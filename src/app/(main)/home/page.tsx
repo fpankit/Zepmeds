@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/carousel"
 import { useRef } from "react";
 import Autoplay from "embla-carousel-autoplay"
+import Typewriter from 'typewriter-effect';
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines" },
@@ -55,6 +56,30 @@ const offerCards = [
   },
 ];
 
+const sponsorCards = [
+  {
+    sponsor: "HealthPlus",
+    title: "Vitamin Supplements",
+    subtitle: "Buy 2 Get 1 Free",
+    image: "https://picsum.photos/800/400?random=1",
+    dataAiHint: "pills medication",
+  },
+  {
+    sponsor: "Wellness Co",
+    title: "Organic Skincare",
+    subtitle: "Upto 30% off",
+    image: "https://picsum.photos/800/400?random=2",
+    dataAiHint: "skincare nature",
+  },
+    {
+    sponsor: "FitLife",
+    title: "Protein Shakes",
+    subtitle: "Combo offers available",
+    image: "https://picsum.photos/800/400?random=3",
+    dataAiHint: "fitness gym",
+  },
+]
+
 
 export default function HomePage() {
   const plugin = useRef(
@@ -70,24 +95,43 @@ export default function HomePage() {
         onMouseLeave={plugin.current.reset}
       >
         <CarouselContent>
-          {Array.from({ length: 3 }).map((_, index) => (
+          {sponsorCards.map((card, index) => (
             <CarouselItem key={index}>
-              <Card className="overflow-hidden bg-gradient-to-r from-primary to-accent/80 p-6 flex flex-col justify-end min-h-[200px]">
-                <div className="text-white">
-                  <h2 className="text-2xl font-bold">Sponsor {index + 1}</h2>
-                  <p>Check out our amazing sponsor!</p>
+              <Card className="overflow-hidden relative min-h-[200px] flex flex-col justify-between p-6 rounded-2xl">
+                <Image src={card.image} alt={card.title} fill className="object-cover z-0" data-ai-hint={card.dataAiHint} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-10"></div>
+                <div className="relative z-20 flex flex-col justify-between h-full">
+                  <div className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full self-start backdrop-blur-sm">
+                    Sponsored by {card.sponsor}
+                  </div>
+                   <div className="text-white">
+                    <h2 className="text-2xl font-bold">{card.title}</h2>
+                    <p>{card.subtitle}</p>
+                  </div>
                 </div>
               </Card>
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
+        <CarouselPrevious className="left-2" />
+        <CarouselNext className="right-2"/>
       </Carousel>
       
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search for medicines, doctors, etc." className="pl-10" />
+        <div className="pl-10 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background flex items-center text-muted-foreground">
+          <Typewriter
+              options={{
+                strings: ['Search for medicines...', 'Doctors...', 'Paracetamol...', 'Sunscreen...', 'and much more!'],
+                autoStart: true,
+                loop: true,
+                delay: 50,
+                deleteSpeed: 50,
+                wrapperClassName: 'text-sm text-muted-foreground',
+                cursorClassName: 'text-sm text-muted-foreground'
+              }}
+            />
+        </div>
       </div>
 
        {/* Feature Cards */}
@@ -113,7 +157,7 @@ export default function HomePage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
             <Card key={i} className="overflow-hidden group">
-              <Image src={`https://picsum.photos/200/200?random=${i}`} alt="Essential Product" width={200} height={200} className="w-full h-32 object-cover" data-ai-hint="skincare product" />
+              <Image src={`https://picsum.photos/200/200?random=${i+5}`} alt="Essential Product" width={200} height={200} className="w-full h-32 object-cover" data-ai-hint="skincare product" />
               <CardContent className="p-3">
                 <h4 className="text-sm font-semibold truncate">Product Name {i+1}</h4>
                 <p className="text-xs text-muted-foreground">1 unit</p>
