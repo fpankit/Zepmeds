@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -22,13 +23,15 @@ export type GeneratePrescriptionSummaryInput = z.infer<
   typeof GeneratePrescriptionSummaryInputSchema
 >;
 
-const GeneratePrescriptionSummaryOutputSchema = z.object({
-  summary: z
-    .string()
-    .describe(
-      'A summary of the medication, dosage, and instructions from the prescription.'
-    ),
+const MedicineSchema = z.object({
+    name: z.string().describe('The name of the medicine.'),
+    dosage: z.string().describe('The dosage and frequency instructions (e.g., "1 tablet twice a day").'),
 });
+
+const GeneratePrescriptionSummaryOutputSchema = z.object({
+    medicines: z.array(MedicineSchema).describe('An array of medicines found in the prescription.'),
+});
+
 export type GeneratePrescriptionSummaryOutput = z.infer<
   typeof GeneratePrescriptionSummaryOutputSchema
 >;
@@ -43,17 +46,17 @@ const prompt = ai.definePrompt({
   name: 'generatePrescriptionSummaryPrompt',
   input: {schema: GeneratePrescriptionSummaryInputSchema},
   output: {schema: GeneratePrescriptionSummaryOutputSchema},
-  prompt: `You are a pharmacist tasked with summarizing prescriptions.
+  prompt: `You are a pharmacist AI tasked with extracting medication details from a prescription.
 
-  Analyze the provided prescription image and extract the following information:
+  Analyze the provided prescription image and extract the following information for each medication:
 
-  - Medication Name(s)
-  - Dosage(s)
-  - Instructions
+  - Medication Name
+  - Dosage and Instructions (e.g., "500mg, 1 tablet twice a day after meals")
+  
+  If you cannot find any medicines, return an empty array. Do not hallucinate.
 
-  Provide a concise summary of the prescription, including all the extracted information.
   Prescription Image: {{media url=prescriptionImageUri}}
-  Summary:`,
+  `,
 });
 
 const generatePrescriptionSummaryFlow = ai.defineFlow(

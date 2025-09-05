@@ -98,7 +98,7 @@ export default function HomePage() {
           {sponsorCards.map((card, index) => (
             <CarouselItem key={index}>
               <Card className={cn("overflow-hidden relative min-h-[200px] flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-br", card.gradient)}>
-                <div className="relative z-20 flex flex-col justify-between h-full">
+                <div className="relative z-10 flex flex-col justify-between h-full">
                   <div className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full self-start backdrop-blur-sm">
                     Sponsored by {card.sponsor}
                   </div>
@@ -115,21 +115,17 @@ export default function HomePage() {
         <CarouselNext className="right-2"/>
       </Carousel>
       
-      <div className="relative">
+      <div className="relative" onClick={() => setIsSearchFocused(true)}>
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground z-10" />
         {isSearchFocused ? (
           <Input 
-            placeholder="Search for..."
-            className="pl-10"
-            onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => setIsSearchFocused(false)}
+            placeholder=""
+            className="pl-10 focus-visible:ring-primary"
             autoFocus
+            onBlur={() => setIsSearchFocused(false)}
           />
         ) : (
-          <div 
-            className="pl-10 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background flex items-center text-muted-foreground cursor-text"
-            onClick={() => setIsSearchFocused(true)}
-          >
+          <div className="pl-10 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background flex items-center text-muted-foreground cursor-text">
             <span className="text-sm text-muted-foreground mr-1">Search for</span>
             <Typewriter
                 options={{

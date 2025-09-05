@@ -1,13 +1,15 @@
+
 "use client";
 
 import { useState, useRef, ChangeEvent } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { generatePrescriptionSummary } from "@/ai/flows/generate-prescription-summary";
+import { generatePrescriptionSummary, GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, UploadCloud, FileText, Sparkles } from "lucide-react";
+import { Loader2, UploadCloud, FileText, Sparkles, X, ShoppingCart } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -24,11 +26,11 @@ const formSchema = z.object({
 });
 
 export function PrescriptionUploader() {
-  const [summary, setSummary] = useState<string | null>(null);
+  const [summary, setSummary] = useState<GeneratePrescriptionSummaryOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>();
 
@@ -42,6 +44,8 @@ export function PrescriptionUploader() {
         setPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+      // Automatically submit after selecting a file
+      onSubmit({ prescription: file });
     }
   };
 
@@ -55,31 +59,43 @@ export function PrescriptionUploader() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    setError(null);
     setSummary(null);
 
     try {
       const dataUri = await toBase64(values.prescription);
       const result = await generatePrescriptionSummary({ prescriptionImageUri: dataUri });
-      setSummary(result.summary);
+      setSummary(result);
     } catch (err) {
       console.error(err);
-      setError("Failed to summarize prescription. Please try again.");
+      toast({
+        variant: "destructive",
+        title: "AI Summarization Failed",
+        description: "Failed to summarize prescription. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
   }
 
+  const resetState = () => {
+    setPreview(null);
+    setSummary(null);
+    form.reset();
+    if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+    }
+  }
+
   return (
-    <Card>
+    <Card className="border-primary border-dashed">
       <CardHeader>
-        <CardTitle>Upload Prescription</CardTitle>
+        <CardTitle>AI Prescription Reader</CardTitle>
         <CardDescription>
-          Upload an image of your prescription to get a summary of your medication.
+          Upload an image of your prescription to have our AI extract the medicines for you.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {!preview && (
           <div
             className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary"
             onClick={() => fileInputRef.current?.click()}
@@ -97,43 +113,58 @@ export function PrescriptionUploader() {
             </p>
             <p className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 5MB</p>
           </div>
-
-          {form.formState.errors.prescription && (
-             <p className="text-sm font-medium text-destructive">{form.formState.errors.prescription.message as string}</p>
-          )}
-
-          {preview && (
-            <div className="relative w-full max-w-xs mx-auto">
-              <Image src={preview} alt="Prescription preview" width={300} height={200} className="rounded-md object-contain" />
-            </div>
-          )}
-
-          <Button type="submit" className="w-full" disabled={isLoading || !form.watch("prescription")}>
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
-            )}
-            Summarize with AI
-          </Button>
-        </form>
-
-        {error && (
-            <div className="text-destructive text-sm font-medium">{error}</div>
         )}
 
-        {summary && (
-          <Card className="bg-card/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText />
-                Prescription Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{summary}</p>
-            </CardContent>
-          </Card>
+        {form.formState.errors.prescription && (
+             <p className="text-sm font-medium text-destructive">{form.formState.errors.prescription.message as string}</p>
+        )}
+        
+        {preview && (
+          <div className="space-y-4">
+             <div className="relative w-full max-w-xs mx-auto">
+                <Image src={preview} alt="Prescription preview" width={300} height={200} className="rounded-md object-contain" />
+                <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={resetState}>
+                    <X className="h-4 w-4"/>
+                </Button>
+             </div>
+
+            {isLoading && (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <p>AI is analyzing your prescription...</p>
+              </div>
+            )}
+
+            {summary && (
+              <Card className="bg-card/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <FileText />
+                    Extracted Medicines
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                     {(summary.medicines || []).map((med, index) => (
+                        <div key={index} className="flex justify-between items-center p-2 rounded-md bg-background">
+                            <div>
+                                <p className="font-semibold">{med.name}</p>
+                                <p className="text-sm text-muted-foreground">{med.dosage}</p>
+                            </div>
+                             <Button size="sm" variant="outline" onClick={() => toast({ title: `${med.name} added to cart!` })}>
+                                <ShoppingCart className="mr-2 h-4 w-4" />
+                                Add to cart
+                            </Button>
+                        </div>
+                     ))}
+                      {(summary.medicines?.length === 0) && (
+                        <p className="text-muted-foreground">Could not extract any medicines from the prescription.</p>
+                      )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
