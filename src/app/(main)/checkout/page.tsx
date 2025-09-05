@@ -21,9 +21,9 @@ const addresses = [
 ];
 
 const deliveryOptions = [
-    { id: "express", name: "Express Delivery", time: "15-30 minutes", price: 50},
-    { id: "standard", name: "Standard Delivery", time: "2-3 hours", price: 0},
-    { id: "scheduled", name: "Scheduled Delivery", time: "Choose your slot", price: 0, default: true}
+    { id: "express", name: "Express Delivery", time: "15-30 minutes", price: 50, color: "red"},
+    { id: "standard", name: "Standard Delivery", time: "2-3 hours", price: 0, color: "blue"},
+    { id: "scheduled", name: "Scheduled Delivery", time: "Choose your slot", price: 0, default: true, color: "orange"}
 ]
 
 const paymentMethods = [
@@ -71,7 +71,7 @@ export default function CheckoutPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-                <MapPin className="text-primary"/> Delivery Address
+                <MapPin className="text-yellow-500"/> Delivery Address
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -84,6 +84,7 @@ export default function CheckoutPage() {
                     description={addr.address}
                     icon={addr.icon}
                     isSelected={selectedAddress === addr.id}
+                    selectionColor="yellow"
                 />
               ))}
             </RadioGroup>
@@ -110,6 +111,7 @@ export default function CheckoutPage() {
                     description={`Delivered within ${opt.time}`}
                     price={opt.price}
                     isSelected={selectedDelivery === opt.id}
+                    selectionColor={opt.color}
                 />
               ))}
             </RadioGroup>
@@ -143,7 +145,7 @@ export default function CheckoutPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-                <CreditCard className="text-primary"/> Payment Method
+                <CreditCard className="text-purple-500"/> Payment Method
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -156,6 +158,7 @@ export default function CheckoutPage() {
                     description=""
                     icon={method.icon}
                     isSelected={selectedPayment === method.id}
+                    selectionColor="purple"
                 />
               ))}
             </RadioGroup>
@@ -211,15 +214,27 @@ export default function CheckoutPage() {
 }
 
 
-function LabelRadio({ value, label, description, icon: Icon, price, isSelected }: { value: string, label: string, description: string, icon?: React.ElementType, price?: number, isSelected: boolean}) {
+function LabelRadio({ value, label, description, icon: Icon, price, isSelected, selectionColor }: { value: string, label: string, description: string, icon?: React.ElementType, price?: number, isSelected: boolean, selectionColor?: string}) {
+    
+    const colorVariants: Record<string, string> = {
+        red: "border-red-500 ring-red-500 bg-red-500/10 text-red-500",
+        orange: "border-orange-500 ring-orange-500 bg-orange-500/10 text-orange-500",
+        blue: "border-blue-500 ring-blue-500 bg-blue-500/10 text-blue-500",
+        yellow: "border-yellow-500 ring-yellow-500 bg-yellow-500/10 text-yellow-500",
+        purple: "border-purple-500 ring-purple-500 bg-purple-500/10 text-purple-500",
+        primary: "border-primary ring-primary bg-primary/10 text-primary",
+    };
+    
+    const selectedClass = colorVariants[selectionColor || 'primary'] || colorVariants.primary;
+    
     return (
-        <label htmlFor={value} className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all", isSelected ? "border-primary ring-2 ring-primary bg-primary/10" : "border-border")}>
+        <label htmlFor={value} className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all", isSelected ? `ring-2 ${selectedClass}` : "border-border")}>
             <RadioGroupItem value={value} id={value} />
-            {Icon && <Icon className={cn("h-5 w-5 text-muted-foreground", isSelected && "text-primary")} />}
+            {Icon && <Icon className={cn("h-5 w-5 text-muted-foreground", isSelected && selectionColor && colorVariants[selectionColor] && `text-${selectionColor}-500`)} />}
             <div className="flex-1">
                 <div className="flex justify-between">
                     <p className="font-semibold">{label}</p>
-                    {price !== undefined && <p className={cn("text-sm font-semibold", isSelected ? "text-primary" : "text-muted-foreground")}>₹{price > 0 ? `₹${price.toFixed(2)}` : 'Free'}</p>}
+                    {price !== undefined && <p className={cn("text-sm font-semibold", isSelected ? `text-${selectionColor}-500` : "text-muted-foreground")}>₹{price > 0 ? `₹${price.toFixed(2)}` : 'Free'}</p>}
                 </div>
                {description && <p className="text-sm text-muted-foreground">{description}</p>}
             </div>
