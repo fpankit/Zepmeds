@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 
 const addresses = [
@@ -36,23 +37,68 @@ const paymentMethods = [
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart } = useCart();
+  const { toast } = useToast();
   const [selectedAddress, setSelectedAddress] = useState(addresses[0].id);
   const [selectedDelivery, setSelectedDelivery] = useState(deliveryOptions.find(d => d.default)?.id ?? deliveryOptions[0].id)
   const [selectedPayment, setSelectedPayment] = useState(paymentMethods[0].id);
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
   const [deliveryTime, setDeliveryTime] = useState<string>("10:00 AM - 12:00 PM");
+  const [isLoading, setIsLoading] = useState(false);
 
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = deliveryOptions.find(d => d.id === selectedDelivery)?.price ?? 0;
   const total = subtotal + deliveryFee;
 
-  const handlePlaceOrder = () => {
-    // In a real app, this would trigger an API call to the backend to create an order.
-    // For this prototype, we'll just clear the cart and navigate to a success page.
-    alert("Order placed successfully!");
-    clearCart();
-    router.push("/order-status");
+  const handlePlaceOrder = async () => {
+    setIsLoading(true);
+
+    // Mock customer data for sanitization example
+    const customer_name = (undefined || "").trimEnd();
+    const customer_address = (addresses.find(a => a.id === selectedAddress)?.address || "").trimEnd();
+    const customer_phone = (null || "").trimEnd();
+
+    const orderData = {
+        cart: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
+        total,
+        subtotal,
+        deliveryFee,
+        deliveryOption: selectedDelivery,
+        deliveryDate,
+        deliveryTime,
+        paymentMethod: selectedPayment,
+        customerDetails: {
+            name: customer_name,
+            address: customer_address,
+            phone: customer_phone,
+        },
+        orderDate: new Date(),
+        status: "Order Confirmed"
+    };
+
+    // Simulate API call
+    try {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        console.log("Order placed:", orderData);
+        
+        toast({
+            title: "Order Placed Successfully!",
+            description: "You will be redirected to the order status page.",
+        });
+
+        clearCart();
+        router.push("/order-status");
+
+    } catch (error) {
+        console.error("Failed to place order:", error);
+        toast({
+            variant: "destructive",
+            title: "Order Failed",
+            description: "There was a problem placing your order. Please try again.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -205,8 +251,8 @@ export default function CheckoutPage() {
 
        {/* Footer */}
       <footer className="p-4 border-t border-border bg-background">
-        <Button onClick={handlePlaceOrder} className="w-full text-lg font-bold py-6 bg-gradient-to-r from-green-500 to-green-700 text-white hover:opacity-90 transition-opacity">
-            Place Order
+        <Button onClick={handlePlaceOrder} disabled={isLoading} className="w-full text-lg font-bold py-6 bg-gradient-to-r from-green-500 to-green-700 text-white hover:opacity-90 transition-opacity">
+            {isLoading ? 'Placing Order...' : 'Place Order'}
         </Button>
       </footer>
     </div>
@@ -253,3 +299,5 @@ function LabelRadio({ value, label, description, icon: Icon, price, isSelected, 
         </label>
     )
 }
+
+    
