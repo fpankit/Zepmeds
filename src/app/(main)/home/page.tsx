@@ -18,6 +18,8 @@ import { useRef, useState } from "react";
 import Autoplay from "embla-carousel-autoplay"
 import Typewriter from 'typewriter-effect';
 import { cn } from "@/lib/utils";
+import { useCart } from "@/context/cart-context";
+import { useToast } from "@/hooks/use-toast";
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines" },
@@ -78,12 +80,30 @@ const sponsorCards = [
   },
 ]
 
+const trendingProducts = [
+  { id: 'prod1', name: 'Product Name 1', image: 'https://picsum.photos/200/200?random=5', dataAiHint: "skincare product", price: 99.00 },
+  { id: 'prod2', name: 'Product Name 2', image: 'https://picsum.photos/200/200?random=6', dataAiHint: "skincare product", price: 149.00 },
+  { id: 'prod3', name: 'Product Name 3', image: 'https://picsum.photos/200/200?random=7', dataAiHint: "skincare product", price: 299.00 },
+  { id: 'prod4', name: 'Product Name 4', image: 'https://picsum.photos/200/200?random=8', dataAiHint: "skincare product", price: 49.00 },
+  { id: 'prod5', name: 'Product Name 5', image: 'https://picsum.photos/200/200?random=9', dataAiHint: "skincare product", price: 199.00 },
+];
+
 
 export default function HomePage() {
   const plugin = useRef(
       Autoplay({ delay: 3000, stopOnInteraction: true })
     )
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const { addToCart } = useCart();
+  const { toast } = useToast();
+
+  const handleAddToCart = (product: typeof trendingProducts[0]) => {
+    addToCart({ ...product, quantity: 1 });
+    toast({
+      title: "Added to cart",
+      description: `${product.name} has been added to your cart.`,
+    });
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8">
@@ -115,19 +135,18 @@ export default function HomePage() {
         <CarouselNext className="right-2"/>
       </Carousel>
       
-      <div className="relative" onClick={() => setIsSearchFocused(true)}>
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground z-10" />
-        {isSearchFocused ? (
-          <Input 
-            placeholder=""
-            className="pl-10 focus-visible:ring-primary"
-            autoFocus
-            onBlur={() => setIsSearchFocused(false)}
-          />
-        ) : (
-          <div className="pl-10 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background flex items-center text-muted-foreground cursor-text">
+       <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+        <Input 
+          placeholder={isSearchFocused ? '' : 'Search for medicines, doctors, and more...'}
+          className={cn("pl-10", isSearchFocused && 'ring-2 ring-primary')}
+          onFocus={() => setIsSearchFocused(true)}
+          onBlur={() => setIsSearchFocused(false)}
+        />
+        {!isSearchFocused && (
+          <div className="absolute left-10 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
             <span className="text-sm text-muted-foreground mr-1">Search for</span>
-            <Typewriter
+              <Typewriter
                 options={{
                   strings: ['medicines...', 'Doctors...', 'Paracetamol...', 'Sunscreen...', 'and much more!'],
                   autoStart: true,
@@ -163,15 +182,15 @@ export default function HomePage() {
        <div>
         <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {[...Array(5)].map((_, i) => (
-            <Card key={i} className="overflow-hidden group">
-              <Image src={`https://picsum.photos/200/200?random=${i+5}`} alt="Essential Product" width={200} height={200} className="w-full h-32 object-cover" data-ai-hint="skincare product" />
+          {trendingProducts.map((product) => (
+            <Card key={product.id} className="overflow-hidden group">
+              <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-32 object-cover" data-ai-hint={product.dataAiHint} />
               <CardContent className="p-3">
-                <h4 className="text-sm font-semibold truncate">Product Name {i+1}</h4>
+                <h4 className="text-sm font-semibold truncate">{product.name}</h4>
                 <p className="text-xs text-muted-foreground">1 unit</p>
                 <div className="flex justify-between items-center mt-2">
-                  <span className="font-bold text-sm">₹99.00</span>
-                  <Button size="sm" variant="outline">Add</Button>
+                  <span className="font-bold text-sm">₹{product.price.toFixed(2)}</span>
+                  <Button size="sm" variant="outline" onClick={() => handleAddToCart(product)}>Add</Button>
                 </div>
               </CardContent>
             </Card>

@@ -22,6 +22,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { PrescriptionUploader } from '@/components/features/prescription-uploader';
+import { useCart } from '@/context/cart-context';
+import { useToast } from '@/hooks/use-toast';
 
 const categories = [
   { name: 'All', icon: Pill, gradient: 'from-blue-500 to-blue-700' },
@@ -50,6 +52,7 @@ const categories = [
 
 const featuredMedicines = [
   {
+    id: 'med1',
     name: 'Vitamin C Tablets',
     description: 'Immunity Booster',
     price: 280,
@@ -60,6 +63,7 @@ const featuredMedicines = [
     dataAiHint: 'medicine bottle',
   },
   {
+    id: 'med2',
     name: 'Multivitamin Capsules',
     description: 'Daily Nutrition',
     price: 410,
@@ -70,6 +74,7 @@ const featuredMedicines = [
     dataAiHint: 'medicine bottle',
   },
   {
+    id: 'med3',
     name: 'Pain Relief Gel',
     description: 'For muscle pain',
     price: 150,
@@ -80,6 +85,7 @@ const featuredMedicines = [
     dataAiHint: 'medicine tube',
   },
   {
+    id: 'med4',
     name: 'Sunscreen SPF 50',
     description: 'Broad spectrum',
     price: 499,
@@ -95,12 +101,22 @@ export default function OrderMedicinesPage() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [showUploader, setShowUploader] = useState(false);
   const uploaderRef = useRef<HTMLDivElement>(null);
+  const { addToCart } = useCart();
+  const { toast } = useToast();
 
   const handleUploadClick = () => {
     setShowUploader(true);
     setTimeout(() => {
         uploaderRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
+  }
+
+  const handleAddToCart = (medicine: typeof featuredMedicines[0]) => {
+    addToCart({ ...medicine, quantity: 1 });
+    toast({
+      title: "Added to cart",
+      description: `${medicine.name} has been added to your cart.`,
+    });
   }
 
   return (
@@ -191,7 +207,7 @@ export default function OrderMedicinesPage() {
                         ₹{medicine.oldPrice}
                       </p>
                     </div>
-                    <Button size="icon" className="rounded-full w-10 h-10 bg-primary/20 hover:bg-primary/30 text-primary">
+                    <Button size="icon" className="rounded-full w-10 h-10 bg-primary/20 hover:bg-primary/30 text-primary" onClick={() => handleAddToCart(medicine)}>
                         <ShoppingCart className="w-5 h-5"/>
                     </Button>
                   </div>

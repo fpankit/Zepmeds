@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, UploadCloud, FileText, Sparkles, X, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/context/cart-context";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -31,6 +32,8 @@ export function PrescriptionUploader() {
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { addToCart } = useCart();
+
 
   const form = useForm<z.infer<typeof formSchema>>();
 
@@ -75,6 +78,22 @@ export function PrescriptionUploader() {
     } finally {
       setIsLoading(false);
     }
+  }
+  
+  const handleAddToCart = (med: { name: string; dosage: string; }) => {
+    // We don't have price info from OCR, so let's add a placeholder
+    const item = {
+      id: `prescribed-${med.name.replace(/\s+/g, '-')}`,
+      name: med.name,
+      price: 0, // Placeholder price
+      description: med.dosage,
+      quantity: 1
+    };
+    addToCart(item);
+    toast({
+      title: "Added to cart",
+      description: `${item.name} has been added to your cart.`,
+    });
   }
 
   const resetState = () => {
@@ -151,7 +170,7 @@ export function PrescriptionUploader() {
                                 <p className="font-semibold">{med.name}</p>
                                 <p className="text-sm text-muted-foreground">{med.dosage}</p>
                             </div>
-                             <Button size="sm" variant="outline" onClick={() => toast({ title: `${med.name} added to cart!` })}>
+                             <Button size="sm" variant="outline" onClick={() => handleAddToCart(med)}>
                                 <ShoppingCart className="mr-2 h-4 w-4" />
                                 Add to cart
                             </Button>
