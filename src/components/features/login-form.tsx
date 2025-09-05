@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, ArrowRight, Home } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 
 const OTPSchema = z.object({
@@ -54,7 +54,7 @@ export function LoginForm() {
   const onOtpSubmit: SubmitHandler<OTPFormValues> = async (data) => {
     setIsLoading(true);
     setPhoneNumber(data.phone);
-    // Mock API call
+    // Mock API call for sending OTP
     await new Promise((resolve) => setTimeout(resolve, 1500));
     verifyForm.setValue("phone", data.phone);
     setStep("verify");
@@ -63,25 +63,17 @@ export function LoginForm() {
 
   const onVerifySubmit: SubmitHandler<VerifyFormValues> = async (data) => {
     setIsLoading(true);
-    // Mock API call
+    // Mock API call for verifying OTP
     await new Promise((resolve) => setTimeout(resolve, 1500));
     
-    // Simulate login and set user data
-    login({ 
-      name: "John Doe", 
+    // On successful verification, login the user
+    // This will fetch existing data or create a new user profile in Firestore
+    await login({ 
+      name: "John Doe", // Placeholder name for new users
       phone: data.phone,
-      addresses: [
-        {
-          id: "home-123",
-          type: "Home",
-          name: "Home",
-          address: "123 Main Street, Apartment 4B, New York, NY 10001",
-          icon: Home,
-        }
-      ]
     });
 
-    // On successful verification, redirect
+    // Redirect to home
     router.push("/home");
   };
 
@@ -97,7 +89,7 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="+1 123 456 7890" {...field} />
+                    <Input placeholder="+91 1234567890" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -141,7 +133,7 @@ export function LoginForm() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  Login
+                  Verify & Login
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </>
               )}

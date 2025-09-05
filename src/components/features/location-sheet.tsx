@@ -25,7 +25,7 @@ const iconMap = {
     Other: MapPin,
 }
 
-function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address, 'id' | 'icon'>) => void }) {
+function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address, 'id'>) => void }) {
     const [type, setType] = useState<Address['type']>("Home");
     const [address, setAddress] = useState("");
 
@@ -88,20 +88,20 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
   const [selectedAddressId, setSelectedAddressId] = useState(user?.addresses[0]?.id || "");
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
-  const handleAddAddress = (newAddressData: Omit<Address, 'id' | 'icon'>) => {
+  const handleAddAddress = async (newAddressData: Omit<Address, 'id'>) => {
       const newAddress: Address = {
           ...newAddressData,
           id: Date.now().toString(),
       };
       const updatedAddresses = [...(user?.addresses || []), newAddress];
-      updateUser({ addresses: updatedAddresses });
+      await updateUser({ addresses: updatedAddresses });
       setSelectedAddressId(newAddress.id);
       setIsAddAddressOpen(false); // Close dialog on submit
   }
   
-  const handleDeleteAddress = (id: string) => {
+  const handleDeleteAddress = async (id: string) => {
       const updatedAddresses = (user?.addresses || []).filter(addr => addr.id !== id);
-      updateUser({ addresses: updatedAddresses });
+      await updateUser({ addresses: updatedAddresses });
       if (selectedAddressId === id) {
           setSelectedAddressId(user?.addresses[0]?.id || "");
       }
