@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
+import { useAuth } from "@/context/auth-context";
 
 interface Doctor {
   id: string;
@@ -23,6 +25,7 @@ interface Doctor {
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -39,6 +42,11 @@ export default function DoctorPage() {
 
     fetchDoctors();
   }, []);
+
+  const createChannelName = (doctorId: string) => {
+    const userId = user?.id || 'guest';
+    return `zepmeds-call-${userId}-${doctorId}`;
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -94,8 +102,10 @@ export default function DoctorPage() {
                 </div>
                 <div className="flex gap-2 mt-4">
                     <Button className="w-full">Book Appointment</Button>
-                    <Button className="w-full bg-green-600 hover:bg-green-700">
-                        <Video className="mr-2 h-4 w-4" /> Call Now
+                    <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+                        <Link href={`/video-call/${createChannelName(doctor.id)}`}>
+                          <Video className="mr-2 h-4 w-4" /> Call Now
+                        </Link>
                     </Button>
                 </div>
                 </CardContent>
