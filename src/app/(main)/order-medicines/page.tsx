@@ -15,6 +15,8 @@ import {
   Thermometer,
   ShoppingCart,
   FileText,
+  Minus,
+  Plus,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -89,7 +91,7 @@ export default function OrderMedicinesPage() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [showUploader, setShowUploader] = useState(false);
   const uploaderRef = useRef<HTMLDivElement>(null);
-  const { addToCart } = useCart();
+  const { cart, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
 
   const handleUploadClick = () => {
@@ -159,50 +161,65 @@ export default function OrderMedicinesPage() {
       <div>
         <h2 className="text-xl font-bold mb-4">Featured Medicines</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {featuredMedicines.map((medicine, index) => (
-            <Card key={index} className="overflow-hidden">
-              <CardContent className="p-4 flex gap-4">
-                <div className="relative w-24 h-24 flex-shrink-0">
-                  <Image
-                    src={medicine.image}
-                    alt={medicine.name}
-                    width={100}
-                    height={100}
-                    className="object-cover rounded-md"
-                    data-ai-hint={medicine.dataAiHint}
-                  />
-                  <div className="absolute top-1 left-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                    {medicine.discount}
-                  </div>
-                </div>
-
-                <div className="flex-grow flex flex-col justify-between">
-                  <div>
-                    <h3 className="font-bold">{medicine.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {medicine.description}
-                    </p>
-                     <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm font-bold">{medicine.rating}</span>
+          {featuredMedicines.map((medicine, index) => {
+            const cartItem = cart.find(item => item.id === medicine.id);
+            return (
+              <Card key={index} className="overflow-hidden">
+                <CardContent className="p-4 flex gap-4">
+                  <div className="relative w-24 h-24 flex-shrink-0">
+                    <Image
+                      src={medicine.image}
+                      alt={medicine.name}
+                      width={100}
+                      height={100}
+                      className="object-cover rounded-md"
+                      data-ai-hint={medicine.dataAiHint}
+                    />
+                    <div className="absolute top-1 left-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                      {medicine.discount}
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-end mt-2">
+                  <div className="flex-grow flex flex-col justify-between">
                     <div>
-                      <p className="font-bold text-lg">₹{medicine.price}</p>
-                      <p className="text-sm text-muted-foreground line-through">
-                        ₹{medicine.oldPrice}
+                      <h3 className="font-bold">{medicine.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {medicine.description}
                       </p>
+                       <div className="flex items-center gap-1 mt-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                        <span className="text-sm font-bold">{medicine.rating}</span>
+                      </div>
                     </div>
-                    <Button size="icon" className="rounded-full w-10 h-10 bg-primary/20 hover:bg-primary/30 text-primary" onClick={() => handleAddToCart(medicine)}>
-                        <ShoppingCart className="w-5 h-5"/>
-                    </Button>
+
+                    <div className="flex justify-between items-end mt-2">
+                      <div>
+                        <p className="font-bold text-lg">₹{medicine.price}</p>
+                        <p className="text-sm text-muted-foreground line-through">
+                          ₹{medicine.oldPrice}
+                        </p>
+                      </div>
+                      {cartItem ? (
+                        <div className="flex items-center gap-1">
+                          <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(medicine.id, cartItem.quantity - 1)}>
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-8 text-center font-bold">{cartItem.quantity}</span>
+                          <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(medicine.id, cartItem.quantity + 1)}>
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button size="icon" className="rounded-full w-10 h-10 bg-primary/20 hover:bg-primary/30 text-primary" onClick={() => handleAddToCart(medicine)}>
+                            <ShoppingCart className="w-5 h-5"/>
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </div>
     </div>

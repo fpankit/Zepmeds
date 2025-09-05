@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pill, Stethoscope, Search, Upload, Bot, Gift, Clock, Truck, CreditCard, Star, Heart, Eye, Bone, Sun, Dog, Thermometer, Siren, PackageSearch } from "lucide-react";
+import { Pill, Stethoscope, Search, Upload, Bot, Gift, Clock, Truck, CreditCard, Star, Heart, Eye, Bone, Sun, Dog, Thermometer, Siren, PackageSearch, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -108,7 +108,7 @@ export default function HomePage() {
       Autoplay({ delay: 3000, stopOnInteraction: true })
     )
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const { addToCart } = useCart();
+  const { cart, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
    const [activeCategory, setActiveCategory] = useState('Popular');
 
@@ -153,7 +153,7 @@ export default function HomePage() {
        <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
         <Input 
-          placeholder={isSearchFocused ? '' : 'Search for medicines, doctors, and more...'}
+          placeholder=""
           className={cn("pl-10", isSearchFocused && 'ring-2 ring-primary')}
           onFocus={() => setIsSearchFocused(true)}
           onBlur={() => setIsSearchFocused(false)}
@@ -163,7 +163,7 @@ export default function HomePage() {
             <span className="text-sm text-muted-foreground mr-1">Search for</span>
               <Typewriter
                 options={{
-                  strings: ['medicines...', 'Doctors...', 'Paracetamol...', 'Sunscreen...', 'and much more!'],
+                  strings: ['medicines...', 'Paracetamol...', 'Sunscreen...', 'and much more!'],
                   autoStart: true,
                   loop: true,
                   delay: 50,
@@ -226,19 +226,34 @@ export default function HomePage() {
        <div>
         <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {trendingProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden group">
-              <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-32 object-cover" data-ai-hint={product.dataAiHint} />
-              <CardContent className="p-3">
-                <h4 className="text-sm font-semibold truncate">{product.name}</h4>
-                <p className="text-xs text-muted-foreground">1 unit</p>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="font-bold text-sm">₹{product.price.toFixed(2)}</span>
-                  <Button size="sm" variant="outline" onClick={() => handleAddToCart(product)}>Add</Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {trendingProducts.map((product) => {
+            const cartItem = cart.find(item => item.id === product.id);
+            return (
+              <Card key={product.id} className="overflow-hidden group">
+                <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-32 object-cover" data-ai-hint={product.dataAiHint} />
+                <CardContent className="p-3">
+                  <h4 className="text-sm font-semibold truncate">{product.name}</h4>
+                  <p className="text-xs text-muted-foreground">1 unit</p>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="font-bold text-sm">₹{product.price.toFixed(2)}</span>
+                    {cartItem ? (
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-6 text-center">{cartItem.quantity}</span>
+                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button size="sm" variant="outline" onClick={() => handleAddToCart(product)}>Add</Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
        </div>
 
