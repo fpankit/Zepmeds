@@ -14,12 +14,12 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Autoplay from "embla-carousel-autoplay"
-import Typewriter from 'typewriter-effect';
 import { cn } from "@/lib/utils";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
+import { AnimatePresence, motion } from "framer-motion";
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
@@ -123,6 +123,38 @@ const categories = [
 
 const trendingProducts = allProducts.filter(p => Array.isArray(p.category) ? p.category.includes('Popular') : p.category === 'Popular');
 
+const AnimatedPlaceholder = () => {
+    const placeholders = ['medicines...', 'Paracetamol...', 'Sunscreen...', 'and much more!'];
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setIndex((prevIndex) => (prevIndex + 1) % placeholders.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [placeholders.length]);
+
+    return (
+        <div className="absolute left-10 top-1/2 -translate-y-1/2 flex items-center pointer-events-none h-full">
+            <span className="text-sm text-muted-foreground mr-1">Search for</span>
+            <AnimatePresence mode="wait">
+                <motion.span
+                    key={index}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-sm text-muted-foreground"
+                >
+                    {placeholders[index]}
+                </motion.span>
+            </AnimatePresence>
+        </div>
+    );
+}
+
+const MotionCard = motion(Card);
+const MotionLink = motion(Link);
 
 export default function HomePage() {
   const plugin = useRef(
@@ -140,37 +172,52 @@ export default function HomePage() {
     });
   }
 
-  return (
-    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8">
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i:number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    }),
+  };
 
-      <Carousel
-        plugins={[plugin.current]}
-        className="w-full"
-        onMouseEnter={plugin.current.stop}
-        onMouseLeave={plugin.current.reset}
-      >
-        <CarouselContent>
-          {sponsorCards.map((card, index) => (
-            <CarouselItem key={index}>
-              <Card className={cn("overflow-hidden relative min-h-[200px] flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-br", card.gradient)}>
-                <div className="relative z-10 flex flex-col justify-between h-full">
-                  <div className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full self-start backdrop-blur-sm">
-                    Sponsored by {card.sponsor}
-                  </div>
-                   <div className="text-white">
-                    <h2 className="text-2xl font-bold">{card.title}</h2>
-                    <p>{card.subtitle}</p>
-                  </div>
-                </div>
-              </Card>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="left-2" />
-        <CarouselNext className="right-2"/>
-      </Carousel>
+  return (
+    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 overflow-hidden">
+
+       <motion.div variants={sectionVariants} initial="hidden" animate="visible" custom={0}>
+        <Carousel
+            plugins={[plugin.current]}
+            className="w-full"
+            onMouseEnter={plugin.current.stop}
+            onMouseLeave={plugin.current.reset}
+        >
+            <CarouselContent>
+            {sponsorCards.map((card, index) => (
+                <CarouselItem key={index}>
+                <Card className={cn("overflow-hidden relative min-h-[200px] flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-br", card.gradient)}>
+                    <div className="relative z-10 flex flex-col justify-between h-full">
+                    <div className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full self-start backdrop-blur-sm">
+                        Sponsored by {card.sponsor}
+                    </div>
+                    <div className="text-white">
+                        <h2 className="text-2xl font-bold">{card.title}</h2>
+                        <p>{card.subtitle}</p>
+                    </div>
+                    </div>
+                </Card>
+                </CarouselItem>
+            ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-2" />
+            <CarouselNext className="right-2"/>
+        </Carousel>
+      </motion.div>
       
-       <div className="relative">
+       <motion.div className="relative" variants={sectionVariants} initial="hidden" animate="visible" custom={1}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
         <Input 
           placeholder=""
@@ -178,26 +225,11 @@ export default function HomePage() {
           onFocus={() => setIsSearchFocused(true)}
           onBlur={() => setIsSearchFocused(false)}
         />
-        {!isSearchFocused && (
-          <div className="absolute left-10 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-            <span className="text-sm text-muted-foreground mr-1">Search for</span>
-              <Typewriter
-                options={{
-                  strings: ['medicines...', 'Paracetamol...', 'Sunscreen...', 'and much more!'],
-                  autoStart: true,
-                  loop: true,
-                  delay: 50,
-                  deleteSpeed: 50,
-                  wrapperClassName: 'text-sm text-muted-foreground',
-                  cursorClassName: 'text-sm text-muted-foreground'
-                }}
-              />
-          </div>
-        )}
-      </div>
+        {!isSearchFocused && <AnimatedPlaceholder />}
+      </motion.div>
 
       {/* Shop by Category */}
-       <div>
+       <motion.div variants={sectionVariants} initial="hidden" animate="visible" custom={2}>
         <h3 className="font-headline text-2xl font-bold mb-4">Shop by Category</h3>
         <div className="flex overflow-x-auto space-x-4 pb-4 -mx-4 px-4">
           {categories.map((category) => (
@@ -211,13 +243,13 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
-      </div>
+      </motion.div>
 
 
        {/* Feature Cards */}
-       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+       <motion.div className="grid grid-cols-2 sm:grid-cols-3 gap-4" variants={sectionVariants} initial="hidden" animate="visible" custom={3}>
         {featureCards.map((card) => (
-          <Link href={card.href} key={card.title}>
+          <MotionLink href={card.href} key={card.title} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
               <div className={cn("p-3 rounded-xl", card.color)}>
                 <card.icon className="h-8 w-8 text-white" />
@@ -227,19 +259,19 @@ export default function HomePage() {
                 <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
               </div>
             </Card>
-          </Link>
+          </MotionLink>
         ))}
-      </div>
+      </motion.div>
       
 
        {/* Products Section */}
-       <div>
+       <motion.div variants={sectionVariants} initial="hidden" animate="visible" custom={4}>
         <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {trendingProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             return (
-              <Card key={product.id} className="overflow-hidden group">
+              <MotionCard key={product.id} className="overflow-hidden group" whileHover={{ y: -5 }}>
                 <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-32 object-cover" data-ai-hint={product.dataAiHint} />
                 <CardContent className="p-3">
                   <h4 className="text-sm font-semibold truncate">{product.name}</h4>
@@ -261,14 +293,14 @@ export default function HomePage() {
                     )}
                   </div>
                 </CardContent>
-              </Card>
+              </MotionCard>
             )
           })}
         </div>
-       </div>
+       </motion.div>
 
         {/* Offers Section */}
-      <div>
+      <motion.div variants={sectionVariants} initial="hidden" animate="visible" custom={5}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {offerCards.map((offer) => (
             <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80">
@@ -285,10 +317,12 @@ export default function HomePage() {
             </Card>
           ))}
         </div>
-      </div>
+      </motion.div>
 
     </div>
   );
 }
+
+    
 
     
