@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -44,10 +44,27 @@ const riderDetails = {
 
 export default function OrderStatusPage() {
   const [viewDetails, setViewDetails] = useState(true);
-  const progress = (orderStatusSteps.filter(s => s.completed).length / orderStatusSteps.length) * 100;
-  const currentStep = orderStatusSteps.find(s => !s.completed) || orderStatusSteps[orderStatusSteps.length-1];
-  const isRiderAssigned = orderStatusSteps.find(s => s.name === 'Rider Assigned')?.completed;
+  const [currentStepIndex, setCurrentStepIndex] = useState(3);
 
+  const completedSteps = orderStatusSteps.slice(0, currentStepIndex);
+  const progress = (completedSteps.length / orderStatusSteps.length) * 100;
+  const currentStep = orderStatusSteps[currentStepIndex - 1];
+  const isRiderAssigned = orderStatusSteps.findIndex(s => s.name === 'Rider Assigned') < currentStepIndex;
+
+  useEffect(() => {
+    // Simulate order progress
+    const interval = setInterval(() => {
+      setCurrentStepIndex(prev => {
+        if (prev < orderStatusSteps.length) {
+          return prev + 1;
+        }
+        clearInterval(interval);
+        return prev;
+      });
+    }, 5000); // Move to next step every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -83,19 +100,19 @@ export default function OrderStatusPage() {
                 <p className="text-muted-foreground">Order Progress</p>
                 <p className="font-bold text-orange-400">{Math.round(progress)}%</p>
               </div>
-              <Progress value={progress} className="h-2 bg-orange-500" />
+              <Progress value={progress} className="h-2 [&>*]:bg-orange-400" />
 
               <div className="space-y-4">
                 {orderStatusSteps.map((step, index) => (
-                  <div key={index} className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step.completed ? 'bg-green-500' : 'bg-muted'}`}>
-                      <step.icon className={`w-5 h-5 ${step.completed ? 'text-white' : 'text-muted-foreground'}`} />
+                   <div key={index} className="flex items-center gap-4">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${index < currentStepIndex ? 'bg-green-500' : 'bg-muted'}`}>
+                      <step.icon className={`w-5 h-5 ${index < currentStepIndex ? 'text-white' : 'text-muted-foreground'}`} />
                     </div>
                     <div>
-                      <p className={`font-semibold ${step.completed ? 'text-foreground' : 'text-muted-foreground'}`}>{step.name}</p>
-                      <p className="text-xs text-muted-foreground">{step.time}</p>
+                      <p className={`font-semibold ${index < currentStepIndex ? 'text-foreground' : 'text-muted-foreground'}`}>{step.name}</p>
+                      <p className="text-xs text-muted-foreground">{index < currentStepIndex ? step.time : ''}</p>
                     </div>
-                    {step.completed && <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto" />}
+                    {index < currentStepIndex && <CheckCircle2 className="w-5 h-5 text-green-500 ml-auto" />}
                   </div>
                 ))}
               </div>

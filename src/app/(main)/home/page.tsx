@@ -27,7 +27,7 @@ const featureCards = [
     { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker", color: "bg-sky-500" },
     { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor", color: "bg-green-500" },
     { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "#", color: "bg-red-500" },
-    { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "#", color: "bg-teal-500" },
+    { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "/order-status", color: "bg-teal-500" },
 ];
 
 const offerCards = [
@@ -107,18 +107,7 @@ const allProducts = [
   { id: 'prod26', name: 'Medicated Soap', image: 'https://picsum.photos/200/200?random=30', dataAiHint: "soap bar", price: 70.00, category: 'Skin Care' },
 ];
 
-
-const categories = [
-  { name: 'Popular', icon: Star, gradient: 'bg-gradient-to-br from-yellow-400 to-orange-500' },
-  { name: 'Skin Care', icon: Heart, gradient: 'bg-gradient-to-br from-pink-400 to-rose-500' },
-  { name: 'Supplements', icon: Pill, gradient: 'bg-gradient-to-br from-green-400 to-teal-500' },
-  { name: 'Eye Care', icon: Eye, gradient: 'bg-gradient-to-br from-cyan-400 to-blue-500' },
-  { name: 'Dental', icon: Stethoscope, gradient: 'bg-gradient-to-br from-indigo-400 to-purple-500' },
-  { name: 'Pain Relief', icon: Bone, gradient: 'bg-gradient-to-br from-red-400 to-red-600' },
-  { name: 'Summer Care', icon: Sun, gradient: 'bg-gradient-to-br from-orange-400 to-yellow-500' },
-  { name: 'Pet Care', icon: Dog, gradient: 'bg-gradient-to-br from-purple-400 to-indigo-500' },
-  { name: 'Devices', icon: Thermometer, gradient: 'bg-gradient-to-br from-gray-400 to-gray-600' },
-];
+const trendingProducts = allProducts.filter(p => Array.isArray(p.category) ? p.category.includes('Popular') : p.category === 'Popular');
 
 
 export default function HomePage() {
@@ -128,15 +117,6 @@ export default function HomePage() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { cart, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
-  const [activeCategory, setActiveCategory] = useState('Popular');
-
-  const filteredProducts = useMemo(() => {
-    if (activeCategory === 'Popular') {
-        return allProducts.filter(p => Array.isArray(p.category) ? p.category.includes('Popular') : p.category === 'Popular');
-    }
-    return allProducts.filter(p => Array.isArray(p.category) ? p.category.includes(activeCategory) : p.category === activeCategory);
-  }, [activeCategory]);
-
 
   const handleAddToCart = (product: typeof allProducts[0]) => {
     addToCart({ ...product, quantity: 1 });
@@ -219,39 +199,12 @@ export default function HomePage() {
         ))}
       </div>
       
-       {/* Categories Section */}
-       <div>
-        <h3 className="font-headline text-2xl font-bold mb-4">Shop by Category</h3>
-        <div className="flex space-x-3 overflow-x-auto pb-4 -mx-4 px-4">
-          {categories.map((category) => (
-              <button
-                key={category.name}
-                onClick={() => setActiveCategory(category.name)}
-                className={cn(
-                  'flex flex-col items-center space-y-2 flex-shrink-0 w-20 transition-all',
-                  activeCategory === category.name ? 'text-primary' : 'text-muted-foreground'
-                )}
-              >
-                <div
-                  className={cn(
-                    'w-16 h-16 rounded-2xl flex items-center justify-center',
-                    category.gradient,
-                    activeCategory === category.name ? 'ring-2 ring-primary scale-105' : 'opacity-80'
-                  )}
-                >
-                  <category.icon className="h-8 w-8 text-white" />
-                </div>
-                <span className="text-xs font-medium">{category.name}</span>
-              </button>
-          ))}
-        </div>
-      </div>
 
        {/* Products Section */}
        <div>
-        <h3 className="font-headline text-2xl font-bold mb-4">{activeCategory} Products</h3>
+        <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {filteredProducts.map((product) => {
+          {trendingProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             return (
               <Card key={product.id} className="overflow-hidden group">

@@ -102,7 +102,7 @@ export default function OrderMedicinesPage() {
   }
 
   const handleAddToCart = (medicine: typeof featuredMedicines[0]) => {
-    addToCart({ ...medicine, quantity: 1 });
+    addToCart({ ...medicine, quantity: 1, name: medicine.name, price: medicine.price });
     toast({
       title: "Added to cart",
       description: `${medicine.name} has been added to your cart.`,
@@ -120,9 +120,9 @@ export default function OrderMedicinesPage() {
         <div className="flex items-center gap-4">
           <FileText className="h-8 w-8 text-primary" />
           <div>
-            <h3 className="font-semibold">Add prescription and our</h3>
+            <h3 className="font-semibold">Have a prescription?</h3>
             <p className="text-sm text-muted-foreground">
-              pharmacist will assist you!
+              Upload it and we'll handle the rest!
             </p>
           </div>
         </div>
@@ -225,5 +225,3 @@ export default function OrderMedicinesPage() {
     </div>
   );
 }
-
-    

@@ -8,7 +8,7 @@ import * as z from "zod";
 import { generatePrescriptionSummary, GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, UploadCloud, FileText, Sparkles, X, ShoppingCart } from "lucide-react";
+import { Loader2, UploadCloud, FileText, X, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
 
@@ -18,10 +18,10 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/web
 const formSchema = z.object({
   prescription: z
     .any()
-    .refine((file) => file, "Image is required.")
-    .refine((file) => file?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
+    .refine((files) => files?.[0], "Image is required.")
+    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
     .refine(
-      (file) => ACCEPTED_IMAGE_TYPES.includes(file?.type),
+      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
       ".jpg, .jpeg, .png and .webp files are accepted."
     ),
 });
@@ -40,7 +40,7 @@ export function PrescriptionUploader() {
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue("prescription", file);
+      form.setValue("prescription", [file]);
       form.clearErrors("prescription");
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -60,7 +60,7 @@ export function PrescriptionUploader() {
       reader.onerror = (error) => reject(error);
     });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: { prescription: File }) {
     setIsLoading(true);
     setSummary(null);
 
@@ -83,11 +83,13 @@ export function PrescriptionUploader() {
   const handleAddToCart = (med: { name: string; dosage: string; }) => {
     // We don't have price info from OCR, so let's add a placeholder
     const item = {
-      id: `prescribed-${med.name.replace(/\s+/g, '-')}`,
+      id: `prescribed-${med.name.replace(/\s+/g, '-')}-${Date.now()}`,
       name: med.name,
       price: 0, // Placeholder price
       description: med.dosage,
-      quantity: 1
+      quantity: 1,
+      image: 'https://picsum.photos/200/200?random=32', // Placeholder image
+      dataAiHint: 'medicine pills',
     };
     addToCart(item);
     toast({
