@@ -25,8 +25,8 @@ const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
     { title: "Upload Prescription", description: "Get medicines as prescribed", icon: Upload, href: "/order-medicines", color: "bg-purple-500" },
     { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker", color: "bg-green-500" },
-    { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor", color: "bg-red-500" },
-    { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "#", color: "bg-yellow-500" },
+    { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor", color: "bg-sky-500" },
+    { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "#", color: "bg-red-500" },
     { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "#", color: "bg-teal-500" },
 ];
 
