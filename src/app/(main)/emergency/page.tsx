@@ -16,6 +16,7 @@ import { useAuth } from "@/context/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 
 const RIDER_ARRIVAL_TIME = 10 * 60; // 10 minutes in seconds
@@ -242,11 +243,3 @@ export default function EmergencyPage() {
     </div>
   );
 }
-
-// Minimalist Framer Motion components to avoid extra dependencies
-const { motion, AnimatePresence } = {
-    motion: {
-        div: ({ children, ...props }: { children: React.ReactNode, [key: string]: any }) => <div {...props}>{children}</div>
-    },
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>
-};
