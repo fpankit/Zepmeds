@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pill, Stethoscope, Search, Upload, Bot, Gift, Clock, Truck, CreditCard } from "lucide-react";
+import { Pill, Stethoscope, Search, Upload, Bot, Gift, Clock, Truck, CreditCard, Star, Heart, Eye, Bone, Sun, Dog, Thermometer } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -88,6 +88,30 @@ const trendingProducts = [
   { id: 'prod5', name: 'Product Name 5', image: 'https://picsum.photos/200/200?random=9', dataAiHint: "skincare product", price: 199.00 },
 ];
 
+const categories = [
+  { name: 'Popular', icon: Star, gradient: 'from-yellow-500 to-yellow-700' },
+  { name: 'Skin Care', icon: Heart, gradient: 'from-pink-500 to-pink-700' },
+  {
+    name: 'Supplements',
+    icon: Pill,
+    gradient: 'from-green-500 to-green-700',
+  },
+  { name: 'Eye Care', icon: Eye, gradient: 'from-cyan-500 to-cyan-700' },
+  { name: 'Dental', icon: Stethoscope, gradient: 'from-indigo-500 to-indigo-700' },
+  { name: 'Pain Relief', icon: Bone, gradient: 'from-red-500 to-red-700' },
+  {
+    name: 'Summer Care',
+    icon: Sun,
+    gradient: 'from-orange-500 to-orange-700',
+  },
+  { name: 'Pet Care', icon: Dog, gradient: 'from-purple-500 to-purple-700' },
+  {
+    name: 'Devices',
+    icon: Thermometer,
+    gradient: 'from-gray-500 to-gray-700',
+  },
+];
+
 
 export default function HomePage() {
   const plugin = useRef(
@@ -96,6 +120,7 @@ export default function HomePage() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { addToCart } = useCart();
   const { toast } = useToast();
+   const [activeCategory, setActiveCategory] = useState('Popular');
 
   const handleAddToCart = (product: typeof trendingProducts[0]) => {
     addToCart({ ...product, quantity: 1 });
@@ -178,6 +203,35 @@ export default function HomePage() {
         ))}
       </div>
       
+       {/* Categories Section */}
+       <div>
+        <h3 className="font-headline text-2xl font-bold mb-4">Shop by Category</h3>
+        <div className="flex space-x-3 overflow-x-auto pb-4 -mx-4 px-4">
+          {categories.map((category) => (
+             <Link href="/order-medicines" key={category.name}>
+              <button
+                onClick={() => setActiveCategory(category.name)}
+                className={cn(
+                  'flex flex-col items-center space-y-2 flex-shrink-0 w-20 transition-all',
+                  activeCategory === category.name ? 'text-primary' : 'text-muted-foreground'
+                )}
+              >
+                <div
+                  className={cn(
+                    'w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br',
+                    category.gradient,
+                    activeCategory === category.name ? 'ring-2 ring-primary scale-105' : 'opacity-80'
+                  )}
+                >
+                  <category.icon className="h-8 w-8 text-white" />
+                </div>
+                <span className="text-xs font-medium">{category.name}</span>
+              </button>
+            </Link>
+          ))}
+        </div>
+      </div>
+
        {/* Trending Products Section */}
        <div>
         <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
