@@ -19,9 +19,9 @@ export function Header() {
             </Button>
             <LocationSheet>
               <div className="flex cursor-pointer items-center gap-2 text-sm">
-                <MapPin className="h-5 w-5 text-primary" />
+                <MapPin className="h-5 w-5 text-green-500" />
                 <div>
-                  <div className="flex items-center font-semibold">
+                  <div className="flex items-center font-semibold text-green-500">
                     Location <ChevronDown className="h-4 w-4 ml-1" />
                   </div>
                 </div>

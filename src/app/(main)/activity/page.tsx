@@ -59,14 +59,14 @@ export default function ActivityPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card className={`p-4 cursor-pointer transition-all ${activeChart === 'steps' ? 'ring-2 ring-primary' : ''}`} onClick={() => setActiveChart('steps')}>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Footprints className="text-primary"/> Steps
+                <Footprints className="text-blue-500"/> Steps
               </CardTitle>
               <p className="text-2xl font-bold">72,500</p>
               <p className="text-sm text-muted-foreground">This week</p>
             </Card>
              <Card className={`p-4 cursor-pointer transition-all ${activeChart === 'water' ? 'ring-2 ring-primary' : ''}`} onClick={() => setActiveChart('water')}>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Droplet className="text-blue-400"/> Water Intake
+                <Droplet className="text-sky-400"/> Water Intake
               </CardTitle>
               <p className="text-2xl font-bold">43</p>
               <p className="text-sm text-muted-foreground">Glasses this week</p>
