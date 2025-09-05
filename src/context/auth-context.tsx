@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface Address {
@@ -27,7 +27,7 @@ interface AuthContextType {
   loading: boolean;
   login: (userData: Pick<User, 'phone' | 'firstName' | 'lastName' | 'email'>) => Promise<void>;
   logout: () => void;
-  updateUser: (userData: Partial<Omit<User, 'id'>>) => Promise<void>;
+  updateUser: (userData: Partial<Omit<User, 'id' | 'phone'>>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +38,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // This could be expanded to check for a session token in localStorage
   useEffect(() => {
+    // Here you would typically check for a persisted session
+    // For now, we just stop the loading state
     setLoading(false);
   }, []);
 
@@ -48,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (userDocSnap.exists()) {
       // User exists, load their data
-      setUser(userDocSnap.data() as User);
+      setUser({ id: userDocSnap.id, ...userDocSnap.data() } as User);
     } else {
       // New user, create their profile
       const newUser: User = {
@@ -74,14 +76,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     setUser(null);
+    // Here you would clear any persisted session
   };
 
-  const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
+  const updateUser = async (userData: Partial<Omit<User, 'id' | 'phone'>>) => {
     if (user) {
-      const updatedUser = { ...user, ...userData };
       const userDocRef = doc(db, "users", user.id);
-      await setDoc(userDocRef, updatedUser, { merge: true });
-      setUser(updatedUser);
+      await updateDoc(userDocRef, userData);
+      setUser(prevUser => prevUser ? { ...prevUser, ...userData } : null);
     }
   }
 
