@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pill, Stethoscope, Search, Upload, Bot, Gift, Clock, Truck, CreditCard, Star, Heart, Eye, Bone, Sun, Dog, Thermometer, Siren, PackageSearch, Minus, Plus } from "lucide-react";
+import { Pill, Stethoscope, Search, Upload, Bot, Gift, Clock, Truck, CreditCard, Star, Heart, Eye, Bone, Sun, Dog, Thermometer, Siren, PackageSearch, Minus, Plus, Sparkles, HeartPulse, Shield, Baby, Wind } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -108,17 +108,18 @@ const allProducts = [
 ];
 
 const categories = [
-  { name: 'All', icon: Pill, href: '/order-medicines' },
-  { name: 'Popular', icon: Star, href: '/order-medicines' },
-  { name: 'Skin Care', icon: Heart, href: '/order-medicines' },
-  { name: 'Supplements', icon: Pill, href: '/order-medicines' },
-  { name: 'Eye Care', icon: Eye, href: '/order-medicines' },
-  { name: 'Dental', icon: Stethoscope, href: '/order-medicines' },
-  { name: 'Pain Relief', icon: Bone, href: '/order-medicines' },
-  { name: 'Summer Care', icon: Sun, href: '/order-medicines' },
-  { name: 'Pet Care', icon: Dog, href: '/order-medicines' },
-  { name: 'Devices', icon: Thermometer, href: '/order-medicines' },
+  { name: 'All', icon: Pill, href: '/order-medicines', gradient: 'from-blue-500 to-blue-700' },
+  { name: 'Popular', icon: Star, href: '/order-medicines', gradient: 'from-yellow-400 to-orange-500' },
+  { name: 'Skin Care', icon: Sparkles, href: '/order-medicines', gradient: 'from-pink-500 to-rose-500' },
+  { name: 'Supplements', icon: HeartPulse, href: '/order-medicines', gradient: 'from-green-500 to-teal-500' },
+  { name: 'Eye Care', icon: Eye, href: '/order-medicines', gradient: 'from-cyan-500 to-sky-500' },
+  { name: 'Dental', icon: Shield, href: '/order-medicines', gradient: 'from-indigo-500 to-purple-600' },
+  { name: 'Pain Relief', icon: Wind, href: '/order-medicines', gradient: 'from-red-500 to-orange-600' },
+  { name: 'Summer Care', icon: Sun, href: '/order-medicines', gradient: 'from-orange-400 to-amber-500' },
+  { name: 'Pet Care', icon: Dog, href: '/order-medicines', gradient: 'from-lime-500 to-green-600' },
+  { name: 'Devices', icon: Thermometer, href: '/order-medicines', gradient: 'from-slate-500 to-gray-600' },
 ];
+
 
 const trendingProducts = allProducts.filter(p => Array.isArray(p.category) ? p.category.includes('Popular') : p.category === 'Popular');
 
@@ -196,21 +197,22 @@ export default function HomePage() {
       </div>
 
       {/* Shop by Category */}
-      <div>
+       <div>
         <h3 className="font-headline text-2xl font-bold mb-4">Shop by Category</h3>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="flex overflow-x-auto space-x-4 pb-4 -mx-4 px-4">
           {categories.map((category) => (
-            <Link href={category.href} key={category.name}>
-              <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-2 text-center items-center aspect-square">
-                <category.icon className="h-8 w-8 text-primary" />
-                <div className="mt-2">
-                  <h3 className="font-semibold text-xs">{category.name}</h3>
+            <Link href={category.href} key={category.name} className="flex-shrink-0 w-20">
+              <div className="flex flex-col items-center gap-2">
+                <div className={cn("w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br", category.gradient)}>
+                  <category.icon className="h-8 w-8 text-white" />
                 </div>
-              </Card>
+                <p className="text-xs font-medium text-center">{category.name}</p>
+              </div>
             </Link>
           ))}
         </div>
       </div>
+
 
        {/* Feature Cards */}
        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
