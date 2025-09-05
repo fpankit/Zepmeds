@@ -14,9 +14,10 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Autoplay from "embla-carousel-autoplay"
 import Typewriter from 'typewriter-effect';
+import { cn } from "@/lib/utils";
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines" },
@@ -61,22 +62,19 @@ const sponsorCards = [
     sponsor: "HealthPlus",
     title: "Vitamin Supplements",
     subtitle: "Buy 2 Get 1 Free",
-    image: "https://picsum.photos/800/400?random=1",
-    dataAiHint: "pills medication",
+    gradient: "from-purple-500 via-pink-500 to-red-500",
   },
   {
     sponsor: "Wellness Co",
     title: "Organic Skincare",
     subtitle: "Upto 30% off",
-    image: "https://picsum.photos/800/400?random=2",
-    dataAiHint: "skincare nature",
+    gradient: "from-green-400 via-cyan-500 to-blue-500",
   },
     {
     sponsor: "FitLife",
     title: "Protein Shakes",
     subtitle: "Combo offers available",
-    image: "https://picsum.photos/800/400?random=3",
-    dataAiHint: "fitness gym",
+    gradient: "from-orange-400 via-red-500 to-pink-500",
   },
 ]
 
@@ -85,6 +83,8 @@ export default function HomePage() {
   const plugin = useRef(
       Autoplay({ delay: 3000, stopOnInteraction: true })
     )
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8">
 
@@ -97,9 +97,7 @@ export default function HomePage() {
         <CarouselContent>
           {sponsorCards.map((card, index) => (
             <CarouselItem key={index}>
-              <Card className="overflow-hidden relative min-h-[200px] flex flex-col justify-between p-6 rounded-2xl">
-                <Image src={card.image} alt={card.title} fill className="object-cover z-0" data-ai-hint={card.dataAiHint} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-10"></div>
+              <Card className={cn("overflow-hidden relative min-h-[200px] flex flex-col justify-between p-6 rounded-2xl bg-gradient-to-br", card.gradient)}>
                 <div className="relative z-20 flex flex-col justify-between h-full">
                   <div className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full self-start backdrop-blur-sm">
                     Sponsored by {card.sponsor}
@@ -118,20 +116,34 @@ export default function HomePage() {
       </Carousel>
       
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-        <div className="pl-10 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background flex items-center text-muted-foreground">
-          <Typewriter
-              options={{
-                strings: ['Search for medicines...', 'Doctors...', 'Paracetamol...', 'Sunscreen...', 'and much more!'],
-                autoStart: true,
-                loop: true,
-                delay: 50,
-                deleteSpeed: 50,
-                wrapperClassName: 'text-sm text-muted-foreground',
-                cursorClassName: 'text-sm text-muted-foreground'
-              }}
-            />
-        </div>
+        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground z-10" />
+        {isSearchFocused ? (
+          <Input 
+            placeholder="Search for..."
+            className="pl-10"
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+            autoFocus
+          />
+        ) : (
+          <div 
+            className="pl-10 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background flex items-center text-muted-foreground cursor-text"
+            onClick={() => setIsSearchFocused(true)}
+          >
+            <span className="text-sm text-muted-foreground mr-1">Search for</span>
+            <Typewriter
+                options={{
+                  strings: ['medicines...', 'Doctors...', 'Paracetamol...', 'Sunscreen...', 'and much more!'],
+                  autoStart: true,
+                  loop: true,
+                  delay: 50,
+                  deleteSpeed: 50,
+                  wrapperClassName: 'text-sm text-muted-foreground',
+                  cursorClassName: 'text-sm text-muted-foreground'
+                }}
+              />
+          </div>
+        )}
       </div>
 
        {/* Feature Cards */}
