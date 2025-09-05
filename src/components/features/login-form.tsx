@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight, Home } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 
 const OTPSchema = z.object({
@@ -67,7 +67,19 @@ export function LoginForm() {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     
     // Simulate login and set user data
-    login({ name: "John Doe", phone: data.phone });
+    login({ 
+      name: "John Doe", 
+      phone: data.phone,
+      addresses: [
+        {
+          id: "home-123",
+          type: "Home",
+          name: "Home",
+          address: "123 Main Street, Apartment 4B, New York, NY 10001",
+          icon: Home,
+        }
+      ]
+    });
 
     // On successful verification, redirect
     router.push("/home");

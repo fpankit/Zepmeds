@@ -11,19 +11,13 @@ import { cn } from "@/lib/utils";
 import { MapPin, Plus, ChevronLeft, Ticket, Home, Briefcase, Calendar, Clock, Wallet, CreditCard, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { Label } from "@/components/ui/label";
-
-
-const addresses = [
-  { id: "home", type: "Home", address: "123 Main Street, Apartment 4B, New York, NY 10001", icon: Home },
-  { id: "work", type: "Work", address: "456 Business Ave, Suite 200, New York, NY 10002", icon: Briefcase },
-];
 
 const deliveryOptions = [
     { id: "express", name: "Express Delivery", time: "15-30 minutes", price: 50, color: "red"},
@@ -38,17 +32,30 @@ const paymentMethods = [
     { id: "cod", name: "Cash on Delivery", icon: DollarSign },
 ]
 
+const iconMap = {
+    Home,
+    Work: Briefcase,
+    Other: MapPin
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedAddress, setSelectedAddress] = useState(addresses[0].id);
+  
+  const [selectedAddress, setSelectedAddress] = useState(user?.addresses[0]?.id || "");
   const [selectedDelivery, setSelectedDelivery] = useState(deliveryOptions.find(d => d.default)?.id ?? deliveryOptions[0].id)
   const [selectedPayment, setSelectedPayment] = useState(paymentMethods[0].id);
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
   const [deliveryTime, setDeliveryTime] = useState<string>("10:00 AM - 12:00 PM");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user && user.addresses.length > 0 && !selectedAddress) {
+      setSelectedAddress(user.addresses[0].id);
+    }
+  }, [user, selectedAddress]);
 
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -58,9 +65,19 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     setIsLoading(true);
 
-    const customer_name = (user?.name || "").trimEnd();
-    const customer_address = (addresses.find(a => a.id === selectedAddress)?.address || "").trimEnd();
-    const customer_phone = (user?.phone || "").trimEnd();
+    if (!user) {
+      toast({ variant: "destructive", title: "You must be logged in to place an order."});
+      setIsLoading(false);
+      return;
+    }
+
+    const currentAddress = user.addresses.find(a => a.id === selectedAddress);
+
+    if (!currentAddress) {
+      toast({ variant: "destructive", title: "Please select a delivery address."});
+      setIsLoading(false);
+      return;
+    }
 
     try {
         const orderData = {
@@ -73,9 +90,9 @@ export default function CheckoutPage() {
             deliveryTime,
             paymentMethod: selectedPayment,
             customerDetails: {
-                name: customer_name,
-                address: customer_address,
-                phone: customer_phone,
+                name: user.name,
+                address: currentAddress.address,
+                phone: user.phone,
             },
             status: "Order Confirmed",
             orderDate: serverTimestamp(),
@@ -125,13 +142,13 @@ export default function CheckoutPage() {
           </CardHeader>
           <CardContent>
             <RadioGroup value={selectedAddress} onValueChange={setSelectedAddress} className="space-y-4">
-              {addresses.map((addr) => (
+              {(user?.addresses || []).map((addr) => (
                 <LabelRadio
                     key={addr.id}
                     value={addr.id}
                     label={addr.type}
                     description={addr.address}
-                    icon={addr.icon}
+                    icon={iconMap[addr.type]}
                     isSelected={selectedAddress === addr.id}
                     data-selection-color="yellow"
                 />

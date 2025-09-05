@@ -11,26 +11,22 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Home, MapPin, Plus, Search, Pencil, LocateFixed, Briefcase, Trash2 } from "lucide-react";
+import { Home, MapPin, Plus, Search, LocateFixed, Briefcase, Trash2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "../ui/dialog";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
+import { useAuth, Address } from "@/context/auth-context";
+import { cn } from "@/lib/utils";
 
-const initialAddresses = [
-    {
-      id: "1",
-      type: "Home",
-      name: "Home",
-      address: "Ghh, Bnn, Gurugram, 122001",
-      icon: Home,
-    },
-];
-
-type Address = (typeof initialAddresses)[0];
+const iconMap = {
+    Home: Home,
+    Work: Briefcase,
+    Other: MapPin,
+}
 
 function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address, 'id' | 'icon'>) => void }) {
-    const [type, setType] = useState("Home");
+    const [type, setType] = useState<Address['type']>("Home");
     const [address, setAddress] = useState("");
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -49,7 +45,7 @@ function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address
                 <div className="space-y-4 py-4">
                     <div>
                         <Label>Address Type</Label>
-                        <RadioGroup value={type} onValueChange={setType} className="flex gap-4 mt-2">
+                        <RadioGroup value={type} onValueChange={(v) => setType(v as Address['type'])} className="flex gap-4 mt-2">
                            <Label htmlFor="home" className="flex items-center gap-2 cursor-pointer">
                                 <RadioGroupItem value="Home" id="home" />
                                 <Home className="w-4 h-4 mr-1" /> Home
@@ -57,6 +53,10 @@ function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address
                              <Label htmlFor="work" className="flex items-center gap-2 cursor-pointer">
                                 <RadioGroupItem value="Work" id="work" />
                                 <Briefcase className="w-4 h-4 mr-1" /> Work
+                            </Label>
+                            <Label htmlFor="other" className="flex items-center gap-2 cursor-pointer">
+                                <RadioGroupItem value="Other" id="other" />
+                                <MapPin className="w-4 h-4 mr-1" /> Other
                             </Label>
                         </RadioGroup>
                     </div>
@@ -84,25 +84,26 @@ function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address
 
 
 export function LocationSheet({ children }: { children: React.ReactNode }) {
-  const [savedAddresses, setSavedAddresses] = useState<Address[]>(initialAddresses);
-  const [selectedAddressId, setSelectedAddressId] = useState("1");
+  const { user, updateUser } = useAuth();
+  const [selectedAddressId, setSelectedAddressId] = useState(user?.addresses[0]?.id || "");
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
   const handleAddAddress = (newAddressData: Omit<Address, 'id' | 'icon'>) => {
       const newAddress: Address = {
           ...newAddressData,
           id: Date.now().toString(),
-          icon: newAddressData.type === 'Home' ? Home : Briefcase
       };
-      setSavedAddresses(prev => [...prev, newAddress]);
+      const updatedAddresses = [...(user?.addresses || []), newAddress];
+      updateUser({ addresses: updatedAddresses });
       setSelectedAddressId(newAddress.id);
       setIsAddAddressOpen(false); // Close dialog on submit
   }
   
   const handleDeleteAddress = (id: string) => {
-      setSavedAddresses(prev => prev.filter(addr => addr.id !== id));
+      const updatedAddresses = (user?.addresses || []).filter(addr => addr.id !== id);
+      updateUser({ addresses: updatedAddresses });
       if (selectedAddressId === id) {
-          setSelectedAddressId(initialAddresses[0]?.id || "");
+          setSelectedAddressId(user?.addresses[0]?.id || "");
       }
   }
 
@@ -145,26 +146,29 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
               Your saved addresses
             </h3>
             <div className="space-y-4">
-              {savedAddresses.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-4 p-3 rounded-lg bg-card cursor-pointer"
-                  onClick={() => setSelectedAddressId(item.id)}
-                >
-                  <item.icon className="h-5 w-5 text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="font-semibold">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">{item.address}</p>
+              {(user?.addresses || []).map((item) => {
+                const Icon = iconMap[item.type] || MapPin;
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 p-3 rounded-lg bg-card cursor-pointer"
+                    onClick={() => setSelectedAddressId(item.id)}
+                  >
+                    <Icon className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="font-semibold">{item.name}</p>
+                      <p className="text-sm text-muted-foreground">{item.address}</p>
+                    </div>
+                    {selectedAddressId === item.id ? (
+                      <Button size="sm" className="pointer-events-none bg-primary/80 text-xs h-7">Selected</Button>
+                    ) : (
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDeleteAddress(item.id)}}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
-                  {selectedAddressId === item.id ? (
-                     <Button size="sm" className="pointer-events-none bg-primary/80 text-xs h-7">Selected</Button>
-                  ) : (
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDeleteAddress(item.id)}}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
