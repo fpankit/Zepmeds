@@ -217,20 +217,20 @@ export default function CheckoutPage() {
 function LabelRadio({ value, label, description, icon: Icon, price, isSelected, selectionColor }: { value: string, label: string, description: string, icon?: React.ElementType, price?: number, isSelected: boolean, selectionColor?: string}) {
     
     const colorVariants: Record<string, string> = {
-        red: "border-red-500 ring-red-500 bg-red-500/10 text-red-500",
-        orange: "border-orange-500 ring-orange-500 bg-orange-500/10 text-orange-500",
-        blue: "border-blue-500 ring-blue-500 bg-blue-500/10 text-blue-500",
-        yellow: "border-yellow-500 ring-yellow-500 bg-yellow-500/10 text-yellow-500",
-        purple: "border-purple-500 ring-purple-500 bg-purple-500/10 text-purple-500",
-        primary: "border-primary ring-primary bg-primary/10 text-primary",
+        red: "[&[data-selected=true]]:border-red-500 [&[data-selected=true]]:ring-red-500 [&[data-selected=true]]:bg-red-500/10 [&[data-selected=true]]:text-red-500",
+        orange: "[&[data-selected=true]]:border-orange-500 [&[data-selected=true]]:ring-orange-500 [&[data-selected=true]]:bg-orange-500/10 [&[data-selected=true]]:text-orange-500",
+        blue: "[&[data-selected=true]]:border-blue-500 [&[data-selected=true]]:ring-blue-500 [&[data-selected=true]]:bg-blue-500/10 [&[data-selected=true]]:text-blue-500",
+        yellow: "[&[data-selected=true]]:border-yellow-500 [&[data-selected=true]]:ring-yellow-500 [&[data-selected=true]]:bg-yellow-500/10 [&[data-selected=true]]:text-yellow-500",
+        purple: "[&[data-selected=true]]:border-purple-500 [&[data-selected=true]]:ring-purple-500 [&[data-selected=true]]:bg-purple-500/10 [&[data-selected=true]]:text-purple-500",
+        primary: "[&[data-selected=true]]:border-primary [&[data-selected=true]]:ring-primary [&[data-selected=true]]:bg-primary/10 [&[data-selected=true]]:text-primary",
     };
     
     const selectedClass = colorVariants[selectionColor || 'primary'] || colorVariants.primary;
     
     return (
-        <label htmlFor={value} className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all", isSelected ? `ring-2 ${selectedClass}` : "border-border")}>
+        <label htmlFor={value} data-selected={isSelected} className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all", isSelected ? 'ring-2' : "border-border", selectedClass)}>
             <RadioGroupItem value={value} id={value} />
-            {Icon && <Icon className={cn("h-5 w-5 text-muted-foreground", isSelected && selectionColor && colorVariants[selectionColor] && `text-${selectionColor}-500`)} />}
+            {Icon && <Icon className={cn("h-5 w-5 text-muted-foreground", isSelected && `text-${selectionColor}-500`)} />}
             <div className="flex-1">
                 <div className="flex justify-between">
                     <p className="font-semibold">{label}</p>
@@ -241,5 +241,3 @@ function LabelRadio({ value, label, description, icon: Icon, price, isSelected, 
         </label>
     )
 }
-
-    
