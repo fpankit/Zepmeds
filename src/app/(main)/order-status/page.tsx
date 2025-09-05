@@ -2,19 +2,19 @@
 "use client";
 
 import { useState } from 'react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Copy, Share2, Phone, FileText, HelpCircle, ShieldAlert, Bike, CheckCircle2, Package, CookingPot, Check, ChevronDown, Map, MessageSquare, LifeBuoy } from 'lucide-react';
+import { Copy, Share2, Phone, FileText, HelpCircle, ShieldAlert, Bike, CheckCircle2, Package, CookingPot, Check, ChevronDown, Map, MessageSquare, LifeBuoy, Star } from 'lucide-react';
 import Image from 'next/image';
 
 const orderStatusSteps = [
   { name: 'Order Confirmed', icon: CheckCircle2, time: '10:00 AM', completed: true },
   { name: 'Preparing', icon: CookingPot, time: '10:05 AM', completed: true },
-  { name: 'Rider Assigned', icon: Bike, time: '10:15 AM', completed: false },
+  { name: 'Rider Assigned', icon: Bike, time: '10:15 AM', completed: true },
   { name: 'Order Picked Up', icon: Package, time: '10:20 AM', completed: false },
   { name: 'Arrived at Location', icon: Check, time: '10:35 AM', completed: false },
   { name: 'Delivered', icon: CheckCircle2, time: '10:40 AM', completed: false },
@@ -35,10 +35,18 @@ const faqs = [
   }
 ];
 
+const riderDetails = {
+    name: "Rohan Sharma",
+    rating: 4.8,
+    phone: "+91 1234567890",
+    image: "https://picsum.photos/200/200?random=31"
+}
+
 export default function OrderStatusPage() {
   const [viewDetails, setViewDetails] = useState(true);
   const progress = (orderStatusSteps.filter(s => s.completed).length / orderStatusSteps.length) * 100;
   const currentStep = orderStatusSteps.find(s => !s.completed) || orderStatusSteps[orderStatusSteps.length-1];
+  const isRiderAssigned = orderStatusSteps.find(s => s.name === 'Rider Assigned')?.completed;
 
 
   return (
@@ -101,15 +109,37 @@ export default function OrderStatusPage() {
           <h2 className="text-lg font-bold">Delivery Status</h2>
         </CardHeader>
         <CardContent className="space-y-4">
-           <div className="flex items-center gap-4">
-            <Avatar className="h-12 w-12">
-              <AvatarFallback>ZR</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-bold">Delivery Partner</p>
-              <p className="text-sm text-muted-foreground">Arriving in 15 mins • 2.4 km away</p>
+           {isRiderAssigned ? (
+            <div className="flex items-center justify-between">
+                 <div className="flex items-center gap-4">
+                    <Avatar className="h-12 w-12">
+                        <AvatarImage src={riderDetails.image} alt={riderDetails.name} data-ai-hint="person portrait" />
+                        <AvatarFallback>{riderDetails.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <p className="font-bold">{riderDetails.name}</p>
+                        <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                            <span className="text-sm font-semibold">{riderDetails.rating}</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button size="icon" variant="outline"><MessageSquare/></Button>
+                    <Button size="icon" variant="outline"><Phone /></Button>
+                </div>
             </div>
-          </div>
+           ) : (
+             <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12 bg-muted">
+                    <AvatarFallback><Bike /></AvatarFallback>
+                </Avatar>
+                <div>
+                <p className="font-bold">Searching for a delivery partner</p>
+                <p className="text-sm text-muted-foreground">You'll be notified once a rider is assigned.</p>
+                </div>
+            </div>
+           )}
 
           <div className="relative h-48 w-full rounded-md overflow-hidden bg-muted">
              <Image src="https://picsum.photos/800/400?random=20" alt="Map" layout="fill" objectFit="cover" data-ai-hint="map satellite" />

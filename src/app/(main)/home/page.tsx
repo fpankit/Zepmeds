@@ -14,7 +14,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Autoplay from "embla-carousel-autoplay"
 import Typewriter from 'typewriter-effect';
 import { cn } from "@/lib/utils";
@@ -45,20 +45,6 @@ const offerCards = [
     buttonText: "Shop Now",
     buttonColor: "bg-green-600 hover:bg-green-700",
   },
-  {
-    title: "Buy Now, Pay Later",
-    description: "Zero interest EMI available",
-    icon: Clock,
-    buttonText: "Shop Now",
-    buttonColor: "bg-orange-500 hover:bg-orange-600",
-  },
-  {
-    title: "Free Express Delivery",
-    description: "On orders above ₹500",
-    icon: Truck,
-    buttonText: "Shop Now",
-    buttonColor: "bg-sky-500 hover:bg-sky-600",
-  },
 ];
 
 const sponsorCards = [
@@ -82,13 +68,45 @@ const sponsorCards = [
   },
 ]
 
-const trendingProducts = [
-  { id: 'prod1', name: 'Product Name 1', image: 'https://picsum.photos/200/200?random=5', dataAiHint: "skincare product", price: 99.00 },
-  { id: 'prod2', name: 'Product Name 2', image: 'https://picsum.photos/200/200?random=6', dataAiHint: "skincare product", price: 149.00 },
-  { id: 'prod3', name: 'Product Name 3', image: 'https://picsum.photos/200/200?random=7', dataAiHint: "skincare product", price: 299.00 },
-  { id: 'prod4', name: 'Product Name 4', image: 'https://picsum.photos/200/200?random=8', dataAiHint: "skincare product", price: 49.00 },
-  { id: 'prod5', name: 'Product Name 5', image: 'https://picsum.photos/200/200?random=9', dataAiHint: "skincare product", price: 199.00 },
+const allProducts = [
+  // Popular
+  { id: 'prod1', name: 'Paracetamol 500mg', image: 'https://picsum.photos/200/200?random=5', dataAiHint: "medicine pills", price: 25.00, category: 'Popular' },
+  { id: 'prod2', name: 'Antiseptic Liquid', image: 'https://picsum.photos/200/200?random=6', dataAiHint: "medicine bottle", price: 80.00, category: 'Popular' },
+  { id: 'prod3', name: 'Digital Thermometer', image: 'https://picsum.photos/200/200?random=7', dataAiHint: "thermometer device", price: 250.00, category: ['Popular', 'Devices'] },
+  // Skin Care
+  { id: 'prod4', name: 'Moisturizing Cream', image: 'https://picsum.photos/200/200?random=8', dataAiHint: "skincare product", price: 350.00, category: 'Skin Care' },
+  { id: 'prod5', name: 'Acne Treatment Gel', image: 'https://picsum.photos/200/200?random=9', dataAiHint: "skincare product", price: 220.00, category: 'Skin Care' },
+  { id: 'prod6', name: 'Vitamin C Serum', image: 'https://picsum.photos/200/200?random=10', dataAiHint: "skincare product", price: 550.00, category: 'Skin Care' },
+  // Supplements
+  { id: 'prod7', name: 'Multivitamin Tablets', image: 'https://picsum.photos/200/200?random=11', dataAiHint: "medicine bottle", price: 400.00, category: 'Supplements' },
+  { id: 'prod8', name: 'Omega-3 Capsules', image: 'https://picsum.photos/200/200?random=12', dataAiHint: "medicine pills", price: 600.00, category: 'Supplements' },
+  { id: 'prod9', name: 'Calcium + Vit D', image: 'https://picsum.photos/200/200?random=13', dataAiHint: "medicine bottle", price: 300.00, category: 'Supplements' },
+  // Eye Care
+  { id: 'prod10', name: 'Lubricating Eye Drops', image: 'https://picsum.photos/200/200?random=14', dataAiHint: "eye drops", price: 150.00, category: 'Eye Care' },
+  { id: 'prod11', name: 'Contact Lens Solution', image: 'https://picsum.photos/200/200?random=15', dataAiHint: "medicine bottle", price: 280.00, category: 'Eye Care' },
+  // Dental
+  { id: 'prod12', name: 'Sensitive Toothpaste', image: 'https://picsum.photos/200/200?random=16', dataAiHint: "toothpaste tube", price: 120.00, category: 'Dental' },
+  { id: 'prod13', name: 'Mouthwash 500ml', image: 'https://picsum.photos/200/200?random=17', dataAiHint: "medicine bottle", price: 180.00, category: 'Dental' },
+  // Pain Relief
+  { id: 'prod14', name: 'Pain Relief Spray', image: 'https://picsum.photos/200/200?random=18', dataAiHint: "spray can", price: 190.00, category: 'Pain Relief' },
+  { id: 'prod15', name: 'Ibuprofen 400mg', image: 'https://picsum.photos/200/200?random=19', dataAiHint: "medicine pills", price: 40.00, category: 'Pain Relief' },
+  { id: 'prod16', name: 'Hot/Cold Gel Pack', image: 'https://picsum.photos/200/200?random=20', dataAiHint: "gel pack", price: 250.00, category: 'Pain Relief' },
+  // Summer Care
+  { id: 'prod17', name: 'Sunscreen SPF 50', image: 'https://picsum.photos/200/200?random=21', dataAiHint: "sunscreen bottle", price: 499.00, category: 'Summer Care' },
+  { id: 'prod18', name: 'Aloe Vera Gel', image: 'https://picsum.photos/200/200?random=22', dataAiHint: "skincare product", price: 180.00, category: 'Summer Care' },
+  { id: 'prod19', name: 'Oral Rehydration Salts', image: 'https://picsum.photos/200/200?random=23', dataAiHint: "medicine sachet", price: 15.00, category: 'Summer Care' },
+  // Pet Care
+  { id: 'prod20', name: 'Flea & Tick Shampoo', image: 'https://picsum.photos/200/200?random=24', dataAiHint: "pet shampoo", price: 350.00, category: 'Pet Care' },
+  { id: 'prod21', name: 'Dog Deworming Tablets', image: 'https://picsum.photos/200/200?random=25', dataAiHint: "medicine pills", price: 200.00, category: 'Pet Care' },
+  // Devices
+  { id: 'prod22', name: 'Blood Pressure Monitor', image: 'https://picsum.photos/200/200?random=26', dataAiHint: "medical device", price: 1500.00, category: 'Devices' },
+  { id: 'prod23', name: 'Glucometer', image: 'https://picsum.photos/200/200?random=27', dataAiHint: "medical device", price: 800.00, category: 'Devices' },
+  // More products to reach 26
+  { id: 'prod24', name: 'Hand Sanitizer', image: 'https://picsum.photos/200/200?random=28', dataAiHint: "sanitizer bottle", price: 50.00, category: 'Popular' },
+  { id: 'prod25', name: 'Band-Aid Strips (100s)', image: 'https://picsum.photos/200/200?random=29', dataAiHint: "bandages box", price: 120.00, category: 'Popular' },
+  { id: 'prod26', name: 'Medicated Soap', image: 'https://picsum.photos/200/200?random=30', dataAiHint: "soap bar", price: 70.00, category: 'Skin Care' },
 ];
+
 
 const categories = [
   { name: 'Popular', icon: Star, gradient: 'bg-gradient-to-br from-yellow-400 to-orange-500' },
@@ -110,9 +128,17 @@ export default function HomePage() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { cart, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
-   const [activeCategory, setActiveCategory] = useState('Popular');
+  const [activeCategory, setActiveCategory] = useState('Popular');
 
-  const handleAddToCart = (product: typeof trendingProducts[0]) => {
+  const filteredProducts = useMemo(() => {
+    if (activeCategory === 'Popular') {
+        return allProducts.filter(p => Array.isArray(p.category) ? p.category.includes('Popular') : p.category === 'Popular');
+    }
+    return allProducts.filter(p => Array.isArray(p.category) ? p.category.includes(activeCategory) : p.category === activeCategory);
+  }, [activeCategory]);
+
+
+  const handleAddToCart = (product: typeof allProducts[0]) => {
     addToCart({ ...product, quantity: 1 });
     toast({
       title: "Added to cart",
@@ -198,8 +224,8 @@ export default function HomePage() {
         <h3 className="font-headline text-2xl font-bold mb-4">Shop by Category</h3>
         <div className="flex space-x-3 overflow-x-auto pb-4 -mx-4 px-4">
           {categories.map((category) => (
-             <Link href="/order-medicines" key={category.name}>
               <button
+                key={category.name}
                 onClick={() => setActiveCategory(category.name)}
                 className={cn(
                   'flex flex-col items-center space-y-2 flex-shrink-0 w-20 transition-all',
@@ -217,16 +243,15 @@ export default function HomePage() {
                 </div>
                 <span className="text-xs font-medium">{category.name}</span>
               </button>
-            </Link>
           ))}
         </div>
       </div>
 
-       {/* Trending Products Section */}
+       {/* Products Section */}
        <div>
-        <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
+        <h3 className="font-headline text-2xl font-bold mb-4">{activeCategory} Products</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {trendingProducts.map((product) => {
+          {filteredProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             return (
               <Card key={product.id} className="overflow-hidden group">
