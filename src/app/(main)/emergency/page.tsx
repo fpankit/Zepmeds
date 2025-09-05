@@ -9,9 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import { Siren, MapPin, Clipboard, AlertTriangle, ShieldCheck, Phone, MessageSquare, Star } from "lucide-react";
+import { Siren, MapPin, AlertTriangle, ShieldCheck, Phone, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useAuth } from "@/context/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
+
 
 const RIDER_ARRIVAL_TIME = 10 * 60; // 10 minutes in seconds
 
@@ -21,10 +26,48 @@ export default function EmergencyPage() {
   const [countdown, setCountdown] = useState(RIDER_ARRIVAL_TIME);
   const [progress, setProgress] = useState(100);
 
-  const isDispatchDisabled = confirmationText !== "Help";
+  const [emergencyDetails, setEmergencyDetails] = useState("");
+  const [additionalNotes, setAdditionalNotes] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleDispatch = () => {
-    setIsDispatched(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const isDispatchDisabled = confirmationText !== "Help" || isLoading;
+  const userAddress = user?.addresses?.[0]?.address || "741/2, Gurugram, Haryana, 122001";
+
+  const handleDispatch = async () => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "You must be logged in to dispatch an emergency.",
+        });
+        return;
+    }
+
+    setIsLoading(true);
+    try {
+        await addDoc(collection(db, "emergencies"), {
+            emergencyDetails,
+            additionalNotes,
+            location: userAddress,
+            userName: user.name,
+            userPhone: user.phone,
+            status: "dispatched",
+            createdAt: serverTimestamp(),
+        });
+        setIsDispatched(true);
+    } catch (error) {
+        console.error("Failed to dispatch emergency:", error);
+        toast({
+            variant: "destructive",
+            title: "Dispatch Failed",
+            description: "Could not send request. Please check your connection and try again.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -80,21 +123,21 @@ export default function EmergencyPage() {
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="emergency-details" className="text-red-400">Describe the Emergency</Label>
-                  <Textarea id="emergency-details" placeholder="e.g., 'Chest pain and difficulty breathing'" rows={3} className="bg-card/50 focus:ring-red-500"/>
+                  <Textarea id="emergency-details" placeholder="e.g., 'Chest pain and difficulty breathing'" rows={3} className="bg-card/50 focus:ring-red-500" value={emergencyDetails} onChange={(e) => setEmergencyDetails(e.target.value)} />
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-red-400">Your Location</Label>
                    <div className="flex items-center gap-2 rounded-md border border-input p-3 bg-card/50">
                      <MapPin className="h-5 w-5 text-yellow-500"/>
-                     <p className="flex-1 text-sm">741/2, Gurugram, Haryana, 122001</p>
+                     <p className="flex-1 text-sm">{userAddress}</p>
                      <Button variant="link" className="p-0 h-auto text-yellow-500">Change</Button>
                    </div>
                 </div>
 
                  <div className="space-y-2">
                   <Label htmlFor="notes" className="text-red-400">Additional Notes</Label>
-                  <Textarea id="notes" placeholder="e.g., 'Patient is allergic to penicillin'" rows={2} className="bg-card/50 focus:ring-red-500"/>
+                  <Textarea id="notes" placeholder="e.g., 'Patient is allergic to penicillin'" rows={2} className="bg-card/50 focus:ring-red-500" value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)} />
                 </div>
                 
                 <Card className="bg-yellow-500/10 border-yellow-500 p-4 space-y-2">
@@ -120,7 +163,7 @@ export default function EmergencyPage() {
                     disabled={isDispatchDisabled}
                     onClick={handleDispatch}
                  >
-                    <Siren className="mr-2 h-6 w-6"/> Dispatch Emergency Services
+                    {isLoading ? <><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div> Sending Request...</> : <><Siren className="mr-2 h-6 w-6"/> Dispatch Emergency Services</>}
                 </Button>
               </CardContent>
             </Card>
@@ -207,3 +250,5 @@ const { motion, AnimatePresence } = {
     },
     AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>
 };
+
+    
