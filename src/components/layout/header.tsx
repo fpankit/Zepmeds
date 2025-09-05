@@ -1,7 +1,7 @@
 
 "use client";
 
-import { MapPin, User, ChevronDown } from 'lucide-react';
+import { MapPin, User, ChevronDown, Bell, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { LocationSheet } from '../features/location-sheet';
@@ -14,12 +14,9 @@ export function Header() {
           <div className="flex cursor-pointer items-center gap-2 text-sm">
             <MapPin className="h-5 w-5 text-primary" />
             <div>
-              <div className="flex items-center font-bold">
-                Home <ChevronDown className="h-4 w-4" />
+              <div className="flex items-center font-semibold">
+                Current Location <ChevronDown className="h-4 w-4 ml-1" />
               </div>
-              <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                Ghh, Bnn, Gurugram, 122001
-              </p>
             </div>
           </div>
         </LocationSheet>
@@ -27,12 +24,16 @@ export function Header() {
         <div className="flex-1" />
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/profile">
-              <User className="h-5 w-5" />
-              <span className="sr-only">Profile</span>
-            </Link>
-          </Button>
+           <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+              <span className="sr-only">Notifications</span>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <Link href="/cart">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="sr-only">Cart</span>
+              </Link>
+            </Button>
         </div>
       </div>
     </header>
