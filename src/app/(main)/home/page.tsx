@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pill, Stethoscope, Search, Upload, Bot, Gift, Clock, Truck, CreditCard, Star, Heart, Eye, Bone, Sun, Dog, Thermometer } from "lucide-react";
+import { Pill, Stethoscope, Search, Upload, Bot, Gift, Clock, Truck, CreditCard, Star, Heart, Eye, Bone, Sun, Dog, Thermometer, Siren, PackageSearch } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -26,6 +26,8 @@ const featureCards = [
     { title: "Upload Prescription", description: "Get medicines as prescribed", icon: Upload, href: "/order-medicines" },
     { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker" },
     { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor" },
+    { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "#" },
+    { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "#" },
 ];
 
 const offerCards = [
@@ -89,27 +91,15 @@ const trendingProducts = [
 ];
 
 const categories = [
-  { name: 'Popular', icon: Star, gradient: 'from-yellow-500 to-yellow-700' },
-  { name: 'Skin Care', icon: Heart, gradient: 'from-pink-500 to-pink-700' },
-  {
-    name: 'Supplements',
-    icon: Pill,
-    gradient: 'from-green-500 to-green-700',
-  },
-  { name: 'Eye Care', icon: Eye, gradient: 'from-cyan-500 to-cyan-700' },
-  { name: 'Dental', icon: Stethoscope, gradient: 'from-indigo-500 to-indigo-700' },
-  { name: 'Pain Relief', icon: Bone, gradient: 'from-red-500 to-red-700' },
-  {
-    name: 'Summer Care',
-    icon: Sun,
-    gradient: 'from-orange-500 to-orange-700',
-  },
-  { name: 'Pet Care', icon: Dog, gradient: 'from-purple-500 to-purple-700' },
-  {
-    name: 'Devices',
-    icon: Thermometer,
-    gradient: 'from-gray-500 to-gray-700',
-  },
+  { name: 'Popular', icon: Star, gradient: 'bg-gradient-to-br from-yellow-400 to-orange-500' },
+  { name: 'Skin Care', icon: Heart, gradient: 'bg-gradient-to-br from-pink-400 to-rose-500' },
+  { name: 'Supplements', icon: Pill, gradient: 'bg-gradient-to-br from-green-400 to-teal-500' },
+  { name: 'Eye Care', icon: Eye, gradient: 'bg-gradient-to-br from-cyan-400 to-blue-500' },
+  { name: 'Dental', icon: Stethoscope, gradient: 'bg-gradient-to-br from-indigo-400 to-purple-500' },
+  { name: 'Pain Relief', icon: Bone, gradient: 'bg-gradient-to-br from-red-400 to-red-600' },
+  { name: 'Summer Care', icon: Sun, gradient: 'bg-gradient-to-br from-orange-400 to-yellow-500' },
+  { name: 'Pet Care', icon: Dog, gradient: 'bg-gradient-to-br from-purple-400 to-indigo-500' },
+  { name: 'Devices', icon: Thermometer, gradient: 'bg-gradient-to-br from-gray-400 to-gray-600' },
 ];
 
 
@@ -187,10 +177,10 @@ export default function HomePage() {
       </div>
 
        {/* Feature Cards */}
-       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {featureCards.map((card) => (
           <Link href={card.href} key={card.title}>
-            <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-between p-4 text-center items-center aspect-square">
+            <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
               <div className="p-3 bg-accent/10 rounded-lg">
                 <card.icon className="h-8 w-8 text-accent" />
               </div>
@@ -218,7 +208,7 @@ export default function HomePage() {
               >
                 <div
                   className={cn(
-                    'w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br',
+                    'w-16 h-16 rounded-2xl flex items-center justify-center',
                     category.gradient,
                     activeCategory === category.name ? 'ring-2 ring-primary scale-105' : 'opacity-80'
                   )}
@@ -275,3 +265,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
