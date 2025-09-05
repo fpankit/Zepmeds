@@ -1,6 +1,7 @@
+
 "use client";
 
-import { Home, ListChecks, Stethoscope, LayoutGrid } from "lucide-react";
+import { Home, ListChecks, Stethoscope, LayoutGrid, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ const navItems = [
   { href: "/activity", icon: ListChecks, label: "Activity" },
   { href: "/doctor", icon: Stethoscope, label: "Doctor" },
   { href: "/more", icon: LayoutGrid, label: "More" },
+  { href: "/profile", icon: User, label: "Profile" },
 ];
 
 export function BottomNav() {

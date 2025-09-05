@@ -1,8 +1,13 @@
+
+"use client";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Bot, Pill, Stethoscope, Ambulance, UploadCloud, Heart, Brain, Bone, Eye, Sparkles, ShoppingBag } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ArrowRight, Pill, Stethoscope, Search, Sparkles, ShoppingBag, Heart, Bone, Eye, Bot, Ambulance } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 const featureCards = [
     { title: "Order Medicines", description: "Quick & easy delivery", icon: Pill, href: "/order-medicines", cta: "Order Now" },
@@ -22,34 +27,42 @@ const categories = [
   { name: "Generic Medicines", icon: Pill },
 ];
 
-const organCategories = [
-  { name: "Heart", icon: Heart },
-  { name: "Brain", icon: Brain },
-  { name: "Bone", icon: Bone },
-  { name: "Eye", icon: Eye },
-  { name: "Dental", icon: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1,12c0,5,4,9,9,9s9-4,9-9s-4-9-9-9S1,7,1,12z M10,16c-3,0-5-2-5-4s2-4,5-4c2,0,3,1,3,2c0,2-2,2-4,2c-1,0-2-1-2-1 M14,16c3,0,5-2,5-4s-2-4-5-4c-2,0-3,1-3,2c0,2,2,2,4,2c1,0,2-1,2-1"/></svg> },
-];
 
 export default function HomePage() {
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8">
-      {/* Hero Section */}
-      <Card className="overflow-hidden bg-primary/10 border-primary/20">
-        <div className="grid md:grid-cols-2 items-center">
-          <div className="p-8 space-y-4">
-            <h2 className="font-headline text-3xl font-bold text-foreground">Fastest Medicine Delivery</h2>
-            <p className="text-muted-foreground">Upload your prescription and get your medicines delivered in minutes.</p>
-            <Button asChild className="group">
-              <Link href="/order-medicines">
-                Upload Prescription <UploadCloud className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-          </div>
-          <div className="hidden md:block relative h-full w-full">
-             <Image src="https://picsum.photos/600/400" alt="Medicine Delivery" layout="fill" objectFit="cover" data-ai-hint="medicine delivery" />
-          </div>
-        </div>
-      </Card>
+      
+       {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search for medicines and wellness products" className="w-full rounded-full bg-muted pl-10 h-12" />
+      </div>
+
+       {/* Sponsors Carousel */}
+      <Carousel
+        opts={{
+          align: "start",
+          loop: true,
+        }}
+        className="w-full"
+      >
+        <CarouselContent>
+          {Array.from({ length: 5 }).map((_, index) => (
+            <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                <Card className="overflow-hidden">
+                  <Image
+                    src={`https://picsum.photos/400/200?random=${index}`}
+                    width={400}
+                    height={200}
+                    alt={`Sponsor ${index + 1}`}
+                    className="w-full h-auto object-cover"
+                    data-ai-hint="advertisement banner"
+                  />
+                </Card>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
 
       {/* Feature Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -79,19 +92,6 @@ export default function HomePage() {
         </div>
       </div>
       
-      {/* Organ Based Feature */}
-      <div>
-        <h3 className="font-headline text-2xl font-bold mb-4">Shop by Concern</h3>
-         <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-          {organCategories.map((organ) => (
-            <Card key={organ.name} className="flex flex-col items-center justify-center p-4 aspect-square hover:bg-accent/10 transition-colors cursor-pointer group">
-               <organ.icon className="h-10 w-10 text-muted-foreground group-hover:text-accent transition-colors"/>
-               <p className="mt-2 text-sm font-semibold">{organ.name}</p>
-            </Card>
-          ))}
-        </div>
-      </div>
-
        {/* Essentials Section */}
        <div>
         <h3 className="font-headline text-2xl font-bold mb-4">Daily Essentials</h3>
