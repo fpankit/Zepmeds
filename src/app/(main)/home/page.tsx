@@ -156,6 +156,17 @@ const AnimatedPlaceholder = () => {
 const MotionCard = motion(Card);
 const MotionLink = motion(Link);
 
+const sectionVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.4,
+      ease: "easeInOut",
+    },
+  },
+};
+
 export default function HomePage() {
   const plugin = useRef(
       Autoplay({ delay: 3000, stopOnInteraction: true })
@@ -172,23 +183,10 @@ export default function HomePage() {
     });
   }
 
-  const sectionVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: (i:number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.15,
-        duration: 0.6,
-        ease: "easeInOut",
-      },
-    }),
-  };
-
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 overflow-x-hidden">
 
-       <motion.div variants={sectionVariants} initial="hidden" animate="visible" custom={0}>
+       <motion.div variants={sectionVariants} initial="hidden" animate="visible">
         <Carousel
             plugins={[plugin.current]}
             className="w-full"
@@ -217,7 +215,7 @@ export default function HomePage() {
         </Carousel>
       </motion.div>
       
-       <motion.div className="relative" variants={sectionVariants} initial="hidden" animate="visible" custom={1}>
+       <motion.div className="relative" variants={sectionVariants} initial="hidden" animate="visible">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
         <Input 
           placeholder=""
@@ -229,7 +227,7 @@ export default function HomePage() {
       </motion.div>
 
       {/* Shop by Category */}
-       <motion.div variants={sectionVariants} initial="hidden" animate="visible" custom={2}>
+       <motion.div variants={sectionVariants} initial="hidden" animate="visible">
         <h3 className="font-headline text-2xl font-bold mb-4">Shop by Category</h3>
         <div className="flex overflow-x-auto space-x-4 pb-4 -mx-4 px-4">
           {categories.map((category) => (
@@ -247,9 +245,9 @@ export default function HomePage() {
 
 
        {/* Feature Cards */}
-       <motion.div className="grid grid-cols-2 sm:grid-cols-3 gap-4" variants={sectionVariants} initial="hidden" animate="visible" custom={3}>
+       <motion.div className="grid grid-cols-2 sm:grid-cols-3 gap-4" variants={sectionVariants} initial="hidden" animate="visible">
         {featureCards.map((card) => (
-          <MotionLink href={card.href} key={card.title} whileHover={{ scale: 1.05, transition: { duration: 0.2 } }} whileTap={{ scale: 0.95 }}>
+          <Link href={card.href} key={card.title}>
             <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
               <div className={cn("p-3 rounded-xl", card.color)}>
                 <card.icon className="h-8 w-8 text-white" />
@@ -259,19 +257,19 @@ export default function HomePage() {
                 <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
               </div>
             </Card>
-          </MotionLink>
+          </Link>
         ))}
       </motion.div>
       
 
        {/* Products Section */}
-       <motion.div variants={sectionVariants} initial="hidden" animate="visible" custom={4}>
+       <motion.div variants={sectionVariants} initial="hidden" animate="visible">
         <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {trendingProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             return (
-              <MotionCard key={product.id} className="overflow-hidden group" whileHover={{ y: -5, transition: { duration: 0.2 } }}>
+              <Card key={product.id} className="overflow-hidden group">
                 <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-32 object-cover" data-ai-hint={product.dataAiHint} />
                 <CardContent className="p-3">
                   <h4 className="text-sm font-semibold truncate">{product.name}</h4>
@@ -293,14 +291,14 @@ export default function HomePage() {
                     )}
                   </div>
                 </CardContent>
-              </MotionCard>
+              </Card>
             )
           })}
         </div>
        </motion.div>
 
         {/* Offers Section */}
-      <motion.div variants={sectionVariants} initial="hidden" animate="visible" custom={5}>
+      <motion.div variants={sectionVariants} initial="hidden" animate="visible">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {offerCards.map((offer) => (
             <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80">
