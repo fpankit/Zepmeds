@@ -22,12 +22,12 @@ import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 
 const featureCards = [
-    { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines" },
-    { title: "Upload Prescription", description: "Get medicines as prescribed", icon: Upload, href: "/order-medicines" },
-    { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker" },
-    { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor" },
-    { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "#" },
-    { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "#" },
+    { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
+    { title: "Upload Prescription", description: "Get medicines as prescribed", icon: Upload, href: "/order-medicines", color: "bg-purple-500" },
+    { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker", color: "bg-green-500" },
+    { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor", color: "bg-red-500" },
+    { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "#", color: "bg-yellow-500" },
+    { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "#", color: "bg-teal-500" },
 ];
 
 const offerCards = [
@@ -181,8 +181,8 @@ export default function HomePage() {
         {featureCards.map((card) => (
           <Link href={card.href} key={card.title}>
             <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
-              <div className="p-3 bg-accent/10 rounded-lg">
-                <card.icon className="h-8 w-8 text-accent" />
+              <div className={cn("p-3 rounded-xl", card.color)}>
+                <card.icon className="h-8 w-8 text-white" />
               </div>
               <div className="mt-2">
                 <h3 className="font-semibold text-sm">{card.title}</h3>
