@@ -32,13 +32,18 @@ export default function ProfilePage() {
     logout();
     router.push('/login');
   };
+  
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+  }
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-8">
       <div className="flex flex-col items-center space-y-4">
         <Avatar className="h-24 w-24">
-          <AvatarImage src="https://picsum.photos/200" alt={user?.firstName || 'User'} data-ai-hint="person portrait" />
-          <AvatarFallback>{user?.firstName?.charAt(0) || 'U'}</AvatarFallback>
+          <AvatarFallback className="text-3xl">
+            {user ? getInitials(user.firstName, user.lastName) : 'GU'}
+          </AvatarFallback>
         </Avatar>
         <div className="text-center">
           <h1 className="text-2xl font-bold">{user ? `${user.firstName} ${user.lastName}` : 'Guest User'}</h1>
