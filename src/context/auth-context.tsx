@@ -15,7 +15,9 @@ export interface Address {
 
 export interface User {
   id: string; // Phone number can be used as a unique ID
-  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   phone: string;
   addresses: Address[];
 }
@@ -23,7 +25,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (userData: Pick<User, 'phone' | 'name'>) => Promise<void>;
+  login: (userData: Pick<User, 'phone' | 'firstName' | 'lastName' | 'email'>) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<Omit<User, 'id'>>) => Promise<void>;
 }
@@ -39,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
-  const login = async (userData: Pick<User, 'phone' | 'name'>) => {
+  const login = async (userData: Pick<User, 'phone' | 'firstName' | 'lastName' | 'email'>) => {
     setLoading(true);
     const userDocRef = doc(db, "users", userData.phone);
     const userDocSnap = await getDoc(userDocRef);
@@ -52,7 +54,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const newUser: User = {
         id: userData.phone,
         phone: userData.phone,
-        name: userData.name,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
         addresses: [
           {
             id: 'home-123',

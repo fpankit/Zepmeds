@@ -11,7 +11,7 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 
 export const profileLinks = [
-  { icon: User, text: "Personal Details", href: "/profile" },
+  { icon: User, text: "Personal Details", href: "/profile/edit" },
   { icon: MapPin, text: "Addresses", href: "#" },
   { icon: History, text: "Order History", href: "/order-status" },
   { icon: HeartPulse, text: "Past Medicines", href: "#" },
@@ -37,14 +37,16 @@ export default function ProfilePage() {
     <div className="container mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-8">
       <div className="flex flex-col items-center space-y-4">
         <Avatar className="h-24 w-24">
-          <AvatarImage src="https://picsum.photos/200" alt={user?.name || 'User'} data-ai-hint="person portrait" />
-          <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
+          <AvatarImage src="https://picsum.photos/200" alt={user?.firstName || 'User'} data-ai-hint="person portrait" />
+          <AvatarFallback>{user?.firstName?.charAt(0) || 'U'}</AvatarFallback>
         </Avatar>
         <div className="text-center">
-          <h1 className="text-2xl font-bold">{user?.name || 'Guest User'}</h1>
+          <h1 className="text-2xl font-bold">{user ? `${user.firstName} ${user.lastName}` : 'Guest User'}</h1>
           <p className="text-muted-foreground">{user?.phone || 'No phone number'}</p>
         </div>
-        <Button variant="outline">Edit Profile</Button>
+        <Button variant="outline" asChild>
+          <Link href="/profile/edit">Edit Profile</Link>
+        </Button>
       </div>
 
       <Separator className="my-8" />

@@ -69,8 +69,10 @@ export function LoginForm() {
     // On successful verification, login the user
     // This will fetch existing data or create a new user profile in Firestore
     await login({ 
-      name: "John Doe", // Placeholder name for new users
       phone: data.phone,
+      firstName: "New", // Placeholder name for new users
+      lastName: "User",
+      email: "new.user@example.com",
     });
 
     // Redirect to home
