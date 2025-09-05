@@ -143,7 +143,7 @@ const AnimatedPlaceholder = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
                     className="text-sm text-muted-foreground"
                 >
                     {placeholders[index]}
@@ -173,20 +173,20 @@ export default function HomePage() {
   }
 
   const sectionVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 15 },
     visible: (i:number) => ({
       opacity: 1,
       y: 0,
       transition: {
-        delay: i * 0.1,
-        duration: 0.5,
-        ease: "easeOut",
+        delay: i * 0.15,
+        duration: 0.6,
+        ease: "easeInOut",
       },
     }),
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 overflow-hidden">
+    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 overflow-x-hidden">
 
        <motion.div variants={sectionVariants} initial="hidden" animate="visible" custom={0}>
         <Carousel
@@ -249,7 +249,7 @@ export default function HomePage() {
        {/* Feature Cards */}
        <motion.div className="grid grid-cols-2 sm:grid-cols-3 gap-4" variants={sectionVariants} initial="hidden" animate="visible" custom={3}>
         {featureCards.map((card) => (
-          <MotionLink href={card.href} key={card.title} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+          <MotionLink href={card.href} key={card.title} whileHover={{ scale: 1.05, transition: { duration: 0.2 } }} whileTap={{ scale: 0.95 }}>
             <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
               <div className={cn("p-3 rounded-xl", card.color)}>
                 <card.icon className="h-8 w-8 text-white" />
@@ -271,7 +271,7 @@ export default function HomePage() {
           {trendingProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             return (
-              <MotionCard key={product.id} className="overflow-hidden group" whileHover={{ y: -5 }}>
+              <MotionCard key={product.id} className="overflow-hidden group" whileHover={{ y: -5, transition: { duration: 0.2 } }}>
                 <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-32 object-cover" data-ai-hint={product.dataAiHint} />
                 <CardContent className="p-3">
                   <h4 className="text-sm font-semibold truncate">{product.name}</h4>
@@ -322,7 +322,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
-
-    
