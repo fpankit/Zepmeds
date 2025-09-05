@@ -26,7 +26,7 @@ const featureCards = [
     { title: "Upload Prescription", description: "Get medicines as prescribed", icon: Upload, href: "/order-medicines", color: "bg-purple-500" },
     { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker", color: "bg-sky-500" },
     { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor", color: "bg-green-500" },
-    { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "#", color: "bg-red-500" },
+    { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "/emergency", color: "bg-red-500" },
     { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "/order-status", color: "bg-teal-500" },
 ];
 
@@ -153,20 +153,6 @@ const AnimatedPlaceholder = () => {
     );
 }
 
-const MotionCard = motion(Card);
-const MotionLink = motion(Link);
-
-const sectionVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      duration: 0.4,
-      ease: "easeInOut",
-    },
-  },
-};
-
 export default function HomePage() {
   const plugin = useRef(
       Autoplay({ delay: 3000, stopOnInteraction: true })
@@ -186,7 +172,7 @@ export default function HomePage() {
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 overflow-x-hidden">
 
-       <motion.div variants={sectionVariants} initial="hidden" animate="visible">
+       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
         <Carousel
             plugins={[plugin.current]}
             className="w-full"
@@ -215,7 +201,7 @@ export default function HomePage() {
         </Carousel>
       </motion.div>
       
-       <motion.div className="relative" variants={sectionVariants} initial="hidden" animate="visible">
+       <motion.div className="relative" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
         <Input 
           placeholder=""
@@ -227,7 +213,7 @@ export default function HomePage() {
       </motion.div>
 
       {/* Shop by Category */}
-       <motion.div variants={sectionVariants} initial="hidden" animate="visible">
+       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}} >
         <h3 className="font-headline text-2xl font-bold mb-4">Shop by Category</h3>
         <div className="flex overflow-x-auto space-x-4 pb-4 -mx-4 px-4">
           {categories.map((category) => (
@@ -245,7 +231,7 @@ export default function HomePage() {
 
 
        {/* Feature Cards */}
-       <motion.div className="grid grid-cols-2 sm:grid-cols-3 gap-4" variants={sectionVariants} initial="hidden" animate="visible">
+       <motion.div className="grid grid-cols-2 sm:grid-cols-3 gap-4" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
         {featureCards.map((card) => (
           <Link href={card.href} key={card.title}>
             <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
@@ -263,7 +249,7 @@ export default function HomePage() {
       
 
        {/* Products Section */}
-       <motion.div variants={sectionVariants} initial="hidden" animate="visible">
+       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
         <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {trendingProducts.map((product) => {
@@ -298,7 +284,7 @@ export default function HomePage() {
        </motion.div>
 
         {/* Offers Section */}
-      <motion.div variants={sectionVariants} initial="hidden" animate="visible">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {offerCards.map((offer) => (
             <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80">
