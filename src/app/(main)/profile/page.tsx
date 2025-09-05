@@ -1,3 +1,4 @@
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { ChevronRight, User, Phone, MapPin, History, HeartPulse, FileText, LifeBuoy, Wallet, Tag, Power } from "lucide-react";
 import Link from "next/link";
 
-const profileLinks = [
+export const profileLinks = [
   { icon: User, text: "Personal Details", href: "#" },
   { icon: MapPin, text: "Addresses", href: "#" },
   { icon: History, text: "Order History", href: "#" },
@@ -13,7 +14,7 @@ const profileLinks = [
   { icon: FileText, text: "Diagnosed Reports", href: "#" },
 ];
 
-const supportLinks = [
+export const supportLinks = [
     { icon: Wallet, text: "Wallet", href: "#" },
     { icon: Tag, text: "Coupons & Offers", href: "#" },
     { icon: LifeBuoy, text: "Help & Support", href: "#" },
@@ -29,7 +30,7 @@ export default function ProfilePage() {
         </Avatar>
         <div className="text-center">
           <h1 className="text-2xl font-bold">John Doe</h1>
-          <p className="text-muted-foreground">+1 123 456 7890</p>
+          <p className="text-muted-foreground">+91 9876543210</p>
         </div>
         <Button variant="outline">Edit Profile</Button>
       </div>

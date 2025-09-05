@@ -13,7 +13,7 @@ const navItems = [
   { href: "/activity", icon: ListChecks, label: "Activity" },
   { href: "/doctor", icon: Stethoscope, label: "Doctor" },
   { href: "/cart", icon: ShoppingCart, label: "Cart" },
-  { href: "/more", icon: MoreHorizontal, label: "More" },
+  { href: "/profile", icon: User, label: "Profile" },
 ];
 
 export function BottomNav() {

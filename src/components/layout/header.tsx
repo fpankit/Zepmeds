@@ -34,6 +34,12 @@ export function Header() {
                 <span className="sr-only">Cart</span>
               </Link>
             </Button>
+             <Button variant="ghost" size="icon" asChild>
+              <Link href="/profile">
+                <User className="h-5 w-5" />
+                <span className="sr-only">Profile</span>
+              </Link>
+            </Button>
         </div>
       </div>
     </header>
