@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, Pill, Stethoscope, Search, Sparkles, Upload, Bot } from "lucide-react";
+import { Pill, Stethoscope, Search, Upload, Bot, Gift, Clock, Truck, CreditCard } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -22,6 +22,37 @@ const featureCards = [
     { title: "Upload Prescription", description: "Get medicines as prescribed", icon: Upload, href: "/order-medicines" },
     { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker" },
     { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor" },
+];
+
+const offerCards = [
+  {
+    title: "Exclusive Offers",
+    description: "Use code ZEPMEDS for 20% off",
+    icon: Gift,
+    buttonText: "Shop Now",
+    buttonColor: "bg-blue-600 hover:bg-blue-700",
+  },
+  {
+    title: "Cashback on Card Payments",
+    description: "Get 5% cashback with any card",
+    icon: CreditCard,
+    buttonText: "Shop Now",
+    buttonColor: "bg-green-600 hover:bg-green-700",
+  },
+  {
+    title: "Buy Now, Pay Later",
+    description: "Zero interest EMI available",
+    icon: Clock,
+    buttonText: "Shop Now",
+    buttonColor: "bg-orange-500 hover:bg-orange-600",
+  },
+  {
+    title: "Free Express Delivery",
+    description: "On orders above ₹500",
+    icon: Truck,
+    buttonText: "Shop Now",
+    buttonColor: "bg-sky-500 hover:bg-sky-600",
+  },
 ];
 
 
@@ -76,9 +107,9 @@ export default function HomePage() {
         ))}
       </div>
       
-       {/* Essentials Section */}
+       {/* Trending Products Section */}
        <div>
-        <h3 className="font-headline text-2xl font-bold mb-4">Daily Essentials</h3>
+        <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {[...Array(5)].map((_, i) => (
             <Card key={i} className="overflow-hidden group">
@@ -87,7 +118,7 @@ export default function HomePage() {
                 <h4 className="text-sm font-semibold truncate">Product Name {i+1}</h4>
                 <p className="text-xs text-muted-foreground">1 unit</p>
                 <div className="flex justify-between items-center mt-2">
-                  <span className="font-bold text-sm">$9.99</span>
+                  <span className="font-bold text-sm">₹99.00</span>
                   <Button size="sm" variant="outline">Add</Button>
                 </div>
               </CardContent>
@@ -95,6 +126,26 @@ export default function HomePage() {
           ))}
         </div>
        </div>
+
+        {/* Offers Section */}
+      <div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {offerCards.map((offer) => (
+            <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gray-700/50 rounded-lg">
+                   <offer.icon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">{offer.title}</h3>
+                  <p className="text-sm text-muted-foreground">{offer.description}</p>
+                </div>
+              </div>
+              <Button className={`${offer.buttonColor} text-white`}>{offer.buttonText}</Button>
+            </Card>
+          ))}
+        </div>
+      </div>
 
     </div>
   );

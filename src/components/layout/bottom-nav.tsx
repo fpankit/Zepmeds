@@ -26,20 +26,21 @@ export function BottomNav() {
             <Link
               key={item.label}
               href={item.href}
-              className="flex flex-col items-center justify-center gap-1 text-xs"
+              className="flex flex-col items-center justify-center gap-1 text-xs w-1/5"
             >
               <div className={cn(
-                "p-2 rounded-full transition-all",
+                "p-2 rounded-full transition-all relative",
                 isActive ? "bg-accent/20" : ""
               )}>
+                 {isActive && <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary animate-pulse"></div>}
                 <item.icon className={cn(
                   "h-6 w-6 transition-colors",
-                  isActive ? "text-accent" : "text-muted-foreground"
+                  isActive ? "text-primary" : "text-muted-foreground"
                   )} />
               </div>
               <span className={cn(
-                  "transition-colors",
-                  isActive ? "text-accent font-semibold" : "text-muted-foreground"
+                  "transition-colors text-xs",
+                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
               )}>{item.label}</span>
             </Link>
           );
