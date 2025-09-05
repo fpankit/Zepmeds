@@ -148,7 +148,7 @@ export default function CheckoutPage() {
             <CardTitle className="flex items-center gap-2 text-lg">
                 <Clock className="text-primary"/> Delivery Time
             </CardTitle>
-          </Header>
+          </CardHeader>
           <CardContent>
             <RadioGroup value={selectedDelivery} onValueChange={setSelectedDelivery} className="space-y-4">
               {deliveryOptions.map((opt) => (
