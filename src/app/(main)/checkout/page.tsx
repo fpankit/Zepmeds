@@ -7,10 +7,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/context/cart-context";
 import { cn } from "@/lib/utils";
-import { MapPin, Plus, ChevronLeft, Ticket, Home, Briefcase } from "lucide-react";
+import { MapPin, Plus, ChevronLeft, Ticket, Home, Briefcase, Calendar, Clock, Wallet, CreditCard, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const addresses = [
@@ -19,8 +21,16 @@ const addresses = [
 ];
 
 const deliveryOptions = [
-    { id: "express", name: "Express Delivery", time: "15-30 minutes", price: 50, default: true},
-    { id: "standard", name: "Standard Delivery", time: "2-3 hours", price: 0}
+    { id: "express", name: "Express Delivery", time: "15-30 minutes", price: 50},
+    { id: "standard", name: "Standard Delivery", time: "2-3 hours", price: 0},
+    { id: "scheduled", name: "Scheduled Delivery", time: "Choose your slot", price: 0, default: true}
+]
+
+const paymentMethods = [
+    { id: "upi", name: "UPI", icon: Wallet },
+    { id: "wallets", name: "Wallets", icon: Wallet },
+    { id: "card", name: "Credit/Debit Card", icon: CreditCard },
+    { id: "cod", name: "Cash on Delivery", icon: DollarSign },
 ]
 
 export default function CheckoutPage() {
@@ -28,6 +38,10 @@ export default function CheckoutPage() {
   const { cart, clearCart } = useCart();
   const [selectedAddress, setSelectedAddress] = useState(addresses[0].id);
   const [selectedDelivery, setSelectedDelivery] = useState(deliveryOptions.find(d => d.default)?.id ?? deliveryOptions[0].id)
+  const [selectedPayment, setSelectedPayment] = useState(paymentMethods[0].id);
+  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
+  const [deliveryTime, setDeliveryTime] = useState<string>("10:00 AM - 12:00 PM");
+
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = deliveryOptions.find(d => d.id === selectedDelivery)?.price ?? 0;
@@ -83,7 +97,7 @@ export default function CheckoutPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-                <MapPin className="text-primary"/> Delivery Time
+                <Clock className="text-primary"/> Delivery Time
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -96,6 +110,52 @@ export default function CheckoutPage() {
                     description={`Delivered within ${opt.time}`}
                     price={opt.price}
                     isSelected={selectedDelivery === opt.id}
+                />
+              ))}
+            </RadioGroup>
+
+            {selectedDelivery === 'scheduled' && (
+                <div className="mt-4 p-4 border-t border-border space-y-4">
+                     <h4 className="font-semibold text-md">Select Date & Time</h4>
+                    <CalendarComponent
+                        mode="single"
+                        selected={deliveryDate}
+                        onSelect={setDeliveryDate}
+                        className="rounded-md border"
+                    />
+                    <Select value={deliveryTime} onValueChange={setDeliveryTime}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select a time slot" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM</SelectItem>
+                            <SelectItem value="12:00 PM - 02:00 PM">12:00 PM - 02:00 PM</SelectItem>
+                            <SelectItem value="02:00 PM - 04:00 PM">02:00 PM - 04:00 PM</SelectItem>
+                            <SelectItem value="04:00 PM - 06:00 PM">04:00 PM - 06:00 PM</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        {/* Payment Methods */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+                <CreditCard className="text-primary"/> Payment Method
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RadioGroup value={selectedPayment} onValueChange={setSelectedPayment} className="space-y-4">
+              {paymentMethods.map((method) => (
+                <LabelRadio
+                    key={method.id}
+                    value={method.id}
+                    label={method.name}
+                    description=""
+                    icon={method.icon}
+                    isSelected={selectedPayment === method.id}
                 />
               ))}
             </RadioGroup>
@@ -142,7 +202,7 @@ export default function CheckoutPage() {
 
        {/* Footer */}
       <footer className="p-4 border-t border-border bg-background">
-        <Button onClick={handlePlaceOrder} className="w-full text-lg font-bold py-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity">
+        <Button onClick={handlePlaceOrder} className="w-full text-lg font-bold py-6 bg-gradient-to-r from-primary via-accent to-purple-500 text-white hover:opacity-90 transition-opacity">
             Place Order
         </Button>
       </footer>
@@ -155,14 +215,16 @@ function LabelRadio({ value, label, description, icon: Icon, price, isSelected }
     return (
         <label htmlFor={value} className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all", isSelected ? "border-primary ring-2 ring-primary bg-primary/10" : "border-border")}>
             <RadioGroupItem value={value} id={value} />
-            {Icon && <Icon className="h-5 w-5 text-muted-foreground" />}
+            {Icon && <Icon className={cn("h-5 w-5 text-muted-foreground", isSelected && "text-primary")} />}
             <div className="flex-1">
                 <div className="flex justify-between">
                     <p className="font-semibold">{label}</p>
-                    {price !== undefined && <p className={cn("text-sm font-semibold", isSelected ? "text-primary" : "text-muted-foreground")}>₹{price.toFixed(2)}</p>}
+                    {price !== undefined && <p className={cn("text-sm font-semibold", isSelected ? "text-primary" : "text-muted-foreground")}>₹{price > 0 ? `₹${price.toFixed(2)}` : 'Free'}</p>}
                 </div>
-                <p className="text-sm text-muted-foreground">{description}</p>
+               {description && <p className="text-sm text-muted-foreground">{description}</p>}
             </div>
         </label>
     )
 }
+
+    
