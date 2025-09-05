@@ -202,7 +202,7 @@ export default function CheckoutPage() {
 
        {/* Footer */}
       <footer className="p-4 border-t border-border bg-background">
-        <Button onClick={handlePlaceOrder} className="w-full text-lg font-bold py-6 bg-gradient-to-r from-primary via-accent to-purple-500 text-white hover:opacity-90 transition-opacity">
+        <Button onClick={handlePlaceOrder} className="w-full text-lg font-bold py-6 bg-gradient-to-r from-green-500 to-green-700 text-white hover:opacity-90 transition-opacity">
             Place Order
         </Button>
       </footer>
