@@ -14,6 +14,8 @@ import { useState } from "react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 
 const addresses = [
@@ -53,33 +55,31 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     setIsLoading(true);
 
-    // Mock customer data for sanitization example
     const customer_name = (undefined || "").trimEnd();
     const customer_address = (addresses.find(a => a.id === selectedAddress)?.address || "").trimEnd();
     const customer_phone = (null || "").trimEnd();
 
-    const orderData = {
-        cart: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
-        total,
-        subtotal,
-        deliveryFee,
-        deliveryOption: selectedDelivery,
-        deliveryDate,
-        deliveryTime,
-        paymentMethod: selectedPayment,
-        customerDetails: {
-            name: customer_name,
-            address: customer_address,
-            phone: customer_phone,
-        },
-        orderDate: new Date(),
-        status: "Order Confirmed"
-    };
-
-    // Simulate API call
     try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        console.log("Order placed:", orderData);
+        const orderData = {
+            cart: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
+            total,
+            subtotal,
+            deliveryFee,
+            deliveryOption: selectedDelivery,
+            deliveryDate: deliveryDate ? deliveryDate.toISOString().split('T')[0] : null,
+            deliveryTime,
+            paymentMethod: selectedPayment,
+            customerDetails: {
+                name: customer_name,
+                address: customer_address,
+                phone: customer_phone,
+            },
+            status: "Order Confirmed",
+            orderDate: serverTimestamp(),
+        };
+
+        const docRef = await addDoc(collection(db, "orders"), orderData);
+        console.log("Order placed with ID: ", docRef.id);
         
         toast({
             title: "Order Placed Successfully!",
@@ -299,5 +299,3 @@ function LabelRadio({ value, label, description, icon: Icon, price, isSelected, 
         </label>
     )
 }
-
-    
