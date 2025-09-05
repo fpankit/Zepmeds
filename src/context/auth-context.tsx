@@ -25,7 +25,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (userData: Pick<User, 'phone' | 'firstName' | 'lastName' | 'email'>) => Promise<void>;
+  login: (phone: string) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<Omit<User, 'id' | 'phone'>>) => Promise<void>;
 }
@@ -43,9 +43,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
-  const login = async (userData: Pick<User, 'phone' | 'firstName' | 'lastName' | 'email'>) => {
+  const login = async (phone: string) => {
     setLoading(true);
-    const userDocRef = doc(db, "users", userData.phone);
+    const userDocRef = doc(db, "users", phone);
     const userDocSnap = await getDoc(userDocRef);
 
     if (userDocSnap.exists()) {
@@ -54,11 +54,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       // New user, create their profile
       const newUser: User = {
-        id: userData.phone,
-        phone: userData.phone,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
+        id: phone,
+        phone: phone,
+        firstName: "New",
+        lastName: "User",
+        email: "new.user@example.com",
         addresses: [
           {
             id: 'home-123',

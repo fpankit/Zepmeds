@@ -68,12 +68,7 @@ export function LoginForm() {
     
     // On successful verification, login the user
     // This will fetch existing data or create a new user profile in Firestore
-    await login({ 
-      phone: data.phone,
-      firstName: "New",
-      lastName: "User",
-      email: "new.user@example.com",
-    });
+    await login(data.phone);
 
     // Redirect to home
     router.push("/home");
