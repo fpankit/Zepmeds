@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -13,15 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Home, MapPin, Plus, Search, Pencil, LocateFixed } from "lucide-react";
 import { Separator } from "../ui/separator";
 
-export function LocationSheet({ children }: { children: React.ReactNode }) {
-  const savedAddresses = [
+const initialAddresses = [
     {
+      id: "1",
       name: "Home",
       address: "Ghh, Bnn, Gurugram, 122001",
       icon: Home,
-      selected: true,
     },
-  ];
+];
+
+
+export function LocationSheet({ children }: { children: React.ReactNode }) {
+  const [savedAddresses, setSavedAddresses] = useState(initialAddresses);
+  const [selectedAddressId, setSelectedAddressId] = useState("1");
+  
 
   return (
     <Sheet>
@@ -37,9 +43,9 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
           </div>
 
           <Button variant="ghost" className="w-full justify-start h-auto p-3 text-left">
-            <LocateFixed className="h-5 w-5 mr-3 text-primary" />
+            <LocateFixed className="h-5 w-5 mr-3 text-green-500" />
             <div>
-              <p className="font-semibold text-primary">Use your current location</p>
+              <p className="font-semibold text-green-500">Use your current location</p>
               <p className="text-xs text-muted-foreground">741/2, Gurugram, Haryana, 122001</p>
             </div>
           </Button>
@@ -58,16 +64,17 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
             <div className="space-y-4">
               {savedAddresses.map((item) => (
                 <div
-                  key={item.name}
+                  key={item.id}
                   className="flex items-center gap-4 p-3 rounded-lg bg-card"
+                  onClick={() => setSelectedAddressId(item.id)}
                 >
                   <item.icon className="h-5 w-5 text-muted-foreground" />
                   <div className="flex-1">
                     <p className="font-semibold">{item.name}</p>
                     <p className="text-sm text-muted-foreground">{item.address}</p>
                   </div>
-                  {item.selected ? (
-                     <Button size="sm" className="pointer-events-none">Currently Selected</Button>
+                  {selectedAddressId === item.id ? (
+                     <Button size="sm" className="pointer-events-none bg-primary/80">Currently Selected</Button>
                   ) : (
                     <Button variant="ghost" size="icon">
                         <Pencil className="h-4 w-4" />
