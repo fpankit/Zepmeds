@@ -27,19 +27,6 @@ import { PrescriptionUploader } from '@/components/features/prescription-uploade
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 
-const categories = [
-  { name: 'All', icon: Pill, gradient: 'bg-gradient-to-br from-blue-400 to-blue-600' },
-  { name: 'Popular', icon: Star, gradient: 'bg-gradient-to-br from-yellow-400 to-orange-500' },
-  { name: 'Skin Care', icon: Heart, gradient: 'bg-gradient-to-br from-pink-400 to-rose-500' },
-  { name: 'Supplements', icon: Pill, gradient: 'bg-gradient-to-br from-green-400 to-teal-500' },
-  { name: 'Eye Care', icon: Eye, gradient: 'bg-gradient-to-br from-cyan-400 to-blue-500' },
-  { name: 'Dental', icon: Stethoscope, gradient: 'bg-gradient-to-br from-indigo-400 to-purple-500' },
-  { name: 'Pain Relief', icon: Bone, gradient: 'bg-gradient-to-br from-red-400 to-red-600' },
-  { name: 'Summer Care', icon: Sun, gradient: 'bg-gradient-to-br from-orange-400 to-yellow-500' },
-  { name: 'Pet Care', icon: Dog, gradient: 'bg-gradient-to-br from-purple-400 to-indigo-500' },
-  { name: 'Devices', icon: Thermometer, gradient: 'bg-gradient-to-br from-gray-400 to-gray-600' },
-];
-
 const featuredMedicines = [
   {
     id: 'med1',
@@ -88,7 +75,6 @@ const featuredMedicines = [
 ];
 
 export default function OrderMedicinesPage() {
-  const [activeCategory, setActiveCategory] = useState('All');
   const [showUploader, setShowUploader] = useState(false);
   const uploaderRef = useRef<HTMLDivElement>(null);
   const { cart, addToCart, updateQuantity } = useCart();
@@ -130,33 +116,6 @@ export default function OrderMedicinesPage() {
       </Card>
       
       {showUploader && <div ref={uploaderRef}><PrescriptionUploader /></div>}
-
-      <div>
-        <h2 className="text-xl font-bold mb-4">Categories</h2>
-        <div className="flex space-x-3 overflow-x-auto pb-4 -mx-4 px-4">
-          {categories.map((category) => (
-            <button
-              key={category.name}
-              onClick={() => setActiveCategory(category.name)}
-              className={cn(
-                'flex flex-col items-center space-y-2 flex-shrink-0 w-20 transition-all',
-                activeCategory === category.name ? 'text-primary' : 'text-muted-foreground'
-              )}
-            >
-              <div
-                className={cn(
-                  'w-16 h-16 rounded-2xl flex items-center justify-center',
-                  category.gradient,
-                  activeCategory === category.name ? 'ring-2 ring-primary scale-105' : 'opacity-80'
-                )}
-              >
-                <category.icon className="h-8 w-8 text-white" />
-              </div>
-              <span className="text-xs font-medium">{category.name}</span>
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div>
         <h2 className="text-xl font-bold mb-4">Featured Medicines</h2>
@@ -225,3 +184,5 @@ export default function OrderMedicinesPage() {
     </div>
   );
 }
+
+    

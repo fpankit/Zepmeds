@@ -107,6 +107,19 @@ const allProducts = [
   { id: 'prod26', name: 'Medicated Soap', image: 'https://picsum.photos/200/200?random=30', dataAiHint: "soap bar", price: 70.00, category: 'Skin Care' },
 ];
 
+const categories = [
+  { name: 'All', icon: Pill, href: '/order-medicines' },
+  { name: 'Popular', icon: Star, href: '/order-medicines' },
+  { name: 'Skin Care', icon: Heart, href: '/order-medicines' },
+  { name: 'Supplements', icon: Pill, href: '/order-medicines' },
+  { name: 'Eye Care', icon: Eye, href: '/order-medicines' },
+  { name: 'Dental', icon: Stethoscope, href: '/order-medicines' },
+  { name: 'Pain Relief', icon: Bone, href: '/order-medicines' },
+  { name: 'Summer Care', icon: Sun, href: '/order-medicines' },
+  { name: 'Pet Care', icon: Dog, href: '/order-medicines' },
+  { name: 'Devices', icon: Thermometer, href: '/order-medicines' },
+];
+
 const trendingProducts = allProducts.filter(p => Array.isArray(p.category) ? p.category.includes('Popular') : p.category === 'Popular');
 
 
@@ -180,6 +193,23 @@ export default function HomePage() {
               />
           </div>
         )}
+      </div>
+
+      {/* Shop by Category */}
+      <div>
+        <h3 className="font-headline text-2xl font-bold mb-4">Shop by Category</h3>
+        <div className="grid grid-cols-5 gap-4">
+          {categories.map((category) => (
+            <Link href={category.href} key={category.name}>
+              <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-2 text-center items-center aspect-square">
+                <category.icon className="h-8 w-8 text-primary" />
+                <div className="mt-2">
+                  <h3 className="font-semibold text-xs">{category.name}</h3>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
 
        {/* Feature Cards */}
@@ -258,3 +288,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
