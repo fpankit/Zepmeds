@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/context/cart-context";
+import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { MapPin, Plus, ChevronLeft, Ticket, Home, Briefcase, Calendar, Clock, Wallet, CreditCard, DollarSign } from "lucide-react";
 import Link from "next/link";
@@ -39,6 +40,7 @@ const paymentMethods = [
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart } = useCart();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [selectedAddress, setSelectedAddress] = useState(addresses[0].id);
   const [selectedDelivery, setSelectedDelivery] = useState(deliveryOptions.find(d => d.default)?.id ?? deliveryOptions[0].id)
@@ -55,9 +57,9 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     setIsLoading(true);
 
-    const customer_name = (undefined || "").trimEnd();
+    const customer_name = (user?.name || "").trimEnd();
     const customer_address = (addresses.find(a => a.id === selectedAddress)?.address || "").trimEnd();
-    const customer_phone = (null || "").trimEnd();
+    const customer_phone = (user?.phone || "").trimEnd();
 
     try {
         const orderData = {
@@ -146,7 +148,7 @@ export default function CheckoutPage() {
             <CardTitle className="flex items-center gap-2 text-lg">
                 <Clock className="text-primary"/> Delivery Time
             </CardTitle>
-          </CardHeader>
+          </Header>
           <CardContent>
             <RadioGroup value={selectedDelivery} onValueChange={setSelectedDelivery} className="space-y-4">
               {deliveryOptions.map((opt) => (

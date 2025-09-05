@@ -1,10 +1,14 @@
 
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ChevronRight, User, Phone, MapPin, History, HeartPulse, FileText, LifeBuoy, Wallet, Tag, Power } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
 
 export const profileLinks = [
   { icon: User, text: "Personal Details", href: "/profile" },
@@ -21,16 +25,24 @@ export const supportLinks = [
 ];
 
 export default function ProfilePage() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+
   return (
     <div className="container mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-8">
       <div className="flex flex-col items-center space-y-4">
         <Avatar className="h-24 w-24">
-          <AvatarImage src="https://picsum.photos/200" alt="User" data-ai-hint="person portrait" />
-          <AvatarFallback>JD</AvatarFallback>
+          <AvatarImage src="https://picsum.photos/200" alt={user?.name || 'User'} data-ai-hint="person portrait" />
+          <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
         </Avatar>
         <div className="text-center">
-          <h1 className="text-2xl font-bold">John Doe</h1>
-          <p className="text-muted-foreground">+91 9876543210</p>
+          <h1 className="text-2xl font-bold">{user?.name || 'Guest User'}</h1>
+          <p className="text-muted-foreground">{user?.phone || 'No phone number'}</p>
         </div>
         <Button variant="outline">Edit Profile</Button>
       </div>
@@ -70,10 +82,8 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        <Button variant="destructive" className="w-full" asChild>
-            <Link href="/">
-                <Power className="mr-2 h-4 w-4" /> Logout
-            </Link>
+        <Button variant="destructive" className="w-full" onClick={handleLogout}>
+          <Power className="mr-2 h-4 w-4" /> Logout
         </Button>
       </div>
     </div>

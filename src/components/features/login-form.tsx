@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Loader2, ArrowRight } from "lucide-react";
+import { useAuth } from "@/context/auth-context";
 
 const OTPSchema = z.object({
   phone: z
@@ -34,6 +36,7 @@ type VerifyFormValues = z.infer<typeof VerifySchema>;
 
 export function LoginForm() {
   const router = useRouter();
+  const { login } = useAuth();
   const [step, setStep] = useState<"otp" | "verify">("otp");
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -62,6 +65,10 @@ export function LoginForm() {
     setIsLoading(true);
     // Mock API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
+    
+    // Simulate login and set user data
+    login({ name: "John Doe", phone: data.phone });
+
     // On successful verification, redirect
     router.push("/home");
   };
