@@ -17,7 +17,6 @@ import { ChevronLeft, Loader2, User } from "lucide-react";
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
   email: z.string().email("Invalid email address"),
 });
 
@@ -34,7 +33,6 @@ export default function EditProfilePage() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      phone: "",
       email: "",
     },
   });
@@ -44,7 +42,6 @@ export default function EditProfilePage() {
       form.reset({
         firstName: user.firstName,
         lastName: user.lastName,
-        phone: user.phone,
         email: user.email,
       });
     }
@@ -53,7 +50,11 @@ export default function EditProfilePage() {
   const onSubmit: SubmitHandler<ProfileFormValues> = async (data) => {
     setIsLoading(true);
     try {
-      await updateUser(data);
+      await updateUser({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email
+      });
       toast({
         title: "Profile Updated",
         description: "Your details have been successfully saved.",
@@ -133,19 +134,11 @@ export default function EditProfilePage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="+91 12345 67890" {...field} disabled />
-                      </FormControl>
-                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                 <div className="space-y-2">
+                    <FormLabel>Phone Number</FormLabel>
+                    <Input placeholder="+91 12345 67890" value={user?.phone || ''} disabled />
+                    <p className="text-xs text-muted-foreground">Your phone number cannot be changed.</p>
+                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Save Changes
