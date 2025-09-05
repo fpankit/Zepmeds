@@ -6,12 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { aiSymptomChecker, AISymptomCheckerOutput } from "@/ai/flows/ai-symptom-checker";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Bot, User, Loader2, Sparkles, Send } from "lucide-react";
+import { Bot, User, Loader2, Send, Pill, Apple, ShieldAlert, Dumbbell, Stethoscope } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -35,17 +35,29 @@ export function SymptomCheckerChat() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    setMessages((prev) => [...prev, { role: "user", content: values.symptoms }]);
+    const userMessage: Message = { role: "user", content: values.symptoms };
+    setMessages((prev) => [...prev, userMessage]);
 
     try {
       const result = await aiSymptomChecker({ symptoms: values.symptoms });
-      setMessages((prev) => [...prev, { role: "ai", content: result }]);
+      const aiMessage: Message = { role: "ai", content: result };
+      setMessages((prev) => [...prev, aiMessage]);
       form.reset();
     } catch (error) {
       console.error("Error with AI symptom checker:", error);
+      const errorMessage: Message = { 
+        role: "ai", 
+        content: { 
+          medicines: "An error occurred while fetching advice.", 
+          diet: "Please try again later.",
+          precautions: "If the problem persists, contact support.",
+          workouts: "",
+          advice: "Please consult a healthcare professional for medical advice." 
+        } 
+      };
       setMessages((prev) => [
         ...prev,
-        { role: "ai", content: { suggestions: "An error occurred.", advice: "Please try again later." } },
+        errorMessage,
       ]);
     } finally {
       setIsLoading(false);
@@ -53,7 +65,7 @@ export function SymptomCheckerChat() {
   }
 
   return (
-    <Card className="flex h-[70vh] flex-col">
+    <Card className="flex h-[80vh] flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bot />
@@ -96,12 +108,24 @@ export function SymptomCheckerChat() {
                     <p>{message.content}</p>
                   ) : (
                     <div className="space-y-4">
-                        <div>
-                            <h4 className="font-bold mb-2 flex items-center gap-2"><Sparkles className="text-accent h-4 w-4"/>Suggestions</h4>
-                            <p>{message.content.suggestions}</p>
+                        <div className="p-2 rounded-md bg-background/50">
+                            <h4 className="font-bold mb-2 flex items-center gap-2"><Pill className="text-accent h-4 w-4"/>Medicines</h4>
+                            <p>{message.content.medicines}</p>
                         </div>
-                         <div>
-                            <h4 className="font-bold mb-2 flex items-center gap-2"><Sparkles className="text-accent h-4 w-4"/>Advice</h4>
+                        <div className="p-2 rounded-md bg-background/50">
+                            <h4 className="font-bold mb-2 flex items-center gap-2"><Apple className="text-accent h-4 w-4"/>Diet</h4>
+                            <p>{message.content.diet}</p>
+                        </div>
+                         <div className="p-2 rounded-md bg-background/50">
+                            <h4 className="font-bold mb-2 flex items-center gap-2"><ShieldAlert className="text-accent h-4 w-4"/>Precautions</h4>
+                            <p>{message.content.precautions}</p>
+                        </div>
+                         <div className="p-2 rounded-md bg-background/50">
+                            <h4 className="font-bold mb-2 flex items-center gap-2"><Dumbbell className="text-accent h-4 w-4"/>Workouts</h4>
+                            <p>{message.content.workouts}</p>
+                        </div>
+                         <div className="p-2 rounded-md bg-primary/20">
+                            <h4 className="font-bold mb-2 flex items-center gap-2"><Stethoscope className="text-primary h-4 w-4"/>Advice</h4>
                             <p>{message.content.advice}</p>
                         </div>
                     </div>
@@ -140,6 +164,7 @@ export function SymptomCheckerChat() {
                       placeholder="e.g., I have a headache and a sore throat..."
                       className="resize-none"
                       disabled={isLoading}
+                      rows={1}
                       {...field}
                     />
                   </FormControl>
