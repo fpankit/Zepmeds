@@ -7,9 +7,9 @@ import { ChevronRight, User, Phone, MapPin, History, HeartPulse, FileText, LifeB
 import Link from "next/link";
 
 export const profileLinks = [
-  { icon: User, text: "Personal Details", href: "#" },
+  { icon: User, text: "Personal Details", href: "/profile" },
   { icon: MapPin, text: "Addresses", href: "#" },
-  { icon: History, text: "Order History", href: "#" },
+  { icon: History, text: "Order History", href: "/order-status" },
   { icon: HeartPulse, text: "Past Medicines", href: "#" },
   { icon: FileText, text: "Diagnosed Reports", href: "#" },
 ];

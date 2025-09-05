@@ -52,7 +52,7 @@ export default function CheckoutPage() {
     // For this prototype, we'll just clear the cart and navigate to a success page.
     alert("Order placed successfully!");
     clearCart();
-    router.push("/home");
+    router.push("/order-status");
   };
 
   return (
@@ -84,7 +84,7 @@ export default function CheckoutPage() {
                     description={addr.address}
                     icon={addr.icon}
                     isSelected={selectedAddress === addr.id}
-                    selectionColor="yellow"
+                    data-selection-color="yellow"
                 />
               ))}
             </RadioGroup>
@@ -111,7 +111,7 @@ export default function CheckoutPage() {
                     description={`Delivered within ${opt.time}`}
                     price={opt.price}
                     isSelected={selectedDelivery === opt.id}
-                    selectionColor={opt.color}
+                    data-selection-color={opt.color}
                 />
               ))}
             </RadioGroup>
@@ -158,7 +158,7 @@ export default function CheckoutPage() {
                     description=""
                     icon={method.icon}
                     isSelected={selectedPayment === method.id}
-                    selectionColor="purple"
+                    data-selection-color="purple"
                 />
               ))}
             </RadioGroup>
@@ -214,27 +214,39 @@ export default function CheckoutPage() {
 }
 
 
-function LabelRadio({ value, label, description, icon: Icon, price, isSelected, selectionColor }: { value: string, label: string, description: string, icon?: React.ElementType, price?: number, isSelected: boolean, selectionColor?: string}) {
+function LabelRadio({ value, label, description, icon: Icon, price, isSelected, ...props }: { value: string, label: string, description: string, icon?: React.ElementType, price?: number, isSelected: boolean, "data-selection-color"?: string}) {
     
+    const selectionColor = props['data-selection-color'] || 'primary';
+
     const colorVariants: Record<string, string> = {
-        red: "[&[data-selected=true]]:border-red-500 [&[data-selected=true]]:ring-red-500 [&[data-selected=true]]:bg-red-500/10 [&[data-selected=true]]:text-red-500",
-        orange: "[&[data-selected=true]]:border-orange-500 [&[data-selected=true]]:ring-orange-500 [&[data-selected=true]]:bg-orange-500/10 [&[data-selected=true]]:text-orange-500",
-        blue: "[&[data-selected=true]]:border-blue-500 [&[data-selected=true]]:ring-blue-500 [&[data-selected=true]]:bg-blue-500/10 [&[data-selected=true]]:text-blue-500",
-        yellow: "[&[data-selected=true]]:border-yellow-500 [&[data-selected=true]]:ring-yellow-500 [&[data-selected=true]]:bg-yellow-500/10 [&[data-selected=true]]:text-yellow-500",
-        purple: "[&[data-selected=true]]:border-purple-500 [&[data-selected=true]]:ring-purple-500 [&[data-selected=true]]:bg-purple-500/10 [&[data-selected=true]]:text-purple-500",
-        primary: "[&[data-selected=true]]:border-primary [&[data-selected=true]]:ring-primary [&[data-selected=true]]:bg-primary/10 [&[data-selected=true]]:text-primary",
+        red: "[&[data-selected=true]]:border-red-500 [&[data-selected=true]]:ring-red-500 [&[data-selected=true]]:bg-red-500/10",
+        orange: "[&[data-selected=true]]:border-orange-500 [&[data-selected=true]]:ring-orange-500 [&[data-selected=true]]:bg-orange-500/10",
+        blue: "[&[data-selected=true]]:border-blue-500 [&[data-selected=true]]:ring-blue-500 [&[data-selected=true]]:bg-blue-500/10",
+        yellow: "[&[data-selected=true]]:border-yellow-500 [&[data-selected=true]]:ring-yellow-500 [&[data-selected=true]]:bg-yellow-500/10",
+        purple: "[&[data-selected=true]]:border-purple-500 [&[data-selected=true]]:ring-purple-500 [&[data-selected=true]]:bg-purple-500/10",
+        primary: "[&[data-selected=true]]:border-primary [&[data-selected=true]]:ring-primary [&[data-selected=true]]:bg-primary/10",
     };
     
-    const selectedClass = colorVariants[selectionColor || 'primary'] || colorVariants.primary;
+    const iconColorVariants: Record<string, string> = {
+        red: "group-data-[selected=true]:text-red-500",
+        orange: "group-data-[selected=true]:text-orange-500",
+        blue: "group-data-[selected=true]:text-blue-500",
+        yellow: "group-data-selected]:text-yellow-500",
+        purple: "group-data-[selected=true]:text-purple-500",
+        primary: "group-data-[selected=true]:text-primary",
+    }
+    
+    const selectedClass = colorVariants[selectionColor] || colorVariants.primary;
+    const iconSelectedClass = iconColorVariants[selectionColor] || iconColorVariants.primary;
     
     return (
-        <label htmlFor={value} data-selected={isSelected} className={cn("flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all", isSelected ? 'ring-2' : "border-border", selectedClass)}>
+        <label htmlFor={value} data-selected={isSelected} className={cn("group flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all", isSelected ? 'ring-2' : "border-border", selectedClass)}>
             <RadioGroupItem value={value} id={value} />
-            {Icon && <Icon className={cn("h-5 w-5 text-muted-foreground", isSelected && `text-${selectionColor}-500`)} />}
+            {Icon && <Icon className={cn("h-5 w-5 text-muted-foreground", iconSelectedClass)} />}
             <div className="flex-1">
                 <div className="flex justify-between">
                     <p className="font-semibold">{label}</p>
-                    {price !== undefined && <p className={cn("text-sm font-semibold", isSelected ? `text-${selectionColor}-500` : "text-muted-foreground")}>₹{price > 0 ? `₹${price.toFixed(2)}` : 'Free'}</p>}
+                    {price !== undefined && <p className={cn("text-sm font-semibold text-muted-foreground", `group-data-[selected=true]:text-${selectionColor}-500`)}>{price > 0 ? `₹${price.toFixed(2)}` : 'Free'}</p>}
                 </div>
                {description && <p className="text-sm text-muted-foreground">{description}</p>}
             </div>
