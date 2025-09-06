@@ -35,26 +35,20 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
 
   const localPlayerRef = useRef<HTMLDivElement>(null);
   
-  // Automatically join the call when the component mounts
+  // Play the local video track when it becomes available and we have joined
   useEffect(() => {
-    join();
-    // Ensure to leave the call when the component unmounts
-    return () => {
-      leave();
-    };
-  }, [join, leave]);
-  
-  // Play the local video track when it becomes available
-  useEffect(() => {
-    if (localVideoTrack && localPlayerRef.current) {
+    if (isJoined && localVideoTrack && localPlayerRef.current) {
         if (localPlayerRef.current.childElementCount === 0) {
             localVideoTrack.play(localPlayerRef.current);
         }
     }
+    
+    // Cleanup function to stop the track if the component unmounts
+    // This is important for when the user navigates away
     return () => {
       localVideoTrack?.stop();
     };
-  }, [localVideoTrack]);
+  }, [localVideoTrack, isJoined]);
 
   const remoteUser = remoteUsers[0]; // Display the first remote user
 
