@@ -10,7 +10,7 @@
  * @function aiSymptomChecker - The main function to initiate the symptom checker flow.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai } from 'genkit';
 import { z } from 'zod';
 
 const AISymptomCheckerInputSchema = z.object({
