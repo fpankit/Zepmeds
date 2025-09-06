@@ -5,24 +5,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ChevronRight, User, Phone, MapPin, History, HeartPulse, FileText, LifeBuoy, Wallet, Tag, Power } from "lucide-react";
+import { ChevronRight, Power } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
+import { profileLinks, supportLinks } from "@/lib/data";
 
-export const profileLinks = [
-  { icon: User, text: "Personal Details", href: "/profile/edit" },
-  { icon: MapPin, text: "Addresses", href: "#" },
-  { icon: History, text: "Order History", href: "/order-status" },
-  { icon: HeartPulse, text: "Past Medicines", href: "#" },
-  { icon: FileText, text: "Diagnosed Reports", href: "#" },
-];
-
-export const supportLinks = [
-    { icon: Wallet, text: "Wallet", href: "#" },
-    { icon: Tag, text: "Coupons & Offers", href: "#" },
-    { icon: LifeBuoy, text: "Help & Support", href: "#" },
-];
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();

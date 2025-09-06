@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LayoutGrid } from "lucide-react";
 import Link from "next/link";
-import { profileLinks, supportLinks } from "../profile/page";
+import { profileLinks, supportLinks } from "@/lib/data";
 import { ChevronRight } from "lucide-react";
 
 export default function MorePage() {
