@@ -20,6 +20,7 @@ import { useAuth, Address } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "../ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 const DynamicMap = dynamic(
     () => import('@/components/features/dynamic-map').then(mod => mod.DynamicMap),
@@ -45,6 +46,7 @@ function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address
     const [isFetchingLocation, setIsFetchingLocation] = useState(false);
     const [position, setPosition] = useState<Position | null>(null);
     const [isOpen, setIsOpen] = useState(false);
+    const { toast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,25 +70,47 @@ function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address
         setIsFetchingLocation(true);
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
-                const { latitude, longitude } = pos.coords;
-                setPosition({ lat: latitude, lng: longitude });
+                try {
+                    const { latitude, longitude } = pos.coords;
+                    setPosition({ lat: latitude, lng: longitude });
 
-                // Reverse geocode
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                const data = await response.json();
-                
-                const { address } = data;
-                setStreet(address.road || '');
-                setFlat(address.house_number || '');
-                setState(address.state || '');
-                setPincode(address.postcode || '');
-                setLandmark(address.suburb || '');
+                    // Reverse geocode
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
+                    if (!response.ok) throw new Error("Failed to fetch address.");
 
-                setIsFetchingLocation(false);
+                    const data = await response.json();
+                    
+                    const { address } = data;
+                    if (!address) throw new Error("Address details not found in response.");
+
+                    setStreet(address.road || [address.suburb, address.city_district].filter(Boolean).join(', ') || '');
+                    setFlat(address.house_number || '');
+                    setState(address.state || '');
+                    setPincode(address.postcode || '');
+                    setLandmark(''); // Clear landmark as it's not always accurate
+                    
+                    toast({
+                        title: "Location Fetched!",
+                        description: "Your address has been auto-filled.",
+                    })
+                } catch (error) {
+                    console.error("Reverse geocoding error: ", error);
+                    toast({
+                        variant: "destructive",
+                        title: "Could not fetch address",
+                        description: "Unable to auto-fill address details. Please enter them manually.",
+                    });
+                } finally {
+                    setIsFetchingLocation(false);
+                }
             },
             (error) => {
                 console.error("Geolocation error: ", error);
-                // You should show a toast message to the user here
+                toast({
+                    variant: "destructive",
+                    title: "Geolocation Failed",
+                    description: "Please enable location permissions in your browser to use this feature.",
+                });
                 setIsFetchingLocation(false);
             }
         );
