@@ -56,16 +56,14 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   }, []);
 
   useEffect(() => {
-    if (hasPermission && !isJoined) {
+    if (hasPermission) {
       join();
     }
+    // Leave the channel when the component unmounts
     return () => {
-      // Ensure leave is called only when the component unmounts
-      if (hasPermission) {
         leave();
-      }
     };
-  }, [hasPermission, isJoined, join, leave]);
+  }, [hasPermission, join, leave]);
   
   useEffect(() => {
     if (localVideoTrack && localPlayerRef.current) {
@@ -79,9 +77,10 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   const remoteUser = remoteUsers.length > 0 ? remoteUsers[0] : null;
 
   useEffect(() => {
-    if (remoteUser && remoteUser.videoTrack && remotePlayerRef.current) {
+    if (remoteUser?.videoTrack && remotePlayerRef.current) {
         remoteUser.videoTrack.play(remotePlayerRef.current);
     }
+    
     return () => {
         remoteUser?.videoTrack?.stop();
     }
