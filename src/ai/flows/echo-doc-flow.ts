@@ -6,7 +6,7 @@
  * medicine recommendations and general healthcare updates in a friendly, conversational manner.
  */
 
-import { ai } from 'genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const EchoDocInputSchema = z.object({
