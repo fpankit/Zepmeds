@@ -28,9 +28,10 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   
   const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
-  
+  const isJoiningRef = useRef(false);
+  const isMountedRef = useRef(false); // Ref to track component mount state
+
   const leave = useCallback(async () => {
-    // Only execute if actually connected
     if (agoraClient.connectionState !== 'CONNECTED') {
       return;
     }
@@ -43,41 +44,50 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     localVideoTrack?.close();
     setLocalVideoTrack(null);
     
-    // Unpublish is not needed as we are leaving the channel, which handles it.
     await agoraClient.leave();
 
     setRemoteUsers([]);
     setIsJoined(false);
+    isJoiningRef.current = false;
   }, [localVideoTrack]);
 
 
   useEffect(() => {
+    isMountedRef.current = true;
+    
     const join = async () => {
-      // Prevent re-entry if already connecting or connected
-      if (agoraClient.connectionState === 'CONNECTING' || agoraClient.connectionState === 'CONNECTED') {
-          return;
+      if (isJoiningRef.current || agoraClient.connectionState === 'CONNECTED') {
+        return;
       }
+      isJoiningRef.current = true;
       setIsJoining(true);
 
       const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
           await agoraClient.subscribe(user, mediaType);
-          setRemoteUsers(Array.from(agoraClient.remoteUsers));
+          if (isMountedRef.current) {
+            setRemoteUsers(Array.from(agoraClient.remoteUsers));
+          }
           if (mediaType === 'audio') {
             user.audioTrack?.play();
           }
       };
 
       const handleUserUnpublished = () => {
-          setRemoteUsers(Array.from(agoraClient.remoteUsers));
+          if (isMountedRef.current) {
+            setRemoteUsers(Array.from(agoraClient.remoteUsers));
+          }
       };
       
       const handleConnectionStateChange = (curState: ConnectionState) => {
-          if (curState === 'CONNECTED') {
-              setIsJoined(true);
-              setIsJoining(false);
-          } else if (curState === 'DISCONNECTED' || curState === 'FAILED') {
-              setIsJoined(false);
-              setIsJoining(false);
+          if (isMountedRef.current) {
+            if (curState === 'CONNECTED') {
+                setIsJoined(true);
+                setIsJoining(false);
+            } else if (curState === 'DISCONNECTED' || curState === 'FAILED') {
+                setIsJoined(false);
+                setIsJoining(false);
+                isJoiningRef.current = false;
+            }
           }
       }
       
@@ -89,8 +99,17 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
 
           await agoraClient.join(appId, channelName, token, null);
           
+          // Check if component is still mounted after join
+          if (!isMountedRef.current) return;
+
           const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
           
+          if (!isMountedRef.current) {
+            audioTrack.close();
+            videoTrack.close();
+            return;
+          }
+
           localAudioTrackRef.current = audioTrack;
           setLocalVideoTrack(videoTrack);
           
@@ -98,13 +117,17 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
           
       } catch (error) {
           console.error('Failed to join or publish:', error);
-          setIsJoining(false);
+          if (isMountedRef.current) {
+            setIsJoining(false);
+            isJoiningRef.current = false;
+          }
       }
     };
     
     join();
 
     return () => {
+        isMountedRef.current = false;
         agoraClient.removeAllListeners();
         leave();
     };
@@ -113,17 +136,15 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
 
   const toggleAudio = useCallback(async () => {
     if (localAudioTrackRef.current) {
-      const newMutedState = !localAudioTrackRef.current.enabled;
-      await localAudioTrackRef.current.setEnabled(!newMutedState);
-      setIsAudioMuted(newMutedState);
+      await localAudioTrackRef.current.setEnabled(!localAudioTrackRef.current.enabled);
+      setIsAudioMuted(!localAudioTrackRef.current.enabled);
     }
   }, []);
 
   const toggleVideo = useCallback(async () => {
     if (localVideoTrack) {
-      const newMutedState = !localVideoTrack.enabled;
-      await localVideoTrack.setEnabled(!newMutedState);
-      setIsVideoMuted(newMutedState);
+      await localVideoTrack.setEnabled(!localVideoTrack.enabled);
+      setIsVideoMuted(!localVideoTrack.enabled);
     }
   }, [localVideoTrack]);
 
