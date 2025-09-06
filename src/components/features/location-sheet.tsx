@@ -34,7 +34,7 @@ type Position = {
     lng: number;
 }
 
-function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address: Omit<Address, 'id' | 'address'>) => Promise<void>, closeDialog: () => void }) {
+function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address, 'id' | 'address'>) => Promise<void> }) {
     const [type, setType] = useState<Address['type']>("Home");
     const [flat, setFlat] = useState("");
     const [street, setStreet] = useState("");
@@ -44,6 +44,7 @@ function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address:
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isFetchingLocation, setIsFetchingLocation] = useState(false);
     const [position, setPosition] = useState<Position | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,7 +60,7 @@ function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address:
                 state 
             });
             setIsSubmitting(false);
-            closeDialog();
+            setIsOpen(false);
         }
     };
     
@@ -92,72 +93,87 @@ function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address:
     };
     
     return (
-        <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-                <Button type="button" variant="outline" onClick={handleFetchLocation} disabled={isFetchingLocation}>
-                    {isFetchingLocation ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <LocateFixed className="mr-2 h-4 w-4" />}
-                    {isFetchingLocation ? "Fetching Location..." : "Use Current Location"}
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                 <Button variant="ghost" className="w-full justify-start p-3">
+                    <Plus className="h-5 w-5 mr-3" />
+                    <span className="font-semibold">Add New Address</span>
                 </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Add a new address</DialogTitle>
+                    <DialogDescription>
+                        Enter your address details or use your current location.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
+                        <Button type="button" variant="outline" onClick={handleFetchLocation} disabled={isFetchingLocation}>
+                            {isFetchingLocation ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <LocateFixed className="mr-2 h-4 w-4" />}
+                            {isFetchingLocation ? "Fetching Location..." : "Use Current Location"}
+                        </Button>
 
-                {position && <DynamicMap position={position} />}
+                        {position && <DynamicMap position={position} />}
 
-                <div className="space-y-2">
-                    <Label>Address Type</Label>
-                    <RadioGroup value={type} onValueChange={(v) => setType(v as Address['type'])} className="flex gap-4 mt-2">
-                        <Label htmlFor="home" className="flex items-center gap-2 cursor-pointer">
-                            <RadioGroupItem value="Home" id="home" />
-                            <Home className="w-4 h-4 mr-1" /> Home
-                        </Label>
-                        <Label htmlFor="work" className="flex items-center gap-2 cursor-pointer">
-                            <RadioGroupItem value="Work" id="work" />
-                            <Briefcase className="w-4 h-4 mr-1" /> Work
-                        </Label>
-                        <Label htmlFor="other" className="flex items-center gap-2 cursor-pointer">
-                            <RadioGroupItem value="Other" id="other" />
-                            <MapPin className="w-4 h-4 mr-1" /> Other
-                        </Label>
-                    </RadioGroup>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="flat">Flat, House no., Building</Label>
-                    <Input id="flat" value={flat} onChange={(e) => setFlat(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="street">Area, Street, Sector, Village</Label>
-                    <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="landmark">Landmark</Label>
-                    <Input id="landmark" placeholder="E.g. Near Apollo Hospital" value={landmark} onChange={(e) => setLandmark(e.target.value)} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="pincode">Pincode</Label>
-                        <Input id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} required />
+                        <div className="space-y-2">
+                            <Label>Address Type</Label>
+                            <RadioGroup value={type} onValueChange={(v) => setType(v as Address['type'])} className="flex gap-4 mt-2">
+                                <Label htmlFor="home" className="flex items-center gap-2 cursor-pointer">
+                                    <RadioGroupItem value="Home" id="home" />
+                                    <Home className="w-4 h-4 mr-1" /> Home
+                                </Label>
+                                <Label htmlFor="work" className="flex items-center gap-2 cursor-pointer">
+                                    <RadioGroupItem value="Work" id="work" />
+                                    <Briefcase className="w-4 h-4 mr-1" /> Work
+                                </Label>
+                                <Label htmlFor="other" className="flex items-center gap-2 cursor-pointer">
+                                    <RadioGroupItem value="Other" id="other" />
+                                    <MapPin className="w-4 h-4 mr-1" /> Other
+                                </Label>
+                            </RadioGroup>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="flat">Flat, House no., Building</Label>
+                            <Input id="flat" value={flat} onChange={(e) => setFlat(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="street">Area, Street, Sector, Village</Label>
+                            <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="landmark">Landmark</Label>
+                            <Input id="landmark" placeholder="E.g. Near Apollo Hospital" value={landmark} onChange={(e) => setLandmark(e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="pincode">Pincode</Label>
+                                <Input id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="state">State</Label>
+                                <Input id="state" value={state} onChange={(e) => setState(e.target.value)} required />
+                            </div>
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="state">State</Label>
-                        <Input id="state" value={state} onChange={(e) => setState(e.target.value)} required />
-                    </div>
-                </div>
-            </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Address
-                </Button>
-            </DialogFooter>
-        </form>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Address
+                        </Button>
+                    </DialogFooter>
+                </form>
+             </DialogContent>
+        </Dialog>
     )
 }
 
 export function LocationSheet({ children }: { children: React.ReactNode }) {
   const { user, updateUser } = useAuth();
   const [selectedAddressId, setSelectedAddressId] = useState(user?.addresses[0]?.id || "");
-  const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
   
   const handleAddAddress = async (newAddressData: Omit<Address, 'id' | 'address'>) => {
       if (!user) return;
@@ -200,23 +216,8 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
             <Input placeholder="Search for area, street name..." className="pl-10" />
           </div>
 
-          <Dialog open={isAddAddressOpen} onOpenChange={setIsAddAddressOpen}>
-            <DialogTrigger asChild>
-                 <Button variant="ghost" className="w-full justify-start p-3">
-                    <Plus className="h-5 w-5 mr-3" />
-                    <span className="font-semibold">Add New Address</span>
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Add a new address</DialogTitle>
-                     <DialogDescription>
-                        Enter your address details or use your current location.
-                    </DialogDescription>
-                </DialogHeader>
-                <AddAddressForm onAddAddress={handleAddAddress} closeDialog={() => setIsAddAddressOpen(false)} />
-            </DialogContent>
-          </Dialog>
+          <AddAddressForm onAddAddress={handleAddAddress} />
+          
 
           <Separator />
 
@@ -258,5 +259,3 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
     </Sheet>
   );
 }
-
-    
