@@ -15,104 +15,111 @@ interface AgoraConfig {
   token: string;
 }
 
+// Store client and tracks outside of the component state to make them stable across renders
+let agoraClient: IAgoraRTCClient | null = null;
+let localAudioTrack: IMicrophoneAudioTrack | null = null;
+let localVideoTrackState: ICameraVideoTrack | null = null;
+
+
 export function useAgora({ appId, channelName, token }: AgoraConfig) {
   const [isJoined, setIsJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
   const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
   
-  const clientRef = useRef<IAgoraRTCClient | null>(null);
-  const localTracksRef = useRef<{
-    audioTrack: IMicrophoneAudioTrack | null;
-    videoTrack: ICameraVideoTrack | null;
-  }>({ audioTrack: null, videoTrack: null });
   const isJoiningRef = useRef(false);
 
-
   const leave = useCallback(async () => {
-    if (localTracksRef.current.audioTrack) {
-      localTracksRef.current.audioTrack.stop();
-      localTracksRef.current.audioTrack.close();
-    }
-    if (localTracksRef.current.videoTrack) {
-      localTracksRef.current.videoTrack.stop();
-      localTracksRef.current.videoTrack.close();
-    }
-    localTracksRef.current = { audioTrack: null, videoTrack: null };
-
-    if (clientRef.current) {
-        clientRef.current.removeAllListeners();
-        if (isJoined) {
-          await clientRef.current.leave();
+      if (localAudioTrack) {
+          localAudioTrack.stop();
+          localAudioTrack.close();
+          localAudioTrack = null;
+      }
+      if (localVideoTrackState) {
+          localVideoTrackState.stop();
+          localVideoTrackState.close();
+          localVideoTrackState = null;
+      }
+      
+      if(agoraClient) {
+        agoraClient.removeAllListeners();
+        if (isJoined || agoraClient.connectionState === 'CONNECTED' || agoraClient.connectionState === 'CONNECTING') {
+            await agoraClient.leave();
         }
-    }
-    
-    setLocalVideoTrack(null);
-    setRemoteUsers([]);
-    setIsJoined(false);
-    isJoiningRef.current = false;
+      }
+
+      setRemoteUsers([]);
+      setIsJoined(false);
+      setLocalVideoTrack(null);
+      isJoiningRef.current = false;
   }, [isJoined]);
 
 
   const join = useCallback(async () => {
-    if (!token || isJoined || isLoading || isJoiningRef.current) return;
-
-    setIsLoading(true);
+    if (!token || isJoined || isJoiningRef.current) return;
+    
     isJoiningRef.current = true;
+    setIsLoading(true);
 
     const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
-
-    if (!clientRef.current) {
-        clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    
+    // Use a single client instance
+    if (!agoraClient) {
+        agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
     }
-    const client = clientRef.current;
 
     const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
-      await client.subscribe(user, mediaType);
-      setRemoteUsers((prevUsers) => [...prevUsers.filter(u => u.uid !== user.uid), user]);
+      await agoraClient!.subscribe(user, mediaType);
+      setRemoteUsers(prevUsers => [...prevUsers.filter(u => u.uid !== user.uid), user]);
       if (mediaType === 'audio') {
         user.audioTrack?.play();
       }
     };
-
+    
     const handleUserUnpublished = (user: IAgoraRTCRemoteUser) => {
-        setRemoteUsers((prevUsers) => prevUsers.filter((u) => u.uid !== user.uid));
+        setRemoteUsers(prevUsers => prevUsers.filter(u => u.uid !== user.uid));
     };
 
-    client.on('user-published', handleUserPublished);
-    client.on('user-unpublished', handleUserUnpublished);
-    client.on('user-left', handleUserUnpublished);
+    agoraClient.on('user-published', handleUserPublished);
+    agoraClient.on('user-unpublished', handleUserUnpublished);
+    agoraClient.on('user-left', handleUserUnpublished);
 
     try {
-      await client.join(appId, channelName, token, null);
+      await agoraClient.join(appId, channelName, token, null);
 
       const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-      localTracksRef.current = { audioTrack, videoTrack };
+      
+      localAudioTrack = audioTrack;
+      localVideoTrackState = videoTrack;
+      
       setLocalVideoTrack(videoTrack);
       
-      await client.publish([audioTrack, videoTrack]);
+      await agoraClient.publish([audioTrack, videoTrack]);
       
       setIsJoined(true);
+
     } catch (error) {
       console.error('Failed to join channel:', error);
-      await leave(); // Clean up on failure
+      await leave();
     } finally {
-        setIsLoading(false);
-        isJoiningRef.current = false;
+      setIsLoading(false);
+      isJoiningRef.current = false;
     }
-  }, [appId, channelName, token, isJoined, isLoading, leave]);
+  }, [appId, channelName, token, isJoined, leave]);
+
 
   const toggleAudio = useCallback(async () => {
-    if (localTracksRef.current.audioTrack) {
-      await localTracksRef.current.audioTrack.setEnabled(!localTracksRef.current.audioTrack.enabled);
+    if (localAudioTrack) {
+      await localAudioTrack.setEnabled(!localAudioTrack.enabled);
     }
   }, []);
 
   const toggleVideo = useCallback(async () => {
-    if (localTracksRef.current.videoTrack) {
-      await localTracksRef.current.videoTrack.setEnabled(!localTracksRef.current.videoTrack.enabled);
+    if (localVideoTrackState) {
+      await localVideoTrackState.setEnabled(!localVideoTrackState.enabled);
     }
   }, []);
+
 
   return { isJoined, isLoading, remoteUsers, localVideoTrack, join, leave, toggleAudio, toggleVideo };
 }
