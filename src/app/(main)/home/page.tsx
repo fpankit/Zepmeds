@@ -24,7 +24,7 @@ import { AnimatePresence, motion } from "framer-motion";
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
     { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker", color: "bg-sky-500" },
-    { title: "Echo Doc AI", description: "Talk to a medical AI", icon: MessageSquare, href: "/echo-doc", color: "bg-orange-500" },
+    { title: "Echo Doc AI", description: "Talk to a medical AI", icon: MessageSquare, href: "https://ai-medicalagent.vercel.app/", color: "bg-orange-500", external: true },
     { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor", color: "bg-green-500" },
     { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "/emergency", color: "bg-red-500" },
     { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "/order-status", color: "bg-teal-500" },
@@ -169,6 +169,34 @@ export default function HomePage() {
     });
   }
 
+  const FeatureCard = ({ card }: { card: typeof featureCards[0] }) => {
+    const content = (
+      <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
+        <div className={cn("p-3 rounded-xl", card.color)}>
+          <card.icon className="h-8 w-8 text-white" />
+        </div>
+        <div className="mt-2">
+          <h3 className="font-semibold text-sm">{card.title}</h3>
+          <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+        </div>
+      </Card>
+    );
+
+    if (card.external) {
+      return (
+        <a href={card.href} target="_blank" rel="noopener noreferrer">
+          {content}
+        </a>
+      );
+    }
+
+    return (
+      <Link href={card.href}>
+        {content}
+      </Link>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 overflow-x-hidden">
 
@@ -233,17 +261,7 @@ export default function HomePage() {
        {/* Feature Cards */}
        <motion.div className="grid grid-cols-2 sm:grid-cols-3 gap-4" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
         {featureCards.map((card) => (
-          <Link href={card.href} key={card.title}>
-            <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
-              <div className={cn("p-3 rounded-xl", card.color)}>
-                <card.icon className="h-8 w-8 text-white" />
-              </div>
-              <div className="mt-2">
-                <h3 className="font-semibold text-sm">{card.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
-              </div>
-            </Card>
-          </Link>
+          <FeatureCard key={card.title} card={card} />
         ))}
       </motion.div>
       
