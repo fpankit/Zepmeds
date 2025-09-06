@@ -2,6 +2,8 @@
 'use client';
 
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 // Dynamically import the video call client component to ensure it's only loaded on the client-side.
@@ -25,14 +27,29 @@ const VideoCallClient = dynamic(
 );
 
 interface VideoCallLoaderProps {
-  appId: string;
   channelName: string;
   token: string | null;
 }
 
-// This component acts as a bridge, receiving server-generated props 
-// and passing them to the client-only video component.
-export function VideoCallLoader({ appId, channelName, token }: VideoCallLoaderProps) {
+// This component acts as a bridge, reading credentials and passing them 
+// to the client-only video component.
+export function VideoCallLoader({ channelName, token }: VideoCallLoaderProps) {
+  const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID;
+
+  if (!appId) {
+    return (
+      <div className="container mx-auto p-4 flex items-center justify-center h-screen">
+        <Alert variant="destructive" className="max-w-md">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Configuration Error</AlertTitle>
+            <AlertDescription>
+                Video call service is not configured correctly. The Agora App ID is missing. Please contact support.
+            </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <VideoCallClient
       appId={appId}
