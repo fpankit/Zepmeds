@@ -9,8 +9,8 @@
  * - GeneratePrescriptionSummaryOutput - The return type for the generatePrescriptionSummary function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from 'genkit';
+import { z } from 'zod';
 
 const GeneratePrescriptionSummaryInputSchema = z.object({
   prescriptionImageUri: z
