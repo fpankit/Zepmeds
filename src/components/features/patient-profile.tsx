@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { User } from "@/context/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,49 +15,18 @@ const getInitials = (firstName: string = '', lastName: string = '') => {
   return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
 }
 
-export function PatientProfile({ patientId }: { patientId: string }) {
+export function PatientProfile({ patientId }: { patientId: string | null }) {
   const [patient, setPatient] = useState<User | null>(null);
-  const [patientDocId, setPatientDocId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!patientId) {
         setIsLoading(false);
         return;
-    };
-    
-    const callDocRef = doc(db, "calls", patientId);
-    const unsubscribeCall = onSnapshot(callDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const callData = docSnap.data();
-            if (callData.patientId) {
-                setPatientDocId(callData.patientId);
-            } else {
-                console.error("No patientId found in call document");
-                setIsLoading(false);
-            }
-        } else {
-            console.error("Call document not found");
-            setIsLoading(false);
-        }
-    }, (error) => {
-        console.error("Error fetching call document:", error);
-        setIsLoading(false);
-    });
-
-    return () => unsubscribeCall();
-  }, [patientId]);
-
-
-  useEffect(() => {
-    if (!patientDocId) {
-        // If patientDocId is not set after trying to fetch it, stop loading.
-        if (!isLoading) setIsLoading(false);
-        return;
     }
 
     setIsLoading(true);
-    const patientDocRef = doc(db, "users", patientDocId);
+    const patientDocRef = doc(db, "users", patientId);
     const unsubscribePatient = onSnapshot(patientDocRef, (docSnap) => {
         if (docSnap.exists()) {
             setPatient({ id: docSnap.id, ...docSnap.data() } as User);
@@ -73,7 +42,7 @@ export function PatientProfile({ patientId }: { patientId: string }) {
     
     return () => unsubscribePatient();
 
-  }, [patientDocId])
+  }, [patientId]);
 
 
   if (isLoading) {

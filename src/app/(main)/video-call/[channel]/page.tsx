@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAgora } from '@/hooks/use-agora';
 import { Button } from '@/components/ui/button';
 import { Camera, CameraOff, Mic, MicOff, PhoneOff, Users, ScreenShare, ScreenShareOff } from 'lucide-react';
@@ -12,10 +12,12 @@ import { PatientProfile } from '@/components/features/patient-profile';
 
 const appId = '9de59654b7884ef58b4a3d15d72cdefa';
 
-export default function VideoCallPage() {
+function VideoCallContent() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     const channelName = params.channel as string;
+    const patientId = searchParams.get('patientId');
 
     const [isCameraOn, setIsCameraOn] = useState(true);
     const [isMicOn, setIsMicOn] = useState(true);
@@ -103,8 +105,16 @@ export default function VideoCallPage() {
 
             {/* Sidebar with Patient Details */}
              <aside className="w-80 hidden md:block bg-gray-900 border-l border-gray-800 p-4">
-                 <PatientProfile patientId={channelName} />
+                 {patientId && <PatientProfile patientId={patientId} />}
              </aside>
         </div>
     );
+}
+
+export default function VideoCallPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <VideoCallContent />
+        </Suspense>
+    )
 }

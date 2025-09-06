@@ -38,7 +38,7 @@ export default function CallStatusPage() {
                 if (data.status === 'accepted') {
                     setStatus('accepted');
                      // Wait for state to update before navigating
-                    setTimeout(() => router.push(`/video-call/${callId}`), 500);
+                    setTimeout(() => router.push(`/video-call/${callId}?patientId=${data.patientId}`), 500);
                 } else if (data.status === 'rejected') {
                     setStatus('rejected');
                 } else if (data.status === 'unanswered') {
