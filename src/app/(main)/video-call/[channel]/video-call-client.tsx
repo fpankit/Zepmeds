@@ -23,7 +23,6 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   const {
     localVideoTrack,
     remoteUsers,
-    join,
     leave,
     isJoined,
     isJoining,
@@ -43,8 +42,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
         }
     }
     
-    // Cleanup function to stop the track if the component unmounts
-    // This is important for when the user navigates away
+    // Cleanup function to stop the track if the component unmounts or track changes
     return () => {
       localVideoTrack?.stop();
     };
@@ -60,7 +58,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
           <RemotePlayer videoTrack={remoteUser.videoTrack} />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-            {isJoining ? (
+            {isJoining && !isJoined ? (
               <>
                 <Loader2 className="h-8 w-8 animate-spin" />
                 <p className="mt-4">Connecting to the call...</p>

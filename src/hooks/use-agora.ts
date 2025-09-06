@@ -17,6 +17,7 @@ interface AgoraConfig {
 }
 
 // Create the Agora client instance outside the hook to ensure it's a singleton.
+// This prevents re-initialization on every render and is crucial for stability.
 const agoraClient: IAgoraRTCClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
 
 export function useAgora({ appId, channelName, token }: AgoraConfig) {
@@ -24,17 +25,21 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
   const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
   
   const [isJoined, setIsJoined] = useState(false);
-  const [isJoining, setIsJoining] = useState(true); // Start in joining state
+  const [isJoining, setIsJoining] = useState(true);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   
   const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
-  const isJoiningRef = useRef(false);
+  
+  // This ref ensures that we only attempt to join once, preventing race conditions.
+  const hasJoinedRef = useRef(false);
 
-  const cleanup = useCallback(async () => {
-    // Unsubscribe and remove all listeners
-    agoraClient.removeAllListeners();
-    
+  const leave = useCallback(async () => {
+    // Only leave if the client is in a connected state.
+    if (agoraClient.connectionState !== 'CONNECTED') {
+        return;
+    }
+      
     // Stop and close local tracks
     localAudioTrackRef.current?.stop();
     localAudioTrackRef.current?.close();
@@ -44,70 +49,83 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     localVideoTrack?.close();
     setLocalVideoTrack(null);
     
-    // Leave the channel if connected
-    if (agoraClient.connectionState === 'CONNECTED' || agoraClient.connectionState === 'CONNECTING') {
-      try {
-        await agoraClient.leave();
-      } catch (e) {
-        console.error("Error leaving channel:", e);
-      }
-    }
+    // Unpublish and leave the channel
+    await agoraClient.unpublish();
+    await agoraClient.leave();
 
-    // Reset state
     setRemoteUsers([]);
     setIsJoined(false);
-    isJoiningRef.current = false;
+    hasJoinedRef.current = false;
   }, [localVideoTrack]);
 
-  const join = useCallback(async () => {
-    if (!token || isJoiningRef.current || isJoined) return;
+
+  // Effect to join and handle component lifecycle
+  useEffect(() => {
     
-    isJoiningRef.current = true;
-    setIsJoining(true);
+    const join = async () => {
+        // Prevent joining if already joined or in the process
+        if (hasJoinedRef.current || !token) return;
 
-    try {
-      const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
-        // Only subscribe if the client is in the 'CONNECTED' state
-        if (agoraClient.connectionState === 'CONNECTED') {
-           await agoraClient.subscribe(user, mediaType);
+        hasJoinedRef.current = true;
+        setIsJoining(true);
+
+        const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
+            await agoraClient.subscribe(user, mediaType);
+            setRemoteUsers(Array.from(agoraClient.remoteUsers));
+            if (mediaType === 'audio') {
+            user.audioTrack?.play();
+            }
+        };
+
+        const handleUserUnpublished = () => {
+            setRemoteUsers(Array.from(agoraClient.remoteUsers));
+        };
+        
+        const handleConnectionStateChange = (curState: ConnectionState) => {
+            if (curState === 'CONNECTED') {
+                setIsJoined(true);
+                setIsJoining(false);
+            } else if (curState === 'DISCONNECTED' || curState === 'FAILED') {
+                setIsJoined(false);
+                setIsJoining(false);
+                hasJoinedRef.current = false; // Allow re-joining
+            }
         }
-        setRemoteUsers(Array.from(agoraClient.remoteUsers));
-        if (mediaType === 'audio') {
-          user.audioTrack?.play();
+        
+        try {
+            agoraClient.on('user-published', handleUserPublished);
+            agoraClient.on('user-unpublished', handleUserUnpublished);
+            agoraClient.on('user-left', handleUserUnpublished);
+            agoraClient.on('connection-state-change', handleConnectionStateChange);
+
+            await agoraClient.join(appId, channelName, token, null);
+            
+            const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+            
+            localAudioTrackRef.current = audioTrack;
+            setLocalVideoTrack(videoTrack);
+            
+            await agoraClient.publish([audioTrack, videoTrack]);
+            
+        } catch (error) {
+            console.error('Failed to join or publish:', error);
+            hasJoinedRef.current = false; // Reset on failure
+            setIsJoining(false);
         }
-      };
+    };
+    
+    join();
 
-      const handleUserUnpublished = () => {
-        setRemoteUsers(Array.from(agoraClient.remoteUsers));
-      };
+    // The cleanup function is critical for stability.
+    // It will be called when the component unmounts.
+    return () => {
+        // Unsubscribe from all events to prevent memory leaks
+        agoraClient.removeAllListeners();
+        // Leave the channel gracefully
+        leave();
+    };
+  }, [appId, channelName, token, leave]);
 
-      agoraClient.on('user-published', handleUserPublished);
-      agoraClient.on('user-unpublished', handleUserUnpublished);
-      agoraClient.on('user-left', handleUserUnpublished);
-
-      await agoraClient.join(appId, channelName, token, null);
-      
-      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-      
-      localAudioTrackRef.current = audioTrack;
-      setLocalVideoTrack(videoTrack);
-      
-      await agoraClient.publish([audioTrack, videoTrack]);
-      
-      setIsJoined(true);
-
-    } catch (error) {
-      console.error('Failed to join or publish:', error);
-      await cleanup(); // Cleanup on failure
-    } finally {
-      setIsJoining(false);
-      isJoiningRef.current = false;
-    }
-  }, [appId, channelName, token, cleanup, isJoined]);
-
-  const leave = useCallback(async () => {
-    await cleanup();
-  }, [cleanup]);
 
   const toggleAudio = useCallback(async () => {
     if (localAudioTrackRef.current) {
@@ -125,15 +143,6 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     }
   }, [localVideoTrack]);
 
-  // Effect to join and leave the channel
-  useEffect(() => {
-    join();
-    return () => {
-      leave();
-    };
-  }, [join, leave]);
-
-
   return { 
     isJoined, 
     isJoining,
@@ -141,7 +150,6 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     localVideoTrack, 
     isAudioMuted,
     isVideoMuted,
-    join, 
     leave, 
     toggleAudio, 
     toggleVideo 
