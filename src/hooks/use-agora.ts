@@ -7,7 +7,6 @@ import AgoraRTC, {
   IAgoraRTCRemoteUser,
   ICameraVideoTrack,
   IMicrophoneAudioTrack,
-  ConnectionState,
 } from 'agora-rtc-sdk-ng';
 
 interface AgoraConfig {
@@ -30,7 +29,6 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
   const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
 
   const leave = useCallback(async () => {
-    // Stop and close local tracks
     if (localAudioTrackRef.current) {
         localAudioTrackRef.current.stop();
         localAudioTrackRef.current.close();
@@ -42,11 +40,9 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
         setLocalVideoTrack(null);
     }
     
-    // Remove all listeners
     agoraClient.removeAllListeners();
 
-    // Leave the channel if connected
-    if (agoraClient.connectionState === 'CONNECTED' || agoraClient.connectionState === 'CONNECTING') {
+    if (agoraClient.connectionState === 'CONNECTED') {
        await agoraClient.leave();
     }
 
