@@ -4,12 +4,13 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { isPossiblePhoneNumber } from "react-phone-number-input";
 
 export interface Address {
   id: string;
   type: "Home" | "Work" | "Other";
-  name: string; // This will be the same as type for simplicity, e.g., "Home"
-  address: string; // This will be the concatenated full address string
+  name: string;
+  address: string;
   flat: string;
   street: string;
   landmark?: string;
@@ -20,26 +21,37 @@ export interface Address {
 
 
 export interface User {
-  id: string; // Document ID, which will be a sanitized phone number
+  id: string; // Document ID, which will be a sanitized phone number or email
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
+  age: number;
+  referralCode?: string;
   addresses: Address[];
+}
+
+interface NewUser_ {
+    firstName: string;
+    lastName: string;
+    age: number;
+    phone: string;
+    email: string;
+    referralCode?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (phone: string) => Promise<void>;
+  login: (identifier: string, newUserDetails?: NewUser_) => Promise<void>;
   logout: () => void;
-  updateUser: (userData: Partial<Omit<User, 'id' | 'phone'>>) => Promise<void>;
+  updateUser: (userData: Partial<Omit<User, 'id'>>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Sanitize phone number to be a valid Firestore document ID
-const sanitizeForId = (phone: string) => phone.replace(/[^a-zA-Z0-9]/g, "_");
+// Sanitize identifier to be a valid Firestore document ID
+const sanitizeForId = (identifier: string) => identifier.replace(/[^a-zA-Z0-9]/g, "_");
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -47,22 +59,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // This could be expanded to check for a session token in localStorage
   useEffect(() => {
-    // Here you would typically check for a persisted session
-    // For now, we just stop the loading state
     setLoading(false);
   }, []);
 
-  const login = async (phone: string) => {
+  const login = async (identifier: string, newUserDetails?: NewUser_) => {
     setLoading(true);
-    const userId = sanitizeForId(phone);
-    const userDocRef = doc(db, "users", userId);
-    const userDocSnap = await getDoc(userDocRef);
+    let userId: string;
+    let userDocRef;
+    let userDocSnap;
 
-    if (userDocSnap.exists()) {
-      // User exists, load their data
-      setUser({ id: userDocSnap.id, ...userDocSnap.data() } as User);
+    // Check if identifier is a phone number or email to query correctly
+    if (isPossiblePhoneNumber(identifier || '')) {
+        userId = sanitizeForId(identifier);
+        userDocRef = doc(db, "users", userId);
+        userDocSnap = await getDoc(userDocRef);
     } else {
-      // New user, create their profile
+        // This would require a query, which needs an index. 
+        // For this mock, we will assume login is by phone number if user exists.
+        // In a real app, you'd query the 'users' collection where 'email' == identifier.
+        // For now, we will create a new user based on email if details are provided.
+        userId = sanitizeForId(newUserDetails?.phone || identifier);
+        userDocRef = doc(db, "users", userId);
+        userDocSnap = await getDoc(userDocRef);
+    }
+    
+    if (userDocSnap.exists()) {
+      setUser({ id: userDocSnap.id, ...userDocSnap.data() } as User);
+    } else if (newUserDetails) {
+      // New user, create their profile from sign-up data
       const defaultAddress: Address = {
         id: 'home-123',
         type: 'Home',
@@ -75,28 +99,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       const newUser: User = {
         id: userId,
-        phone: phone,
-        firstName: "New",
-        lastName: "User",
-        email: "new.user@example.com",
+        ...newUserDetails,
         addresses: [defaultAddress],
       };
       await setDoc(userDocRef, newUser);
       setUser(newUser);
+    } else {
+        // User not found and no sign-up details provided
+        console.error("Login failed: User not found.");
+        // Here you might want to redirect to sign-up or show an error
     }
     setLoading(false);
   };
 
   const logout = () => {
     setUser(null);
-    // Here you would clear any persisted session
   };
 
-  const updateUser = async (userData: Partial<Omit<User, 'id' | 'phone'>>) => {
+  const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
     if (user) {
       const userDocRef = doc(db, "users", user.id);
       await updateDoc(userDocRef, userData);
-      setUser(prevUser => prevUser ? { ...prevUser, ...userData } : null);
+      setUser(prevUser => {
+        if (!prevUser) return null;
+        // Create a new object to ensure state update is detected
+        const updatedUser = { ...prevUser, ...userData };
+        return updatedUser;
+      });
     }
   }
 
