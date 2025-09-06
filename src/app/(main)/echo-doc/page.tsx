@@ -11,9 +11,7 @@ export default function EchoDocDashboardPage() {
   const router = useRouter();
 
   const handleStartConsultation = () => {
-    // This will eventually lead to the survey page
-    // For now, let's just log it.
-    console.log("Starting new consultation...");
+    router.push('/echo-doc/survey');
   };
 
   return (
