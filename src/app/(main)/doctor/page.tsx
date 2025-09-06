@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import { collection, onSnapshot, addDoc, serverTimestamp, query, limit, startAfter, getDocs, orderBy, DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, limit, startAfter, getDocs, orderBy, DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -53,30 +53,25 @@ export default function DoctorPage() {
     }
   }, [incomingCalls]);
 
-  const fetchInitialDoctors = useCallback(() => {
+  const fetchInitialDoctors = useCallback(async () => {
       setIsLoading(true);
-      const doctorsQuery = query(collection(db, "doctors"), orderBy("name"), limit(DOCTORS_PER_PAGE));
-      const unsubscribe = onSnapshot(doctorsQuery, 
-          (querySnapshot) => {
-              const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
-              setDoctors(doctorsData);
-              setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
-              setHasMore(querySnapshot.docs.length === DOCTORS_PER_PAGE);
-              setIsLoading(false);
-          }, 
-          (error) => {
-              console.error("Error fetching doctors: ", error);
-              setDoctors([]);
-              setIsLoading(false);
-          }
-      );
-      
-      return unsubscribe;
+      try {
+        const doctorsQuery = query(collection(db, "doctors"), orderBy("name"), limit(DOCTORS_PER_PAGE));
+        const querySnapshot = await getDocs(doctorsQuery);
+        const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+        setDoctors(doctorsData);
+        setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
+        setHasMore(querySnapshot.docs.length === DOCTORS_PER_PAGE);
+      } catch(error) {
+        console.error("Error fetching doctors: ", error);
+        setDoctors([]);
+      } finally {
+        setIsLoading(false);
+      }
   }, []);
 
   useEffect(() => {
-    const unsubscribe = fetchInitialDoctors();
-    return () => unsubscribe();
+    fetchInitialDoctors();
   }, [fetchInitialDoctors]);
   
   const fetchMoreDoctors = useCallback(async () => {
