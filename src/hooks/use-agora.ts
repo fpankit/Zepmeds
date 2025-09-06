@@ -74,7 +74,10 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     localTracksRef.current.videoTrack?.close();
     setLocalVideoTrack(null);
     
-    await clientRef.current?.leave();
+    if (clientRef.current && clientRef.current.connectionState === 'CONNECTED') {
+        await clientRef.current?.leave();
+    }
+    
     setIsJoined(false);
     setRemoteUsers([]);
   }, []);
@@ -93,4 +96,3 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
 
   return { isJoined, remoteUsers, localVideoTrack, join, leave, toggleAudio, toggleVideo };
 }
-
