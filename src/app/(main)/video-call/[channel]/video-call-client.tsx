@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { useAgora } from '@/hooks/use-agora';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { IAgoraRTCRemoteUser, ICameraVideoTrack } from 'agora-rtc-sdk-ng';
 
 interface VideoCallClientProps {
   appId: string;
@@ -114,7 +115,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
 
 
 // A helper component to manage playing the remote video track
-function RemotePlayer({ videoTrack }: { videoTrack: NonNullable<typeof remoteUsers[0]['videoTrack']> }) {
+function RemotePlayer({ videoTrack }: { videoTrack: NonNullable<IAgoraRTCRemoteUser['videoTrack']> }) {
     const playerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {

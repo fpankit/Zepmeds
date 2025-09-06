@@ -32,6 +32,8 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
   const hasJoinedRef = useRef(false);
 
   const cleanup = useCallback(async () => {
+    if (!hasJoinedRef.current) return;
+    
     // Stop and close local tracks
     localAudioTrackRef.current?.stop();
     localAudioTrackRef.current?.close();
@@ -44,9 +46,11 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     // Unsubscribe and remove all listeners
     agoraClient.removeAllListeners();
     
-    // Leave the channel if joined
-    if (hasJoinedRef.current) {
+    // Leave the channel
+    try {
       await agoraClient.leave();
+    } catch (e) {
+      console.error("Error leaving channel:", e);
     }
 
     // Reset state
