@@ -133,7 +133,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
               <AlertTitle>Camera & Microphone Access Denied</AlertTitle>
               <AlertDescription>
                 This feature requires camera and microphone access. Please enable permissions in your browser settings to continue.
-              </Aler       tDescription>
+              </AlertDescription>
             </Alert>
             <Button onClick={() => router.push('/home')} className="mt-4 w-full">Go Back</Button>
         </Card>
