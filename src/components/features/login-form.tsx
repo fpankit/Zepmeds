@@ -59,7 +59,7 @@ export function LoginForm() {
 
   const signUpForm = useForm<SignUpFormValues>({
     resolver: zodResolver(SignUpSchema),
-    defaultValues: { firstName: "", lastName: "", age: undefined, phone: "", email: "", referralCode: "" },
+    defaultValues: { firstName: "", lastName: "", age: "" as any, phone: "", email: "", referralCode: "" },
   });
 
   const loginForm = useForm<LoginFormValues>({
