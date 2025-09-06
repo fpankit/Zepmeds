@@ -20,6 +20,7 @@ import { Loader2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isPossiblePhoneNumber } from 'react-phone-number-input'
+import { useToast } from "@/hooks/use-toast";
 
 // Schema for the Sign Up form
 const SignUpSchema = z.object({
@@ -50,6 +51,7 @@ type VerifyFormValues = z.infer<typeof VerifySchema>;
 export function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
+  const { toast } = useToast();
   const [step, setStep] = useState<"form" | "verify">("form");
   const [isLoading, setIsLoading] = useState(false);
   const [loginIdentifier, setLoginIdentifier] = useState("");
@@ -92,15 +94,27 @@ export function LoginForm() {
 
   const onVerifySubmit: SubmitHandler<VerifyFormValues> = async (data) => {
     setIsLoading(true);
-    // Mock API call for verifying OTP
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    // On successful verification, login the user
-    // This will fetch existing data or create a new user profile
-    await login(loginIdentifier, newUserData || undefined);
+    try {
+        // Mock API call for verifying OTP
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        
+        // On successful verification, login the user
+        // This will fetch existing data or create a new user profile
+        await login(loginIdentifier, newUserData || undefined);
 
-    // Redirect to home
-    router.push("/home");
+        // Redirect to home
+        router.push("/home");
+
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: error.message || "An unexpected error occurred. Please try again.",
+        });
+        setStep("form"); // Go back to the login/signup form
+    } finally {
+        setIsLoading(false);
+    }
   };
   
   if (step === "verify") {

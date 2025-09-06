@@ -59,6 +59,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // This could be expanded to check for a session token in localStorage
   useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+        setUser(JSON.parse(storedUser));
+    }
     setLoading(false);
   }, []);
 
@@ -84,7 +88,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     if (userDocSnap.exists()) {
-      setUser({ id: userDocSnap.id, ...userDocSnap.data() } as User);
+      const userData = { id: userDocSnap.id, ...userDocSnap.data() } as User;
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
     } else if (newUserDetails) {
       // New user, create their profile from sign-up data
       const defaultAddress: Address = {
@@ -104,16 +110,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       await setDoc(userDocRef, newUser);
       setUser(newUser);
+      localStorage.setItem('user', JSON.stringify(newUser));
     } else {
         // User not found and no sign-up details provided
-        console.error("Login failed: User not found.");
-        // Here you might want to redirect to sign-up or show an error
+        setLoading(false);
+        throw new Error("User not found. Please check your details or sign up.");
     }
     setLoading(false);
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('user');
   };
 
   const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
@@ -122,8 +130,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await updateDoc(userDocRef, userData);
       setUser(prevUser => {
         if (!prevUser) return null;
-        // Create a new object to ensure state update is detected
         const updatedUser = { ...prevUser, ...userData };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
         return updatedUser;
       });
     }
