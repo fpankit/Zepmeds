@@ -91,6 +91,7 @@ export default function CheckoutPage() {
             paymentMethod: selectedPayment,
             customerDetails: {
                 name: `${user.firstName} ${user.lastName}`,
+                email: user.email,
                 address: currentAddress.address,
                 phone: user.phone,
             },
@@ -288,3 +289,5 @@ function LabelRadio({ value, label, description, icon: Icon, price, isSelected, 
         </label>
     )
 }
+
+    
