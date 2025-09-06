@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ export default function CallStatusPage() {
     const callId = params.callId as string;
     const { toast } = useToast();
 
-    const [callData, setCallData] = useState<DocumentData | null>(null);
+    const [callData, setCallData] = useState<any | null>(null);
     const [status, setStatus] = useState('calling'); // local status for UI
 
     useEffect(() => {
@@ -36,14 +36,13 @@ export default function CallStatusPage() {
                 setCallData(data);
 
                 if (data.status === 'accepted') {
-                    unsubscribe(); // Stop listening
-                    router.push(`/video-call/${callId}`);
+                    setStatus('accepted');
+                     // Wait for state to update before navigating
+                    setTimeout(() => router.push(`/video-call/${callId}`), 500);
                 } else if (data.status === 'rejected') {
                     setStatus('rejected');
-                    unsubscribe();
                 } else if (data.status === 'unanswered') {
                     setStatus('unanswered');
-                    unsubscribe();
                 }
             } else {
                 toast({ variant: 'destructive', title: 'Call not found.' });
@@ -53,8 +52,7 @@ export default function CallStatusPage() {
 
         // Timeout logic
         const timeoutId = setTimeout(async () => {
-             // Check against the latest status from Firestore, not the local state one
-            const currentDoc = await getDoc(callDocRef);
+             const currentDoc = await getDoc(callDocRef);
             if (currentDoc.exists() && currentDoc.data().status === 'calling') {
                 await updateDoc(callDocRef, { status: 'unanswered' });
             }
@@ -67,6 +65,7 @@ export default function CallStatusPage() {
     }, [callId, router, toast]);
 
     const handleCancelCall = async () => {
+        if (!callId) return;
         const callDocRef = doc(db, 'calls', callId);
         await updateDoc(callDocRef, { status: 'cancelled' });
         router.push('/doctor');
@@ -120,15 +119,26 @@ export default function CallStatusPage() {
                         </div>
                     </>
                 )}
+                
+                {status === 'accepted' && (
+                     <>
+                        <h1 className="text-3xl font-bold">Call Accepted!</h1>
+                        <p className="text-muted-foreground">Redirecting you to the call...</p>
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </>
+                )}
 
-                {(status === 'rejected' || status === 'unanswered') && (
+
+                {(status === 'rejected' || status === 'unanswered' || status === 'cancelled') && (
                      <>
                         <XCircle className="h-16 w-16 text-destructive" />
                         <h1 className="text-3xl font-bold">
-                            {status === 'rejected' ? 'Call Rejected' : 'No Answer'}
+                            {status === 'rejected' && 'Call Rejected'}
+                            {status === 'unanswered' && 'No Answer'}
+                            {status === 'cancelled' && 'Call Cancelled'}
                         </h1>
                         <p className="text-muted-foreground">
-                            Dr. {callData.doctorName} is currently unavailable. Please try again later.
+                            {status !== 'cancelled' ? `Dr. ${callData.doctorName} is currently unavailable. Please try again later.` : 'You have cancelled the call.'}
                         </p>
                         <Button onClick={() => router.push('/doctor')} size="lg">
                             Back to Doctors

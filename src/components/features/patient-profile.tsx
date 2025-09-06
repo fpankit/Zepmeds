@@ -21,9 +21,11 @@ export function PatientProfile({ patientId }: { patientId: string }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!patientId) return; // patientId is the callId/channelName
+    if (!patientId) {
+        setIsLoading(false);
+        return;
+    };
     
-    // First, get the call document to find the patient's actual document ID
     const callDocRef = doc(db, "calls", patientId);
     const unsubscribeCall = onSnapshot(callDocRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -38,6 +40,9 @@ export function PatientProfile({ patientId }: { patientId: string }) {
             console.error("Call document not found");
             setIsLoading(false);
         }
+    }, (error) => {
+        console.error("Error fetching call document:", error);
+        setIsLoading(false);
     });
 
     return () => unsubscribeCall();
@@ -45,9 +50,12 @@ export function PatientProfile({ patientId }: { patientId: string }) {
 
 
   useEffect(() => {
-    if (!patientDocId) return;
+    if (!patientDocId) {
+        // If patientDocId is not set after trying to fetch it, stop loading.
+        if (!isLoading) setIsLoading(false);
+        return;
+    }
 
-    // Now, listen to the patient's document for their details
     setIsLoading(true);
     const patientDocRef = doc(db, "users", patientDocId);
     const unsubscribePatient = onSnapshot(patientDocRef, (docSnap) => {
@@ -57,6 +65,9 @@ export function PatientProfile({ patientId }: { patientId: string }) {
             console.error("Patient document not found");
             setPatient(null);
         }
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching patient document:", error);
         setIsLoading(false);
     });
     
