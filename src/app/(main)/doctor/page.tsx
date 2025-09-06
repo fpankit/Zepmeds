@@ -57,6 +57,11 @@ export default function DoctorPage() {
     return `zepmeds-call-${cleanUserId}-${cleanDoctorId}`;
   }
 
+  const getInitials = (name: string) => {
+    if (!name) return 'Dr';
+    return name.split(' ').map(n => n[0]).join('');
+  }
+
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
       <div className="flex flex-col items-center text-center space-y-2">
@@ -99,10 +104,10 @@ export default function DoctorPage() {
                 <div className="flex items-center gap-4">
                     <Avatar className="h-20 w-20 border-4" style={{ borderColor: doctor.isOnline ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }}>
                         <AvatarImage src={doctor.image} alt={doctor.name} data-ai-hint={doctor.dataAiHint} />
-                        <AvatarFallback>{doctor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        <AvatarFallback>{getInitials(doctor.name)}</AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
-                    <h3 className="font-bold text-lg">{doctor.name}</h3>
+                    <h3 className="font-bold text-lg">{doctor.name || 'Unnamed Doctor'}</h3>
                     <p className="text-primary font-medium">{doctor.specialty}</p>
                     <p className="text-sm text-muted-foreground">
                         {doctor.experience}
