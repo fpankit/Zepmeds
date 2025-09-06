@@ -2,21 +2,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import AgoraRTC, {
+import type {
   IAgoraRTCClient,
   IAgoraRTCRemoteUser,
   ICameraVideoTrack,
   IMicrophoneAudioTrack,
+  AgoraRTC,
 } from 'agora-rtc-sdk-ng';
 
-AgoraRTC.setLogLevel(3); // Set to 1 for detailed logs
 
-type AgoraHookOptions = {
-    appId: string;
-    channel: string;
-};
-
-export const useAgora = ({ appId, channel }: AgoraHookOptions) => {
+export const useAgora = ({ appId, channel }: { appId: string; channel: string; }) => {
     const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
     const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
     const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
@@ -24,16 +19,27 @@ export const useAgora = ({ appId, channel }: AgoraHookOptions) => {
     const [isJoining, setIsJoining] = useState(false);
 
     const clientRef = useRef<IAgoraRTCClient | null>(null);
+    const AgoraRTCRef = useRef<typeof AgoraRTC | null>(null);
     const isMountedRef = useRef(false);
 
     useEffect(() => {
         isMountedRef.current = true;
-        // Initialize Agora client on mount
-        clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         
+        const initAgora = async () => {
+            // Dynamically import Agora
+            const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
+            AgoraRTCRef.current = AgoraRTC;
+            AgoraRTC.setLogLevel(3);
+
+            if (!isMountedRef.current) return;
+
+            clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        };
+        
+        initAgora();
+
         return () => {
             isMountedRef.current = false;
-            // Cleanup on unmount
             if (clientRef.current) {
                 leave();
             }
@@ -74,10 +80,10 @@ export const useAgora = ({ appId, channel }: AgoraHookOptions) => {
             agoraClient.on('user-joined', handleUserJoined);
             agoraClient.on('user-left', handleUserLeft);
 
-            const uid = await agoraClient.join(appId, channel, null, null);
+            await agoraClient.join(appId, channel, null, null);
             if (!isMountedRef.current) return;
 
-            const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+            const [audioTrack, videoTrack] = await AgoraRTCRef.current!.createMicrophoneAndCameraTracks();
              if (!isMountedRef.current) {
                 audioTrack.close();
                 videoTrack.close();
