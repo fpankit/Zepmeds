@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, getDocs, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -24,37 +24,6 @@ interface Doctor {
   isOnline: boolean;
 }
 
-const mockDoctors: Doctor[] = [
-    {
-        id: "doc1",
-        name: "Dr. Anjali Sharma",
-        specialty: "Cardiologist",
-        experience: "12+ years of experience",
-        image: "https://picsum.photos/200/200?random=41",
-        dataAiHint: "doctor woman portrait",
-        isOnline: true,
-    },
-    {
-        id: "doc2",
-        name: "Dr. Vikram Singh",
-        specialty: "Neurologist",
-        experience: "10+ years of experience",
-        image: "https://picsum.photos/200/200?random=42",
-        dataAiHint: "doctor man portrait",
-        isOnline: false,
-    },
-    {
-        id: "doc3",
-        name: "Dr. Priya Desai",
-        specialty: "Pediatrician",
-        experience: "8+ years of experience",
-        image: "https://picsum.photos/200/200?random=43",
-        dataAiHint: "doctor woman smiling",
-        isOnline: true,
-    },
-];
-
-
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,16 +34,13 @@ export default function DoctorPage() {
     const unsubscribe = onSnapshot(doctorsCol, 
         (querySnapshot) => {
             const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
-            if (doctorsData.length > 0) {
-                setDoctors(doctorsData);
-            } else {
-                setDoctors(mockDoctors);
-            }
+            setDoctors(doctorsData);
             setIsLoading(false);
         }, 
         (error) => {
-            console.error("Error fetching doctors, using mock data: ", error);
-            setDoctors(mockDoctors);
+            console.error("Error fetching doctors: ", error);
+            // In case of an error, we'll show an empty list and the "no doctors" message.
+            setDoctors([]);
             setIsLoading(false);
         }
     );
