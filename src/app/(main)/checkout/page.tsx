@@ -90,7 +90,7 @@ export default function CheckoutPage() {
             deliveryTime,
             paymentMethod: selectedPayment,
             customerDetails: {
-                name: user.name,
+                name: `${user.firstName} ${user.lastName}`,
                 address: currentAddress.address,
                 phone: user.phone,
             },
