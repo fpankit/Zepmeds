@@ -200,7 +200,6 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
   const [selectedAddressId, setSelectedAddressId] = useState(user?.addresses[0]?.id || "");
   
   const handleAddAddress = async (newAddressData: Omit<Address, 'id' | 'address'>) => {
-      if (!user) return;
       const fullAddress = `${newAddressData.flat}, ${newAddressData.street}${newAddressData.landmark ? `, ${newAddressData.landmark}` : ''}, ${newAddressData.pincode}, ${newAddressData.state}`;
       const newAddress: Address = {
           ...newAddressData,

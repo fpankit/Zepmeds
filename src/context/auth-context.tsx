@@ -29,6 +29,7 @@ export interface User {
   age: number;
   referralCode?: string;
   addresses: Address[];
+  isGuest?: boolean;
 }
 
 interface NewUser_ {
@@ -53,15 +54,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Sanitize identifier to be a valid Firestore document ID
 const sanitizeForId = (identifier: string) => identifier.replace(/[^a-zA-Z0-9]/g, "_");
 
+const createGuestUser = (): User => ({
+    id: `guest_${Date.now()}`,
+    firstName: "Guest",
+    lastName: "User",
+    email: "",
+    phone: "",
+    age: 0,
+    addresses: [],
+    isGuest: true,
+});
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // This could be expanded to check for a session token in localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
         setUser(JSON.parse(storedUser));
+    } else {
+        // If no user is stored, create a guest user
+        setUser(createGuestUser());
     }
     setLoading(false);
   }, []);
@@ -78,10 +92,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userDocRef = doc(db, "users", userId);
         userDocSnap = await getDoc(userDocRef);
     } else {
-        // This would require a query, which needs an index. 
-        // For this mock, we will assume login is by phone number if user exists.
-        // In a real app, you'd query the 'users' collection where 'email' == identifier.
-        // For now, we will create a new user based on email if details are provided.
         userId = sanitizeForId(newUserDetails?.phone || identifier);
         userDocRef = doc(db, "users", userId);
         userDocSnap = await getDoc(userDocRef);
@@ -92,7 +102,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
     } else if (newUserDetails) {
-      // New user, create their profile from sign-up data
       const defaultAddress: Address = {
         id: 'home-123',
         type: 'Home',
@@ -112,7 +121,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(newUser);
       localStorage.setItem('user', JSON.stringify(newUser));
     } else {
-        // User not found and no sign-up details provided
         setLoading(false);
         throw new Error("User not found. Please check your details or sign up.");
     }
@@ -120,22 +128,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    setUser(null);
     localStorage.removeItem('user');
+    setUser(createGuestUser());
   };
 
   const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
-    if (user) {
-      const userDocRef = doc(db, "users", user.id);
-      await updateDoc(userDocRef, userData);
-      setUser(prevUser => {
-        if (!prevUser) return null;
-        const updatedUser = { ...prevUser, ...userData };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        return updatedUser;
-      });
-    }
-  }
+    setUser(prevUser => {
+      if (!prevUser) return null;
+
+      const updatedUser = { ...prevUser, ...userData };
+      
+      // Update localStorage immediately for both guest and logged-in users
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // If the user is not a guest, also update Firestore
+      if (!prevUser.isGuest) {
+        const userDocRef = doc(db, "users", prevUser.id);
+        // Use a separate async function to not block the state update
+        const updateFirestore = async () => {
+            await updateDoc(userDocRef, userData);
+        }
+        updateFirestore().catch(console.error);
+      }
+      
+      return updatedUser;
+    });
+  };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
