@@ -30,13 +30,13 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const categories = [
-  { name: 'All', icon: Pill },
-  { name: 'General Health', icon: Heart },
-  { name: 'Pain Relief', icon: Bone },
-  { name: 'Skin Care', icon: Sun },
-  { name: 'Eye Care', icon: Eye },
-  { name: 'Pet Care', icon: Dog },
-  { name: 'Devices', icon: Thermometer },
+  { name: 'All', icon: Pill, gradient: 'from-blue-500 to-cyan-400' },
+  { name: 'General Health', icon: Heart, gradient: 'from-green-500 to-teal-400' },
+  { name: 'Pain Relief', icon: Bone, gradient: 'from-red-500 to-orange-400' },
+  { name: 'Skin Care', icon: Sun, gradient: 'from-yellow-500 to-amber-400' },
+  { name: 'Eye Care', icon: Eye, gradient: 'from-indigo-500 to-purple-400' },
+  { name: 'Pet Care', icon: Dog, gradient: 'from-pink-500 to-rose-400' },
+  { name: 'Devices', icon: Thermometer, gradient: 'from-gray-500 to-slate-400' },
 ];
 
 const medicineCategories = [
@@ -312,10 +312,12 @@ export default function OrderMedicinesPage() {
                 key={category.name}
                 onClick={() => setSelectedCategory(category.name)}
                 className={cn(
-                  'flex flex-col items-center justify-center space-y-2 w-24 h-24 rounded-lg text-center p-2 transition-colors',
+                  'flex flex-col items-center justify-center space-y-2 w-24 h-24 rounded-lg text-center p-2 transition-all duration-200 transform hover:scale-105',
+                   'bg-gradient-to-br text-white shadow-lg',
+                   category.gradient,
                   selectedCategory === category.name
-                    ? 'bg-primary/20 text-primary'
-                    : 'bg-card hover:bg-card/80'
+                    ? 'ring-2 ring-offset-2 ring-offset-background ring-white'
+                    : 'opacity-80 hover:opacity-100'
                 )}
               >
                 <category.icon className="h-8 w-8" />
