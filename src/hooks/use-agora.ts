@@ -52,11 +52,18 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
       }
     };
 
+    const handleUserUnpublished = (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
+      if (mediaType === 'video') {
+        setRemoteUsers((prevUsers) => prevUsers.filter((u) => u.uid !== user.uid));
+      }
+    };
+
     const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
       setRemoteUsers((prevUsers) => prevUsers.filter((u) => u.uid !== user.uid));
     };
 
     client.on('user-published', handleUserPublished);
+    client.on('user-unpublished', handleUserUnpublished);
     client.on('user-left', handleUserLeft);
 
     try {
