@@ -5,7 +5,7 @@ import { useState, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAgora } from '@/hooks/use-agora';
 import { Button } from '@/components/ui/button';
-import { Camera, CameraOff, Mic, MicOff, PhoneOff, Users, ScreenShare, ScreenShareOff } from 'lucide-react';
+import { Camera, CameraOff, Mic, MicOff, PhoneOff, Users, ScreenShare, ScreenShareOff, Loader2, Video } from 'lucide-react';
 import { Player } from '@/components/features/player';
 import { cn } from '@/lib/utils';
 import { PatientProfile } from '@/components/features/patient-profile';
@@ -58,16 +58,19 @@ function VideoCallContent() {
         alert(isScreenSharing ? "Stopping screen share (placeholder)" : "Starting screen share (placeholder)");
     };
 
-    if (!isJoined && !isJoining) {
-        join(); // Automatically join when the component loads
-    }
-
-    if (isJoining) {
+    if (!isJoined) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-black text-white">
-                 <div className="flex flex-col items-center gap-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                    <p className="text-lg">Joining Call...</p>
+                <div className="flex flex-col items-center gap-4 text-center p-4">
+                    <h1 className="text-2xl font-bold">You're invited to a video call</h1>
+                    <p className="text-muted-foreground">Click the button below to join the session.</p>
+                     <Button onClick={join} disabled={isJoining} size="lg" className="mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-8 rounded-full">
+                        {isJoining ? (
+                            <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Joining...</>
+                        ) : (
+                            <><Video className="mr-2 h-5 w-5" /> Join Call</>
+                        )}
+                    </Button>
                 </div>
             </div>
         );
@@ -80,7 +83,8 @@ function VideoCallContent() {
             <main className="flex-1 flex flex-col p-4 relative">
                 <div className={cn(
                     "grid gap-4 flex-1",
-                    remoteUsers.length > 0 ? "grid-cols-2" : "grid-cols-1"
+                     (remoteUsers.length + 1) > 4 ? "grid-cols-3" : (remoteUsers.length > 0 ? "grid-cols-2" : "grid-cols-1"),
+                     (remoteUsers.length + 1) > 2 && "grid-rows-2"
                 )}>
                     {isJoined && <Player videoTrack={localVideoTrack} audioTrack={localAudioTrack} uid="local" isLocal={true} />}
                     {remoteUsers.map((user) => (
