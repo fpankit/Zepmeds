@@ -38,7 +38,13 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
       await client.subscribe(user, mediaType);
       if (mediaType === 'video') {
-        setRemoteUsers((prevUsers) => [...prevUsers, user]);
+        // Check if user already exists to avoid duplicates
+        setRemoteUsers((prevUsers) => {
+            if (prevUsers.find(u => u.uid === user.uid)) {
+                return prevUsers;
+            }
+            return [...prevUsers, user]
+        });
         setTimeout(() => user.videoTrack?.play(`remote-player-${user.uid}`), 0);
       }
       if (mediaType === 'audio') {
