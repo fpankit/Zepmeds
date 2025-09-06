@@ -125,20 +125,6 @@ export default function OrderMedicinesPage() {
             return (
               <Card key={index} className="overflow-hidden">
                 <CardContent className="p-4 flex gap-4">
-                  <div className="relative w-24 h-24 flex-shrink-0">
-                    <Image
-                      src={medicine.image}
-                      alt={medicine.name}
-                      width={100}
-                      height={100}
-                      className="object-cover rounded-md"
-                      data-ai-hint={medicine.dataAiHint}
-                    />
-                    <div className="absolute top-1 left-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                      {medicine.discount}
-                    </div>
-                  </div>
-
                   <div className="flex-grow flex flex-col justify-between">
                     <div>
                       <h3 className="font-bold">{medicine.name}</h3>

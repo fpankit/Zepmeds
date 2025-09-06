@@ -265,7 +265,6 @@ export default function HomePage() {
             const cartItem = cart.find(item => item.id === product.id);
             return (
               <Card key={product.id} className="overflow-hidden group">
-                <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-32 object-cover" data-ai-hint={product.dataAiHint} />
                 <CardContent className="p-3">
                   <h4 className="text-sm font-semibold truncate">{product.name}</h4>
                   <p className="text-xs text-muted-foreground">1 unit</p>
