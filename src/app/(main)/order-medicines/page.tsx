@@ -26,6 +26,17 @@ import { cn } from '@/lib/utils';
 import { PrescriptionUploader } from '@/components/features/prescription-uploader';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+
+const categories = [
+  { name: 'All', icon: Pill },
+  { name: 'General Health', icon: Heart },
+  { name: 'Pain Relief', icon: Bone },
+  { name: 'Skin Care', icon: Sun },
+  { name: 'Eye Care', icon: Eye },
+  { name: 'Pet Care', icon: Dog },
+  { name: 'Devices', icon: Thermometer },
+];
 
 const medicineCategories = [
   {
@@ -236,6 +247,7 @@ const medicineCategories = [
 
 export default function OrderMedicinesPage() {
   const [showUploader, setShowUploader] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const uploaderRef = useRef<HTMLDivElement>(null);
   const { cart, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
@@ -254,6 +266,11 @@ export default function OrderMedicinesPage() {
       description: `${medicine.name} has been added to your cart.`,
     });
   }
+
+  const filteredCategories =
+    selectedCategory === 'All'
+      ? medicineCategories
+      : medicineCategories.filter((cat) => cat.name === selectedCategory);
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -277,8 +294,32 @@ export default function OrderMedicinesPage() {
       
       {showUploader && <div ref={uploaderRef}><PrescriptionUploader /></div>}
 
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold">Categories</h2>
+        <ScrollArea className="w-full whitespace-nowrap rounded-md">
+          <div className="flex w-max space-x-4">
+            {categories.map((category) => (
+              <button
+                key={category.name}
+                onClick={() => setSelectedCategory(category.name)}
+                className={cn(
+                  'flex flex-col items-center justify-center space-y-2 w-24 h-24 rounded-lg text-center p-2 transition-colors',
+                  selectedCategory === category.name
+                    ? 'bg-primary/20 text-primary'
+                    : 'bg-card hover:bg-card/80'
+                )}
+              >
+                <category.icon className="h-8 w-8" />
+                <span className="text-xs font-semibold">{category.name}</span>
+              </button>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </div>
+
       <div className="space-y-8">
-        {medicineCategories.map((category) => (
+        {filteredCategories.map((category) => (
             <div key={category.name}>
                 <h2 className="text-xl font-bold mb-4">{category.name}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
