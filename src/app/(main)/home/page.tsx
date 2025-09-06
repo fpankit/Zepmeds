@@ -84,29 +84,11 @@ export default function HomePage() {
     });
   }
 
-  const FeatureCard = ({ card }: { card: typeof featureCards[0] }) => {
-    return (
-      <Link href={card.href}>
-        <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
-          <div className={cn("p-3 rounded-xl", card.color)}>
-            <card.icon className="h-8 w-8 text-white" />
-          </div>
-          <div className="mt-2">
-            <h3 className="font-semibold text-sm">{card.title}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
-          </div>
-        </Card>
-      </Link>
-    );
-  };
-
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 overflow-x-hidden">
 
        <div>
-        <Carousel
-            className="w-full"
-        >
+        <Carousel className="w-full">
             <CarouselContent>
             {sponsorCards.map((card, index) => (
                 <CarouselItem key={index}>
@@ -140,7 +122,17 @@ export default function HomePage() {
        {/* Feature Cards */}
        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {featureCards.map((card) => (
-          <FeatureCard key={card.title} card={card} />
+          <Link href={card.href} key={card.title} prefetch={false}>
+            <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
+              <div className={cn("p-3 rounded-xl", card.color)}>
+                <card.icon className="h-8 w-8 text-white" />
+              </div>
+              <div className="mt-2">
+                <h3 className="font-semibold text-sm">{card.title}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+              </div>
+            </Card>
+          </Link>
         ))}
       </div>
       
