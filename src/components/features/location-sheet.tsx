@@ -25,25 +25,38 @@ const iconMap = {
     Other: MapPin,
 }
 
-function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address, 'id'>) => void }) {
+function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address: Omit<Address, 'id' | 'address'>) => void, closeDialog: () => void }) {
     const [type, setType] = useState<Address['type']>("Home");
-    const [address, setAddress] = useState("");
+    const [flat, setFlat] = useState("");
+    const [street, setStreet] = useState("");
+    const [landmark, setLandmark] = useState("");
+    const [pincode, setPincode] = useState("");
+    const [state, setState] = useState("");
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (address.trim()) {
-            onAddAddress({ name: type, type, address });
+        if (flat.trim() && street.trim() && pincode.trim() && state.trim()) {
+            onAddAddress({ 
+                name: type, 
+                type, 
+                flat, 
+                street, 
+                landmark, 
+                pincode, 
+                state 
+            });
+            closeDialog();
         }
     };
     
     return (
         <form onSubmit={handleSubmit}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>Add a new address</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
                         <Label>Address Type</Label>
                         <RadioGroup value={type} onValueChange={(v) => setType(v as Address['type'])} className="flex gap-4 mt-2">
                            <Label htmlFor="home" className="flex items-center gap-2 cursor-pointer">
@@ -60,15 +73,27 @@ function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address
                             </Label>
                         </RadioGroup>
                     </div>
-                    <div>
-                        <Label htmlFor="address-input">Full Address</Label>
-                        <Input 
-                            id="address-input"
-                            placeholder="Enter your full address" 
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            required
-                         />
+                     <div className="space-y-2">
+                        <Label htmlFor="flat">Flat, House no., Building</Label>
+                        <Input id="flat" value={flat} onChange={(e) => setFlat(e.target.value)} required />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="street">Area, Street, Sector, Village</Label>
+                        <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} required />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="landmark">Landmark</Label>
+                        <Input id="landmark" placeholder="E.g. Near Apollo Hospital" value={landmark} onChange={(e) => setLandmark(e.target.value)} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="pincode">Pincode</Label>
+                            <Input id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="state">State</Label>
+                            <Input id="state" value={state} onChange={(e) => setState(e.target.value)} required />
+                        </div>
                     </div>
                 </div>
                 <DialogFooter>
@@ -88,15 +113,16 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
   const [selectedAddressId, setSelectedAddressId] = useState(user?.addresses[0]?.id || "");
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
-  const handleAddAddress = async (newAddressData: Omit<Address, 'id'>) => {
+  const handleAddAddress = async (newAddressData: Omit<Address, 'id' | 'address'>) => {
+      const fullAddress = `${newAddressData.flat}, ${newAddressData.street}, ${newAddressData.pincode}, ${newAddressData.state}`;
       const newAddress: Address = {
           ...newAddressData,
           id: Date.now().toString(),
+          address: fullAddress,
       };
       const updatedAddresses = [...(user?.addresses || []), newAddress];
       await updateUser({ addresses: updatedAddresses });
       setSelectedAddressId(newAddress.id);
-      setIsAddAddressOpen(false); // Close dialog on submit
   }
   
   const handleDeleteAddress = async (id: string) => {
@@ -135,7 +161,7 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
                         <span className="font-semibold">Add New Address</span>
                     </Button>
                 </DialogTrigger>
-                <AddAddressForm onAddAddress={handleAddAddress} />
+                <AddAddressForm onAddAddress={handleAddAddress} closeDialog={() => setIsAddAddressOpen(false)} />
             </Dialog>
 
 

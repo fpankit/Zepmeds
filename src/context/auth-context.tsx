@@ -8,10 +8,16 @@ import { db } from "@/lib/firebase";
 export interface Address {
   id: string;
   type: "Home" | "Work" | "Other";
-  name: string;
-  address: string;
+  name: string; // This will be the same as type for simplicity, e.g., "Home"
+  address: string; // This will be the concatenated full address string
+  flat: string;
+  street: string;
+  landmark?: string;
+  pincode: string;
+  state: string;
   icon?: React.ElementType;
 }
+
 
 export interface User {
   id: string; // Document ID, which will be a sanitized phone number
@@ -57,20 +63,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser({ id: userDocSnap.id, ...userDocSnap.data() } as User);
     } else {
       // New user, create their profile
+      const defaultAddress: Address = {
+        id: 'home-123',
+        type: 'Home',
+        name: 'Home',
+        flat: 'A-123',
+        street: 'Main Street',
+        pincode: '122001',
+        state: 'Haryana',
+        address: 'A-123, Main Street, Gurugram, Haryana, 122001'
+      };
       const newUser: User = {
         id: userId,
         phone: phone,
         firstName: "New",
         lastName: "User",
         email: "new.user@example.com",
-        addresses: [
-          {
-            id: 'home-123',
-            type: 'Home',
-            name: 'Home',
-            address: '123 Main Street, Gurugram, Haryana, 122001'
-          }
-        ],
+        addresses: [defaultAddress],
       };
       await setDoc(userDocRef, newUser);
       setUser(newUser);
