@@ -5,8 +5,8 @@ import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 
-// IMPORTANT: Replace this with the actual URL of your Vercel application.
-const ECHO_DOC_VERCEL_URL = 'https://your-echo-doc-app.vercel.app';
+// IMPORTANT: This URL points to your live Vercel application.
+const ECHO_DOC_VERCEL_URL = 'https://ai-medicalagent.vercel.app/';
 
 // This is a placeholder for a function that would generate a secure token (e.g., a JWT)
 // In a real application, this should be done on a backend to keep secrets safe.
