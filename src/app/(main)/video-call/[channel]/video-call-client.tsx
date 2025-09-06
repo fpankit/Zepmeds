@@ -56,15 +56,16 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   }, []);
 
   useEffect(() => {
-    if (hasPermission) {
+    if (hasPermission && !isJoined) {
       join();
     }
     return () => {
+      // Ensure leave is called only when the component unmounts
       if (hasPermission) {
         leave();
       }
     };
-  }, [hasPermission, join, leave]);
+  }, [hasPermission, isJoined, join, leave]);
   
   useEffect(() => {
     if (localVideoTrack && localPlayerRef.current) {
