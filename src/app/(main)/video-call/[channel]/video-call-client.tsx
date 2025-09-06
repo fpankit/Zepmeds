@@ -3,7 +3,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, PhoneOff, Video, VideoOff } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Mic, MicOff, PhoneOff, Video, VideoOff, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +21,8 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   const router = useRouter();
   const [micMuted, setMicMuted] = useState(false);
   const [videoMuted, setVideoMuted] = useState(false);
+  const [hasPermission, setHasPermission] = useState(false);
+  const [isPermissionChecked, setIsPermissionChecked] = useState(false);
   
   const {
     localVideoTrack,
@@ -35,11 +38,33 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   const remotePlayerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    join();
-    return () => {
-      leave();
+    const requestPermissions = async () => {
+      try {
+        // Request both video and audio permissions
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        // Stop the tracks immediately after getting permission, as Agora will manage them
+        stream.getTracks().forEach(track => track.stop());
+        setHasPermission(true);
+      } catch (error) {
+        console.error('Error getting media permissions:', error);
+        setHasPermission(false);
+      } finally {
+        setIsPermissionChecked(true);
+      }
     };
-  }, [join, leave]);
+    requestPermissions();
+  }, []);
+
+  useEffect(() => {
+    if (hasPermission) {
+      join();
+    }
+    return () => {
+      if (hasPermission) {
+        leave();
+      }
+    };
+  }, [hasPermission, join, leave]);
   
   useEffect(() => {
     if (localVideoTrack && localPlayerRef.current) {
@@ -56,7 +81,6 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     if (remoteUser && remoteUser.videoTrack && remotePlayerRef.current) {
         remoteUser.videoTrack.play(remotePlayerRef.current);
     }
-
     return () => {
         remoteUser?.videoTrack?.stop();
     }
@@ -78,6 +102,31 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     setVideoMuted((prev) => !prev);
   };
 
+  if (!isPermissionChecked) {
+    return (
+      <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
+        <div className="text-white text-lg">Requesting permissions...</div>
+      </div>
+    );
+  }
+
+  if (!hasPermission) {
+     return (
+      <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
+        <Card className="max-w-md p-6">
+           <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Camera & Microphone Access Denied</AlertTitle>
+              <AlertDescription>
+                This feature requires camera and microphone access. Please enable permissions in your browser settings to continue.
+              </AlertDescription>
+            </Alert>
+            <Button onClick={() => router.push('/home')} className="mt-4 w-full">Go Back</Button>
+        </Card>
+      </div>
+    );
+  }
+  
   if (!isJoined) {
     return (
       <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
