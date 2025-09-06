@@ -14,7 +14,7 @@ import type { IAgoraRTCRemoteUser, ICameraVideoTrack } from 'agora-rtc-sdk-ng';
 interface VideoCallClientProps {
   appId: string;
   channelName: string;
-  token: string;
+  token: string | null;
 }
 
 export function VideoCallClient({ appId, channelName, token }: VideoCallClientProps) {

@@ -27,7 +27,7 @@ const VideoCallClient = dynamic(
 interface VideoCallLoaderProps {
   appId: string;
   channelName: string;
-  token: string;
+  token: string | null;
 }
 
 // This component acts as a bridge, receiving server-generated props 

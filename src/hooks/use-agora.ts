@@ -13,7 +13,7 @@ import AgoraRTC, {
 interface AgoraConfig {
   appId: string;
   channelName: string;
-  token: string;
+  token: string | null;
 }
 
 // Create the Agora client instance outside the hook to ensure it's a singleton.
@@ -64,7 +64,7 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     
     const join = async () => {
         // Prevent joining if already joined or in the process
-        if (hasJoinedRef.current || !token) return;
+        if (hasJoinedRef.current) return;
 
         hasJoinedRef.current = true;
         setIsJoining(true);
