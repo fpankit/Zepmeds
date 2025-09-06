@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Home, MapPin, Plus, Search, LocateFixed, Briefcase, Trash2, Loader2 } from "lucide-react";
 import { Separator } from "../ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "../ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "../ui/dialog";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
 import { useAuth, Address } from "@/context/auth-context";
@@ -258,3 +258,5 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
     </Sheet>
   );
 }
+
+    
