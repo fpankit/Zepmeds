@@ -17,6 +17,7 @@ interface AgoraConfig {
 
 export function useAgora({ appId, channelName, token }: AgoraConfig) {
   const [isJoined, setIsJoined] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
   const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
   
@@ -27,12 +28,12 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
   }>({ audioTrack: null, videoTrack: null });
 
   const join = useCallback(async () => {
-    if (!token) return;
+    if (!token || isJoined || isLoading) return;
 
-    // Dynamically import AgoraRTC only on the client-side
+    setIsLoading(true);
+
     const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
 
-    // Ensure client is only created once
     if (!clientRef.current) {
         clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
     }
@@ -82,28 +83,32 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
       setIsJoined(true);
     } catch (error) {
       console.error('Failed to join channel:', error);
+    } finally {
+        setIsLoading(false);
     }
-  }, [appId, channelName, token]);
+  }, [appId, channelName, token, isJoined, isLoading]);
 
   const leave = useCallback(async () => {
     if (localTracksRef.current.audioTrack) {
+      localTracksRef.current.audioTrack.stop();
       localTracksRef.current.audioTrack.close();
       localTracksRef.current.audioTrack = null;
     }
     if (localTracksRef.current.videoTrack) {
+      localTracksRef.current.videoTrack.stop();
       localTracksRef.current.videoTrack.close();
       localTracksRef.current.videoTrack = null;
     }
     setLocalVideoTrack(null);
+    setRemoteUsers([]);
+    setIsJoined(false);
     
-    // Only leave if the client is connected or connecting
     if (clientRef.current && (clientRef.current.connectionState === 'CONNECTED' || clientRef.current.connectionState === 'CONNECTING')) {
         await clientRef.current.leave();
     }
     
     clientRef.current?.removeAllListeners();
-    setIsJoined(false);
-    setRemoteUsers([]);
+    // Do not nullify clientRef.current here to allow re-joining
   }, []);
 
   const toggleAudio = useCallback(async () => {
@@ -118,5 +123,5 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     }
   }, []);
 
-  return { isJoined, remoteUsers, localVideoTrack, join, leave, toggleAudio, toggleVideo };
+  return { isJoined, isLoading, remoteUsers, localVideoTrack, join, leave, toggleAudio, toggleVideo };
 }

@@ -5,13 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Phone, Video } from "lucide-react";
+import { Search, Stethoscope, Video, CheckCircle, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
+import { cn } from "@/lib/utils";
 
 interface Doctor {
   id: string;
@@ -20,6 +21,7 @@ interface Doctor {
   experience: string;
   image: string;
   dataAiHint: string;
+  isOnline: boolean;
 }
 
 const mockDoctors: Doctor[] = [
@@ -30,6 +32,7 @@ const mockDoctors: Doctor[] = [
         experience: "12+ years of experience",
         image: "https://picsum.photos/200/200?random=41",
         dataAiHint: "doctor woman portrait",
+        isOnline: true,
     },
     {
         id: "doc2",
@@ -38,6 +41,7 @@ const mockDoctors: Doctor[] = [
         experience: "10+ years of experience",
         image: "https://picsum.photos/200/200?random=42",
         dataAiHint: "doctor man portrait",
+        isOnline: false,
     },
     {
         id: "doc3",
@@ -46,6 +50,7 @@ const mockDoctors: Doctor[] = [
         experience: "8+ years of experience",
         image: "https://picsum.photos/200/200?random=43",
         dataAiHint: "doctor woman smiling",
+        isOnline: true,
     },
 ];
 
@@ -56,28 +61,26 @@ export default function DoctorPage() {
   const { user } = useAuth();
 
   useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "doctors"));
-        const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
-        
-        if (doctorsData.length > 0) {
-            setDoctors(doctorsData);
-        } else {
-            // If no doctors in Firestore, use mock data
+    const doctorsCol = collection(db, "doctors");
+    const unsubscribe = onSnapshot(doctorsCol, 
+        (querySnapshot) => {
+            const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+            if (doctorsData.length > 0) {
+                setDoctors(doctorsData);
+            } else {
+                setDoctors(mockDoctors);
+            }
+            setIsLoading(false);
+        }, 
+        (error) => {
+            console.error("Error fetching doctors, using mock data: ", error);
             setDoctors(mockDoctors);
+            setIsLoading(false);
         }
-
-      } catch (error) {
-        console.error("Error fetching doctors, using mock data: ", error);
-        // If there's an error, use mock data as a fallback
-        setDoctors(mockDoctors);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDoctors();
+    );
+    
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   const createChannelName = (doctorId: string) => {
@@ -128,9 +131,9 @@ export default function DoctorPage() {
             <Card key={doctor.id} className="overflow-hidden">
                 <CardContent className="p-4">
                 <div className="flex items-center gap-4">
-                    <Avatar className="h-20 w-20">
-                    <AvatarImage src={doctor.image} alt={doctor.name} data-ai-hint={doctor.dataAiHint} />
-                    <AvatarFallback>{doctor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    <Avatar className="h-20 w-20 border-4" style={{ borderColor: doctor.isOnline ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }}>
+                        <AvatarImage src={doctor.image} alt={doctor.name} data-ai-hint={doctor.dataAiHint} />
+                        <AvatarFallback>{doctor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
                     <h3 className="font-bold text-lg">{doctor.name}</h3>
@@ -138,11 +141,18 @@ export default function DoctorPage() {
                     <p className="text-sm text-muted-foreground">
                         {doctor.experience}
                     </p>
+                    <div className={cn(
+                        "flex items-center gap-1 text-xs font-semibold",
+                        doctor.isOnline ? "text-green-500" : "text-red-500"
+                    )}>
+                        {doctor.isOnline ? <CheckCircle className="h-3 w-3"/> : <XCircle className="h-3 w-3"/>}
+                        {doctor.isOnline ? "Online" : "Offline"}
+                    </div>
                     </div>
                 </div>
                 <div className="flex gap-2 mt-4">
                     <Button className="w-full">Book Appointment</Button>
-                    <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+                    <Button asChild className="w-full bg-green-600 hover:bg-green-700" disabled={!doctor.isOnline}>
                         <Link href={`/video-call/${createChannelName(doctor.id)}`}>
                           <Video className="mr-2 h-4 w-4" /> Call Now
                         </Link>

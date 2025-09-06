@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAgora } from '@/hooks/use-agora';
-import type { IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 
 interface VideoCallClientProps {
   appId: string;
@@ -32,6 +31,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     isJoined,
     toggleAudio,
     toggleVideo,
+    isLoading: isConnecting,
   } = useAgora({ appId, channelName, token });
 
   const localPlayerRef = useRef<HTMLDivElement>(null);
@@ -40,9 +40,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   useEffect(() => {
     const requestPermissions = async () => {
       try {
-        // Request both video and audio permissions
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        // Stop the tracks immediately after getting permission, as Agora will manage them
         stream.getTracks().forEach(track => track.stop());
         setHasPermission(true);
       } catch (error) {
@@ -59,11 +57,10 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     if (hasPermission && !isJoined) {
       join();
     }
-    // Leave the channel when the component unmounts
     return () => {
-        leave();
+      leave();
     };
-  }, [hasPermission]);
+  }, [hasPermission, join, leave, isJoined]);
   
   useEffect(() => {
     if (localVideoTrack && localPlayerRef.current) {
@@ -102,10 +99,10 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     setVideoMuted((prev) => !prev);
   };
 
-  if (!isPermissionChecked) {
+  if (!isPermissionChecked || isConnecting) {
     return (
       <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
-        <div className="text-white text-lg">Requesting permissions...</div>
+        <div className="text-white text-lg">{!isPermissionChecked ? 'Requesting permissions...' : 'Connecting to call...'}</div>
       </div>
     );
   }
@@ -127,20 +124,6 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     );
   }
   
-  if (!isJoined) {
-    return (
-      <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full">
-          <Skeleton className="bg-gray-800 w-full h-full rounded-lg" />
-          <Skeleton className="bg-gray-800 w-full h-full rounded-lg" />
-        </div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-lg">
-          Connecting to call...
-        </div>
-      </div>
-    );
-  }
-  
   return (
     <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full">
@@ -149,9 +132,9 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
         </Card>
 
         {remoteUser ? (
-           <Card ref={remotePlayerRef} id={`remote-player-${remoteUser.uid}`} className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
+           <div ref={remotePlayerRef} id={`remote-player-${remoteUser.uid}`} className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
               <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">Doctor</div>
-           </Card>
+           </div>
         ) : (
           <Card className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative flex flex-col items-center justify-center">
             <Skeleton className="h-24 w-24 rounded-full bg-gray-700" />
