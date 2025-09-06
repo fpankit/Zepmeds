@@ -38,7 +38,6 @@ export const useAgora = ({ appId, channel }: { appId: string; channel: string; }
 
         return () => {
             isMountedRef.current = false;
-            // Ensure we leave and clean up if the component unmounts for any reason
             if (clientRef.current && (isJoined || isJoining)) {
                  leave();
             }
@@ -54,8 +53,7 @@ export const useAgora = ({ appId, channel }: { appId: string; channel: string; }
         try {
             const handleUserPublished = (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
                  if (!isMountedRef.current) return;
-                 // The user object is mutable, so we need to create a new array to trigger a re-render
-                 setRemoteUsers(prevUsers => [...prevUsers]);
+                 setRemoteUsers((prevUsers) => [...prevUsers]);
             };
 
             const handleUserUnpublished = (user: IAgoraRTCRemoteUser) => {
@@ -66,7 +64,13 @@ export const useAgora = ({ appId, channel }: { appId: string; channel: string; }
             const handleUserJoined = (user: IAgoraRTCRemoteUser) => {
                 if (!isMountedRef.current) return;
                 console.log('User joined:', user.uid);
-                setRemoteUsers((prevUsers) => [...prevUsers, user]);
+                // Check if user already exists to avoid duplicates
+                setRemoteUsers((prevUsers) => {
+                    if (prevUsers.find(u => u.uid === user.uid)) {
+                        return prevUsers;
+                    }
+                    return [...prevUsers, user];
+                });
             };
 
             const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
@@ -84,6 +88,7 @@ export const useAgora = ({ appId, channel }: { appId: string; channel: string; }
             if (!isMountedRef.current) return;
 
             const [audioTrack, videoTrack] = await AgoraRTCRef.current!.createMicrophoneAndCameraTracks();
+            
             if (!isMountedRef.current) {
                 audioTrack.close();
                 videoTrack.close();
@@ -99,7 +104,6 @@ export const useAgora = ({ appId, channel }: { appId: string; channel: string; }
             setIsJoined(true);
         } catch (error) {
             console.error('Failed to join or publish:', error);
-            // In case of error, reset the state
             setIsJoined(false);
             setLocalAudioTrack(null);
             setLocalVideoTrack(null);
