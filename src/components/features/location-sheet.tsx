@@ -114,7 +114,7 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
   const handleAddAddress = async (newAddressData: Omit<Address, 'id' | 'address'>) => {
-      const fullAddress = `${newAddressData.flat}, ${newAddressData.street}, ${newAddressData.landmark ? newAddressData.landmark + ', ' : ''}${newAddressData.pincode}, ${newAddressData.state}`;
+      const fullAddress = `${newAddressData.flat}, ${newAddressData.street}${newAddressData.landmark ? `, ${newAddressData.landmark}` : ''}, ${newAddressData.pincode}, ${newAddressData.state}`;
       const newAddress: Address = {
           ...newAddressData,
           id: Date.now().toString(),
