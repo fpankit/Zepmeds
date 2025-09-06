@@ -5,6 +5,7 @@ import { Mic, MicOff, PhoneOff, Video, VideoOff, Users, ScreenShare } from 'luci
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PatientProfile } from '@/components/features/patient-profile';
+import { useAuth } from '@/context/auth-context';
 
 // This is a placeholder URL. Replace with your actual video call service provider.
 // The service should be configured to allow embedding.
@@ -15,10 +16,12 @@ const VIDEO_SERVICE_BASE_URL = "https://zepmeds.whereby.com";
 export default function VideoCallPage() {
     const router = useRouter();
     const params = useParams();
+    const { user } = useAuth();
     const channelName = params.channel as string;
 
-    // A real implementation would fetch the patientId associated with this channel/appointment
-    const patientId = "new.user@example.com".replace("@", "_").replace(/\./g, "_"); // Placeholder ID
+    // In a real app, you would fetch the appointment details using the channelName (appointmentId)
+    // to get the correct patientId. For this demo, we'll use the logged-in user's ID.
+    const patientId = user?.id;
 
     if (!channelName) {
         return (
@@ -60,7 +63,7 @@ export default function VideoCallPage() {
 
             {/* Sidebar with Patient Details */}
             <aside className="w-80 hidden md:block bg-gray-900 border-l border-gray-800 p-4">
-                <PatientProfile patientId={patientId} />
+                {patientId ? <PatientProfile patientId={patientId} /> : <div className="text-center text-gray-400">No patient selected.</div>}
             </aside>
         </div>
     );
