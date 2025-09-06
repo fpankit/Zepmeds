@@ -16,8 +16,6 @@ import { useAuth } from "@/context/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
-
 
 const RIDER_ARRIVAL_TIME = 10 * 60; // 10 minutes in seconds
 
@@ -53,7 +51,7 @@ export default function EmergencyPage() {
             emergencyDetails,
             additionalNotes,
             location: userAddress,
-            userName: user.name,
+            userName: user.firstName + ' ' + user.lastName,
             userPhone: user.phone,
             status: "dispatched",
             createdAt: serverTimestamp(),
@@ -104,14 +102,10 @@ export default function EmergencyPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8">
-      <AnimatePresence mode="wait">
+      <div>
         {!isDispatched ? (
-          <motion.div
+          <div
             key="form"
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 50 }}
-            transition={{ duration: 0.5 }}
           >
             <Card className="border-red-500 border-2 shadow-lg shadow-red-500/20">
               <CardHeader className="text-center bg-red-500/10">
@@ -168,13 +162,10 @@ export default function EmergencyPage() {
                 </Button>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
         ) : (
-          <motion.div
+          <div
             key="status"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
             className="space-y-6"
           >
              <div className="fixed inset-0 z-0 overflow-hidden">
@@ -237,9 +228,9 @@ export default function EmergencyPage() {
                     </CardContent>
                 </Card>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }

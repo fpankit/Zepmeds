@@ -191,7 +191,7 @@ export default function HomePage() {
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-8 overflow-x-hidden">
 
-       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
+       <div>
         <Carousel
             plugins={[plugin.current]}
             className="w-full"
@@ -218,9 +218,9 @@ export default function HomePage() {
             <CarouselPrevious className="left-2" />
             <CarouselNext className="right-2"/>
         </Carousel>
-      </motion.div>
+      </div>
       
-       <motion.div className="relative" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
+       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
         <Input 
           placeholder=""
@@ -229,10 +229,10 @@ export default function HomePage() {
           onBlur={() => setIsSearchFocused(false)}
         />
         {!isSearchFocused && <AnimatedPlaceholder />}
-      </motion.div>
+      </div>
 
       {/* Shop by Category */}
-       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}} >
+       <div>
         <h3 className="font-headline text-2xl font-bold mb-4">Shop by Category</h3>
         <div className="flex overflow-x-auto space-x-4 pb-4 -mx-4 px-4">
           {categories.map((category) => (
@@ -246,19 +246,19 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
-      </motion.div>
+      </div>
 
 
        {/* Feature Cards */}
-       <motion.div className="grid grid-cols-2 sm:grid-cols-3 gap-4" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
+       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {featureCards.map((card) => (
           <FeatureCard key={card.title} card={card} />
         ))}
-      </motion.div>
+      </div>
       
 
        {/* Products Section */}
-       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
+       <div>
         <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {trendingProducts.map((product) => {
@@ -289,10 +289,10 @@ export default function HomePage() {
             )
           })}
         </div>
-       </motion.div>
+       </div>
 
         {/* Offers Section */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4, ease: "easeInOut" }}}>
+      <div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {offerCards.map((offer) => (
             <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80">
@@ -309,7 +309,7 @@ export default function HomePage() {
             </Card>
           ))}
         </div>
-      </motion.div>
+      </div>
 
     </div>
   );

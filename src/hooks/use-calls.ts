@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export interface Call {
@@ -34,7 +34,6 @@ export const useCalls = (doctorId: string) => {
     const callsQuery = query(
       collection(db, 'calls'),
       where('doctorId', '==', doctorId)
-      // orderBy('createdAt', 'desc') // This requires a composite index in Firestore. Removing for now to prevent crash.
     );
 
     const unsubscribe = onSnapshot(
@@ -44,7 +43,7 @@ export const useCalls = (doctorId: string) => {
           id: doc.id,
           ...doc.data(),
         } as Call));
-        // Manual sort on the client-side since we removed orderBy
+        // Manual sort on the client-side to avoid needing a composite index
         callsData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         setCalls(callsData);
         setIsLoading(false);

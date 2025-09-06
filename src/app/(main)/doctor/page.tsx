@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, serverTimestamp, query, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -47,8 +47,8 @@ export default function DoctorPage() {
 
 
   useEffect(() => {
-    const doctorsCol = collection(db, "doctors");
-    const unsubscribe = onSnapshot(doctorsCol, 
+    const doctorsQuery = query(collection(db, "doctors"), limit(12));
+    const unsubscribe = onSnapshot(doctorsQuery, 
         (querySnapshot) => {
             const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
             setDoctors(doctorsData);
