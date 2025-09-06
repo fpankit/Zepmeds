@@ -32,9 +32,16 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   const [isJoined, setIsJoined] = useState(false);
   const [micMuted, setMicMuted] = useState(false);
   const [videoMuted, setVideoMuted] = useState(false);
+  const [isClientLoaded, setIsClientLoaded] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
+    // This effect only runs on the client
+    setIsClientLoaded(true);
+  }, []);
+
+
+  useEffect(() => {
+    if (!token || !isClientLoaded) return;
 
     client.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
 
@@ -85,7 +92,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
       localTracks.current.videoTrack?.close();
       client.current?.leave();
     };
-  }, [appId, channelName, token]);
+  }, [appId, channelName, token, isClientLoaded]);
 
   const handleLeave = async () => {
     router.push('/home');
@@ -105,7 +112,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     }
   };
   
-  if (!isJoined) {
+  if (!isJoined || !isClientLoaded) {
     return (
        <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full">
