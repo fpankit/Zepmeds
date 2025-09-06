@@ -12,7 +12,6 @@ import { MapPin, Plus, ChevronLeft, Ticket, Home, Briefcase, Calendar, Clock, Wa
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
@@ -186,12 +185,7 @@ export default function CheckoutPage() {
             {selectedDelivery === 'scheduled' && (
                 <div className="mt-4 p-4 border-t border-border space-y-4">
                      <h4 className="font-semibold text-md">Select Date & Time</h4>
-                    <CalendarComponent
-                        mode="single"
-                        selected={deliveryDate}
-                        onSelect={setDeliveryDate}
-                        className="rounded-md border"
-                    />
+                     <p className="text-sm text-muted-foreground">Please select a date and time for your delivery.</p>
                     <Select value={deliveryTime} onValueChange={setDeliveryTime}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a time slot" />
@@ -320,5 +314,3 @@ function LabelRadio({ value, label, description, icon: Icon, price, isSelected, 
         </label>
     )
 }
-
-    

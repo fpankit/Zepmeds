@@ -23,7 +23,6 @@ export default function EmergencyPage() {
   const [isDispatched, setIsDispatched] = useState(false);
   const [confirmationText, setConfirmationText] = useState("");
   const [countdown, setCountdown] = useState(RIDER_ARRIVAL_TIME);
-  const [progress, setProgress] = useState(100);
 
   const [emergencyDetails, setEmergencyDetails] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
@@ -83,15 +82,6 @@ export default function EmergencyPage() {
       return () => clearInterval(timer);
     }
   }, [isDispatched]);
-
-  useEffect(() => {
-    if (isDispatched) {
-        const progressTimer = setInterval(() => {
-            setProgress((prev) => Math.max(0, prev - (100 / RIDER_ARRIVAL_TIME)));
-        }, 1000);
-        return () => clearInterval(progressTimer);
-    }
-  }, [isDispatched, countdown]);
 
 
   const formatTime = (seconds: number) => {
@@ -168,12 +158,6 @@ export default function EmergencyPage() {
             key="status"
             className="space-y-6"
           >
-             <div className="fixed inset-0 z-0 overflow-hidden">
-                <div className="absolute inset-0 bg-red-900/50 animate-pulse [animation-duration:2s]"></div>
-                <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-yellow-500/30 rounded-full blur-3xl animate-pulse [animation-delay:1s]"></div>
-                <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-red-500/30 rounded-full blur-3xl animate-pulse"></div>
-            </div>
-
             <div className="relative z-10">
                 <Card className="border-yellow-400 border-2 bg-black/50 backdrop-blur-sm">
                     <CardHeader className="text-center">

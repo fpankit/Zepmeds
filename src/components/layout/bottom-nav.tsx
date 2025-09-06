@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, ListChecks, Stethoscope, MoreHorizontal, ShoppingCart, User } from "lucide-react";
+import { Home, Stethoscope, MoreHorizontal, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,6 @@ import { Badge } from "../ui/badge";
 
 const navItems = [
   { href: "/home", icon: Home, label: "Home" },
-  { href: "/activity", icon: ListChecks, label: "Activity" },
   { href: "/doctor", icon: Stethoscope, label: "Doctor" },
   { href: "/cart", icon: ShoppingCart, label: "Cart" },
   { href: "/more", icon: MoreHorizontal, label: "More" },
