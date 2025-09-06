@@ -34,7 +34,8 @@ interface VideoCallLoaderProps {
 // This component acts as a bridge, reading credentials and passing them 
 // to the client-only video component.
 export function VideoCallLoader({ channelName, token }: VideoCallLoaderProps) {
-  const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID;
+  // HARDCODED: Directly using the App ID to bypass environment variable issues.
+  const appId = "9de59654b7884ef58b4a3d15d72cdefa";
 
   if (!appId) {
     return (
