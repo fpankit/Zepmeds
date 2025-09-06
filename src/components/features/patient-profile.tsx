@@ -24,15 +24,20 @@ export function PatientProfile({ patientId }: { patientId: string }) {
 
     const fetchPatient = async () => {
       setIsLoading(true);
-      const patientDocRef = doc(db, "users", patientId);
-      const patientDocSnap = await getDoc(patientDocRef);
+      try {
+        const patientDocRef = doc(db, "users", patientId);
+        const patientDocSnap = await getDoc(patientDocRef);
 
-      if (patientDocSnap.exists()) {
-        setPatient({ id: patientDocSnap.id, ...patientDocSnap.data() } as User);
-      } else {
-        console.error("Patient not found");
+        if (patientDocSnap.exists()) {
+          setPatient({ id: patientDocSnap.id, ...patientDocSnap.data() } as User);
+        } else {
+          console.error("Patient not found");
+        }
+      } catch (error) {
+          console.error("Error fetching patient:", error)
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchPatient();
@@ -40,19 +45,19 @@ export function PatientProfile({ patientId }: { patientId: string }) {
 
   if (isLoading) {
     return (
-        <Card className="w-full h-full bg-gray-800 rounded-lg">
+        <Card className="w-full h-full bg-gray-800 rounded-lg text-white">
             <CardHeader><CardTitle>Patient Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
                 <div className="flex items-center gap-4">
-                    <Skeleton className="h-16 w-16 rounded-full" />
-                    <div className="space-y-2">
-                        <Skeleton className="h-5 w-32" />
-                        <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-16 w-16 rounded-full bg-gray-700" />
+                    <div className="space-y-2 flex-1">
+                        <Skeleton className="h-5 w-3/4 bg-gray-700" />
+                        <Skeleton className="h-4 w-1/2 bg-gray-700" />
                     </div>
                 </div>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full bg-gray-700" />
+                <Skeleton className="h-4 w-full bg-gray-700" />
+                <Skeleton className="h-4 w-full bg-gray-700" />
             </CardContent>
         </Card>
     )
@@ -60,8 +65,8 @@ export function PatientProfile({ patientId }: { patientId: string }) {
   
   if (!patient) {
       return (
-          <Card className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-             <p className="text-white">Could not load patient details.</p>
+          <Card className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center text-white">
+             <p>Could not load patient details.</p>
           </Card>
     );
   }
@@ -83,7 +88,7 @@ export function PatientProfile({ patientId }: { patientId: string }) {
           </Avatar>
           <div>
             <h3 className="text-xl font-bold">{patient.firstName} {patient.lastName}</h3>
-            <p className="text-sm text-gray-400">Patient ID: {patient.id}</p>
+            <p className="text-sm text-gray-400">Patient ID: {patient.id.substring(0,10)}...</p>
           </div>
         </div>
         <Separator className="bg-gray-700"/>

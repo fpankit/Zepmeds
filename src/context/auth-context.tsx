@@ -14,7 +14,7 @@ export interface Address {
 }
 
 export interface User {
-  id: string; // Phone number can be used as a unique ID
+  id: string; // Document ID, which will be a sanitized phone number
   firstName: string;
   lastName: string;
   email: string;
@@ -32,6 +32,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Sanitize phone number to be a valid Firestore document ID
+const sanitizeForId = (phone: string) => phone.replace(/[^a-zA-Z0-9]/g, "_");
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +48,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (phone: string) => {
     setLoading(true);
-    const userDocRef = doc(db, "users", phone);
+    const userId = sanitizeForId(phone);
+    const userDocRef = doc(db, "users", userId);
     const userDocSnap = await getDoc(userDocRef);
 
     if (userDocSnap.exists()) {
@@ -54,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       // New user, create their profile
       const newUser: User = {
-        id: phone,
+        id: userId,
         phone: phone,
         firstName: "New",
         lastName: "User",
