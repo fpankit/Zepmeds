@@ -45,7 +45,6 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
             }
             return [...prevUsers, user]
         });
-        setTimeout(() => user.videoTrack?.play(`remote-player-${user.uid}`), 0);
       }
       if (mediaType === 'audio') {
         user.audioTrack?.play();
@@ -78,7 +77,6 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
       
       await client.publish([audioTrack, videoTrack]);
       
-      videoTrack.play('local-player');
       setIsJoined(true);
     } catch (error) {
       console.error('Failed to join channel:', error);
