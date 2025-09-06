@@ -32,7 +32,7 @@ const paymentMethods = [
     { id: "cod", name: "Cash on Delivery", icon: DollarSign },
 ]
 
-const iconMap = {
+const iconMap: Record<"Home" | "Work" | "Other", React.ElementType> = {
     Home,
     Work: Briefcase,
     Other: MapPin
@@ -44,7 +44,7 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [selectedAddress, setSelectedAddress] = useState(user?.addresses[0]?.id || "");
+  const [selectedAddress, setSelectedAddress] = useState("");
   const [selectedDelivery, setSelectedDelivery] = useState(deliveryOptions.find(d => d.default)?.id ?? deliveryOptions[0].id)
   const [selectedPayment, setSelectedPayment] = useState(paymentMethods[0].id);
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
@@ -81,6 +81,7 @@ export default function CheckoutPage() {
 
     try {
         const orderData = {
+            userId: user.id,
             cart: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
             total,
             subtotal,
@@ -107,7 +108,7 @@ export default function CheckoutPage() {
         });
 
         clearCart();
-        router.push("/order-status");
+        router.push(`/order-status?orderId=${docRef.id}`);
 
     } catch (error) {
         console.error("Failed to place order:", error);
@@ -319,3 +320,5 @@ function LabelRadio({ value, label, description, icon: Icon, price, isSelected, 
         </label>
     )
 }
+
+    
