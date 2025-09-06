@@ -9,7 +9,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, PhoneOff, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { motion } from 'framer-motion';
 
 const CALL_TIMEOUT = 30000; // 30 seconds
 
@@ -87,20 +86,9 @@ export default function CallStatusPage() {
     return (
         <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden bg-background p-4 text-center">
              <div className="absolute inset-0 z-0 bg-gradient-to-br from-background via-gray-900 to-black" />
-             <motion.div 
-                className="absolute z-10"
-                initial={{ opacity: 0}}
-                animate={{ opacity: 0.5, scale: [1, 1.2, 1], transition: { duration: 2, repeat: Infinity, ease: "easeInOut" } }}
-             >
-                <div className="h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-            </motion.div>
-
-
-            <motion.div 
+             
+            <div 
                 className="relative z-20 flex flex-col items-center space-y-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
             >
                 <Avatar className="h-32 w-32 border-4 border-primary/50">
                     <AvatarImage src={callData.doctorImage} alt={callData.doctorName} />
@@ -145,7 +133,7 @@ export default function CallStatusPage() {
                         </Button>
                     </>
                 )}
-            </motion.div>
+            </div>
         </div>
     );
 }

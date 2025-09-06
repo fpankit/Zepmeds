@@ -19,9 +19,9 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { Label } from "@/components/ui/label";
 
 const deliveryOptions = [
-    { id: "express", name: "Express Delivery", time: "15-30 minutes", price: 50, color: "red"},
-    { id: "standard", name: "Standard Delivery", time: "2-3 hours", price: 0, color: "blue"},
-    { id: "scheduled", name: "Scheduled Delivery", time: "Choose your slot", price: 0, default: true, color: "orange"}
+    { id: "express", name: "Express Delivery", time: "15-30 minutes", price: 50},
+    { id: "standard", name: "Standard Delivery", time: "2-3 hours", price: 0},
+    { id: "scheduled", name: "Scheduled Delivery", time: "Choose your slot", price: 0, default: true}
 ]
 
 const paymentMethods = [
@@ -43,7 +43,7 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [selectedAddress, setSelectedAddress] = useState("");
+  const [selectedAddressId, setSelectedAddressId] = useState("");
   const [selectedDelivery, setSelectedDelivery] = useState(deliveryOptions.find(d => d.default)?.id ?? deliveryOptions[0].id)
   const [selectedPayment, setSelectedPayment] = useState(paymentMethods[0].id);
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(new Date());
@@ -51,10 +51,10 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (user && user.addresses.length > 0 && !selectedAddress) {
-      setSelectedAddress(user.addresses[0].id);
+    if (user && user.addresses.length > 0 && !selectedAddressId) {
+      setSelectedAddressId(user.addresses[0].id);
     }
-  }, [user, selectedAddress]);
+  }, [user, selectedAddressId]);
 
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -70,7 +70,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const currentAddress = user.addresses.find(a => a.id === selectedAddress);
+    const currentAddress = user.addresses.find(a => a.id === selectedAddressId);
 
     if (!currentAddress) {
       toast({ variant: "destructive", title: "Please select a delivery address."});
@@ -137,11 +137,11 @@ export default function CheckoutPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-                <MapPin className="text-yellow-500"/> Delivery Address
+                <MapPin className="text-primary"/> Delivery Address
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <RadioGroup value={selectedAddress} onValueChange={setSelectedAddress} className="space-y-4">
+            <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId} className="space-y-4">
               {(user?.addresses || []).map((addr) => (
                 <LabelRadio
                     key={addr.id}
@@ -149,8 +149,7 @@ export default function CheckoutPage() {
                     label={addr.type}
                     description={addr.address}
                     icon={iconMap[addr.type]}
-                    isSelected={selectedAddress === addr.id}
-                    data-selection-color="yellow"
+                    isSelected={selectedAddressId === addr.id}
                 />
               ))}
             </RadioGroup>
@@ -177,7 +176,6 @@ export default function CheckoutPage() {
                     description={`Delivered within ${opt.time}`}
                     price={opt.price}
                     isSelected={selectedDelivery === opt.id}
-                    data-selection-color={opt.color}
                 />
               ))}
             </RadioGroup>
@@ -206,7 +204,7 @@ export default function CheckoutPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-                <CreditCard className="text-purple-500"/> Payment Method
+                <CreditCard className="text-primary"/> Payment Method
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -219,7 +217,6 @@ export default function CheckoutPage() {
                     description=""
                     icon={method.icon}
                     isSelected={selectedPayment === method.id}
-                    data-selection-color="purple"
                 />
               ))}
             </RadioGroup>
@@ -275,39 +272,16 @@ export default function CheckoutPage() {
 }
 
 
-function LabelRadio({ value, label, description, icon: Icon, price, isSelected, ...props }: { value: string, label: string, description: string, icon?: React.ElementType, price?: number, isSelected: boolean, "data-selection-color"?: string}) {
-    
-    const selectionColor = props['data-selection-color'] || 'primary';
-
-    const colorVariants: Record<string, string> = {
-        red: "[&[data-selected=true]]:border-red-500 [&[data-selected=true]]:ring-red-500 [&[data-selected=true]]:bg-red-500/10",
-        orange: "[&[data-selected=true]]:border-orange-500 [&[data-selected=true]]:ring-orange-500 [&[data-selected=true]]:bg-orange-500/10",
-        blue: "[&[data-selected=true]]:border-blue-500 [&[data-selected=true]]:ring-blue-500 [&[data-selected=true]]:bg-blue-500/10",
-        yellow: "[&[data-selected=true]]:border-yellow-500 [&[data-selected=true]]:ring-yellow-500 [&[data-selected=true]]:bg-yellow-500/10",
-        purple: "[&[data-selected=true]]:border-purple-500 [&[data-selected=true]]:ring-purple-500 [&[data-selected=true]]:bg-purple-500/10",
-        primary: "[&[data-selected=true]]:border-primary [&[data-selected=true]]:ring-primary [&[data-selected=true]]:bg-primary/10",
-    };
-    
-    const iconColorVariants: Record<string, string> = {
-        red: "group-data-[selected=true]:text-red-500",
-        orange: "group-data-[selected=true]:text-orange-500",
-        blue: "group-data-[selected=true]:text-blue-500",
-        yellow: "group-data-selected]:text-yellow-500",
-        purple: "group-data-[selected=true]:text-purple-500",
-        primary: "group-data-[selected=true]:text-primary",
-    }
-    
-    const selectedClass = colorVariants[selectionColor] || colorVariants.primary;
-    const iconSelectedClass = iconColorVariants[selectionColor] || iconColorVariants.primary;
+function LabelRadio({ value, label, description, icon: Icon, price, isSelected, ...props }: { value: string, label: string, description: string, icon?: React.ElementType, price?: number, isSelected: boolean}) {
     
     return (
-        <label htmlFor={value} data-selected={isSelected} className={cn("group flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all", isSelected ? 'ring-2' : "border-border", selectedClass)}>
+        <label htmlFor={value} className={cn("group flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-all", isSelected ? 'ring-2 border-primary ring-primary bg-primary/10' : "border-border")}>
             <RadioGroupItem value={value} id={value} />
-            {Icon && <Icon className={cn("h-5 w-5 text-muted-foreground", iconSelectedClass)} />}
+            {Icon && <Icon className={cn("h-5 w-5 text-muted-foreground", isSelected && "text-primary")} />}
             <div className="flex-1">
                 <div className="flex justify-between">
                     <p className="font-semibold">{label}</p>
-                    {price !== undefined && <p className={cn("text-sm font-semibold text-muted-foreground", `group-data-[selected=true]:text-${selectionColor}-500`)}>{price > 0 ? `₹${price.toFixed(2)}` : 'Free'}</p>}
+                    {price !== undefined && <p className={cn("text-sm font-semibold text-muted-foreground", isSelected && "text-primary")}>{price > 0 ? `₹${price.toFixed(2)}` : 'Free'}</p>}
                 </div>
                {description && <p className="text-sm text-muted-foreground">{description}</p>}
             </div>

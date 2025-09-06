@@ -13,8 +13,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
-import { useRef } from "react";
-import Autoplay from "embla-carousel-autoplay"
 import { cn } from "@/lib/utils";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
@@ -75,9 +73,6 @@ const trendingProducts = [
 ];
 
 export default function HomePage() {
-  const plugin = useRef(
-      Autoplay({ delay: 3000, stopOnInteraction: true })
-    )
   const { cart, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
 
@@ -110,10 +105,7 @@ export default function HomePage() {
 
        <div>
         <Carousel
-            plugins={[plugin.current]}
             className="w-full"
-            onMouseEnter={plugin.current.stop}
-            onMouseLeave={plugin.current.reset}
         >
             <CarouselContent>
             {sponsorCards.map((card, index) => (
