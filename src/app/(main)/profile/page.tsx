@@ -10,10 +10,11 @@ import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { profileLinks, supportLinks } from "@/lib/data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -28,18 +29,31 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-8">
       <div className="flex flex-col items-center space-y-4">
-        <Avatar className="h-24 w-24">
-          <AvatarFallback className="text-3xl">
-            {user ? getInitials(user.firstName, user.lastName) : 'GU'}
-          </AvatarFallback>
-        </Avatar>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">{user ? `${user.firstName} ${user.lastName}` : 'Guest User'}</h1>
-          <p className="text-muted-foreground">{user?.phone || 'No phone number'}</p>
-        </div>
-        <Button variant="outline" asChild>
-          <Link href="/profile/edit">Edit Profile</Link>
-        </Button>
+        {loading ? (
+            <>
+                <Skeleton className="h-24 w-24 rounded-full" />
+                <div className="text-center space-y-2">
+                    <Skeleton className="h-7 w-40" />
+                    <Skeleton className="h-5 w-32" />
+                </div>
+                <Skeleton className="h-10 w-24" />
+            </>
+        ) : (
+            <>
+                <Avatar className="h-24 w-24">
+                <AvatarFallback className="text-3xl">
+                    {user ? getInitials(user.firstName, user.lastName) : 'GU'}
+                </AvatarFallback>
+                </Avatar>
+                <div className="text-center">
+                <h1 className="text-2xl font-bold">{user ? `${user.firstName} ${user.lastName}` : 'Guest User'}</h1>
+                <p className="text-muted-foreground">{user?.phone || 'No phone number'}</p>
+                </div>
+                <Button variant="outline" asChild>
+                <Link href="/profile/edit">Edit Profile</Link>
+                </Button>
+            </>
+        )}
       </div>
 
       <Separator className="my-8" />
@@ -77,7 +91,7 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        <Button variant="destructive" className="w-full" onClick={handleLogout}>
+        <Button variant="destructive" className="w-full" onClick={handleLogout} disabled={loading}>
           <Power className="mr-2 h-4 w-4" /> Logout
         </Button>
       </div>

@@ -157,7 +157,7 @@ export default function DoctorPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading && doctors.length === 0 ? (
-          Array.from({ length: 3 }).map((_, index) => (
+          Array.from({ length: 6 }).map((_, index) => (
             <Card key={index} className="overflow-hidden">
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
