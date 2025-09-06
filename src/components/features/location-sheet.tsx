@@ -114,7 +114,7 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
   const handleAddAddress = async (newAddressData: Omit<Address, 'id' | 'address'>) => {
-      const fullAddress = `${newAddressData.flat}, ${newAddressData.street}, ${newAddressData.pincode}, ${newAddressData.state}`;
+      const fullAddress = `${newAddressData.flat}, ${newAddressData.street}, ${newAddressData.landmark ? newAddressData.landmark + ', ' : ''}${newAddressData.pincode}, ${newAddressData.state}`;
       const newAddress: Address = {
           ...newAddressData,
           id: Date.now().toString(),
@@ -126,11 +126,12 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
   }
   
   const handleDeleteAddress = async (id: string) => {
-      const updatedAddresses = (user?.addresses || []).filter(addr => addr.id !== id);
-      await updateUser({ addresses: updatedAddresses });
-      if (selectedAddressId === id) {
-          setSelectedAddressId(user?.addresses[0]?.id || "");
-      }
+    if (!user) return;
+    const updatedAddresses = user.addresses.filter(addr => addr.id !== id);
+    await updateUser({ addresses: updatedAddresses });
+    if (selectedAddressId === id) {
+      setSelectedAddressId(updatedAddresses[0]?.id || "");
+    }
   }
 
   return (
@@ -177,16 +178,19 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center gap-4 p-3 rounded-lg bg-card cursor-pointer"
-                    onClick={() => setSelectedAddressId(item.id)}
+                    className="flex items-center gap-4 p-3 rounded-lg bg-card"
                   >
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <p className="font-semibold">{item.name}</p>
-                      <p className="text-sm text-muted-foreground">{item.address}</p>
+                    <div className="flex-1 cursor-pointer" onClick={() => setSelectedAddressId(item.id)}>
+                        <div className="flex items-center gap-4">
+                            <Icon className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-semibold">{item.name}</p>
+                              <p className="text-sm text-muted-foreground">{item.address}</p>
+                            </div>
+                        </div>
                     </div>
                     {selectedAddressId === item.id ? (
-                      <Button size="sm" className="pointer-events-none bg-primary/80 text-xs h-7">Selected</Button>
+                      <div className="text-primary text-xs font-bold px-2 py-1 rounded-full bg-primary/10">Selected</div>
                     ) : (
                       <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDeleteAddress(item.id)}}>
                           <Trash2 className="h-4 w-4 text-destructive" />
