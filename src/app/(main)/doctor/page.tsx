@@ -5,14 +5,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle } from "lucide-react";
+import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface Doctor {
   id: string;
@@ -27,7 +28,10 @@ interface Doctor {
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBooking, setIsBooking] = useState<string | null>(null);
   const { user } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     const doctorsCol = collection(db, "doctors");
@@ -39,23 +43,55 @@ export default function DoctorPage() {
         }, 
         (error) => {
             console.error("Error fetching doctors: ", error);
-            // In case of an error, we'll show an empty list and the "no doctors" message.
             setDoctors([]);
             setIsLoading(false);
         }
     );
     
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
-  const createChannelName = (doctorId: string) => {
-    const userId = user?.id || 'guest';
-    // Sanitize channel name for Agora
-    const cleanUserId = userId.replace(/[^a-zA-Z0-9]/g, '');
-    const cleanDoctorId = doctorId.replace(/[^a-zA-Z0-9]/g, '');
-    return `zepmeds-call-${cleanUserId}-${cleanDoctorId}`;
+  const handleBookAppointment = async (doctor: Doctor) => {
+      if (!user) {
+          toast({ variant: 'destructive', title: "Login Required", description: "You must be logged in to book an appointment." });
+          router.push('/login');
+          return;
+      }
+
+      setIsBooking(doctor.id);
+
+      try {
+          const appointmentData = {
+              patientId: user.id,
+              patientName: `${user.firstName} ${user.lastName}`,
+              doctorId: doctor.id,
+              doctorName: doctor.name,
+              status: "Scheduled",
+              createdAt: serverTimestamp(),
+          };
+
+          const docRef = await addDoc(collection(db, "appointments"), appointmentData);
+          
+          toast({
+              title: "Appointment Booked!",
+              description: `Your appointment with ${doctor.name} is confirmed.`,
+          });
+
+          // The new channel name will be the appointment ID
+          const channelName = docRef.id;
+          router.push(`/video-call/${channelName}`);
+
+      } catch (error) {
+          console.error("Failed to book appointment:", error);
+          toast({
+              variant: "destructive",
+              title: "Booking Failed",
+              description: "There was a problem booking your appointment. Please try again.",
+          });
+          setIsBooking(null);
+      }
   }
+
 
   const getInitials = (name: string) => {
     if (!name) return 'Dr';
@@ -92,7 +128,6 @@ export default function DoctorPage() {
                 </div>
                 <div className="flex gap-2 mt-4">
                     <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
                 </div>
               </CardContent>
             </Card>
@@ -122,11 +157,16 @@ export default function DoctorPage() {
                     </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                    <Button className="w-full">Book Appointment</Button>
-                    <Button asChild className="w-full bg-green-600 hover:bg-green-700" disabled={!doctor.isOnline}>
-                        <Link href={`/video-call/${createChannelName(doctor.id)}`}>
-                          <Video className="mr-2 h-4 w-4" /> Call Now
-                        </Link>
+                    <Button 
+                        className="w-full bg-green-600 hover:bg-green-700" 
+                        disabled={!doctor.isOnline || !!isBooking}
+                        onClick={() => handleBookAppointment(doctor)}
+                    >
+                        {isBooking === doctor.id ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Booking...</>
+                        ) : (
+                            <><Video className="mr-2 h-4 w-4" /> Book & Call Now</>
+                        )}
                     </Button>
                 </div>
                 </CardContent>
