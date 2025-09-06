@@ -30,6 +30,8 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     leave,
     isJoined,
     isLoading: isConnecting,
+    toggleAudio,
+    toggleVideo,
   } = useAgora({ appId, channelName, token });
 
   const localPlayerRef = useRef<HTMLDivElement>(null);
@@ -50,34 +52,36 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     };
     requestPermissions();
   }, []);
-
+  
   useEffect(() => {
-    if (hasPermission) {
+    if (hasPermission && !isJoined) {
       join();
     }
     return () => {
-      leave();
+        leave();
     };
-  }, [hasPermission, join, leave]);
+  }, [hasPermission, isJoined, join, leave]);
   
   useEffect(() => {
     if (localVideoTrack && localPlayerRef.current) {
-      localPlayerRef.current.innerHTML = '';
-      localVideoTrack.play(localPlayerRef.current);
+      if (localPlayerRef.current.childElementCount === 0) {
+        localVideoTrack.play(localPlayerRef.current);
+      }
     }
     return () => {
       localVideoTrack?.stop();
     };
   }, [localVideoTrack]);
 
-  const remoteUser = remoteUsers[0];
+  const remoteUser = remoteUsers.find(user => user.hasVideo);
   
   useEffect(() => {
     if (remoteUser?.videoTrack && remotePlayerRef.current) {
-        remotePlayerRef.current.innerHTML = '';
-        remoteUser.videoTrack.play(remotePlayerRef.current);
+        if (remotePlayerRef.current.childElementCount === 0) {
+            remoteUser.videoTrack.play(remotePlayerRef.current);
+        }
     } else if (remotePlayerRef.current) {
-        remotePlayerRef.current.innerHTML = ''; // Clear remote view if user leaves
+        remotePlayerRef.current.innerHTML = ''; // Clear remote view if user leaves or has no video
     }
     
     return () => {
