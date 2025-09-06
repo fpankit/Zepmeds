@@ -9,24 +9,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import { Siren, MapPin, AlertTriangle, ShieldCheck, Phone, MessageSquare, Loader2, LocateFixed } from "lucide-react";
+import { Siren, MapPin, AlertTriangle, ShieldCheck, Phone, MessageSquare, Loader2, LocateFixed, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from "next/dynamic";
+import { EditAddressDialog } from "@/components/features/edit-address-dialog";
 
 const RIDER_ARRIVAL_TIME = 10 * 60; // 10 minutes in seconds
 
-const LiveTrackingMap = dynamic(() => Promise.resolve(() => (
-  <div className="relative h-48 w-full rounded-md overflow-hidden bg-muted/30">
-    <img src="https://picsum.photos/800/400?random=45" alt="Map" loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-50"/>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-4 h-4 bg-blue-500 rounded-full animate-ping"></div>
-      </div>
-  </div>
-)), { ssr: false });
+const LiveEmergencyMap = dynamic(() => import('@/components/features/live-emergency-map').then(mod => mod.LiveEmergencyMap), { 
+    ssr: false,
+    loading: () => <div className="h-48 w-full rounded-md bg-muted/30 animate-pulse" />
+});
 
 export default function EmergencyPage() {
   const [isDispatched, setIsDispatched] = useState(false);
@@ -37,12 +34,14 @@ export default function EmergencyPage() {
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
   
   const defaultAddress = user?.addresses?.[0]?.address || "741/2, Gurugram, Haryana, 122001";
   const [location, setLocation] = useState(defaultAddress);
+  const [userCoords, setUserCoords] = useState<{lat: number, lng: number} | null>({lat: 28.4595, lng: 77.0266}); // Default to Gurugram
 
   useEffect(() => {
     setLocation(defaultAddress);
@@ -56,6 +55,7 @@ export default function EmergencyPage() {
       async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
+          setUserCoords({ lat: latitude, lng: longitude });
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
           if (!response.ok) throw new Error("Failed to fetch address.");
 
@@ -105,6 +105,7 @@ export default function EmergencyPage() {
             location,
             userName: user.firstName + ' ' + user.lastName,
             userPhone: user.phone,
+            userCoords: userCoords,
             status: "dispatched",
             createdAt: serverTimestamp(),
         });
@@ -143,6 +144,11 @@ export default function EmergencyPage() {
     return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
   };
 
+  const handleSaveAddress = (newAddress: string) => {
+    setLocation(newAddress);
+    setIsEditAddressOpen(false);
+  }
+
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8">
       <div>
@@ -165,13 +171,25 @@ export default function EmergencyPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-red-400">Your Location</Label>
-                   <div className="flex items-center gap-2 rounded-md border border-input p-3 bg-card/50">
-                     <MapPin className="h-5 w-5 text-yellow-500"/>
-                     <p className="flex-1 text-sm">{location}</p>
-                     <Button variant="link" className="p-0 h-auto text-yellow-500" onClick={handleFetchLocation} disabled={isFetchingLocation}>
-                        {isFetchingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : "Change"}
-                    </Button>
+                   <Label className="text-red-400">Your Location</Label>
+                   <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 rounded-md border border-input p-3 bg-card/50">
+                            <MapPin className="h-5 w-5 text-yellow-500 flex-shrink-0"/>
+                            <p className="flex-1 text-sm">{location}</p>
+                            <Button variant="ghost" size="icon" className="text-yellow-500" onClick={() => setIsEditAddressOpen(true)}>
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <Button variant="link" className="p-0 h-auto text-yellow-500 self-start" onClick={handleFetchLocation} disabled={isFetchingLocation}>
+                             {isFetchingLocation ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixed className="h-4 w-4 mr-2" />}
+                            Use Current Location
+                        </Button>
+                        <EditAddressDialog
+                            isOpen={isEditAddressOpen}
+                            onClose={() => setIsEditAddressOpen(false)}
+                            currentAddress={location}
+                            onSave={handleSaveAddress}
+                        />
                    </div>
                 </div>
 
@@ -236,7 +254,7 @@ export default function EmergencyPage() {
                         <CardTitle className="text-lg text-yellow-300">Live Tracking</CardTitle>
                     </CardHeader>
                     <CardContent>
-                       <LiveTrackingMap />
+                       {userCoords && <LiveEmergencyMap userPosition={userCoords} />}
                     </CardContent>
                 </Card>
 
