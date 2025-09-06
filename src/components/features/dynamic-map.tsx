@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L, { type Map } from 'leaflet';
+import L from 'leaflet';
 
 // Fix for default icon issues with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -24,22 +24,12 @@ type DynamicMapProps = {
     popupText?: string;
 }
 
-export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }: DynamicMapProps) {
-    const [isMounted, setIsMounted] = useState(false);
-    
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    if (!isMounted) {
-        return null;
-    }
-
+const MapDisplay = memo(function MapDisplay({ position, zoom, popupText }: DynamicMapProps) {
     return (
         <MapContainer center={[position.lat, position.lng]} zoom={zoom} scrollWheelZoom={false} style={{ height: '200px', width: '100%', borderRadius: '0.5rem' }}>
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                url="https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
             />
             <Marker position={[position.lat, position.lng]}>
                 <Popup>
@@ -48,4 +38,22 @@ export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }:
             </Marker>
         </MapContainer>
     );
+});
+
+
+export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }: DynamicMapProps) {
+    const [isMounted, setIsMounted] = useState(false);
+    
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    if (!isMounted) {
+        return null; // Don't render anything on the server
+    }
+
+    return (
+       <MapDisplay position={position} zoom={zoom} popupText={popupText} />
+    );
 }
+
