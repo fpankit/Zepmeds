@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { collection, onSnapshot, addDoc, serverTimestamp, query, limit } from "firebase/firestore";
+import { useEffect, useState, useCallback } from "react";
+import { collection, onSnapshot, addDoc, serverTimestamp, query, limit, startAfter, getDocs, orderBy, DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useCalls } from "@/hooks/use-calls";
+import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 
 interface Doctor {
   id: string;
@@ -26,43 +27,89 @@ interface Doctor {
   isOnline: boolean;
 }
 
+const DOCTORS_PER_PAGE = 9;
+
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+
   const [isCalling, setIsCalling] = useState<string | null>(null);
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   
-  // NOTE: This is for demonstration to show the hook works.
-  // In a real app, this would be in the DOCTOR'S application.
   const { calls: incomingCalls } = useCalls(user?.id || '');
 
+  const { ref: loadMoreRef, entry } = useIntersectionObserver({
+    threshold: 0.5,
+  });
+  
   useEffect(() => {
     if (incomingCalls.length > 0) {
         console.log("Incoming calls detected (for demo): ", incomingCalls);
-        // Here, the doctor's app would show a notification.
     }
   }, [incomingCalls]);
 
+  const fetchInitialDoctors = useCallback(() => {
+      setIsLoading(true);
+      const doctorsQuery = query(collection(db, "doctors"), orderBy("name"), limit(DOCTORS_PER_PAGE));
+      const unsubscribe = onSnapshot(doctorsQuery, 
+          (querySnapshot) => {
+              const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+              setDoctors(doctorsData);
+              setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
+              setHasMore(querySnapshot.docs.length === DOCTORS_PER_PAGE);
+              setIsLoading(false);
+          }, 
+          (error) => {
+              console.error("Error fetching doctors: ", error);
+              setDoctors([]);
+              setIsLoading(false);
+          }
+      );
+      
+      return unsubscribe;
+  }, []);
 
   useEffect(() => {
-    const doctorsQuery = query(collection(db, "doctors"), limit(12));
-    const unsubscribe = onSnapshot(doctorsQuery, 
-        (querySnapshot) => {
-            const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
-            setDoctors(doctorsData);
-            setIsLoading(false);
-        }, 
-        (error) => {
-            console.error("Error fetching doctors: ", error);
-            setDoctors([]);
-            setIsLoading(false);
-        }
-    );
-    
+    const unsubscribe = fetchInitialDoctors();
     return () => unsubscribe();
-  }, []);
+  }, [fetchInitialDoctors]);
+  
+  const fetchMoreDoctors = useCallback(async () => {
+    if (isLoadingMore || !hasMore || !lastDoc) return;
+    setIsLoadingMore(true);
+
+    const nextQuery = query(
+      collection(db, "doctors"),
+      orderBy("name"),
+      startAfter(lastDoc),
+      limit(DOCTORS_PER_PAGE)
+    );
+
+    try {
+      const documentSnapshots = await getDocs(nextQuery);
+      const newDoctors = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+      
+      setDoctors((prev) => [...prev, ...newDoctors]);
+      setLastDoc(documentSnapshots.docs[documentSnapshots.docs.length - 1]);
+      setHasMore(documentSnapshots.docs.length === DOCTORS_PER_PAGE);
+    } catch (error) {
+      console.error("Error fetching more doctors: ", error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, lastDoc]);
+
+  useEffect(() => {
+    if (entry?.isIntersecting && hasMore) {
+      fetchMoreDoctors();
+    }
+  }, [entry, fetchMoreDoctors, hasMore]);
+
 
   const handleInitiateCall = async (doctor: Doctor) => {
       if (!user) {
@@ -81,7 +128,7 @@ export default function DoctorPage() {
               doctorName: doctor.name || "Unnamed Doctor",
               doctorImage: doctor.image || "",
               doctorSpecialty: doctor.specialty || "N/A",
-              status: "calling", // Status: calling, accepted, rejected, unanswered, completed
+              status: "calling",
               createdAt: serverTimestamp(),
           };
 
@@ -91,8 +138,7 @@ export default function DoctorPage() {
               title: "Calling Doctor",
               description: `Waiting for ${doctor.name || 'the doctor'} to respond.`,
           });
-
-          // Navigate to the call status page
+          
           router.push(`/call-status/${docRef.id}`);
 
       } catch (error) {
@@ -105,7 +151,6 @@ export default function DoctorPage() {
           setIsCalling(null);
       }
   }
-
 
   const getInitials = (name: string) => {
     if (!name) return 'Dr';
@@ -128,7 +173,7 @@ export default function DoctorPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
+        {isLoading && doctors.length === 0 ? (
           Array.from({ length: 3 }).map((_, index) => (
             <Card key={index} className="overflow-hidden">
               <CardContent className="p-4">
@@ -187,10 +232,15 @@ export default function DoctorPage() {
             </Card>
             ))
         ) : (
-            <div className="col-span-full text-center py-10">
+            !isLoading && <div className="col-span-full text-center py-10">
                 <p className="text-muted-foreground">No doctors available at the moment. Please check back later.</p>
             </div>
         )}
+      </div>
+
+       <div ref={loadMoreRef} className="col-span-full flex justify-center py-6">
+        {isLoadingMore && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
+        {!hasMore && doctors.length > 0 && <p className="text-muted-foreground">You've reached the end of the list.</p>}
       </div>
     </div>
   );
