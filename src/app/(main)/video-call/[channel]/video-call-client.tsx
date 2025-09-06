@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Mic, MicOff, PhoneOff, Video, VideoOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface VideoCallClientProps {
   appId: string;
@@ -26,9 +27,9 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     audioTrack: IMicrophoneAudioTrack | null;
     videoTrack: ICameraVideoTrack | null;
   }>({ audioTrack: null, videoTrack: null });
-  const remoteUsers = useRef<IAgoraRTCRemoteUser[]>([]);
-  const [, setForceRender] = useState(0);
-
+  const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
+  
+  const [isJoined, setIsJoined] = useState(false);
   const [micMuted, setMicMuted] = useState(false);
   const [videoMuted, setVideoMuted] = useState(false);
 
@@ -47,7 +48,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
         await client.current?.publish(Object.values(localTracks.current));
 
         localTracks.current.videoTrack.play('local-player');
-        setForceRender(f => f + 1);
+        setIsJoined(true);
 
       } catch (error) {
         console.error('Failed to join channel:', error);
@@ -56,29 +57,30 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
 
     initAndJoin();
 
-    client.current.on('user-published', async (user, mediaType) => {
+    const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
       await client.current?.subscribe(user, mediaType);
       if (mediaType === 'video') {
-        remoteUsers.current.push(user);
-        setForceRender(f => f + 1);
-        // Defer playing to ensure the DOM element is ready
+        setRemoteUsers(prevUsers => [...prevUsers, user]);
+         // Defer playing to ensure the DOM element is ready
         setTimeout(() => user.videoTrack?.play(`remote-player-${user.uid}`), 0);
       }
       if (mediaType === 'audio') {
         user.audioTrack?.play();
       }
-    });
+    };
     
-    client.current.on('user-unpublished', (user) => {
-       // Logic to handle when a user unpublishes their stream
-    });
+    const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
+      setRemoteUsers(prevUsers => prevUsers.filter((u) => u.uid !== user.uid));
+    };
 
-    client.current.on('user-left', (user) => {
-      remoteUsers.current = remoteUsers.current.filter((u) => u.uid !== user.uid);
-      setForceRender(f => f + 1);
-    });
+    client.current.on('user-published', handleUserPublished);
+    client.current.on('user-left', handleUserLeft);
+
 
     return () => {
+      client.current?.off('user-published', handleUserPublished);
+      client.current?.off('user-left', handleUserLeft);
+      
       localTracks.current.audioTrack?.close();
       localTracks.current.videoTrack?.close();
       client.current?.leave();
@@ -102,6 +104,17 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
       setVideoMuted(!videoMuted);
     }
   };
+  
+  if (!isJoined) {
+    return (
+       <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full">
+          <Skeleton className="bg-gray-800 w-full h-full rounded-lg" />
+          <Skeleton className="bg-gray-800 w-full h-full rounded-lg" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
@@ -110,11 +123,17 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
            <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">You</div>
          </Card>
         
-        {remoteUsers.current.map((user) => (
+        {remoteUsers.map((user) => (
           <Card key={user.uid} id={`remote-player-${user.uid}`} className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
             <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">Doctor</div>
           </Card>
         ))}
+         {remoteUsers.length === 0 && (
+          <Card className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative flex flex-col items-center justify-center">
+            <Skeleton className="h-24 w-24 rounded-full bg-gray-700" />
+            <p className="mt-4 text-white">Waiting for the doctor to join...</p>
+          </Card>
+        )}
       </div>
 
       <div className="absolute bottom-8 flex items-center justify-center gap-4">
