@@ -35,7 +35,6 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   } = useAgora({ appId, channelName, token });
 
   const localPlayerRef = useRef<HTMLDivElement>(null);
-  const remotePlayerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -54,13 +53,15 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   }, []);
 
   useEffect(() => {
-    if (hasPermission && !isJoined) {
+    if (hasPermission && !isJoined && !isConnecting) {
       join();
     }
     return () => {
-      leave();
+      if (isJoined) {
+        leave();
+      }
     };
-  }, [hasPermission, join, leave, isJoined]);
+  }, [hasPermission, join, leave, isJoined, isConnecting]);
   
   useEffect(() => {
     if (localVideoTrack && localPlayerRef.current) {
@@ -72,7 +73,8 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   }, [localVideoTrack]);
 
   const remoteUser = remoteUsers.length > 0 ? remoteUsers[0] : null;
-
+  const remotePlayerRef = useRef<HTMLDivElement>(null);
+  
   useEffect(() => {
     if (remoteUser?.videoTrack && remotePlayerRef.current) {
         remoteUser.videoTrack.play(remotePlayerRef.current);
@@ -99,10 +101,10 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     setVideoMuted((prev) => !prev);
   };
 
-  if (!isPermissionChecked || isConnecting) {
+  if (!isPermissionChecked) {
     return (
       <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
-        <div className="text-white text-lg">{!isPermissionChecked ? 'Requesting permissions...' : 'Connecting to call...'}</div>
+        <div className="text-white text-lg">Requesting permissions...</div>
       </div>
     );
   }
@@ -137,8 +139,17 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
            </div>
         ) : (
           <Card className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative flex flex-col items-center justify-center">
-            <Skeleton className="h-24 w-24 rounded-full bg-gray-700" />
-            <p className="mt-4 text-white">Waiting for the doctor to join...</p>
+            {isConnecting || !isJoined ? (
+                 <>
+                    <Skeleton className="h-24 w-24 rounded-full bg-gray-700 animate-pulse" />
+                    <p className="mt-4 text-white">Connecting to the call...</p>
+                 </>
+            ) : (
+                 <>
+                    <Skeleton className="h-24 w-24 rounded-full bg-gray-700" />
+                    <p className="mt-4 text-white">Waiting for the doctor to join...</p>
+                 </>
+            )}
           </Card>
         )}
       </div>

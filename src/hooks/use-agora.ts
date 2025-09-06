@@ -101,15 +101,13 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     }
     setLocalVideoTrack(null);
     setRemoteUsers([]);
-    setIsJoined(false);
     
-    if (clientRef.current && (clientRef.current.connectionState === 'CONNECTED' || clientRef.current.connectionState === 'CONNECTING')) {
+    if (clientRef.current && isJoined) {
         await clientRef.current.leave();
     }
-    
-    clientRef.current?.removeAllListeners();
-    // Do not nullify clientRef.current here to allow re-joining
-  }, []);
+    setIsJoined(false);
+    // Do not nullify clientRef, it can be reused
+  }, [isJoined]);
 
   const toggleAudio = useCallback(async () => {
     if (localTracksRef.current.audioTrack) {
