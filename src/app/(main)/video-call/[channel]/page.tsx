@@ -1,8 +1,26 @@
 
 'use server';
 
-import { VideoCallClient } from './video-call-client';
 import { RtcTokenBuilder, RtcRole } from 'agora-token';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Dynamically import the VideoCallClient component with SSR turned off
+const VideoCallClient = dynamic(
+  () => import('./video-call-client').then(mod => mod.VideoCallClient),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full">
+          <Skeleton className="bg-gray-800 w-full h-full rounded-lg" />
+          <Skeleton className="bg-gray-800 w-full h-full rounded-lg" />
+        </div>
+      </div>
+    )
+  }
+);
+
 
 const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID;
 const appCertificate = process.env.AGORA_APP_CERTIFICATE;
