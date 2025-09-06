@@ -108,7 +108,7 @@ function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
                         <Button type="button" variant="outline" onClick={handleFetchLocation} disabled={isFetchingLocation}>
                             {isFetchingLocation ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <LocateFixed className="mr-2 h-4 w-4" />}
                             {isFetchingLocation ? "Fetching Location..." : "Use Current Location"}
@@ -156,7 +156,7 @@ function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address
                             </div>
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="mt-4">
                         <DialogClose asChild>
                             <Button type="button" variant="outline">Cancel</Button>
                         </DialogClose>
