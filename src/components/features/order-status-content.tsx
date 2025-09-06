@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,22 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Copy, Share2, Phone, FileText, HelpCircle, ShieldAlert, Bike, CheckCircle2, Package, CookingPot, Check, ChevronDown, Map, MessageSquare, LifeBuoy, Star, Loader2 } from 'lucide-react';
-import Image from 'next/image';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '../ui/skeleton';
+
+const LiveTrackingMap = dynamic(() => Promise.resolve(() => (
+    <div className="relative h-48 w-full rounded-md overflow-hidden bg-muted">
+       <img src="https://picsum.photos/800/400?random=20" alt="Map" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+       <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+          <Button variant="secondary">
+              <Map className="mr-2 h-4 w-4"/> View on Map
+          </Button>
+       </div>
+    </div>
+)), { ssr: false, loading: () => <Skeleton className="h-48 w-full" /> });
+
 
 const orderStatusSteps = [
   { name: 'Order Confirmed', icon: CheckCircle2, completed: false, time: null },
@@ -208,15 +221,7 @@ export function OrderStatusContent() {
                 </div>
             </div>
            )}
-
-          <div className="relative h-48 w-full rounded-md overflow-hidden bg-muted">
-             <Image src="https://picsum.photos/800/400?random=20" alt="Map" layout="fill" objectFit="cover" data-ai-hint="map satellite" />
-             <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                <Button variant="secondary">
-                    <Map className="mr-2 h-4 w-4"/> View on Map
-                </Button>
-             </div>
-          </div>
+            <LiveTrackingMap />
         </CardContent>
       </Card>
 
@@ -271,5 +276,3 @@ export function OrderStatusContent() {
     </div>
   );
 }
-
-    

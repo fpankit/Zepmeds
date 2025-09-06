@@ -11,13 +11,22 @@ import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Siren, MapPin, AlertTriangle, ShieldCheck, Phone, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 import { useAuth } from "@/context/auth-context";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import dynamic from "next/dynamic";
 
 const RIDER_ARRIVAL_TIME = 10 * 60; // 10 minutes in seconds
+
+const LiveTrackingMap = dynamic(() => Promise.resolve(() => (
+  <div className="relative h-48 w-full rounded-md overflow-hidden bg-muted/30">
+    <img src="https://picsum.photos/800/400?random=45" alt="Map" loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-50"/>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-4 h-4 bg-blue-500 rounded-full animate-ping"></div>
+      </div>
+  </div>
+)), { ssr: false });
 
 export default function EmergencyPage() {
   const [isDispatched, setIsDispatched] = useState(false);
@@ -181,12 +190,7 @@ export default function EmergencyPage() {
                         <CardTitle className="text-lg text-yellow-300">Live Tracking</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="relative h-48 w-full rounded-md overflow-hidden bg-muted/30">
-                            <Image src="https://picsum.photos/800/400?random=45" alt="Map" layout="fill" objectFit="cover" data-ai-hint="map satellite" className="opacity-50"/>
-                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-4 h-4 bg-blue-500 rounded-full animate-ping"></div>
-                             </div>
-                        </div>
+                       <LiveTrackingMap />
                     </CardContent>
                 </Card>
 

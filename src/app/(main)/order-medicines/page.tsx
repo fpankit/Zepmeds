@@ -18,7 +18,6 @@ import {
   Minus,
   Plus,
 } from 'lucide-react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +26,8 @@ import { PrescriptionUploader } from '@/components/features/prescription-uploade
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const categories = [
   { name: 'All', icon: Pill },
@@ -245,6 +246,14 @@ const medicineCategories = [
   }
 ];
 
+const DynamicPrescriptionUploader = dynamic(
+  () => import('@/components/features/prescription-uploader').then(mod => mod.PrescriptionUploader),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-48 w-full" />
+  }
+)
+
 export default function OrderMedicinesPage() {
   const [showUploader, setShowUploader] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -292,7 +301,7 @@ export default function OrderMedicinesPage() {
         <Button onClick={handleUploadClick}>Upload</Button>
       </Card>
       
-      {showUploader && <div ref={uploaderRef}><PrescriptionUploader /></div>}
+      {showUploader && <div ref={uploaderRef}><DynamicPrescriptionUploader /></div>}
 
       <div className="space-y-4">
         <h2 className="text-xl font-bold">Categories</h2>

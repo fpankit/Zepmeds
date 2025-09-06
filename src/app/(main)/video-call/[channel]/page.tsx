@@ -5,8 +5,23 @@ import { Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Camera, Mic, PhoneOff, Users, Loader2, Video, AlertTriangle } from 'lucide-react';
-import { PatientProfile } from '@/components/features/patient-profile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const PatientProfile = dynamic(
+    () => import('@/components/features/patient-profile').then(mod => mod.PatientProfile),
+    {
+        ssr: false,
+        loading: () => (
+            <div className='p-4 space-y-4'>
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-40 w-full" />
+            </div>
+        )
+    }
+);
+
 
 function VideoCallContent() {
     const router = useRouter();

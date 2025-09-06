@@ -97,7 +97,7 @@ export function PatientProfile({ patientId }: { patientId: string | null }) {
         <div className="space-y-2 text-sm">
             <div className="flex items-center gap-3">
                 <Calendar className="h-4 w-4 text-gray-400"/>
-                <span>Age: 28 (Placeholder)</span>
+                <span>Age: {patient.age}</span>
             </div>
             <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-gray-400"/>

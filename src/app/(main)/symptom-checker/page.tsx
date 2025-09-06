@@ -1,4 +1,16 @@
-import { SymptomCheckerChat } from "@/components/features/symptom-checker-chat";
+
+'use client';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const SymptomCheckerChat = dynamic(
+  () => import('@/components/features/symptom-checker-chat').then(mod => mod.SymptomCheckerChat),
+  { 
+    ssr: false,
+    loading: () => <div className="p-4"><Skeleton className="h-[80vh] w-full" /></div>
+  }
+);
+
 
 export default function SymptomCheckerPage() {
   return (

@@ -4,7 +4,14 @@
 import { MapPin, User, ChevronDown, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { LocationSheet } from '../features/location-sheet';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '../ui/skeleton';
+
+const LocationSheet = dynamic(() => import('../features/location-sheet').then(mod => mod.LocationSheet), {
+  ssr: false,
+  loading: () => <Skeleton className="h-10 w-32" />
+});
+
 
 export function Header() {
   return (

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { collection, addDoc, serverTimestamp, query, limit, startAfter, getDocs, orderBy, DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +35,7 @@ export default function DoctorPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const isFetching = useRef(false);
 
   const [isCalling, setIsCalling] = useState<string | null>(null);
   const { user } = useAuth();
@@ -53,57 +54,44 @@ export default function DoctorPage() {
     }
   }, [incomingCalls]);
 
-  const fetchInitialDoctors = useCallback(async () => {
-      setIsLoading(true);
-      try {
-        const doctorsQuery = query(collection(db, "doctors"), orderBy("name"), limit(DOCTORS_PER_PAGE));
-        const querySnapshot = await getDocs(doctorsQuery);
-        const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
-        setDoctors(doctorsData);
-        setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
-        setHasMore(querySnapshot.docs.length === DOCTORS_PER_PAGE);
-      } catch(error) {
-        console.error("Error fetching doctors: ", error);
-        setDoctors([]);
-      } finally {
-        setIsLoading(false);
-      }
-  }, []);
-
-  useEffect(() => {
-    fetchInitialDoctors();
-  }, [fetchInitialDoctors]);
-  
-  const fetchMoreDoctors = useCallback(async () => {
-    if (isLoadingMore || !hasMore || !lastDoc) return;
-    setIsLoadingMore(true);
-
-    const nextQuery = query(
-      collection(db, "doctors"),
-      orderBy("name"),
-      startAfter(lastDoc),
-      limit(DOCTORS_PER_PAGE)
-    );
+  const fetchDoctors = useCallback(async (lastVisibleDoc: QueryDocumentSnapshot<DocumentData> | null = null) => {
+    if (isFetching.current) return;
+    isFetching.current = true;
+    
+    if(lastVisibleDoc) setIsLoadingMore(true) 
+    else setIsLoading(true);
 
     try {
-      const documentSnapshots = await getDocs(nextQuery);
-      const newDoctors = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+      const doctorsQuery = lastVisibleDoc
+        ? query(collection(db, "doctors"), orderBy("name"), startAfter(lastVisibleDoc), limit(DOCTORS_PER_PAGE))
+        : query(collection(db, "doctors"), orderBy("name"), limit(DOCTORS_PER_PAGE));
+
+      const querySnapshot = await getDocs(doctorsQuery);
+      const newDoctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
       
-      setDoctors((prev) => [...prev, ...newDoctors]);
-      setLastDoc(documentSnapshots.docs[documentSnapshots.docs.length - 1]);
-      setHasMore(documentSnapshots.docs.length === DOCTORS_PER_PAGE);
-    } catch (error) {
-      console.error("Error fetching more doctors: ", error);
+      setDoctors(prev => lastVisibleDoc ? [...prev, ...newDoctors] : newDoctors);
+      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
+      setHasMore(querySnapshot.docs.length === DOCTORS_PER_PAGE);
+
+    } catch(error) {
+      console.error("Error fetching doctors: ", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctors.' });
     } finally {
-      setIsLoadingMore(false);
+      if(lastVisibleDoc) setIsLoadingMore(false)
+      else setIsLoading(false);
+      isFetching.current = false;
     }
-  }, [isLoadingMore, hasMore, lastDoc]);
+  }, [toast]);
 
   useEffect(() => {
-    if (entry?.isIntersecting && hasMore) {
-      fetchMoreDoctors();
+    fetchDoctors();
+  }, [fetchDoctors]);
+
+  useEffect(() => {
+    if (entry?.isIntersecting && hasMore && !isLoadingMore) {
+      fetchDoctors(lastDoc);
     }
-  }, [entry, fetchMoreDoctors, hasMore]);
+  }, [entry, hasMore, isLoadingMore, fetchDoctors, lastDoc]);
 
 
   const handleInitiateCall = async (doctor: Doctor) => {

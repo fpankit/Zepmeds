@@ -1,5 +1,15 @@
 
-import { EchoDocChat } from '@/components/features/echo-doc-chat';
+'use client';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const EchoDocChat = dynamic(
+  () => import('@/components/features/echo-doc-chat').then(mod => mod.EchoDocChat),
+  { 
+    ssr: false,
+    loading: () => <div className="p-4"><Skeleton className="h-[80vh] w-full" /></div>
+  }
+);
 
 export default function EchoDocPage() {
   return (
