@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAgora } from '@/hooks/use-agora';
+import type { IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 
 interface VideoCallClientProps {
   appId: string;
@@ -30,12 +31,36 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     toggleVideo,
   } = useAgora({ appId, channelName, token });
 
+  const localPlayerRef = useRef<HTMLDivElement>(null);
+  const remotePlayerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     join();
     return () => {
       leave();
     };
   }, [join, leave]);
+  
+  useEffect(() => {
+    if (localVideoTrack && localPlayerRef.current) {
+      localVideoTrack.play(localPlayerRef.current);
+    }
+    return () => {
+      localVideoTrack?.stop();
+    };
+  }, [localVideoTrack]);
+
+  const remoteUser = remoteUsers.length > 0 ? remoteUsers[0] : null;
+
+  useEffect(() => {
+    if (remoteUser && remoteUser.videoTrack && remotePlayerRef.current) {
+        remoteUser.videoTrack.play(remotePlayerRef.current);
+    }
+
+    return () => {
+        remoteUser?.videoTrack?.stop();
+    }
+  }, [remoteUser]);
 
 
   const handleLeave = () => {
@@ -67,17 +92,15 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     );
   }
   
-  const remoteUser = remoteUsers.length > 0 ? remoteUsers[0] : null;
-
   return (
     <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full">
-        <Card id="local-player" className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
+        <Card ref={localPlayerRef} id="local-player" className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
            <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">You</div>
         </Card>
 
         {remoteUser ? (
-           <Card key={remoteUser.uid} id={`remote-player-${remoteUser.uid}`} className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
+           <Card ref={remotePlayerRef} id={`remote-player-${remoteUser.uid}`} className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
               <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">Doctor</div>
            </Card>
         ) : (
