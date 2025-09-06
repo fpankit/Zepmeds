@@ -2,9 +2,21 @@
 'use server';
 
 import { RtcTokenBuilder, RtcRole } from 'agora-token';
-import { VideoCallClient } from './video-call-client';
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
+
+const VideoCallClient = dynamic(
+  () => import('./video-call-client').then(mod => mod.VideoCallClient),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
+        <Skeleton className="h-full w-full" />
+      </div>
+    ),
+  }
+);
+
 
 const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID;
 const appCertificate = process.env.AGORA_APP_CERTIFICATE;
