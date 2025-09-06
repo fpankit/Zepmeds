@@ -22,6 +22,34 @@ interface Doctor {
   dataAiHint: string;
 }
 
+const mockDoctors: Doctor[] = [
+    {
+        id: "doc1",
+        name: "Dr. Anjali Sharma",
+        specialty: "Cardiologist",
+        experience: "12+ years of experience",
+        image: "https://picsum.photos/200/200?random=41",
+        dataAiHint: "doctor woman portrait",
+    },
+    {
+        id: "doc2",
+        name: "Dr. Vikram Singh",
+        specialty: "Neurologist",
+        experience: "10+ years of experience",
+        image: "https://picsum.photos/200/200?random=42",
+        dataAiHint: "doctor man portrait",
+    },
+    {
+        id: "doc3",
+        name: "Dr. Priya Desai",
+        specialty: "Pediatrician",
+        experience: "8+ years of experience",
+        image: "https://picsum.photos/200/200?random=43",
+        dataAiHint: "doctor woman smiling",
+    },
+];
+
+
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,9 +60,18 @@ export default function DoctorPage() {
       try {
         const querySnapshot = await getDocs(collection(db, "doctors"));
         const doctorsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
-        setDoctors(doctorsData);
+        
+        if (doctorsData.length > 0) {
+            setDoctors(doctorsData);
+        } else {
+            // If no doctors in Firestore, use mock data
+            setDoctors(mockDoctors);
+        }
+
       } catch (error) {
-        console.error("Error fetching doctors: ", error);
+        console.error("Error fetching doctors, using mock data: ", error);
+        // If there's an error, use mock data as a fallback
+        setDoctors(mockDoctors);
       } finally {
         setIsLoading(false);
       }
@@ -45,7 +82,10 @@ export default function DoctorPage() {
 
   const createChannelName = (doctorId: string) => {
     const userId = user?.id || 'guest';
-    return `zepmeds-call-${userId}-${doctorId}`;
+    // Sanitize channel name for Agora
+    const cleanUserId = userId.replace(/[^a-zA-Z0-9]/g, '');
+    const cleanDoctorId = doctorId.replace(/[^a-zA-Z0-9]/g, '');
+    return `zepmeds-call-${cleanUserId}-${cleanDoctorId}`;
   }
 
   return (
@@ -90,7 +130,7 @@ export default function DoctorPage() {
                 <div className="flex items-center gap-4">
                     <Avatar className="h-20 w-20">
                     <AvatarImage src={doctor.image} alt={doctor.name} data-ai-hint={doctor.dataAiHint} />
-                    <AvatarFallback>{doctor.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{doctor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
                     <h3 className="font-bold text-lg">{doctor.name}</h3>
