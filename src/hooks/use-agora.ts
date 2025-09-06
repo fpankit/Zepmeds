@@ -49,7 +49,7 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     agoraClient.removeAllListeners();
 
     // Leave the channel only if connected
-    if (agoraClient.connectionState === 'CONNECTED') {
+    if (agoraClient.connectionState === 'CONNECTED' || agoraClient.connectionState === 'CONNECTING') {
        await agoraClient.leave();
     }
     
@@ -91,13 +91,21 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
         try {
             // Join the channel
             await agoraClient.join(appId, channelName, token, null);
-            if (!isMountedRef.current) return;
+
+            // If component is unmounted after join, disconnect and exit.
+            if (!isMountedRef.current) {
+              await agoraClient.leave();
+              return;
+            }
 
             // Create and publish local tracks
             const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+            
+            // If component is unmounted after track creation, clean up tracks and exit.
             if (!isMountedRef.current) {
                 audioTrack.close();
                 videoTrack.close();
+                await agoraClient.leave();
                 return;
             }
 
@@ -105,6 +113,7 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
             setLocalVideoTrack(videoTrack);
             
             await agoraClient.publish([audioTrack, videoTrack]);
+            
             if (!isMountedRef.current) return;
 
             setIsJoined(true);
