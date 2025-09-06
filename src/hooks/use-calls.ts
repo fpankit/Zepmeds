@@ -33,8 +33,8 @@ export const useCalls = (doctorId: string) => {
 
     const callsQuery = query(
       collection(db, 'calls'),
-      where('doctorId', '==', doctorId),
-      orderBy('createdAt', 'desc')
+      where('doctorId', '==', doctorId)
+      // orderBy('createdAt', 'desc') // This requires a composite index in Firestore. Removing for now to prevent crash.
     );
 
     const unsubscribe = onSnapshot(
@@ -44,6 +44,8 @@ export const useCalls = (doctorId: string) => {
           id: doc.id,
           ...doc.data(),
         } as Call));
+        // Manual sort on the client-side since we removed orderBy
+        callsData.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         setCalls(callsData);
         setIsLoading(false);
       },
