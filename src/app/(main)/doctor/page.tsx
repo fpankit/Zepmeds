@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useCalls } from "@/hooks/use-calls";
 
 interface Doctor {
   id: string;
@@ -32,6 +33,18 @@ export default function DoctorPage() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  
+  // NOTE: This is for demonstration to show the hook works.
+  // In a real app, this would be in the DOCTOR'S application.
+  const { calls: incomingCalls } = useCalls(user?.id || '');
+
+  useEffect(() => {
+    if (incomingCalls.length > 0) {
+        console.log("Incoming calls detected (for demo): ", incomingCalls);
+        // Here, the doctor's app would show a notification.
+    }
+  }, [incomingCalls]);
+
 
   useEffect(() => {
     const doctorsCol = collection(db, "doctors");
