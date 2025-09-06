@@ -3,13 +3,13 @@
 
 import { RtcTokenBuilder, RtcRole } from 'agora-token';
 import { VideoCallClient } from './video-call-client';
+import { Skeleton } from '@/components/ui/skeleton';
+import dynamic from 'next/dynamic';
 
 const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID;
 const appCertificate = process.env.AGORA_APP_CERTIFICATE;
 
 if (!appId || !appCertificate) {
-  // This case should be handled gracefully in a real app
-  // For now, we'll throw an error during build/server-side execution
   throw new Error('Agora App ID and Certificate are not set in environment variables.');
 }
 
@@ -47,7 +47,6 @@ export default async function VideoCallPage({ params }: { params: { channel: str
   const token = await generateToken(channelName);
   
   if (!appId) {
-     // This could be a more user-friendly error component
      return <div className="container mx-auto p-4">Agora App ID is not configured.</div>
   }
 
