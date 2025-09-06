@@ -50,11 +50,11 @@ function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address:
     };
     
     return (
-        <form onSubmit={handleSubmit}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Add a new address</DialogTitle>
-                </DialogHeader>
+        <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+                <DialogTitle>Add a new address</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
                         <Label>Address Type</Label>
@@ -102,8 +102,8 @@ function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address:
                     </DialogClose>
                     <Button type="submit">Save Address</Button>
                 </DialogFooter>
-            </DialogContent>
-        </form>
+            </form>
+        </DialogContent>
     )
 }
 
@@ -114,6 +114,7 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
 
   const handleAddAddress = async (newAddressData: Omit<Address, 'id' | 'address'>) => {
+      if (!user) return;
       const fullAddress = `${newAddressData.flat}, ${newAddressData.street}${newAddressData.landmark ? `, ${newAddressData.landmark}` : ''}, ${newAddressData.pincode}, ${newAddressData.state}`;
       const newAddress: Address = {
           ...newAddressData,
