@@ -4,14 +4,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Mic, MicOff, PhoneOff, Video, VideoOff, AlertTriangle } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Video, VideoOff, AlertTriangle, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useAgora } from '@/hooks/use-agora';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { PatientProfile } from '@/components/features/patient-profile';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface VideoCallClientProps {
   appId: string;
@@ -25,7 +22,6 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   const [videoMuted, setVideoMuted] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
   const [isPermissionChecked, setIsPermissionChecked] = useState(false);
-  const [patientId, setPatientId] = useState<string | null>(null);
   
   const {
     localVideoTrack,
@@ -33,25 +29,11 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
     join,
     leave,
     isJoined,
-    toggleAudio,
-    toggleVideo,
     isLoading: isConnecting,
   } = useAgora({ appId, channelName, token });
 
   const localPlayerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchAppointmentDetails = async () => {
-        const appointmentDocRef = doc(db, "appointments", channelName);
-        const appointmentDocSnap = await getDoc(appointmentDocRef);
-        if (appointmentDocSnap.exists()) {
-            setPatientId(appointmentDocSnap.data().patientId);
-        } else {
-            console.error("Appointment not found");
-        }
-    };
-    fetchAppointmentDetails();
-  }, [channelName]);
+  const remotePlayerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -80,6 +62,7 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   
   useEffect(() => {
     if (localVideoTrack && localPlayerRef.current) {
+      localPlayerRef.current.innerHTML = '';
       localVideoTrack.play(localPlayerRef.current);
     }
     return () => {
@@ -88,11 +71,13 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   }, [localVideoTrack]);
 
   const remoteUser = remoteUsers[0];
-  const remotePlayerRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (remoteUser?.videoTrack && remotePlayerRef.current) {
+        remotePlayerRef.current.innerHTML = '';
         remoteUser.videoTrack.play(remotePlayerRef.current);
+    } else if (remotePlayerRef.current) {
+        remotePlayerRef.current.innerHTML = ''; // Clear remote view if user leaves
     }
     
     return () => {
@@ -119,7 +104,8 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   if (!isPermissionChecked) {
     return (
       <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
-        <div className="text-white text-lg">Requesting permissions...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+        <p className="mt-4 text-white">Requesting permissions...</p>
       </div>
     );
   }
@@ -142,38 +128,39 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
   }
   
   return (
-    <div className="relative flex h-screen flex-col bg-black p-4 gap-4">
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 grid grid-rows-2 gap-4">
-            <div ref={remotePlayerRef} id="remote-player" className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
-              <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">Doctor</div>
-               {!remoteUser && (
+    <div className="relative flex h-screen flex-col bg-black">
+        {/* Remote Video */}
+        <div ref={remotePlayerRef} className="flex-1 w-full h-full bg-gray-900 relative">
+             {!remoteUser && (
                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
                      {isConnecting || !isJoined ? (
                          <>
-                            <Skeleton className="h-24 w-24 rounded-full bg-gray-700 animate-pulse" />
+                            <Loader2 className="h-8 w-8 animate-spin" />
                             <p className="mt-4">Connecting to the call...</p>
                          </>
                     ) : (
                          <>
-                            <Skeleton className="h-24 w-24 rounded-full bg-gray-700" />
-                            <p className="mt-4">Waiting for the doctor to join...</p>
+                            <div className="flex flex-col items-center gap-2">
+                                <Skeleton className="h-24 w-24 rounded-full bg-gray-700" />
+                                <p className="mt-4">Waiting for the doctor to join...</p>
+                            </div>
                          </>
                     )}
                  </div>
                )}
-            </div>
-             <div ref={localPlayerRef} id="local-player" className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
-               <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">You</div>
-            </div>
         </div>
-        <div className="md:col-span-1">
-            {patientId ? <PatientProfile patientId={patientId} /> : <Card className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center"><p className="text-white">Loading patient details...</p></Card>}
+        
+        {/* Local Video (Picture-in-Picture) */}
+        <div ref={localPlayerRef} className="absolute bottom-24 right-4 w-48 h-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700 shadow-lg">
+             {videoMuted && (
+                <div className="w-full h-full flex items-center justify-center bg-black">
+                    <VideoOff className="h-8 w-8 text-white" />
+                </div>
+            )}
         </div>
-      </div>
 
-
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4">
+      {/* Controls */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4 p-4 bg-black/50 rounded-full">
         <Button onClick={handleToggleMic} size="icon" className={`rounded-full h-14 w-14 ${micMuted ? 'bg-destructive' : 'bg-gray-700'}`}>
           {micMuted ? <MicOff /> : <Mic />}
         </Button>
