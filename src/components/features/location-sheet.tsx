@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Home, MapPin, Plus, Search, LocateFixed, Briefcase, Trash2 } from "lucide-react";
 import { Separator } from "../ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from "../ui/dialog";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
 import { useAuth, Address } from "@/context/auth-context";
@@ -25,7 +25,8 @@ const iconMap = {
     Other: MapPin,
 }
 
-function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address: Omit<Address, 'id' | 'address'>) => void, closeDialog: () => void }) {
+function AddAddressForm({ onAddAddress }: { onAddAddress: (address: Omit<Address, 'id' | 'address'>) => void }) {
+    const [open, setOpen] = useState(false);
     const [type, setType] = useState<Address['type']>("Home");
     const [flat, setFlat] = useState("");
     const [street, setStreet] = useState("");
@@ -45,65 +46,76 @@ function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address:
                 pincode, 
                 state 
             });
-            closeDialog();
+            setOpen(false); // Close dialog on successful submission
         }
     };
     
     return (
-        <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-                <DialogTitle>Add a new address</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit}>
-                <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                        <Label>Address Type</Label>
-                        <RadioGroup value={type} onValueChange={(v) => setType(v as Address['type'])} className="flex gap-4 mt-2">
-                           <Label htmlFor="home" className="flex items-center gap-2 cursor-pointer">
-                                <RadioGroupItem value="Home" id="home" />
-                                <Home className="w-4 h-4 mr-1" /> Home
-                            </Label>
-                             <Label htmlFor="work" className="flex items-center gap-2 cursor-pointer">
-                                <RadioGroupItem value="Work" id="work" />
-                                <Briefcase className="w-4 h-4 mr-1" /> Work
-                            </Label>
-                            <Label htmlFor="other" className="flex items-center gap-2 cursor-pointer">
-                                <RadioGroupItem value="Other" id="other" />
-                                <MapPin className="w-4 h-4 mr-1" /> Other
-                            </Label>
-                        </RadioGroup>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="flat">Flat, House no., Building</Label>
-                        <Input id="flat" value={flat} onChange={(e) => setFlat(e.target.value)} required />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="street">Area, Street, Sector, Village</Label>
-                        <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} required />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="landmark">Landmark</Label>
-                        <Input id="landmark" placeholder="E.g. Near Apollo Hospital" value={landmark} onChange={(e) => setLandmark(e.target.value)} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                 <Button variant="ghost" className="w-full justify-start p-3">
+                    <Plus className="h-5 w-5 mr-3" />
+                    <span className="font-semibold">Add New Address</span>
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Add a new address</DialogTitle>
+                    <DialogDescription>
+                        Enter your address details. This will be saved to your profile.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="pincode">Pincode</Label>
-                            <Input id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} required />
+                            <Label>Address Type</Label>
+                            <RadioGroup value={type} onValueChange={(v) => setType(v as Address['type'])} className="flex gap-4 mt-2">
+                               <Label htmlFor="home" className="flex items-center gap-2 cursor-pointer">
+                                    <RadioGroupItem value="Home" id="home" />
+                                    <Home className="w-4 h-4 mr-1" /> Home
+                                </Label>
+                                 <Label htmlFor="work" className="flex items-center gap-2 cursor-pointer">
+                                    <RadioGroupItem value="Work" id="work" />
+                                    <Briefcase className="w-4 h-4 mr-1" /> Work
+                                </Label>
+                                <Label htmlFor="other" className="flex items-center gap-2 cursor-pointer">
+                                    <RadioGroupItem value="Other" id="other" />
+                                    <MapPin className="w-4 h-4 mr-1" /> Other
+                                </Label>
+                            </RadioGroup>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="state">State</Label>
-                            <Input id="state" value={state} onChange={(e) => setState(e.target.value)} required />
+                         <div className="space-y-2">
+                            <Label htmlFor="flat">Flat, House no., Building</Label>
+                            <Input id="flat" value={flat} onChange={(e) => setFlat(e.target.value)} required />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="street">Area, Street, Sector, Village</Label>
+                            <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)} required />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="landmark">Landmark</Label>
+                            <Input id="landmark" placeholder="E.g. Near Apollo Hospital" value={landmark} onChange={(e) => setLandmark(e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="pincode">Pincode</Label>
+                                <Input id="pincode" value={pincode} onChange={(e) => setPincode(e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="state">State</Label>
+                                <Input id="state" value={state} onChange={(e) => setState(e.target.value)} required />
+                            </div>
                         </div>
                     </div>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button type="button" variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button type="submit">Save Address</Button>
-                </DialogFooter>
-            </form>
-        </DialogContent>
+                    <DialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button type="submit">Save Address</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -111,8 +123,7 @@ function AddAddressForm({ onAddAddress, closeDialog }: { onAddAddress: (address:
 export function LocationSheet({ children }: { children: React.ReactNode }) {
   const { user, updateUser } = useAuth();
   const [selectedAddressId, setSelectedAddressId] = useState(user?.addresses[0]?.id || "");
-  const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
-
+  
   const handleAddAddress = async (newAddressData: Omit<Address, 'id' | 'address'>) => {
       if (!user) return;
       const fullAddress = `${newAddressData.flat}, ${newAddressData.street}${newAddressData.landmark ? `, ${newAddressData.landmark}` : ''}, ${newAddressData.pincode}, ${newAddressData.state}`;
@@ -156,15 +167,7 @@ export function LocationSheet({ children }: { children: React.ReactNode }) {
             </div>
           </Button>
 
-            <Dialog open={isAddAddressOpen} onOpenChange={setIsAddAddressOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start p-3">
-                        <Plus className="h-5 w-5 mr-3" />
-                        <span className="font-semibold">Add New Address</span>
-                    </Button>
-                </DialogTrigger>
-                <AddAddressForm onAddAddress={handleAddAddress} closeDialog={() => setIsAddAddressOpen(false)} />
-            </Dialog>
+          <AddAddressForm onAddAddress={handleAddAddress} />
 
 
           <Separator />
