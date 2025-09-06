@@ -1,19 +1,24 @@
 
 "use client";
 
-import { useEffect, useState, memo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import type { Map } from 'leaflet';
 
 // Fix for default icon issues with webpack
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default,
-  iconUrl: require('leaflet/dist/images/marker-icon.png').default,
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png').default,
+// This is a common workaround for Next.js/Webpack projects with Leaflet
+const defaultIcon = new L.Icon({
+    iconUrl: '/marker-icon.png',
+    iconRetinaUrl: '/marker-icon-2x.png',
+    shadowUrl: '/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
 });
+L.Marker.prototype.options.icon = defaultIcon;
+
 
 type DynamicMapProps = {
     position: {
@@ -24,36 +29,41 @@ type DynamicMapProps = {
     popupText?: string;
 }
 
-const MapDisplay = memo(function MapDisplay({ position, zoom, popupText }: DynamicMapProps) {
-    return (
-        <MapContainer center={[position.lat, position.lng]} zoom={zoom} scrollWheelZoom={false} style={{ height: '200px', width: '100%', borderRadius: '0.5rem' }}>
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
-            />
-            <Marker position={[position.lat, position.lng]}>
-                <Popup>
-                    {popupText}
-                </Popup>
-            </Marker>
-        </MapContainer>
-    );
-});
-
-
 export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }: DynamicMapProps) {
-    const [isMounted, setIsMounted] = useState(false);
-    
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const mapInstanceRef = useRef<Map | null>(null);
 
-    if (!isMounted) {
-        return null; // Don't render anything on the server
-    }
+    useEffect(() => {
+        // Ensure this only runs on the client
+        if (typeof window === 'undefined') return;
+
+        // Initialize map only if the container exists and map is not already initialized
+        if (mapContainerRef.current && !mapInstanceRef.current) {
+            const map = L.map(mapContainerRef.current).setView([position.lat, position.lng], zoom);
+            mapInstanceRef.current = map;
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            L.marker([position.lat, position.lng]).addTo(map)
+                .bindPopup(popupText)
+                .openPopup();
+        }
+
+        // Cleanup function to destroy the map instance when the component unmounts
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+        };
+    }, [position, zoom, popupText]); // Rerun effect if these props change, though the re-init logic is handled inside
 
     return (
-       <MapDisplay position={position} zoom={zoom} popupText={popupText} />
+        <div 
+            ref={mapContainerRef} 
+            style={{ height: '200px', width: '100%', borderRadius: '0.5rem' }} 
+        />
     );
 }
-
