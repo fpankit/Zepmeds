@@ -117,7 +117,7 @@ function VideoCallContent() {
 
 export default function VideoCallPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
             <VideoCallContent />
         </Suspense>
     )

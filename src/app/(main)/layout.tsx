@@ -11,22 +11,22 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const noLayoutRoutes = ["/checkout"];
-  const showLayout = !noLayoutRoutes.includes(pathname);
+  const noLayoutRoutes = ["/checkout", "/video-call", "/call-status"];
+  
+  const isLayoutVisible = !noLayoutRoutes.some(route => pathname.startsWith(route));
+
+
+  if (!isLayoutVisible) {
+    return <main>{children}</main>;
+  }
 
   return (
-    <>
-      {showLayout ? (
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1 pb-20">
-            {children}
-          </main>
-          <BottomNav />
-        </div>
-      ) : (
-        <main>{children}</main>
-      )}
-    </>
+    <div className="flex min-h-screen flex-col">
+      <Header />
+      <main className="flex-1 pb-20">
+        {children}
+      </main>
+      <BottomNav />
+    </div>
   );
 }
