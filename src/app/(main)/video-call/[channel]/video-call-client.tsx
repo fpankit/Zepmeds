@@ -66,6 +66,8 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
       </div>
     );
   }
+  
+  const remoteUser = remoteUsers.length > 0 ? remoteUsers[0] : null;
 
   return (
     <div className="relative flex h-screen flex-col items-center justify-center bg-black p-4">
@@ -74,12 +76,11 @@ export function VideoCallClient({ appId, channelName, token }: VideoCallClientPr
            <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">You</div>
         </Card>
 
-        {remoteUsers.map((user) => (
-           <Card key={user.uid} id={`remote-player-${user.uid}`} className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
+        {remoteUser ? (
+           <Card key={remoteUser.uid} id={`remote-player-${remoteUser.uid}`} className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative">
               <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-sm">Doctor</div>
            </Card>
-        ))}
-        {remoteUsers.length === 0 && (
+        ) : (
           <Card className="bg-gray-800 w-full h-full rounded-lg overflow-hidden relative flex flex-col items-center justify-center">
             <Skeleton className="h-24 w-24 rounded-full bg-gray-700" />
             <p className="mt-4 text-white">Waiting for the doctor to join...</p>

@@ -53,8 +53,11 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     };
 
     const handleUserUnpublished = (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
-      if (mediaType === 'video') {
+       if (mediaType === 'video') {
         setRemoteUsers((prevUsers) => prevUsers.filter((u) => u.uid !== user.uid));
+      }
+      if (mediaType === 'audio') {
+        user.audioTrack?.stop();
       }
     };
 
@@ -91,6 +94,7 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
         await clientRef.current?.leave();
     }
     
+    clientRef.current?.removeAllListeners();
     setIsJoined(false);
     setRemoteUsers([]);
   }, []);
