@@ -14,6 +14,7 @@ if (!appId || !appCertificate) {
 }
 
 async function generateToken(channelName: string) {
+  'use server';
   const role = RtcRole.PUBLISHER;
   const expirationTimeInSeconds = 3600; // 1 hour
   const currentTimestamp = Math.floor(Date.now() / 1000);
