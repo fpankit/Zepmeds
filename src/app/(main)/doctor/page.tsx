@@ -66,8 +66,8 @@ export default function DoctorPage() {
               patientName: `${user.firstName} ${user.lastName}`,
               doctorId: doctor.id,
               doctorName: doctor.name || "Unnamed Doctor",
-              doctorImage: doctor.image,
-              doctorSpecialty: doctor.specialty,
+              doctorImage: doctor.image || "",
+              doctorSpecialty: doctor.specialty || "N/A",
               status: "calling", // Status: calling, accepted, rejected, unanswered, completed
               createdAt: serverTimestamp(),
           };
