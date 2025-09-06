@@ -9,7 +9,4 @@ export const ai = genkit({
   model: 'googleai/gemini-2.5-flash',
 });
 
-import '@/ai/flows/ai-symptom-checker.ts';
 import '@/ai/flows/generate-prescription-summary.ts';
-import '@/ai/flows/echo-doc-flow.ts';
-import '@/ai/flows/text-to-speech.ts';
