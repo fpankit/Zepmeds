@@ -9,25 +9,27 @@ const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID;
 const appCertificate = process.env.AGORA_APP_CERTIFICATE;
 
 if (!appId || !appCertificate) {
-  throw new Error('Agora App ID and Certificate are not set in environment variables.');
+  console.error("Agora App ID or Certificate is missing from environment variables.");
 }
 
 async function generateToken(channelName: string) {
   'use server';
+  // Role is set to publisher to allow sending video stream
   const role = RtcRole.PUBLISHER;
   const expirationTimeInSeconds = 3600; // 1 hour
   const currentTimestamp = Math.floor(Date.now() / 1000);
   const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
-  const uid = 0; // The user ID. 0 means the server assigns one.
+  // A uid of 0 allows Agora to assign a random user ID
+  const uid = 0;
 
-  if (!channelName) {
+  if (!channelName || !appId || !appCertificate) {
     return '';
   }
 
   try {
     const token = RtcTokenBuilder.buildTokenWithUid(
-      appId!,
-      appCertificate!,
+      appId,
+      appCertificate,
       channelName,
       uid,
       role,
@@ -43,11 +45,16 @@ async function generateToken(channelName: string) {
 
 export default async function VideoCallPage({ params }: { params: { channel: string } }) {
   const channelName = params.channel;
-  const token = await generateToken(channelName);
   
-  if (!appId) {
-     return <div className="container mx-auto p-4">Agora App ID is not configured.</div>
+  if (!appId || !appCertificate) {
+     return (
+        <div className="container mx-auto p-4 flex items-center justify-center h-screen">
+          <p className="text-red-500 text-center">Video call service is not configured correctly. Please contact support.</p>
+        </div>
+     )
   }
+
+  const token = await generateToken(channelName);
 
   return (
     <VideoCallLoader
