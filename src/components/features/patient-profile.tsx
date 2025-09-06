@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { User } from "@/context/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,31 +17,53 @@ const getInitials = (firstName: string = '', lastName: string = '') => {
 
 export function PatientProfile({ patientId }: { patientId: string }) {
   const [patient, setPatient] = useState<User | null>(null);
+  const [patientDocId, setPatientDocId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!patientId) return;
-
-    const fetchPatient = async () => {
-      setIsLoading(true);
-      try {
-        const patientDocRef = doc(db, "users", patientId);
-        const patientDocSnap = await getDoc(patientDocRef);
-
-        if (patientDocSnap.exists()) {
-          setPatient({ id: patientDocSnap.id, ...patientDocSnap.data() } as User);
+    if (!patientId) return; // patientId is the callId/channelName
+    
+    // First, get the call document to find the patient's actual document ID
+    const callDocRef = doc(db, "calls", patientId);
+    const unsubscribeCall = onSnapshot(callDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const callData = docSnap.data();
+            if (callData.patientId) {
+                setPatientDocId(callData.patientId);
+            } else {
+                console.error("No patientId found in call document");
+                setIsLoading(false);
+            }
         } else {
-          console.error("Patient not found");
+            console.error("Call document not found");
+            setIsLoading(false);
         }
-      } catch (error) {
-          console.error("Error fetching patient:", error)
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    });
 
-    fetchPatient();
+    return () => unsubscribeCall();
   }, [patientId]);
+
+
+  useEffect(() => {
+    if (!patientDocId) return;
+
+    // Now, listen to the patient's document for their details
+    setIsLoading(true);
+    const patientDocRef = doc(db, "users", patientDocId);
+    const unsubscribePatient = onSnapshot(patientDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setPatient({ id: docSnap.id, ...docSnap.data() } as User);
+        } else {
+            console.error("Patient document not found");
+            setPatient(null);
+        }
+        setIsLoading(false);
+    });
+    
+    return () => unsubscribePatient();
+
+  }, [patientDocId])
+
 
   if (isLoading) {
     return (

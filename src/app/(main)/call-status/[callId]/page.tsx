@@ -53,9 +53,10 @@ export default function CallStatusPage() {
 
         // Timeout logic
         const timeoutId = setTimeout(async () => {
-            if (status === 'calling') {
+             // Check against the latest status from Firestore, not the local state one
+            const currentDoc = await getDoc(callDocRef);
+            if (currentDoc.exists() && currentDoc.data().status === 'calling') {
                 await updateDoc(callDocRef, { status: 'unanswered' });
-                unsubscribe();
             }
         }, CALL_TIMEOUT);
 
@@ -63,7 +64,7 @@ export default function CallStatusPage() {
             unsubscribe();
             clearTimeout(timeoutId);
         };
-    }, [callId, router, toast, status]);
+    }, [callId, router, toast]);
 
     const handleCancelCall = async () => {
         const callDocRef = doc(db, 'calls', callId);
@@ -112,6 +113,11 @@ export default function CallStatusPage() {
                         <h1 className="text-3xl font-bold">Calling Dr. {callData.doctorName}</h1>
                         <p className="text-muted-foreground">{callData.doctorSpecialty}</p>
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                         <div className="absolute bottom-[-150px]">
+                            <Button variant="destructive" size="lg" className="rounded-full h-16 w-16" onClick={handleCancelCall}>
+                                <PhoneOff />
+                            </Button>
+                        </div>
                     </>
                 )}
 
@@ -129,16 +135,7 @@ export default function CallStatusPage() {
                         </Button>
                     </>
                 )}
-
-                {status === 'calling' && (
-                    <div className="absolute bottom-[-100px]">
-                        <Button variant="destructive" size="lg" className="rounded-full h-16 w-16" onClick={handleCancelCall}>
-                            <PhoneOff />
-                        </Button>
-                    </div>
-                )}
             </motion.div>
         </div>
     );
 }
-
