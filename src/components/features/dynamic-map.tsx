@@ -1,9 +1,10 @@
 
 "use client";
 
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import L, { type Map } from 'leaflet';
 
 // Fix for default icon issues with webpack
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -24,7 +25,13 @@ type DynamicMapProps = {
 }
 
 export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }: DynamicMapProps) {
-    if (typeof window === 'undefined') {
+    const [isMounted, setIsMounted] = useState(false);
+    
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    if (!isMounted) {
         return null;
     }
 
