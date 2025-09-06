@@ -32,13 +32,15 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
     // Dynamically import AgoraRTC only on the client-side
     const AgoraRTC = (await import('agora-rtc-sdk-ng')).default;
 
-    const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-    clientRef.current = client;
+    // Ensure client is only created once
+    if (!clientRef.current) {
+        clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    }
+    const client = clientRef.current;
 
     const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'video' | 'audio') => {
       await client.subscribe(user, mediaType);
       if (mediaType === 'video') {
-        // Check if user already exists to avoid duplicates
         setRemoteUsers((prevUsers) => {
             if (prevUsers.find(u => u.uid === user.uid)) {
                 return prevUsers;
@@ -84,12 +86,19 @@ export function useAgora({ appId, channelName, token }: AgoraConfig) {
   }, [appId, channelName, token]);
 
   const leave = useCallback(async () => {
-    localTracksRef.current.audioTrack?.close();
-    localTracksRef.current.videoTrack?.close();
+    if (localTracksRef.current.audioTrack) {
+      localTracksRef.current.audioTrack.close();
+      localTracksRef.current.audioTrack = null;
+    }
+    if (localTracksRef.current.videoTrack) {
+      localTracksRef.current.videoTrack.close();
+      localTracksRef.current.videoTrack = null;
+    }
     setLocalVideoTrack(null);
     
-    if (clientRef.current && clientRef.current.connectionState === 'CONNECTED') {
-        await clientRef.current?.leave();
+    // Only leave if the client is connected or connecting
+    if (clientRef.current && (clientRef.current.connectionState === 'CONNECTED' || clientRef.current.connectionState === 'CONNECTING')) {
+        await clientRef.current.leave();
     }
     
     clientRef.current?.removeAllListeners();
