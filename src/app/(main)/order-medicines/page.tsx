@@ -312,7 +312,7 @@ export default function OrderMedicinesPage() {
                 key={category.name}
                 onClick={() => setSelectedCategory(category.name)}
                 className={cn(
-                  'flex flex-col items-center justify-center space-y-2 w-24 h-24 rounded-lg text-center p-2 transition-all duration-200 transform hover:scale-105',
+                  'flex flex-col items-center justify-center space-y-2 w-20 h-20 rounded-2xl text-center p-2 transition-all duration-200 transform hover:scale-105',
                    'bg-gradient-to-br text-white shadow-lg',
                    category.gradient,
                   selectedCategory === category.name
@@ -320,8 +320,8 @@ export default function OrderMedicinesPage() {
                     : 'opacity-80 hover:opacity-100'
                 )}
               >
-                <category.icon className="h-8 w-8" />
-                <span className="text-xs font-semibold">{category.name}</span>
+                <category.icon className="h-7 w-7" />
+                <span className="text-xs font-bold">{category.name}</span>
               </button>
             ))}
           </div>
