@@ -65,7 +65,7 @@ export default function DoctorPage() {
               patientId: user.id,
               patientName: `${user.firstName} ${user.lastName}`,
               doctorId: doctor.id,
-              doctorName: doctor.name,
+              doctorName: doctor.name || "Unnamed Doctor",
               status: "Scheduled",
               createdAt: serverTimestamp(),
           };
@@ -74,7 +74,7 @@ export default function DoctorPage() {
           
           toast({
               title: "Appointment Booked!",
-              description: `Your appointment with ${doctor.name} is confirmed.`,
+              description: `Your appointment with ${doctor.name || 'the doctor'} is confirmed.`,
           });
 
           // The new channel name will be the appointment ID
