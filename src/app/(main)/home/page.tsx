@@ -181,15 +181,6 @@ export default function HomePage() {
         </div>
       </Card>
     );
-
-    if (card.external) {
-      return (
-        <a href={card.href} target="_blank" rel="noopener noreferrer">
-          {content}
-        </a>
-      );
-    }
-
     return (
       <Link href={card.href}>
         {content}
