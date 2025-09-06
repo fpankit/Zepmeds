@@ -1,11 +1,14 @@
 
 'use client';
 
-import { Mic, MicOff, PhoneOff, Video, VideoOff, Users, ScreenShare } from 'lucide-react';
+import { PhoneOff, Users } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PatientProfile } from '@/components/features/patient-profile';
 import { useAuth } from '@/context/auth-context';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useEffect, useState }from 'react';
 
 // This is a placeholder URL. Replace with your actual video call service provider.
 // The service should be configured to allow embedding.
@@ -19,9 +22,20 @@ export default function VideoCallPage() {
     const { user } = useAuth();
     const channelName = params.channel as string;
 
-    // In a real app, you would fetch the appointment details using the channelName (appointmentId)
-    // to get the correct patientId. For this demo, we'll use the logged-in user's ID.
-    const patientId = user?.id;
+    const [patientId, setPatientId] = useState<string | null>(user?.id || null);
+
+    useEffect(() => {
+        const fetchCallData = async () => {
+            if (channelName && !user?.id) { // Only fetch if patientId is not from auth context
+                const callDocRef = doc(db, "calls", channelName);
+                const callDocSnap = await getDoc(callDocRef);
+                if (callDocSnap.exists()) {
+                    setPatientId(callDocSnap.data().patientId);
+                }
+            }
+        };
+        fetchCallData();
+    }, [channelName, user?.id])
 
     if (!channelName) {
         return (
@@ -31,10 +45,11 @@ export default function VideoCallPage() {
         )
     }
 
+    // You might want to append user's name or other details as URL parameters
     const meetingUrl = `${VIDEO_SERVICE_BASE_URL}/${channelName}?embed&audio=on&video=on&background=off&screenshare=on&chat=on`;
 
     const handleEndCall = () => {
-        // Navigate back to the doctor's dashboard or home page
+        // Here you would also update the call status in Firestore to 'completed'
         router.push('/doctor'); 
     };
 
@@ -52,10 +67,11 @@ export default function VideoCallPage() {
                 </div>
                 
                 {/* Control Bar */}
-                <div className="bg-gray-900/80 backdrop-blur-sm p-4 flex justify-center items-center gap-4">
-                     <Button variant="secondary" size="lg" className="rounded-full h-14 w-14 bg-gray-700 hover:bg-gray-600"><Mic /></Button>
-                     <Button variant="secondary" size="lg" className="rounded-full h-14 w-14 bg-gray-700 hover:bg-gray-600"><Video /></Button>
-                     <Button variant="secondary" size="lg" className="rounded-full h-14 w-14 bg-gray-700 hover:bg-gray-600"><ScreenShare /></Button>
+                 <div className="bg-gray-900/80 backdrop-blur-sm p-4 flex justify-center items-center gap-4">
+                     {/* The actual controls are handled inside the Whereby iframe. 
+                         These can be for custom app logic or branding.
+                         For simplicity, we only have the end call and participants button.
+                     */}
                      <Button variant="secondary" size="lg" className="rounded-full h-14 w-14 bg-gray-700 hover:bg-gray-600"><Users /></Button>
                      <Button onClick={handleEndCall} variant="destructive" size="lg" className="rounded-full h-14 w-14"><PhoneOff /></Button>
                 </div>
@@ -63,7 +79,7 @@ export default function VideoCallPage() {
 
             {/* Sidebar with Patient Details */}
             <aside className="w-80 hidden md:block bg-gray-900 border-l border-gray-800 p-4">
-                {patientId ? <PatientProfile patientId={patientId} /> : <div className="text-center text-gray-400">No patient selected.</div>}
+                {patientId ? <PatientProfile patientId={patientId} /> : <div className="text-center text-gray-400">Loading patient details...</div>}
             </aside>
         </div>
     );

@@ -28,7 +28,7 @@ interface Doctor {
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isBooking, setIsBooking] = useState<string | null>(null);
+  const [isCalling, setIsCalling] = useState<string | null>(null);
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -51,44 +51,45 @@ export default function DoctorPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleBookAppointment = async (doctor: Doctor) => {
+  const handleInitiateCall = async (doctor: Doctor) => {
       if (!user) {
           toast({ variant: 'destructive', title: "Login Required", description: "You must be logged in to book an appointment." });
           router.push('/login');
           return;
       }
 
-      setIsBooking(doctor.id);
+      setIsCalling(doctor.id);
 
       try {
-          const appointmentData = {
+          const callData = {
               patientId: user.id,
               patientName: `${user.firstName} ${user.lastName}`,
               doctorId: doctor.id,
               doctorName: doctor.name || "Unnamed Doctor",
-              status: "Scheduled",
+              doctorImage: doctor.image,
+              doctorSpecialty: doctor.specialty,
+              status: "calling", // Status: calling, accepted, rejected, unanswered, completed
               createdAt: serverTimestamp(),
           };
 
-          const docRef = await addDoc(collection(db, "appointments"), appointmentData);
+          const docRef = await addDoc(collection(db, "calls"), callData);
           
           toast({
-              title: "Appointment Booked!",
-              description: `Your appointment with ${doctor.name || 'the doctor'} is confirmed.`,
+              title: "Calling Doctor",
+              description: `Waiting for ${doctor.name || 'the doctor'} to respond.`,
           });
 
-          // The new channel name will be the appointment ID
-          const channelName = docRef.id;
-          router.push(`/video-call/${channelName}`);
+          // Navigate to the call status page
+          router.push(`/call-status/${docRef.id}`);
 
       } catch (error) {
-          console.error("Failed to book appointment:", error);
+          console.error("Failed to initiate call:", error);
           toast({
               variant: "destructive",
-              title: "Booking Failed",
-              description: "There was a problem booking your appointment. Please try again.",
+              title: "Calling Failed",
+              description: "There was a problem initiating your call. Please try again.",
           });
-          setIsBooking(null);
+          setIsCalling(null);
       }
   }
 
@@ -159,13 +160,13 @@ export default function DoctorPage() {
                 <div className="flex gap-2 mt-4">
                     <Button 
                         className="w-full bg-green-600 hover:bg-green-700" 
-                        disabled={!doctor.isOnline || !!isBooking}
-                        onClick={() => handleBookAppointment(doctor)}
+                        disabled={!doctor.isOnline || !!isCalling}
+                        onClick={() => handleInitiateCall(doctor)}
                     >
-                        {isBooking === doctor.id ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Booking...</>
+                        {isCalling === doctor.id ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Calling...</>
                         ) : (
-                            <><Video className="mr-2 h-4 w-4" /> Book & Call Now</>
+                            <><Video className="mr-2 h-4 w-4" /> Call Now</>
                         )}
                     </Button>
                 </div>
