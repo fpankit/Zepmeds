@@ -3,9 +3,9 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent }d from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Bot } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { collection, addDoc, serverTimestamp, query, limit, startAfter, getDocs, orderBy, DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -65,6 +65,11 @@ export default function DoctorPage() {
       const doctorsQuery = lastVisibleDoc
         ? query(collection(db, "doctors"), orderBy("name"), startAfter(lastVisibleDoc), limit(DOCTORS_PER_PAGE))
         : query(collection(db, "doctors"), orderBy("name"), limit(DOCTORS_PER_PAGE));
+
+      // Simulate network delay for loading skeletons
+      if (!lastVisibleDoc) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
 
       const querySnapshot = await getDocs(doctorsQuery);
       const newDoctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
@@ -139,6 +144,33 @@ export default function DoctorPage() {
     if (!name) return 'Dr';
     return name.split(' ').map(n => n[0]).join('');
   }
+  
+  const renderSkeletons = () => (
+    <>
+        <div className="col-span-full flex flex-col items-center text-center space-y-2 py-10">
+            <Loader2 className="h-10 w-10 animate-spin text-primary"/>
+            <h2 className="text-xl font-semibold">Hang Up! Warming up</h2>
+            <p className="text-muted-foreground">Finding available doctors for you...</p>
+        </div>
+        {Array.from({ length: 6 }).map((_, index) => (
+        <Card key={index} className="overflow-hidden">
+            <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-20 w-20 rounded-full" />
+                <div className="space-y-2 flex-1">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-4 w-2/3" />
+                </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+                <Skeleton className="h-10 w-full" />
+            </div>
+            </CardContent>
+        </Card>
+        ))}
+    </>
+  );
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -157,23 +189,7 @@ export default function DoctorPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading && doctors.length === 0 ? (
-          Array.from({ length: 6 }).map((_, index) => (
-            <Card key={index} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-20 w-20 rounded-full" />
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-4 w-2/3" />
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                    <Skeleton className="h-10 w-full" />
-                </div>
-              </CardContent>
-            </Card>
-          ))
+          renderSkeletons()
         ) : doctors.length > 0 ? (
             doctors.map((doctor) => (
             <Card key={doctor.id} className="overflow-hidden">

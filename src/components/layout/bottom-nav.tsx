@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from "react";
 import { Home, Stethoscope, MoreHorizontal, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,7 +16,7 @@ const navItems = [
   { href: "/more", icon: MoreHorizontal, label: "More" },
 ];
 
-export function BottomNav() {
+function BottomNavComponent() {
   const pathname = usePathname();
   const { cart } = useCart();
 
@@ -56,3 +57,5 @@ export function BottomNav() {
     </nav>
   );
 }
+
+export const BottomNav = React.memo(BottomNavComponent);
