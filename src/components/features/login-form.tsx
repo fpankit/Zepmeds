@@ -166,7 +166,7 @@ export function LoginForm() {
             <TabsTrigger value="login">Login</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
         </TabsList>
-        <TabsContent value="login" className="mt-6">
+        <TabsContent value="login" className="mt-6" key="login-form">
             <Form {...loginForm}>
             <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                 <FormField
@@ -195,7 +195,7 @@ export function LoginForm() {
             </form>
             </Form>
         </TabsContent>
-        <TabsContent value="signup" className="mt-6">
+        <TabsContent value="signup" className="mt-6" key="signup-form">
             <Form {...signUpForm}>
             <form onSubmit={signUpForm.handleSubmit(onSignUpSubmit)} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -297,3 +297,5 @@ export function LoginForm() {
     </div>
   );
 }
+
+    
