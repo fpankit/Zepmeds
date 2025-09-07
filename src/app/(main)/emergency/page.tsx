@@ -17,6 +17,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from "next/dynamic";
 import { EditAddressDialog } from "@/components/features/edit-address-dialog";
+import { useRouter } from "next/navigation";
 
 const RIDER_ARRIVAL_TIME = 10 * 60; // 10 minutes in seconds
 
@@ -38,6 +39,7 @@ export default function EmergencyPage() {
 
   const { user } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
   
   const defaultAddress = user?.addresses?.[0]?.address || "741/2, Gurugram, Haryana, 122001";
   const [location, setLocation] = useState(defaultAddress);
@@ -88,12 +90,13 @@ export default function EmergencyPage() {
 
 
   const handleDispatch = async () => {
-    if (!user) {
+    if (!user || user.isGuest) {
         toast({
             variant: "destructive",
             title: "Authentication Error",
             description: "You must be logged in to dispatch an emergency.",
         });
+        router.push('/login');
         return;
     }
 

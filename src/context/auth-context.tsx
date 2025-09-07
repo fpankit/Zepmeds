@@ -4,7 +4,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { isPossiblePhoneNumber } from "react-phone-number-input";
 
 export interface Address {
   id: string;
@@ -21,7 +20,7 @@ export interface Address {
 
 
 export interface User {
-  id: string; // This will now be the Firebase Auth UID
+  id: string; 
   firstName: string;
   lastName: string;
   email: string;
@@ -32,7 +31,7 @@ export interface User {
   isGuest?: boolean;
 }
 
-interface NewUser_ {
+interface NewUserDetails {
     firstName: string;
     lastName: string;
     age: number;
@@ -41,16 +40,10 @@ interface NewUser_ {
     referralCode?: string;
 }
 
-// This is a mock of what Firebase Auth would return
-interface MockAuthResult {
-    uid: string;
-    isNewUser: boolean;
-}
-
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (identifier: string, newUserDetails?: NewUser_) => Promise<void>;
+  login: (identifier: string, newUserDetails?: NewUserDetails) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<Omit<User, 'id'>>) => Promise<void>;
 }
@@ -70,23 +63,6 @@ const createGuestUser = (): User => ({
     isGuest: true,
 });
 
-
-// Mock Firebase Auth sign-in/sign-up
-const mockFirebaseAuth = async (identifier: string): Promise<MockAuthResult> => {
-    // In a real app, this would involve calling Firebase Auth functions.
-    // For this prototype, we'll simulate it. We'll use the sanitized
-    // identifier as the user ID (uid).
-    const uid = sanitizeForId(identifier);
-    const userDocRef = doc(db, "users", uid);
-    const userDocSnap = await getDoc(userDocRef);
-
-    return {
-        uid: uid,
-        isNewUser: !userDocSnap.exists(),
-    }
-}
-
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,65 +70,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        // If stored user is guest, keep them as guest
-        if (parsedUser.isGuest) {
-            setUser(createGuestUser());
-        } else {
-            setUser(parsedUser);
-        }
+        setUser(JSON.parse(storedUser));
     } else {
         setUser(createGuestUser());
     }
     setLoading(false);
   }, []);
 
-  const login = async (identifier: string, newUserDetails?: NewUser_) => {
+  const login = async (identifier: string, newUserDetails?: NewUserDetails) => {
     setLoading(true);
     
+    // Use phone from signup details, or the identifier from login form
     const phone = newUserDetails?.phone || identifier;
-    const authResult = await mockFirebaseAuth(phone);
-    const userDocRef = doc(db, "users", authResult.uid);
+    const uid = sanitizeForId(phone); // Use sanitized phone as a stable ID
+    const userDocRef = doc(db, "users", uid);
+    const userDocSnap = await getDoc(userDocRef);
 
-    if (authResult.isNewUser) {
-        if (!newUserDetails) {
-            setLoading(false);
-            throw new Error("User not found. Please sign up.");
-        }
-        const defaultAddress: Address = {
-            id: 'home-123',
-            type: 'Home',
-            name: 'Home',
-            flat: 'A-123',
-            street: 'Main Street',
-            pincode: '122001',
-            state: 'Haryana',
-            address: 'A-123, Main Street, Gurugram, Haryana, 122001'
-        };
-        const newUser: User = {
-            id: authResult.uid,
-            ...newUserDetails,
-            addresses: [defaultAddress],
-        };
-        await setDoc(userDocRef, newUser);
-        setUser(newUser);
-        localStorage.setItem('user', JSON.stringify(newUser));
+    if (userDocSnap.exists()) {
+      // User exists, log them in
+      const userData = { id: userDocSnap.id, ...userDocSnap.data() } as User;
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
     } else {
-        const userDocSnap = await getDoc(userDocRef);
-        if (!userDocSnap.exists()) {
-            // This case should ideally not happen if logic is correct
-            setLoading(false);
-            throw new Error("User data not found after authentication.");
-        }
-        const userData = { id: userDocSnap.id, ...userDocSnap.data() } as User;
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+      // New user, sign them up
+      if (!newUserDetails) {
+          setLoading(false);
+          throw new Error("User not found. Please sign up.");
+      }
+      const defaultAddress: Address = {
+          id: 'home-123',
+          type: 'Home',
+          name: 'Home',
+          flat: 'A-123',
+          street: 'Main Street',
+          pincode: '122001',
+          state: 'Haryana',
+          address: 'A-123, Main Street, Gurugram, Haryana, 122001'
+      };
+      const newUser: User = {
+          id: uid,
+          ...newUserDetails,
+          addresses: [defaultAddress],
+          isGuest: false,
+      };
+      await setDoc(userDocRef, newUser);
+      setUser(newUser);
+      localStorage.setItem('user', JSON.stringify(newUser));
     }
     setLoading(false);
   };
 
   const logout = () => {
-    // In a real app, you'd also call Firebase signOut() here
     localStorage.removeItem('user');
     setUser(createGuestUser());
   };
@@ -160,7 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
     if (!user) return;
 
-    const updatedUser = { ...user, ...userData };
+    const updatedUser: User = { ...user, ...userData, isGuest: user.isGuest };
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
 
