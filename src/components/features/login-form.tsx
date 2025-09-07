@@ -36,7 +36,7 @@ const SignUpSchema = z.object({
 
 // Schema for the Login form
 const LoginSchema = z.object({
-  identifier: z.string().min(1, "Please enter your email or phone number"),
+  identifier: z.string().min(1, "Please enter your phone number"),
 });
 
 // Schema for OTP verification
@@ -97,12 +97,17 @@ export function LoginForm() {
     try {
         // Mock API call for verifying OTP
         await new Promise((resolve) => setTimeout(resolve, 1500));
+        if (data.code !== '123456') { // Simulate OTP check
+            throw new Error("Invalid OTP. Please try again.");
+        }
         
-        // On successful verification, login the user
-        // This will fetch existing data or create a new user profile
         await login(loginIdentifier, newUserData || undefined);
 
-        // Redirect to home
+        toast({
+            title: "Login Successful!",
+            description: "Welcome to Zepmeds.",
+        });
+
         router.push("/home");
 
     } catch (error: any) {
@@ -126,6 +131,7 @@ export function LoginForm() {
                 <p className="text-sm text-muted-foreground">
                     Enter the 6-digit code sent to {loginIdentifier}
                 </p>
+                <p className="text-xs text-muted-foreground">(Hint: use 123456)</p>
                 </div>
                 <FormField
                 control={verifyForm.control}
@@ -174,9 +180,9 @@ export function LoginForm() {
                 name="identifier"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Email or Phone Number</FormLabel>
+                    <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                        <Input placeholder="name@example.com or +91 1234567890" {...field} />
+                        <Input placeholder="+91 1234567890" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -297,5 +303,3 @@ export function LoginForm() {
     </div>
   );
 }
-
-    

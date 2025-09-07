@@ -21,7 +21,7 @@ export interface Address {
 
 
 export interface User {
-  id: string; // Document ID, which will be a sanitized phone number or email
+  id: string; // This will now be the Firebase Auth UID
   firstName: string;
   lastName: string;
   email: string;
@@ -41,6 +41,12 @@ interface NewUser_ {
     referralCode?: string;
 }
 
+// This is a mock of what Firebase Auth would return
+interface MockAuthResult {
+    uid: string;
+    isNewUser: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -51,7 +57,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Sanitize identifier to be a valid Firestore document ID
 const sanitizeForId = (identifier: string) => identifier.replace(/[^a-zA-Z0-9]/g, "_");
 
 const createGuestUser = (): User => ({
@@ -65,6 +70,23 @@ const createGuestUser = (): User => ({
     isGuest: true,
 });
 
+
+// Mock Firebase Auth sign-in/sign-up
+const mockFirebaseAuth = async (identifier: string): Promise<MockAuthResult> => {
+    // In a real app, this would involve calling Firebase Auth functions.
+    // For this prototype, we'll simulate it. We'll use the sanitized
+    // identifier as the user ID (uid).
+    const uid = sanitizeForId(identifier);
+    const userDocRef = doc(db, "users", uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    return {
+        uid: uid,
+        isNewUser: !userDocSnap.exists(),
+    }
+}
+
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,9 +94,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // If stored user is guest, keep them as guest
+        if (parsedUser.isGuest) {
+            setUser(createGuestUser());
+        } else {
+            setUser(parsedUser);
+        }
     } else {
-        // If no user is stored, create a guest user
         setUser(createGuestUser());
     }
     setLoading(false);
@@ -82,77 +109,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (identifier: string, newUserDetails?: NewUser_) => {
     setLoading(true);
-    let userId: string;
-    let userDocRef;
-    let userDocSnap;
-
-    // Check if identifier is a phone number or email to query correctly
-    if (isPossiblePhoneNumber(identifier || '')) {
-        userId = sanitizeForId(identifier);
-        userDocRef = doc(db, "users", userId);
-        userDocSnap = await getDoc(userDocRef);
-    } else {
-        userId = sanitizeForId(newUserDetails?.phone || identifier);
-        userDocRef = doc(db, "users", userId);
-        userDocSnap = await getDoc(userDocRef);
-    }
     
-    if (userDocSnap.exists()) {
-      const userData = { id: userDocSnap.id, ...userDocSnap.data() } as User;
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-    } else if (newUserDetails) {
-      const defaultAddress: Address = {
-        id: 'home-123',
-        type: 'Home',
-        name: 'Home',
-        flat: 'A-123',
-        street: 'Main Street',
-        pincode: '122001',
-        state: 'Haryana',
-        address: 'A-123, Main Street, Gurugram, Haryana, 122001'
-      };
-      const newUser: User = {
-        id: userId,
-        ...newUserDetails,
-        addresses: [defaultAddress],
-      };
-      await setDoc(userDocRef, newUser);
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
+    const phone = newUserDetails?.phone || identifier;
+    const authResult = await mockFirebaseAuth(phone);
+    const userDocRef = doc(db, "users", authResult.uid);
+
+    if (authResult.isNewUser) {
+        if (!newUserDetails) {
+            setLoading(false);
+            throw new Error("User not found. Please sign up.");
+        }
+        const defaultAddress: Address = {
+            id: 'home-123',
+            type: 'Home',
+            name: 'Home',
+            flat: 'A-123',
+            street: 'Main Street',
+            pincode: '122001',
+            state: 'Haryana',
+            address: 'A-123, Main Street, Gurugram, Haryana, 122001'
+        };
+        const newUser: User = {
+            id: authResult.uid,
+            ...newUserDetails,
+            addresses: [defaultAddress],
+        };
+        await setDoc(userDocRef, newUser);
+        setUser(newUser);
+        localStorage.setItem('user', JSON.stringify(newUser));
     } else {
-        setLoading(false);
-        throw new Error("User not found. Please check your details or sign up.");
+        const userDocSnap = await getDoc(userDocRef);
+        if (!userDocSnap.exists()) {
+            // This case should ideally not happen if logic is correct
+            setLoading(false);
+            throw new Error("User data not found after authentication.");
+        }
+        const userData = { id: userDocSnap.id, ...userDocSnap.data() } as User;
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
     }
     setLoading(false);
   };
 
   const logout = () => {
+    // In a real app, you'd also call Firebase signOut() here
     localStorage.removeItem('user');
     setUser(createGuestUser());
   };
 
   const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
-    setUser(prevUser => {
-      if (!prevUser) return null;
+    if (!user) return;
 
-      const updatedUser = { ...prevUser, ...userData };
-      
-      // Update localStorage immediately for both guest and logged-in users
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
-      // If the user is not a guest, also update Firestore
-      if (!prevUser.isGuest) {
-        const userDocRef = doc(db, "users", prevUser.id);
-        // Use a separate async function to not block the state update
-        const updateFirestore = async () => {
-            await updateDoc(userDocRef, userData);
-        }
-        updateFirestore().catch(console.error);
-      }
-      
-      return updatedUser;
-    });
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+
+    // Only update Firestore if the user is not a guest
+    if (!user.isGuest) {
+        const userDocRef = doc(db, "users", user.id);
+        await updateDoc(userDocRef, userData);
+    }
   };
 
   return (
