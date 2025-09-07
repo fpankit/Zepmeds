@@ -3,7 +3,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent }d from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Bot } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -244,3 +244,5 @@ export default function DoctorPage() {
     </div>
   );
 }
+
+    
