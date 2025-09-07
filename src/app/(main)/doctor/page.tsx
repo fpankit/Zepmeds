@@ -58,8 +58,11 @@ export default function DoctorPage() {
     if (isFetching.current) return;
     isFetching.current = true;
     
-    if(lastVisibleDoc) setIsLoadingMore(true) 
-    else setIsLoading(true);
+    if(lastVisibleDoc) {
+        setIsLoadingMore(true);
+    } else {
+        setIsLoading(true);
+    }
 
     try {
       const doctorsQuery = lastVisibleDoc
@@ -82,8 +85,8 @@ export default function DoctorPage() {
       console.error("Error fetching doctors: ", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctors.' });
     } finally {
-      if(lastVisibleDoc) setIsLoadingMore(false)
-      else setIsLoading(false);
+      setIsLoading(false);
+      setIsLoadingMore(false);
       isFetching.current = false;
     }
   }, [toast]);
@@ -93,7 +96,7 @@ export default function DoctorPage() {
   }, [fetchDoctors]);
 
   useEffect(() => {
-    if (entry?.isIntersecting && hasMore && !isLoadingMore) {
+    if (entry?.isIntersecting && hasMore && !isLoadingMore && !isFetching.current) {
       fetchDoctors(lastDoc);
     }
   }, [entry, hasMore, isLoadingMore, fetchDoctors, lastDoc]);
@@ -244,5 +247,3 @@ export default function DoctorPage() {
     </div>
   );
 }
-
-    
