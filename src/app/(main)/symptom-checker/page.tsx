@@ -12,6 +12,7 @@ import { Stethoscope, Plus, X, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { Form } from '@/components/ui/form';
 
 const symptomSchema = z.object({
   symptoms: z.array(z.string()).min(1, 'Please enter at least one symptom.'),
@@ -54,7 +55,7 @@ function SymptomCheckerForm() {
     const combinedSymptoms = [
       ...data.symptoms,
       data.additionalInfo,
-    ].join(', ');
+    ].filter(Boolean).join(', ');
     router.push(`/symptom-checker/results?symptoms=${encodeURIComponent(combinedSymptoms)}`);
   };
 
