@@ -65,12 +65,12 @@ const sponsorCards = [
 ]
 
 const trendingProducts = [
-  { id: 'prod1', name: 'Paracetamol 500mg', image: 'https://picsum.photos/200/200?random=5', dataAiHint: "medicine pills", price: 25.00, category: 'Popular' },
-  { id: 'prod2', name: 'Antiseptic Liquid', image: 'https://picsum.photos/200/200?random=6', dataAiHint: "medicine bottle", price: 80.00, category: 'Popular' },
-  { id: 'prod3', name: 'Digital Thermometer', image: 'https://picsum.photos/200/200?random=7', dataAiHint: "thermometer device", price: 250.00, category: ['Popular', 'Devices'] },
-  { id: 'prod4', name: 'Moisturizing Cream', image: 'https://picsum.photos/200/200?random=8', dataAiHint: "skincare product", price: 350.00, category: 'Skin Care' },
-  { id: 'prod5', name: 'Acne Treatment Gel', image: 'https://picsum.photos/200/200?random=9', dataAiHint: "skincare product", price: 220.00, category: 'Skin Care' },
-  { id: 'prod6', name: 'Band-Aid Pack', image: 'https://picsum.photos/200/200?random=10', dataAiHint: "medical product", price: 50.00, category: 'Popular' },
+  { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular' },
+  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular' },
+  { id: 'prod3', name: 'Digital Thermometer', price: 250.00, category: ['Popular', 'Devices'] },
+  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care' },
+  { id: 'prod5', name: 'Acne Treatment Gel', price: 220.00, category: 'Skin Care' },
+  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular' },
 ];
 
 export default function HomePage() {

@@ -88,8 +88,6 @@ export function PrescriptionUploader() {
       price: 0, // Placeholder price
       description: med.dosage,
       quantity: 1,
-      image: 'https://picsum.photos/200/200?random=32', // Placeholder image
-      dataAiHint: 'medicine pills',
     };
     addToCart(item);
     toast({
