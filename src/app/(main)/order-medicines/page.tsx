@@ -86,7 +86,7 @@ const medicineCategories = [
         discount: '10% OFF',
         rating: 4.6,
         image: "https://picsum.photos/200/200?random=14",
-        dataAiHint: "medicine pills"
+        dataAiHint: "pine cones"
       },
       {
         id: 'gh5',
@@ -97,7 +97,7 @@ const medicineCategories = [
         discount: '8% OFF',
         rating: 4.7,
         image: "https://picsum.photos/200/200?random=15",
-        dataAiHint: "medicine pills"
+        dataAiHint: "snowy mountain"
       },
       {
         id: 'gh6',
@@ -376,56 +376,52 @@ export default function OrderMedicinesPage() {
         {filteredCategories.map((category) => (
             <div key={category.name}>
                 <h2 className="text-xl font-bold mb-4">{category.name}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                 {category.medicines.map((medicine) => {
                     const cartItem = cart.find(item => item.id === medicine.id);
                     return (
                     <Card key={medicine.id} className="overflow-hidden">
-                        <CardContent className="p-3 flex gap-4 items-center">
+                        <CardContent className="p-3 flex gap-4 items-start">
                             <Image
                                 src={medicine.image}
                                 alt={medicine.name}
                                 width={80}
                                 height={80}
-                                className="rounded-md object-cover w-20 h-20"
+                                className="rounded-md object-cover w-20 h-20 aspect-square"
                                 data-ai-hint={medicine.dataAiHint}
                             />
                             <div className="flex-grow flex flex-col justify-between self-stretch">
                                 <div>
                                     <h3 className="font-bold text-base leading-tight">{medicine.name}</h3>
-                                    <p className="text-xs text-muted-foreground mt-1">
+                                    <p className="text-sm text-muted-foreground mt-1">
                                         {medicine.description}
                                     </p>
                                     <div className="flex items-center gap-1 mt-1">
-                                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                                        <span className="text-xs font-bold">{medicine.rating}</span>
+                                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                        <span className="text-sm font-semibold">{medicine.rating}</span>
                                     </div>
                                 </div>
-
-                                <div className="flex justify-between items-end mt-2">
-                                    <div className='flex items-center gap-2'>
-                                        <p className="font-bold text-md">₹{medicine.price}</p>
-                                        <p className="text-xs text-muted-foreground line-through">
-                                        ₹{medicine.oldPrice}
-                                        </p>
-                                        <p className="text-xs font-bold text-green-500">{medicine.discount}</p>
-                                    </div>
-                                    
+                                <div className="flex items-center gap-2 mt-2">
+                                    <p className="font-bold text-lg">₹{medicine.price}</p>
+                                    <p className="text-sm text-muted-foreground line-through">
+                                    ₹{medicine.oldPrice}
+                                    </p>
+                                    <p className="text-sm font-bold text-green-500">{medicine.discount}</p>
                                 </div>
                             </div>
-                             <div className="flex flex-col justify-between items-center h-full">
+                            <div className="flex flex-col justify-start items-center h-full">
                                 {cartItem ? (
-                                    <div className="flex flex-col items-center gap-1">
-                                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(medicine.id, cartItem.quantity + 1)}>
-                                            <Plus className="h-4 w-4" />
-                                        </Button>
-                                        <span className="w-8 text-center font-bold text-lg">{cartItem.quantity}</span>
-                                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(medicine.id, cartItem.quantity - 1)}>
-                                            <Minus className="h-4 w-4" />
-                                        </Button>
+                                    <div className="flex items-center gap-1">
+                                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(medicine.id, cartItem.quantity - 1)}>
+                                        <Minus className="h-4 w-4" />
+                                      </Button>
+                                      <span className="w-8 text-center font-bold text-lg">{cartItem.quantity}</span>
+                                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(medicine.id, cartItem.quantity + 1)}>
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
                                     </div>
                                 ) : (
-                                    <Button size="sm" variant="outline" className="self-end" onClick={() => handleAddToCart(medicine)}>
+                                    <Button size="sm" variant="outline" onClick={() => handleAddToCart(medicine)}>
                                         Add
                                     </Button>
                                 )}
