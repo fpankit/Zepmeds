@@ -87,13 +87,18 @@ export default function OrderMedicinesPage() {
       let productsQuery: Query<DocumentData>;
       const baseQuery = collection(db, "products");
 
-      const categoryQuery = category !== 'All' 
-        ? query(baseQuery, where("category", "==", category))
-        : baseQuery;
+      let categoryQuery: Query<DocumentData>;
+      
+      // Temporary fix: Don't order by name when filtering by category to avoid composite index error
+      if (category !== 'All') {
+        categoryQuery = query(baseQuery, where("category", "==", category));
+      } else {
+        categoryQuery = query(baseQuery, orderBy("name"));
+      }
 
       productsQuery = lastVisibleDoc
-        ? query(categoryQuery, orderBy("name"), startAfter(lastVisibleDoc), limit(PRODUCTS_PER_PAGE))
-        : query(categoryQuery, orderBy("name"), limit(PRODUCTS_PER_PAGE));
+        ? query(categoryQuery, startAfter(lastVisibleDoc), limit(PRODUCTS_PER_PAGE))
+        : query(categoryQuery, limit(PRODUCTS_PER_PAGE));
       
        // Simulate network delay for initial load
       if (!lastVisibleDoc) {
@@ -214,39 +219,42 @@ export default function OrderMedicinesPage() {
         <h2 className="text-xl font-bold mb-4">
             {selectedCategory === 'All' ? 'All Products' : selectedCategory}
         </h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {isLoading && products.length === 0 ? renderSkeletons() : (
             products.map((product) => {
               const cartItem = cart.find(item => item.id === product.id);
               return (
                 <Card key={product.id} className="overflow-hidden group">
-                  <CardContent className="p-0 flex flex-col justify-between h-full">
-                    <div className="p-4">
-                      <h3 className="font-semibold text-base leading-tight truncate">{product.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1 truncate">
-                          {product.description}
-                      </p>
-                      <div className="flex items-baseline gap-2 mt-2">
-                        <p className="font-bold text-lg">₹{product.price}</p>
-                        {product.oldPrice && <p className="text-sm text-muted-foreground line-through">₹{product.oldPrice}</p>}
+                   <CardContent className="p-4 flex flex-col justify-between h-full">
+                      <div>
+                        <h3 className="font-semibold text-base leading-tight truncate">{product.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1 truncate">
+                            {product.description}
+                        </p>
+                        <div className="flex items-baseline gap-2 mt-2">
+                          <p className="font-bold text-lg">₹{product.price}</p>
+                          {product.oldPrice && <p className="text-sm text-muted-foreground line-through">₹{product.oldPrice}</p>}
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mt-auto p-2 border-t border-border">
-                       {cartItem ? (
-                          <div className="flex items-center justify-between">
-                            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
-                              <Minus className="h-4 w-4" />
+                      <div className="mt-auto pt-4">
+                        {cartItem ? (
+                            <div className="flex items-center justify-between">
+                              <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="w-6 text-center font-bold">{cartItem.quantity}</span>
+                              <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)}>
+                              <ShoppingCart className="mr-2 h-4 w-4"/>
+                              Add to Cart
                             </Button>
-                            <span className="w-6 text-center font-bold">{cartItem.quantity}</span>
-                            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)}>Add to Cart</Button>
-                        )}
-                    </div>
+                          )}
+                      </div>
                   </CardContent>
                 </Card>
               )
@@ -268,4 +276,3 @@ export default function OrderMedicinesPage() {
   );
 }
 
-    
