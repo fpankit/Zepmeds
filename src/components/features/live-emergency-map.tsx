@@ -42,33 +42,36 @@ export function LiveEmergencyMap({ userPosition }: LiveEmergencyMapProps) {
     });
     const [step, setStep] = useState(0);
 
-    // Simulate ambulance movement
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setStep(prevStep => {
-                const nextStep = prevStep + 1;
-                if (nextStep > SIMULATION_STEPS) {
-                    clearInterval(interval);
-                    return prevStep;
-                }
+    // TODO: The current ambulance simulation uses setInterval which causes performance issues
+    // and a SES_UNCAUGHT_EXCEPTION error on resize. This has been temporarily disabled.
+    // A better approach would be to use CSS animations or a more performant library for this.
+    // // Simulate ambulance movement
+    // useEffect(() => {
+    //     const interval = setInterval(() => {
+    //         setStep(prevStep => {
+    //             const nextStep = prevStep + 1;
+    //             if (nextStep > SIMULATION_STEPS) {
+    //                 clearInterval(interval);
+    //                 return prevStep;
+    //             }
 
-                const latDiff = (userPosition.lat - ambulancePosition.lat) / SIMULATION_STEPS;
-                const lngDiff = (userPosition.lng - ambulancePosition.lng) / SIMULATION_STEPS;
+    //             const latDiff = (userPosition.lat - ambulancePosition.lat) / SIMULATION_STEPS;
+    //             const lngDiff = (userPosition.lng - ambulancePosition.lng) / SIMULATION_STEPS;
                 
-                if (ambulanceMarkerRef.current) {
-                    const newPos = {
-                        lat: ambulancePosition.lat + latDiff * nextStep,
-                        lng: ambulancePosition.lng + lngDiff * nextStep
-                    };
-                    ambulanceMarkerRef.current.setLatLng(newPos);
-                }
+    //             if (ambulanceMarkerRef.current) {
+    //                 const newPos = {
+    //                     lat: ambulancePosition.lat + latDiff * nextStep,
+    //                     lng: ambulancePosition.lng + lngDiff * nextStep
+    //                 };
+    //                 ambulanceMarkerRef.current.setLatLng(newPos);
+    //             }
                 
-                return nextStep;
-            });
-        }, SIMULATION_INTERVAL);
+    //             return nextStep;
+    //         });
+    //     }, SIMULATION_INTERVAL);
 
-        return () => clearInterval(interval);
-    }, [userPosition, ambulancePosition]);
+    //     return () => clearInterval(interval);
+    // }, [userPosition, ambulancePosition]);
 
     useEffect(() => {
         if (mapContainerRef.current && !mapInstanceRef.current) {
