@@ -393,35 +393,37 @@ export default function OrderMedicinesPage() {
         {filteredCategories.map((category) => (
             <div key={category.name}>
                 <h2 className="text-xl font-bold mb-4">{category.name}</h2>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {category.medicines.map((medicine) => {
                     const cartItem = cart.find(item => item.id === medicine.id);
                     return (
-                    <Card key={medicine.id} className="overflow-hidden flex flex-col">
-                        <CardContent className="p-0 flex flex-col flex-grow">
-                             <div className="relative w-full aspect-square bg-muted/30">
+                    <Card key={medicine.id} className="overflow-hidden">
+                        <CardContent className="p-4 flex gap-4">
+                             <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 bg-muted/30 rounded-md">
                                 <Image
                                     src={medicine.image}
                                     alt={medicine.name}
                                     fill
-                                    className="object-cover"
+                                    className="object-cover rounded-md"
                                     data-ai-hint={medicine.dataAiHint}
                                 />
-                                <Badge variant="destructive" className="absolute top-2 left-2 bg-gradient-to-r from-pink-500 to-red-500 text-white border-0">{medicine.discount}</Badge>
-                                <Badge variant="secondary" className="absolute bottom-2 right-2 bg-background/70 backdrop-blur-sm">
-                                    <Star className="w-3 h-3 mr-1 text-yellow-400 fill-yellow-400" />
-                                    {medicine.rating}
-                                </Badge>
                              </div>
-                             <div className="p-3 flex flex-col flex-grow">
-                                <h3 className="font-semibold text-base leading-tight truncate">{medicine.name}</h3>
-                                <p className="text-sm text-muted-foreground mt-1 flex-grow">
+                             <div className="flex flex-col flex-grow">
+                                <h3 className="font-semibold text-base leading-tight">{medicine.name}</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
                                     {medicine.description}
                                 </p>
-                                <div className="flex items-center justify-between mt-3">
-                                  <div className="flex items-center gap-2">
-                                      <p className="text-sm text-muted-foreground line-through">₹{medicine.oldPrice}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                     <Badge variant="secondary" className="bg-background/70 backdrop-blur-sm">
+                                        <Star className="w-3 h-3 mr-1 text-yellow-400 fill-yellow-400" />
+                                        {medicine.rating}
+                                    </Badge>
+                                    <Badge variant="destructive" className="bg-gradient-to-r from-pink-500 to-red-500 text-white border-0">{medicine.discount}</Badge>
+                                </div>
+                                <div className="flex items-end justify-between mt-auto pt-2">
+                                  <div className="flex items-baseline gap-2">
                                       <p className="font-bold text-lg">₹{medicine.price}</p>
+                                      <p className="text-sm text-muted-foreground line-through">₹{medicine.oldPrice}</p>
                                   </div>
                                   {cartItem ? (
                                     <div className="flex items-center">
@@ -434,8 +436,8 @@ export default function OrderMedicinesPage() {
                                       </Button>
                                     </div>
                                   ) : (
-                                    <Button size="circle" className="h-8 w-8" onClick={() => handleAddToCart(medicine)}>
-                                        <ShoppingCart className="h-4 w-4" />
+                                    <Button size="sm" onClick={() => handleAddToCart(medicine)}>
+                                        Add
                                     </Button>
                                   )}
                                 </div>
