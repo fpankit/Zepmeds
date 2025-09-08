@@ -7,7 +7,6 @@ import 'leaflet/dist/leaflet.css';
 import type { Map } from 'leaflet';
 
 // Fix for default icon issues with webpack
-// This is a common workaround for Next.js/Webpack projects with Leaflet
 const defaultIcon = new L.Icon({
     iconUrl: '/marker-icon.png',
     iconRetinaUrl: '/marker-icon-2x.png',
@@ -18,7 +17,6 @@ const defaultIcon = new L.Icon({
     shadowSize: [41, 41]
 });
 L.Marker.prototype.options.icon = defaultIcon;
-
 
 type DynamicMapProps = {
     position: {
@@ -34,31 +32,26 @@ export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }:
     const mapInstanceRef = useRef<Map | null>(null);
 
     useEffect(() => {
-        // Ensure this only runs on the client
-        if (typeof window === 'undefined') return;
-
-        // Initialize map only if the container exists and map is not already initialized
         if (mapContainerRef.current && !mapInstanceRef.current) {
-            const map = L.map(mapContainerRef.current).setView([position.lat, position.lng], zoom);
-            mapInstanceRef.current = map;
+            mapInstanceRef.current = L.map(mapContainerRef.current).setView([position.lat, position.lng], zoom);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+            }).addTo(mapInstanceRef.current);
 
-            L.marker([position.lat, position.lng]).addTo(map)
+            L.marker([position.lat, position.lng]).addTo(mapInstanceRef.current)
                 .bindPopup(popupText)
                 .openPopup();
         }
 
-        // Cleanup function to destroy the map instance when the component unmounts
+        // Cleanup function to destroy the map instance when component unmounts
         return () => {
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;
             }
         };
-    }, [position, zoom, popupText]); // Rerun effect if these props change, though the re-init logic is handled inside
+    }, [position, zoom, popupText]);
 
     return (
         <div 
