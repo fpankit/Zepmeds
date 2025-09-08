@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
     { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker", color: "bg-sky-500" },
-    { title: "Echo Doc AI", description: "Talk to a medical AI", icon: MessageSquare, href: "#", color: "bg-orange-500" },
+    { title: "Echo Doc AI", description: "Talk to a medical AI", icon: MessageSquare, href: "/echo-doc", color: "bg-orange-500" },
     { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor", color: "bg-green-500" },
     { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "/emergency", color: "bg-red-500" },
     { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "/order-status", color: "bg-teal-500" },
@@ -70,6 +70,7 @@ const trendingProducts = [
   { id: 'prod3', name: 'Digital Thermometer', image: 'https://picsum.photos/200/200?random=7', dataAiHint: "thermometer device", price: 250.00, category: ['Popular', 'Devices'] },
   { id: 'prod4', name: 'Moisturizing Cream', image: 'https://picsum.photos/200/200?random=8', dataAiHint: "skincare product", price: 350.00, category: 'Skin Care' },
   { id: 'prod5', name: 'Acne Treatment Gel', image: 'https://picsum.photos/200/200?random=9', dataAiHint: "skincare product", price: 220.00, category: 'Skin Care' },
+  { id: 'prod6', name: 'Band-Aid Pack', image: 'https://picsum.photos/200/200?random=10', dataAiHint: "medical product", price: 50.00, category: 'Popular' },
 ];
 
 export default function HomePage() {
@@ -140,23 +141,25 @@ export default function HomePage() {
        {/* Products Section */}
        <div>
         <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {trendingProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             return (
               <Card key={product.id} className="overflow-hidden group">
-                <CardContent className="p-3">
-                  <h4 className="text-sm font-semibold truncate">{product.name}</h4>
-                  <p className="text-xs text-muted-foreground">1 unit</p>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="font-bold text-sm">₹{product.price.toFixed(2)}</span>
+                <CardContent className="p-4 flex flex-col justify-between h-full">
+                  <div>
+                    <h4 className="font-semibold truncate">{product.name}</h4>
+                    <p className="text-sm text-muted-foreground">1 unit</p>
+                  </div>
+                  <div className="flex justify-between items-center mt-4">
+                    <span className="font-bold text-lg">₹{product.price.toFixed(2)}</span>
                     {cartItem ? (
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
+                        <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="w-6 text-center">{cartItem.quantity}</span>
-                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
+                        <span className="w-6 text-center font-bold">{cartItem.quantity}</span>
+                        <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
