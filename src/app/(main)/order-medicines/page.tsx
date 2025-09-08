@@ -18,6 +18,7 @@ import {
   Minus,
   Plus,
 } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -51,6 +52,8 @@ const medicineCategories = [
         oldPrice: 350,
         discount: '20% OFF',
         rating: 4.5,
+        image: "https://picsum.photos/200/200?random=11",
+        dataAiHint: "medicine pills"
       },
       {
         id: 'med2',
@@ -60,6 +63,8 @@ const medicineCategories = [
         oldPrice: 450,
         discount: '9% OFF',
         rating: 4.7,
+        image: "https://picsum.photos/200/200?random=12",
+        dataAiHint: "medicine pills"
       },
       {
         id: 'gh3',
@@ -69,6 +74,8 @@ const medicineCategories = [
         oldPrice: 720,
         discount: '10% OFF',
         rating: 4.8,
+        image: "https://picsum.photos/200/200?random=13",
+        dataAiHint: "medicine pills"
       },
       {
         id: 'gh4',
@@ -78,6 +85,8 @@ const medicineCategories = [
         oldPrice: 200,
         discount: '10% OFF',
         rating: 4.6,
+        image: "https://picsum.photos/200/200?random=14",
+        dataAiHint: "medicine pills"
       },
       {
         id: 'gh5',
@@ -87,6 +96,8 @@ const medicineCategories = [
         oldPrice: 600,
         discount: '8% OFF',
         rating: 4.7,
+        image: "https://picsum.photos/200/200?random=15",
+        dataAiHint: "medicine pills"
       },
       {
         id: 'gh6',
@@ -96,6 +107,8 @@ const medicineCategories = [
         oldPrice: 380,
         discount: '16% OFF',
         rating: 4.5,
+        image: "https://picsum.photos/200/200?random=16",
+        dataAiHint: "medicine pills"
       },
       {
         id: 'gh7',
@@ -105,6 +118,8 @@ const medicineCategories = [
         oldPrice: 500,
         discount: '10% OFF',
         rating: 4.4,
+        image: "https://picsum.photos/200/200?random=17",
+        dataAiHint: "tea product"
       },
     ]
   },
@@ -119,6 +134,8 @@ const medicineCategories = [
         oldPrice: 175,
         discount: '14% OFF',
         rating: 4.6,
+        image: "https://picsum.photos/200/200?random=18",
+        dataAiHint: "medicine product"
       },
       {
         id: 'pr2',
@@ -128,6 +145,8 @@ const medicineCategories = [
         oldPrice: 100,
         discount: '10% OFF',
         rating: 4.8,
+        image: "https://picsum.photos/200/200?random=19",
+        dataAiHint: "medicine pills"
       },
       {
         id: 'pr3',
@@ -137,6 +156,8 @@ const medicineCategories = [
         oldPrice: 50,
         discount: '10% OFF',
         rating: 4.9,
+        image: "https://picsum.photos/200/200?random=20",
+        dataAiHint: "medicine pills"
       },
       {
         id: 'pr4',
@@ -146,6 +167,8 @@ const medicineCategories = [
         oldPrice: 85,
         discount: '18% OFF',
         rating: 4.5,
+        image: "https://picsum.photos/200/200?random=21",
+        dataAiHint: "medicine product"
       },
       {
         id: 'pr5',
@@ -155,6 +178,8 @@ const medicineCategories = [
         oldPrice: 300,
         discount: '17% OFF',
         rating: 4.6,
+        image: "https://picsum.photos/200/200?random=22",
+        dataAiHint: "medical product"
       },
       {
         id: 'pr6',
@@ -164,6 +189,8 @@ const medicineCategories = [
         oldPrice: 500,
         discount: '20% OFF',
         rating: 4.4,
+        image: "https://picsum.photos/200/200?random=23",
+        dataAiHint: "medical product"
       },
       {
         id: 'pr7',
@@ -173,6 +200,8 @@ const medicineCategories = [
         oldPrice: 210,
         discount: '14% OFF',
         rating: 4.7,
+        image: "https://picsum.photos/200/200?random=24",
+        dataAiHint: "medicine bottle"
       },
     ]
   },
@@ -187,6 +216,8 @@ const medicineCategories = [
         oldPrice: 600,
         discount: '17% OFF',
         rating: 4.8,
+        image: "https://picsum.photos/200/200?random=25",
+        dataAiHint: "skincare product"
       },
       {
         id: 'sc2',
@@ -196,6 +227,8 @@ const medicineCategories = [
         oldPrice: 520,
         discount: '13% OFF',
         rating: 4.9,
+        image: "https://picsum.photos/200/200?random=26",
+        dataAiHint: "skincare product"
       },
       {
         id: 'sc3',
@@ -205,6 +238,8 @@ const medicineCategories = [
         oldPrice: 1100,
         discount: '18% OFF',
         rating: 4.7,
+        image: "https://picsum.photos/200/200?random=27",
+        dataAiHint: "skincare product"
       },
       {
         id: 'sc4',
@@ -214,6 +249,8 @@ const medicineCategories = [
         oldPrice: 400,
         discount: '12% OFF',
         rating: 4.6,
+        image: "https://picsum.photos/200/200?random=28",
+        dataAiHint: "skincare product"
       },
       {
         id: 'sc5',
@@ -223,6 +260,8 @@ const medicineCategories = [
         oldPrice: 900,
         discount: '17% OFF',
         rating: 4.8,
+        image: "https://picsum.photos/200/200?random=29",
+        dataAiHint: "skincare product"
       },
       {
         id: 'sc6',
@@ -232,6 +271,8 @@ const medicineCategories = [
         oldPrice: 420,
         discount: '10% OFF',
         rating: 4.5,
+        image: "https://picsum.photos/200/200?random=30",
+        dataAiHint: "skincare product"
       },
       {
         id: 'sc7',
@@ -241,6 +282,8 @@ const medicineCategories = [
         oldPrice: 140,
         discount: '14% OFF',
         rating: 4.7,
+        image: "https://picsum.photos/200/200?random=31",
+        dataAiHint: "medicine product"
       },
     ]
   }
@@ -269,7 +312,7 @@ export default function OrderMedicinesPage() {
   }
 
   const handleAddToCart = (medicine: (typeof medicineCategories)[0]['medicines'][0]) => {
-    addToCart({ ...medicine, quantity: 1, name: medicine.name, price: medicine.price });
+    addToCart({ ...medicine, quantity: 1, name: medicine.name, price: medicine.price, image: medicine.image, dataAiHint: medicine.dataAiHint });
     toast({
       title: "Added to cart",
       description: `${medicine.name} has been added to your cart.`,
@@ -334,47 +377,59 @@ export default function OrderMedicinesPage() {
             <div key={category.name}>
                 <h2 className="text-xl font-bold mb-4">{category.name}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {category.medicines.map((medicine, index) => {
+                {category.medicines.map((medicine) => {
                     const cartItem = cart.find(item => item.id === medicine.id);
                     return (
-                    <Card key={index} className="overflow-hidden">
-                        <CardContent className="p-4 flex gap-4">
-                        <div className="flex-grow flex flex-col justify-between">
-                            <div>
-                            <h3 className="font-bold">{medicine.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                                {medicine.description}
-                            </p>
-                            <div className="flex items-center gap-1 mt-1">
-                                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                <span className="text-sm font-bold">{medicine.rating}</span>
-                            </div>
-                            </div>
-
-                            <div className="flex justify-between items-end mt-2">
-                            <div>
-                                <p className="font-bold text-lg">₹{medicine.price}</p>
-                                <p className="text-sm text-muted-foreground line-through">
-                                ₹{medicine.oldPrice}
-                                </p>
-                            </div>
-                            {cartItem ? (
-                                <div className="flex items-center gap-1">
-                                <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(medicine.id, cartItem.quantity - 1)}>
-                                    <Minus className="h-4 w-4" />
-                                </Button>
-                                <span className="w-8 text-center font-bold">{cartItem.quantity}</span>
-                                <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(medicine.id, cartItem.quantity + 1)}>
-                                    <Plus className="h-4 w-4" />
-                                </Button>
+                    <Card key={medicine.id} className="overflow-hidden">
+                        <CardContent className="p-3 flex gap-4 items-center">
+                            <Image
+                                src={medicine.image}
+                                alt={medicine.name}
+                                width={80}
+                                height={80}
+                                className="rounded-md object-cover w-20 h-20"
+                                data-ai-hint={medicine.dataAiHint}
+                            />
+                            <div className="flex-grow flex flex-col justify-between self-stretch">
+                                <div>
+                                    <h3 className="font-bold text-base leading-tight">{medicine.name}</h3>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {medicine.description}
+                                    </p>
+                                    <div className="flex items-center gap-1 mt-1">
+                                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                                        <span className="text-xs font-bold">{medicine.rating}</span>
+                                    </div>
                                 </div>
-                            ) : (
-                                <Button size="icon" className="rounded-full w-10 h-10 bg-primary/20 hover:bg-primary/30 text-primary" onClick={() => handleAddToCart(medicine)}>
-                                    <ShoppingCart className="w-5 h-5"/>
-                                </Button>
-                            )}
+
+                                <div className="flex justify-between items-end mt-2">
+                                    <div className='flex items-center gap-2'>
+                                        <p className="font-bold text-md">₹{medicine.price}</p>
+                                        <p className="text-xs text-muted-foreground line-through">
+                                        ₹{medicine.oldPrice}
+                                        </p>
+                                        <p className="text-xs font-bold text-green-500">{medicine.discount}</p>
+                                    </div>
+                                    
+                                </div>
                             </div>
-                        </div>
+                             <div className="flex flex-col justify-between items-center h-full">
+                                {cartItem ? (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(medicine.id, cartItem.quantity + 1)}>
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                        <span className="w-8 text-center font-bold text-lg">{cartItem.quantity}</span>
+                                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(medicine.id, cartItem.quantity - 1)}>
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Button size="sm" variant="outline" className="self-end" onClick={() => handleAddToCart(medicine)}>
+                                        Add
+                                    </Button>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                     )
