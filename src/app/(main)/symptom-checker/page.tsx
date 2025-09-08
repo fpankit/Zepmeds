@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useSearchParams, Suspense } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ const symptomSchema = z.object({
 
 type SymptomFormValues = z.infer<typeof symptomSchema>;
 
-function SymptomCheckerForm() {
+function SymptomCheckerComponent() {
   const router = useRouter();
   const [symptomInput, setSymptomInput] = useState('');
 
@@ -179,7 +179,7 @@ function SymptomCheckerForm() {
 export default function SymptomCheckerPage() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <SymptomCheckerForm />
+            <SymptomCheckerComponent />
         </Suspense>
     )
 }
