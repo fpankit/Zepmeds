@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Search,
   Pill,
@@ -17,19 +17,22 @@ import {
   FileText,
   Minus,
   Plus,
+  Loader2,
 } from 'lucide-react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { PrescriptionUploader } from '@/components/features/prescription-uploader';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Product } from '@/lib/types';
+import { collection, query, getDocs, limit, startAfter, orderBy, where, Query, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useIntersectionObserver } from '@/hooks/use-intersection-observer';
 
 const categories = [
   { name: 'All', icon: Pill, gradient: 'from-blue-500 to-cyan-400' },
@@ -41,226 +44,7 @@ const categories = [
   { name: 'Devices', icon: Thermometer, gradient: 'from-gray-500 to-slate-400' },
 ];
 
-const medicineCategories = [
-  {
-    name: "General Health",
-    medicines: [
-      {
-        id: 'med1',
-        name: 'Vitamin C Tablets',
-        description: 'Immunity Booster',
-        price: 280,
-        oldPrice: 350,
-        discount: '20% OFF',
-        rating: 4.5,
-      },
-      {
-        id: 'med2',
-        name: 'Multivitamin Capsules',
-        description: 'Daily Nutrition',
-        price: 410,
-        oldPrice: 450,
-        discount: '9% OFF',
-        rating: 4.7,
-      },
-      {
-        id: 'gh3',
-        name: 'Omega-3 Fish Oil',
-        description: 'Heart and Brain Health',
-        price: 650,
-        oldPrice: 720,
-        discount: '10% OFF',
-        rating: 4.8,
-      },
-      {
-        id: 'gh4',
-        name: 'Iron & Folic Acid',
-        description: 'For Healthy Blood',
-        price: 180,
-        oldPrice: 200,
-        discount: '10% OFF',
-        rating: 4.6,
-      },
-      {
-        id: 'gh5',
-        name: 'Probiotic Capsules',
-        description: 'Digestive Health',
-        price: 550,
-        oldPrice: 600,
-        discount: '8% OFF',
-        rating: 4.7,
-      },
-      {
-        id: 'gh6',
-        name: 'Calcium + Vitamin D3',
-        description: 'For Strong Bones',
-        price: 320,
-        oldPrice: 380,
-        discount: '16% OFF',
-        rating: 4.5,
-      },
-      {
-        id: 'gh7',
-        name: 'Green Tea Extract',
-        description: 'Antioxidant Support',
-        price: 450,
-        oldPrice: 500,
-        discount: '10% OFF',
-        rating: 4.4,
-      },
-    ]
-  },
-  {
-    name: "Pain Relief",
-    medicines: [
-      {
-        id: 'med3',
-        name: 'Pain Relief Gel',
-        description: 'Fast Relief',
-        price: 220,
-        oldPrice: 250,
-        discount: '12% OFF',
-        rating: 4.0,
-      },
-      {
-        id: 'pr2',
-        name: 'Ibuprofen 400mg',
-        description: 'Pain and Inflammation',
-        price: 90,
-        oldPrice: 100,
-        discount: '10% OFF',
-        rating: 4.8,
-      },
-      {
-        id: 'pr3',
-        name: 'Paracetamol 650mg',
-        description: 'Fever and Pain',
-        price: 45,
-        oldPrice: 50,
-        discount: '10% OFF',
-        rating: 4.9,
-      },
-      {
-        id: 'pr4',
-        name: 'Headache Relief Balm',
-        description: 'Quick Action',
-        price: 70,
-        oldPrice: 85,
-        discount: '18% OFF',
-        rating: 4.5,
-      },
-      {
-        id: 'pr5',
-        name: 'Hot & Cold Pack',
-        description: 'Reusable',
-        price: 250,
-        oldPrice: 300,
-        discount: '17% OFF',
-        rating: 4.6,
-      },
-      {
-        id: 'pr6',
-        name: 'Knee Support Brace',
-        description: 'For Joint Pain',
-        price: 400,
-        oldPrice: 500,
-        discount: '20% OFF',
-        rating: 4.4,
-      },
-      {
-        id: 'pr7',
-        name: 'Diclofenac Spray',
-        description: 'Instant Relief',
-        price: 180,
-        oldPrice: 210,
-        discount: '14% OFF',
-        rating: 4.7,
-      },
-    ]
-  },
-  {
-    name: "Skin Care",
-    medicines: [
-       {
-        id: 'med4',
-        name: 'Sunscreen SPF 50',
-        description: 'Broad spectrum',
-        price: 499,
-        oldPrice: 600,
-        discount: '17% OFF',
-        rating: 4.8,
-      },
-      {
-        id: 'sc2',
-        name: 'Cetaphil Cleanser',
-        description: 'Gentle on skin',
-        price: 450,
-        oldPrice: 520,
-        discount: '13% OFF',
-        rating: 4.9,
-      },
-      {
-        id: 'sc3',
-        name: 'Hyaluronic Acid Serum',
-        description: 'For hydration',
-        price: 899,
-        oldPrice: 1100,
-        discount: '18% OFF',
-        rating: 4.7,
-      },
-      {
-        id: 'sc4',
-        name: 'Acne Pimple Patch',
-        description: 'Overnight treatment',
-        price: 350,
-        oldPrice: 400,
-        discount: '12% OFF',
-        rating: 4.6,
-      },
-      {
-        id: 'sc5',
-        name: 'Vitamin C Face Serum',
-        description: 'For glowing skin',
-        price: 750,
-        oldPrice: 900,
-        discount: '17% OFF',
-        rating: 4.8,
-      },
-      {
-        id: 'sc6',
-        name: 'Moisturizing Lotion',
-        description: 'For dry skin',
-        price: 380,
-        oldPrice: 420,
-        discount: '10% OFF',
-        rating: 4.5,
-      },
-      {
-        id: 'sc7',
-        name: 'Anti-Fungal Cream',
-        description: 'For skin infections',
-        price: 120,
-        oldPrice: 140,
-        discount: '14% OFF',
-        rating: 4.7,
-      },
-    ]
-  },
-  {
-    name: "Devices",
-    medicines: [
-        {
-            id: 'dev1',
-            name: 'Digital Thermometer',
-            description: 'Accurate Reading',
-            price: 399,
-            oldPrice: 500,
-            discount: '20% OFF',
-            rating: 4.2,
-        }
-    ]
-  }
-];
+const PRODUCTS_PER_PAGE = 8;
 
 const DynamicPrescriptionUploader = dynamic(
   () => import('@/components/features/prescription-uploader').then(mod => mod.PrescriptionUploader),
@@ -277,6 +61,72 @@ export default function OrderMedicinesPage() {
   const { cart, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
 
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const isFetching = useRef(false);
+
+  const { ref: loadMoreRef, entry } = useIntersectionObserver({
+    threshold: 0.5,
+  });
+
+  const fetchProducts = useCallback(async (lastVisibleDoc: QueryDocumentSnapshot<DocumentData> | null = null, category: string = 'All') => {
+    if (isFetching.current) return;
+    isFetching.current = true;
+
+    if (lastVisibleDoc) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+      setProducts([]); // Clear products when fetching a new category
+    }
+
+    try {
+      let productsQuery: Query<DocumentData>;
+      const baseQuery = collection(db, "products");
+
+      const categoryQuery = category !== 'All' 
+        ? query(baseQuery, where("category", "==", category))
+        : baseQuery;
+
+      productsQuery = lastVisibleDoc
+        ? query(categoryQuery, orderBy("name"), startAfter(lastVisibleDoc), limit(PRODUCTS_PER_PAGE))
+        : query(categoryQuery, orderBy("name"), limit(PRODUCTS_PER_PAGE));
+      
+       // Simulate network delay for initial load
+      if (!lastVisibleDoc) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      const querySnapshot = await getDocs(productsQuery);
+      const newProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+
+      setProducts(prev => lastVisibleDoc ? [...prev, ...newProducts] : newProducts);
+      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
+      setHasMore(querySnapshot.docs.length === PRODUCTS_PER_PAGE);
+
+    } catch (error) {
+      console.error("Error fetching products: ", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products.' });
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+      isFetching.current = false;
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    fetchProducts(null, selectedCategory);
+  }, [selectedCategory, fetchProducts]);
+
+  useEffect(() => {
+    if (entry?.isIntersecting && hasMore && !isLoadingMore && !isFetching.current) {
+      fetchProducts(lastDoc, selectedCategory);
+    }
+  }, [entry, hasMore, isLoadingMore, fetchProducts, lastDoc, selectedCategory]);
+
   const handleUploadClick = () => {
     setShowUploader(true);
     setTimeout(() => {
@@ -284,18 +134,33 @@ export default function OrderMedicinesPage() {
     }, 100);
   }
 
-  const handleAddToCart = (medicine: (typeof medicineCategories)[0]['medicines'][0]) => {
-    addToCart({ ...medicine, quantity: 1, name: medicine.name, price: medicine.price });
+  const handleAddToCart = (product: Product) => {
+    addToCart({ ...product, quantity: 1, name: product.name, price: product.price });
     toast({
       title: "Added to cart",
-      description: `${medicine.name} has been added to your cart.`,
+      description: `${product.name} has been added to your cart.`,
     });
   }
 
-  const filteredCategories =
-    selectedCategory === 'All'
-      ? medicineCategories
-      : medicineCategories.filter((cat) => cat.name === selectedCategory);
+  const renderSkeletons = () => (
+    Array.from({ length: 4 }).map((_, index) => (
+      <Card key={index} className="overflow-hidden">
+        <CardContent className="p-4 flex flex-col justify-between h-full">
+          <Skeleton className="w-full h-32 rounded-md" />
+          <div className="mt-4 space-y-2">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <div className="flex justify-between items-center mt-2">
+              <Skeleton className="h-6 w-1/4" />
+              <Skeleton className="h-8 w-1/3" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ))
+  );
+
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -345,58 +210,62 @@ export default function OrderMedicinesPage() {
         </ScrollArea>
       </div>
 
-      <div className="space-y-8">
-        {filteredCategories.map((category) => (
-            <div key={category.name}>
-                <h2 className="text-xl font-bold mb-4">{category.name}</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {category.medicines.map((medicine) => {
-                    const cartItem = cart.find(item => item.id === medicine.id);
-                    return (
-                    <Card key={medicine.id} className="overflow-hidden">
-                        <CardContent className="p-4 flex gap-4">
-                             <div className="flex flex-col flex-grow">
-                                <h3 className="font-semibold text-base leading-tight">{medicine.name}</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    {medicine.description}
-                                </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                     <Badge variant="secondary" className="bg-background/70 backdrop-blur-sm">
-                                        <Star className="w-3 h-3 mr-1 text-yellow-400 fill-yellow-400" />
-                                        {medicine.rating}
-                                    </Badge>
-                                    <Badge variant="destructive" className="bg-gradient-to-r from-pink-500 to-red-500 text-white border-0">{medicine.discount}</Badge>
-                                </div>
-                                <div className="flex items-end justify-between mt-auto pt-2">
-                                  <div className="flex items-baseline gap-2">
-                                      <p className="font-bold text-lg">₹{medicine.price}</p>
-                                      <p className="text-sm text-muted-foreground line-through">₹{medicine.oldPrice}</p>
-                                  </div>
-                                  {cartItem ? (
-                                    <div className="flex items-center">
-                                      <Button size="icon" variant="outline" className="h-8 w-8 rounded-r-none" onClick={() => updateQuantity(medicine.id, cartItem.quantity - 1)}>
-                                        <Minus className="h-4 w-4" />
-                                      </Button>
-                                      <span className="w-8 text-center font-bold text-sm bg-background border-y border-input h-8 flex items-center justify-center">{cartItem.quantity}</span>
-                                      <Button size="icon" variant="outline" className="h-8 w-8 rounded-l-none" onClick={() => updateQuantity(medicine.id, cartItem.quantity + 1)}>
-                                        <Plus className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <Button size="sm" onClick={() => handleAddToCart(medicine)}>
-                                        Add
-                                    </Button>
-                                  )}
-                                </div>
-                             </div>
-                        </CardContent>
-                    </Card>
-                    )
-                })}
-                </div>
+      <div>
+        <h2 className="text-xl font-bold mb-4">
+            {selectedCategory === 'All' ? 'All Products' : selectedCategory}
+        </h2>
+        <div className="grid grid-cols-2 gap-4">
+          {isLoading && products.length === 0 ? renderSkeletons() : (
+            products.map((product) => {
+              const cartItem = cart.find(item => item.id === product.id);
+              return (
+                <Card key={product.id} className="overflow-hidden group">
+                  <CardContent className="p-0 flex flex-col justify-between h-full">
+                    <div className="p-4">
+                      <h3 className="font-semibold text-base leading-tight truncate">{product.name}</h3>
+                      <p className="text-sm text-muted-foreground mt-1 truncate">
+                          {product.description}
+                      </p>
+                      <div className="flex items-baseline gap-2 mt-2">
+                        <p className="font-bold text-lg">₹{product.price}</p>
+                        {product.oldPrice && <p className="text-sm text-muted-foreground line-through">₹{product.oldPrice}</p>}
+                      </div>
+                    </div>
+
+                    <div className="mt-auto p-2 border-t border-border">
+                       {cartItem ? (
+                          <div className="flex items-center justify-between">
+                            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <span className="w-6 text-center font-bold">{cartItem.quantity}</span>
+                            <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)}>Add to Cart</Button>
+                        )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })
+          )}
+        </div>
+
+        <div ref={loadMoreRef} className="col-span-full flex justify-center py-6">
+            {isLoadingMore && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
+            {!hasMore && products.length > 0 && <p className="text-muted-foreground">You've reached the end of the list.</p>}
+        </div>
+         {!isLoading && products.length === 0 && (
+            <div className="col-span-full text-center py-10">
+                <p className="text-muted-foreground">No products found in this category.</p>
             </div>
-        ))}
+         )}
       </div>
     </div>
   );
 }
+
+    
