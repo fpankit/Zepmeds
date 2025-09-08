@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 const categories = [
   { name: 'All', icon: Pill, gradient: 'from-blue-500 to-cyan-400' },
@@ -129,11 +130,11 @@ const medicineCategories = [
       {
         id: 'med3',
         name: 'Pain Relief Gel',
-        description: 'For muscle pain',
-        price: 150,
-        oldPrice: 175,
-        discount: '14% OFF',
-        rating: 4.6,
+        description: 'Fast Relief',
+        price: 220,
+        oldPrice: 250,
+        discount: '12% OFF',
+        rating: 4.0,
         image: "https://picsum.photos/200/200?random=18",
         dataAiHint: "medicine product"
       },
@@ -286,6 +287,22 @@ const medicineCategories = [
         dataAiHint: "medicine product"
       },
     ]
+  },
+  {
+    name: "Devices",
+    medicines: [
+        {
+            id: 'dev1',
+            name: 'Digital Thermometer',
+            description: 'Accurate Reading',
+            price: 399,
+            oldPrice: 500,
+            discount: '20% OFF',
+            rating: 4.2,
+            image: "https://picsum.photos/200/200?random=32",
+            dataAiHint: "thermometer device"
+        }
+    ]
   }
 ];
 
@@ -376,56 +393,53 @@ export default function OrderMedicinesPage() {
         {filteredCategories.map((category) => (
             <div key={category.name}>
                 <h2 className="text-xl font-bold mb-4">{category.name}</h2>
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                 {category.medicines.map((medicine) => {
                     const cartItem = cart.find(item => item.id === medicine.id);
                     return (
-                    <Card key={medicine.id} className="overflow-hidden">
-                        <CardContent className="p-3 flex gap-4 items-start">
-                            <Image
-                                src={medicine.image}
-                                alt={medicine.name}
-                                width={80}
-                                height={80}
-                                className="rounded-md object-cover w-20 h-20 aspect-square"
-                                data-ai-hint={medicine.dataAiHint}
-                            />
-                            <div className="flex-grow flex flex-col justify-between self-stretch">
-                                <div>
-                                    <h3 className="font-bold text-base leading-tight">{medicine.name}</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {medicine.description}
-                                    </p>
-                                    <div className="flex items-center gap-1 mt-1">
-                                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                        <span className="text-sm font-semibold">{medicine.rating}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <p className="font-bold text-lg">₹{medicine.price}</p>
-                                    <p className="text-sm text-muted-foreground line-through">
-                                    ₹{medicine.oldPrice}
-                                    </p>
-                                    <p className="text-sm font-bold text-green-500">{medicine.discount}</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col justify-start items-center h-full">
-                                {cartItem ? (
-                                    <div className="flex items-center gap-1">
-                                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(medicine.id, cartItem.quantity - 1)}>
+                    <Card key={medicine.id} className="overflow-hidden flex flex-col">
+                        <CardContent className="p-0 flex flex-col flex-grow">
+                             <div className="relative w-full aspect-square bg-muted/30">
+                                <Image
+                                    src={medicine.image}
+                                    alt={medicine.name}
+                                    fill
+                                    className="object-cover"
+                                    data-ai-hint={medicine.dataAiHint}
+                                />
+                                <Badge variant="destructive" className="absolute top-2 left-2 bg-gradient-to-r from-pink-500 to-red-500 text-white border-0">{medicine.discount}</Badge>
+                                <Badge variant="secondary" className="absolute bottom-2 right-2 bg-background/70 backdrop-blur-sm">
+                                    <Star className="w-3 h-3 mr-1 text-yellow-400 fill-yellow-400" />
+                                    {medicine.rating}
+                                </Badge>
+                             </div>
+                             <div className="p-3 flex flex-col flex-grow">
+                                <h3 className="font-semibold text-base leading-tight truncate">{medicine.name}</h3>
+                                <p className="text-sm text-muted-foreground mt-1 flex-grow">
+                                    {medicine.description}
+                                </p>
+                                <div className="flex items-center justify-between mt-3">
+                                  <div className="flex items-center gap-2">
+                                      <p className="text-sm text-muted-foreground line-through">₹{medicine.oldPrice}</p>
+                                      <p className="font-bold text-lg">₹{medicine.price}</p>
+                                  </div>
+                                  {cartItem ? (
+                                    <div className="flex items-center">
+                                      <Button size="icon" variant="outline" className="h-8 w-8 rounded-r-none" onClick={() => updateQuantity(medicine.id, cartItem.quantity - 1)}>
                                         <Minus className="h-4 w-4" />
                                       </Button>
-                                      <span className="w-8 text-center font-bold text-lg">{cartItem.quantity}</span>
-                                      <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(medicine.id, cartItem.quantity + 1)}>
+                                      <span className="w-8 text-center font-bold text-sm bg-background border-y border-input h-8 flex items-center justify-center">{cartItem.quantity}</span>
+                                      <Button size="icon" variant="outline" className="h-8 w-8 rounded-l-none" onClick={() => updateQuantity(medicine.id, cartItem.quantity + 1)}>
                                         <Plus className="h-4 w-4" />
                                       </Button>
                                     </div>
-                                ) : (
-                                    <Button size="sm" variant="outline" onClick={() => handleAddToCart(medicine)}>
-                                        Add
+                                  ) : (
+                                    <Button size="circle" className="h-8 w-8" onClick={() => handleAddToCart(medicine)}>
+                                        <ShoppingCart className="h-4 w-4" />
                                     </Button>
-                                )}
-                            </div>
+                                  )}
+                                </div>
+                             </div>
                         </CardContent>
                     </Card>
                     )
