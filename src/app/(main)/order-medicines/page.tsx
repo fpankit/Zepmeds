@@ -19,6 +19,7 @@ import {
   Plus,
   Loader2,
 } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -114,7 +115,7 @@ export default function OrderMedicinesPage() {
 
     } catch (error) {
       console.error("Error fetching products: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products. Please ensure the required Firestore indexes are built.' });
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
@@ -140,7 +141,7 @@ export default function OrderMedicinesPage() {
   }
 
   const handleAddToCart = (product: Product) => {
-    addToCart({ ...product, quantity: 1, name: product.name, price: product.price });
+    addToCart({ ...product, quantity: 1, name: product.name, price: product.price, image: product.image });
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart.`,
@@ -158,7 +159,7 @@ export default function OrderMedicinesPage() {
             <Skeleton className="h-4 w-1/3" />
             <div className="flex justify-between items-center mt-2">
               <Skeleton className="h-6 w-1/4" />
-              <Skeleton className="h-8 w-1/3" />
+              <Skeleton className="h-10 w-10 rounded-full" />
             </div>
           </div>
         </CardContent>
@@ -219,41 +220,64 @@ export default function OrderMedicinesPage() {
         <h2 className="text-xl font-bold mb-4">
             {selectedCategory === 'All' ? 'All Products' : selectedCategory}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {isLoading && products.length === 0 ? renderSkeletons() : (
             products.map((product) => {
               const cartItem = cart.find(item => item.id === product.id);
               return (
-                <Card key={product.id} className="overflow-hidden group">
-                   <CardContent className="p-4 flex flex-col justify-between h-full">
-                      <div>
-                        <h3 className="font-semibold text-base leading-tight truncate">{product.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1 truncate">
+                <Card key={product.id} className="overflow-hidden group flex flex-col">
+                  <div className="relative">
+                      {product.image ? (
+                        <Image
+                            src={product.image}
+                            alt={product.name}
+                            width={200}
+                            height={200}
+                            className="w-full h-32 object-cover"
+                            data-ai-hint={product.dataAiHint}
+                        />
+                      ) : (
+                        <div className="w-full h-32 bg-muted flex items-center justify-center">
+                          <Pill className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      {product.discount && <Badge className="absolute top-2 left-2">{product.discount}</Badge>}
+                      <Badge variant="secondary" className="absolute top-2 right-2 flex items-center gap-1">
+                          <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" /> {product.rating}
+                      </Badge>
+                  </div>
+                   <CardContent className="p-3 flex-1 flex flex-col justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
                             {product.description}
                         </p>
-                        <div className="flex items-baseline gap-2 mt-2">
-                          <p className="font-bold text-lg">₹{product.price}</p>
-                          {product.oldPrice && <p className="text-sm text-muted-foreground line-through">₹{product.oldPrice}</p>}
-                        </div>
                       </div>
 
-                      <div className="mt-auto pt-4">
-                        {cartItem ? (
-                            <div className="flex items-center justify-between">
-                              <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <span className="w-6 text-center font-bold">{cartItem.quantity}</span>
-                              <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)}>
-                              <ShoppingCart className="mr-2 h-4 w-4"/>
-                              Add to Cart
-                            </Button>
-                          )}
+                      <div className="mt-2">
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-bold text-base">₹{product.price}</p>
+                          {product.oldPrice && <p className="text-sm text-muted-foreground line-through">₹{product.oldPrice}</p>}
+                        </div>
+
+                         <div className="mt-2">
+                            {cartItem ? (
+                                <div className="flex items-center justify-center gap-1">
+                                <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
+                                    <Minus className="h-4 w-4" />
+                                </Button>
+                                <span className="w-6 text-center font-bold text-sm">{cartItem.quantity}</span>
+                                <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                                </div>
+                            ) : (
+                                <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)}>
+                                <ShoppingCart className="mr-2 h-4 w-4"/>
+                                Add
+                                </Button>
+                            )}
+                        </div>
                       </div>
                   </CardContent>
                 </Card>
@@ -264,7 +288,7 @@ export default function OrderMedicinesPage() {
 
         <div ref={loadMoreRef} className="col-span-full flex justify-center py-6">
             {isLoadingMore && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
-            {!hasMore && products.length > 0 && <p className="text-muted-foreground">You've reached the end of the list.</p>}
+            {!hasMore && products.length > 0 && <p className="text-muted-foreground">You've reached the end.</p>}
         </div>
          {!isLoading && products.length === 0 && (
             <div className="col-span-full text-center py-10">
@@ -275,4 +299,3 @@ export default function OrderMedicinesPage() {
     </div>
   );
 }
-
