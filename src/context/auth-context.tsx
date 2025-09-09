@@ -50,7 +50,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const sanitizeForId = (identifier: string) => identifier.replace(/[^a-zA-Z0-9]/g, "_");
+const sanitizeForId = (identifier: string) => identifier.replace(/[^a-zA-Z0-9]/g, "");
 
 const createGuestUser = (): User => ({
     id: `guest_${Date.now()}`,
