@@ -23,9 +23,10 @@ interface AgoraVideoPlayerProps {
     appId: string;
     channelName: string;
     token: string | null;
+    uid: number; // UID must be a number
 }
 
-export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayerProps) {
+export function AgoraVideoPlayer({ appId, channelName, token, uid }: AgoraVideoPlayerProps) {
     const router = useRouter();
     const { toast } = useToast();
 
@@ -63,7 +64,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
     const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn && hasPermission);
     const { localCameraTrack } = useLocalCameraTrack(cameraOn && hasPermission);
     
-    useJoin({ appid: appId, channel: channelName, token: token }, hasPermission);
+    useJoin({ appid: appId, channel: channelName, token: token, uid: uid }, hasPermission);
     usePublish([localMicrophoneTrack, localCameraTrack]);
 
     const remoteUsers = useRemoteUsers();
