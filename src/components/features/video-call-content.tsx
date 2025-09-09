@@ -46,10 +46,6 @@ export function VideoCallContent() {
     const patientId = searchParams.get('patientId');
     const { user } = useAuth();
 
-    // Generate a random 32-bit unsigned integer for the Agora UID
-    // This is the correct and final fix for the INVALID_PARAMS error
-    const agoraUid = useMemo(() => Math.floor(Math.random() * (2**32 - 1)) + 1, []);
-
     const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID || '3b649d7a9006490292cd9d82534a6a91';
     const token = null; // Should be fetched from a secure token server in production
 
@@ -59,7 +55,7 @@ export function VideoCallContent() {
                 {/* Main Video Grid */}
                 <main className="flex-1 flex flex-col relative">
                     {appId ? (
-                        <AgoraVideoPlayer appId={appId} channelName={channelName} token={token} uid={agoraUid} />
+                        <AgoraVideoPlayer appId={appId} channelName={channelName} token={token} />
                     ) : (
                         <div className="flex items-center justify-center h-full">
                             <p>Agora App ID is not configured.</p>
