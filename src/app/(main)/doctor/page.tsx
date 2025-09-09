@@ -133,16 +133,12 @@ export default function DoctorPage() {
         return;
     }
     
-    // Patient fetches the doctor's current Peer ID from Firestore
-    const doctorDocRef = doc(db, "doctors", doctor.id);
-    const doctorSnap = await getDoc(doctorDocRef);
-
-    if (!doctorSnap.exists() || !doctorSnap.data()?.isOnline || !doctorSnap.data()?.peerId) {
-        toast({ variant: "destructive", title: "Doctor Offline", description: "The doctor is currently not available for calls." });
+    if (!doctor.isOnline || !doctor.peerId) {
+        toast({ variant: "destructive", title: "Doctor Offline", description: "The doctor is currently not available for calls. Please try again in a moment." });
         return;
     }
     
-    const remotePeerId = doctorSnap.data().peerId;
+    const remotePeerId = doctor.peerId;
     router.push(`/video-call/${remotePeerId}?isCaller=true`);
   }
 
