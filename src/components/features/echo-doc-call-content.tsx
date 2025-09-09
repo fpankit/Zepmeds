@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, MicOff, PhoneOff, Volume2, Bot, Loader2 } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Bot, Loader2 } from 'lucide-react';
 import { aiSymptomChecker } from '@/ai/flows/ai-symptom-checker';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 
@@ -16,7 +16,6 @@ interface Message {
     text: string;
 }
 
-// Updated with supported voice names
 const languageToVoiceMap: Record<string, string> = {
     'English': 'Algenib', // Female
     'Hindi': 'Achernar', // Male
@@ -26,21 +25,28 @@ const languageToVoiceMap: Record<string, string> = {
     'Kannada': 'Autonoe', // Female
 };
 
+// SpeechRecognition is browser-specific, so we check for its existence.
+const SpeechRecognition =
+  (typeof window !== 'undefined' && window.SpeechRecognition) ||
+  (typeof window !== 'undefined' && (window as any).webkitSpeechRecognition);
+
+
 export function EchoDocCallContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const doctorName = searchParams.get('doctorName');
     const initialSymptoms = searchParams.get('symptoms');
 
-    const [isMuted, setIsMuted] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isAISpeaking, setIsAISpeaking] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true); // Loading for initial greeting
+    const [isProcessing, setIsProcessing] = useState(false); // For subsequent AI responses
     const [transcript, setTranscript] = useState('');
     const [language, setLanguage] = useState('English');
     const [messages, setMessages] = useState<Message[]>([]);
     
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const recognitionRef = useRef<any | null>(null);
 
     // Initial greeting
     useEffect(() => {
@@ -59,6 +65,49 @@ export function EchoDocCallContent() {
         greet();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [doctorName, initialSymptoms]);
+    
+    // Setup Speech Recognition
+    useEffect(() => {
+        if (!SpeechRecognition) {
+            console.error("Speech recognition not supported in this browser.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event: any) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
+            }
+            if (finalTranscript) {
+                setTranscript(t => t + finalTranscript + ' ');
+            }
+        };
+        
+        recognition.onend = () => {
+            setIsListening(false);
+        }
+
+        recognitionRef.current = recognition;
+
+        return () => {
+            recognition.stop();
+        };
+    }, []);
+
+    // Process transcript when user stops speaking
+    useEffect(() => {
+        if (!isListening && transcript.trim()) {
+            handleSendTranscript(transcript.trim());
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isListening]);
 
 
     const speak = async (text: string, lang: string) => {
@@ -79,39 +128,43 @@ export function EchoDocCallContent() {
     };
     
     const handleMicToggle = () => {
-        // Placeholder for actual mic handling logic
-        setIsMuted(!isMuted);
-        setTranscript(isMuted ? 'Microphone is on. Start speaking...' : 'Microphone is off.');
+        if (isListening) {
+            recognitionRef.current?.stop();
+        } else {
+            setTranscript(''); // Reset transcript for new input
+            recognitionRef.current?.start();
+        }
+        setIsListening(!isListening);
     };
     
     const handleEndCall = () => {
         if (audioRef.current) {
             audioRef.current.pause();
         }
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
         router.push('/home');
     };
     
-    // Simulate a user speaking and getting a response
-    const simulateConversation = async () => {
-        const userMessage = "I have a headache and a fever.";
-        setMessages(prev => [...prev, { sender: 'user', text: userMessage }]);
-        
-        setIsLoading(true);
+    const handleSendTranscript = async (text: string) => {
+        if (!text) return;
+        setMessages(prev => [...prev, { sender: 'user', text }]);
+        setIsProcessing(true);
         
         try {
-             // Use aiSymptomChecker for a medically-relevant response
-            const aiResult = await aiSymptomChecker({ symptoms: userMessage });
+            const aiResult = await aiSymptomChecker({ symptoms: text });
             const aiResponseText = aiResult.response;
             setMessages(prev => [...prev, { sender: 'ai', text: aiResponseText }]);
             await speak(aiResponseText, language);
-
         } catch (error) {
             console.error("AI Response Error:", error);
             const errorMsg = "I'm sorry, I encountered an error. Could you please repeat that?";
             setMessages(prev => [...prev, { sender: 'ai', text: errorMsg }]);
             await speak(errorMsg, language);
         } finally {
-            setIsLoading(false);
+            setIsProcessing(false);
+            setTranscript(''); // Clear transcript after processing
         }
     };
 
@@ -132,42 +185,36 @@ export function EchoDocCallContent() {
                            <Bot />
                         </AvatarFallback>
                     </Avatar>
-                     {isAISpeaking && (
+                     {(isAISpeaking || isListening) && (
                         <div className="absolute inset-0 rounded-full border-4 border-green-500 animate-pulse"></div>
                     )}
                 </div>
 
                 <Card className="w-full max-w-lg text-center p-6 bg-card">
                     <CardContent className="space-y-4">
-                         {isLoading && (
-                            <div className="flex items-center justify-center gap-2">
+                         {(isLoading || isProcessing) && (
+                            <div className="flex items-center justify-center gap-2 min-h-[56px]">
                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                <p>AI is thinking...</p>
+                                <p>{isLoading ? 'Connecting...' : 'AI is thinking...'}</p>
                             </div>
                         )}
 
-                        {!isLoading && messages.length > 0 && (
+                        {!(isLoading || isProcessing) && messages.length > 0 && (
                              <p className="text-lg font-medium min-h-[56px]">
                                 {messages[messages.length - 1].text}
                             </p>
                         )}
                        
                        <div className="text-sm text-muted-foreground">
-                            <p>{transcript || "Click the mic to speak"}</p>
+                            <p>{isListening ? "Listening..." : "Click the mic to speak"}</p>
                        </div>
                     </CardContent>
                 </Card>
-                
-                 {/* Simulate conversation button */}
-                 <Button onClick={simulateConversation} disabled={isLoading || isAISpeaking}>
-                    Simulate User Asking: "I have a headache and a fever."
-                </Button>
-
             </main>
             
             <footer className="flex-shrink-0 bg-card p-4 rounded-t-2xl">
                  <div className="flex items-center justify-center gap-4">
-                     <Select value={language} onValueChange={setLanguage} disabled={isAISpeaking || isLoading}>
+                     <Select value={language} onValueChange={setLanguage} disabled={isAISpeaking || isLoading || isListening}>
                         <SelectTrigger className="w-[150px]">
                             <SelectValue placeholder="Select Language" />
                         </SelectTrigger>
@@ -179,10 +226,11 @@ export function EchoDocCallContent() {
                     </Select>
                     <Button 
                         size="icon" 
-                        className={`h-16 w-16 rounded-full ${isMuted ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700'}`}
+                        className={`h-16 w-16 rounded-full transition-colors ${isListening ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600'}`}
                         onClick={handleMicToggle}
+                        disabled={isAISpeaking || isLoading}
                     >
-                        {isMuted ? <MicOff /> : <Mic />}
+                        {isListening ? <Mic /> : <MicOff />}
                     </Button>
                     <Button onClick={handleEndCall} variant="destructive" size="icon" className="h-16 w-16 rounded-full">
                         <PhoneOff />
