@@ -41,7 +41,9 @@ export function WebRTCVideoPlayer() {
   
   const callId = params.channel as string;
 
-  const pc = useRef<RTCPeerConnection | null>(null);
+  // Use useRef initializer to create a single, stable RTCPeerConnection instance
+  const pc = useRef<RTCPeerConnection>(new RTCPeerConnection(servers));
+  
   const localStream = useRef<MediaStream | null>(null);
   const remoteStream = useRef<MediaStream | null>(null);
 
@@ -56,16 +58,14 @@ export function WebRTCVideoPlayer() {
 
   // Main call setup effect
   useEffect(() => {
-    if (!user || !callId || user.isGuest || pc.current) {
+    if (!user || !callId || user.isGuest) {
       return;
     }
     
     let isCancelled = false;
     const unsubscribes: Unsubscribe[] = [];
 
-    const setupWebRTC = async () => {
-        pc.current = new RTCPeerConnection(servers);
-        remoteStream.current = new MediaStream();
+    const setupCall = async () => {
         setCallStatus('connecting');
 
         // Get local media
@@ -74,23 +74,26 @@ export function WebRTCVideoPlayer() {
              if (localVideoRef.current) {
                 localVideoRef.current.srcObject = localStream.current;
             }
-
-            // Push tracks to connection
-            localStream.current.getTracks().forEach(track => {
-                if (pc.current?.signalingState !== 'closed') {
-                   pc.current?.addTrack(track, localStream.current!);
-                }
-            });
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Media Error', description: `Could not access camera or microphone: ${error.message}` });
             if (!isCancelled) hangUp();
             return;
         }
 
-        if (isCancelled) return;
+        if (isCancelled || !pc.current) return;
+        
+        // Push tracks to connection
+        localStream.current.getTracks().forEach(track => {
+            if (pc.current.signalingState !== 'closed') {
+               pc.current.addTrack(track, localStream.current!);
+            }
+        });
 
         // Setup remote stream
         pc.current.ontrack = (event) => {
+            if (!remoteStream.current) {
+                remoteStream.current = new MediaStream();
+            }
             event.streams[0].getTracks().forEach(track => {
                 remoteStream.current?.addTrack(track);
             });
@@ -104,8 +107,8 @@ export function WebRTCVideoPlayer() {
         const offerCandidates = collection(callDoc, 'offerCandidates');
         const answerCandidates = collection(callDoc, 'answerCandidates');
         
-        pc.current!.onicecandidate = async (event) => {
-            if (event.candidate && pc.current?.signalingState !== 'closed') {
+        pc.current.onicecandidate = async (event) => {
+            if (event.candidate && pc.current.signalingState !== 'closed') {
                 const candidatesCollection = user.isDoctor ? answerCandidates : offerCandidates;
                 await addDoc(candidatesCollection, event.candidate.toJSON());
             }
@@ -113,12 +116,12 @@ export function WebRTCVideoPlayer() {
 
         if (user.isDoctor) {
             // Doctor: Answer the call
-             const callSnap = await getDoc(callDoc);
+            const callSnap = await getDoc(callDoc);
             if(isCancelled || !callSnap.exists() || !callSnap.data().offer || pc.current.signalingState !== 'stable') return;
             
-            await pc.current!.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
-            const answerDescription = await pc.current!.createAnswer();
-            await pc.current!.setLocalDescription(answerDescription);
+            await pc.current.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
+            const answerDescription = await pc.current.createAnswer();
+            await pc.current.setLocalDescription(answerDescription);
 
             const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
             await updateDoc(callDoc, { answer });
@@ -134,8 +137,8 @@ export function WebRTCVideoPlayer() {
         } else {
             // Patient: Create Offer
             if(pc.current.signalingState !== 'stable') return;
-            const offerDescription = await pc.current!.createOffer();
-            await pc.current!.setLocalDescription(offerDescription);
+            const offerDescription = await pc.current.createOffer();
+            await pc.current.setLocalDescription(offerDescription);
             
             const offer = { sdp: offerDescription.sdp, type: offerDescription.type };
             await updateDoc(callDoc, { offer });
@@ -143,8 +146,7 @@ export function WebRTCVideoPlayer() {
             const unsubAnswer = onSnapshot(callDoc, (snapshot) => {
                 const data = snapshot.data();
                 if (pc.current && !pc.current.currentRemoteDescription && data?.answer) {
-                    const answerDescription = new RTCSessionDescription(data.answer);
-                    pc.current.setRemoteDescription(answerDescription);
+                    pc.current.setRemoteDescription(new RTCSessionDescription(data.answer));
                 }
             });
             unsubscribes.push(unsubAnswer);
@@ -161,7 +163,7 @@ export function WebRTCVideoPlayer() {
         }
     };
     
-    setupWebRTC().catch(err => {
+    setupCall().catch(err => {
         if (!isCancelled) {
              console.error("Setup failed:", err);
              toast({ variant: 'destructive', title: 'Call Failed', description: err.message });
@@ -182,7 +184,17 @@ export function WebRTCVideoPlayer() {
     return () => {
       isCancelled = true;
       unsubscribes.forEach(unsub => unsub());
-      hangUp();
+      
+      // Cleanup media tracks, but do not close the connection here to avoid race conditions.
+      // The connection is closed explicitly on hangUp.
+      if (localStream.current) {
+        localStream.current.getTracks().forEach(track => track.stop());
+        localStream.current = null;
+      }
+      if (remoteStream.current) {
+        remoteStream.current.getTracks().forEach(track => track.stop());
+        remoteStream.current = null;
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, callId]);
@@ -191,22 +203,23 @@ export function WebRTCVideoPlayer() {
     if (callStatus === 'disconnected') return;
     setCallStatus('disconnected');
 
-    if (pc.current) {
-        if (pc.current.signalingState !== 'closed') {
-           pc.current.close();
-        }
+    if (pc.current && pc.current.signalingState !== 'closed') {
+        pc.current.close();
     }
     
-    localStream.current?.getTracks().forEach(track => track.stop());
-    remoteStream.current?.getTracks().forEach(track => track.stop());
+    // Stop and clear streams
+    if (localStream.current) {
+        localStream.current.getTracks().forEach(track => track.stop());
+        localStream.current = null;
+    }
+    if (remoteStream.current) {
+        remoteStream.current.getTracks().forEach(track => track.stop());
+        remoteStream.current = null;
+    }
     
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     
-    localStream.current = null;
-    remoteStream.current = null;
-    pc.current = null;
-
     if (callId) {
         try {
             const callDoc = doc(db, 'calls', callId);
@@ -297,3 +310,5 @@ export function WebRTCVideoPlayer() {
     </div>
   );
 }
+
+    
