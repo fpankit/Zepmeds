@@ -93,9 +93,7 @@ function VideoCallPlayerContent() {
         channel: callDetails?.channelName!, 
         token: callDetails?.token,
         uid: null // Let Agora assign UID automatically
-    }, isJoined, () => {
-        console.log('Successfully joined channel');
-    });
+    }, isJoined);
 
     usePublish([localMicrophoneTrack, localCameraTrack], isJoined);
 
@@ -164,7 +162,14 @@ function VideoCallPlayerContent() {
                 <div className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Local User Video */}
                     <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                        <LocalVideoTrack track={localCameraTrack} play={cameraOn} className="w-full h-full object-cover" />
+                        {cameraOn ? (
+                             <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />
+                        ) : (
+                             <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+                                <CameraOff className="h-10 w-10 text-gray-600" />
+                            </div>
+                        )}
+                       
                         <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">
                             <p>You</p>
                         </div>
