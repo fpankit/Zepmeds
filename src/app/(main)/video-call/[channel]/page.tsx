@@ -6,8 +6,8 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const AgoraVideoPlayer = dynamic(
-    () => import('@/components/features/agora-video-player').then((mod) => mod.AgoraVideoPlayer),
+const WebRTCVideoPlayer = dynamic(
+    () => import('@/components/features/webrtc-video-player').then((mod) => mod.WebRTCVideoPlayer),
     { 
         ssr: false,
         loading: () => (
@@ -39,7 +39,7 @@ const AgoraVideoPlayer = dynamic(
 export default function VideoCallPage() {
     return (
         <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-gray-900"><Loader2 className="h-8 w-8 animate-spin text-white"/></div>}>
-            <AgoraVideoPlayer />
+            <WebRTCVideoPlayer />
         </Suspense>
     )
 }

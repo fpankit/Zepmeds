@@ -7,23 +7,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, query, onSnapshot, orderBy, getDoc, doc } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-
-interface Doctor {
-  id: string;
-  name: string;
-  specialty: string;
-  experience: string;
-  image: string;
-  dataAiHint: string;
-  isOnline: boolean;
-}
+import { Doctor } from "@/hooks/use-calls";
 
 const DoctorCardSkeleton = () => (
     <Card className="overflow-hidden">
@@ -102,8 +93,18 @@ export default function DoctorPage() {
         return;
     }
     
-    // The channel for the call is the doctor's unique ID
-    router.push(`/video-call/${doctor.id}`);
+    // Create a new call document in Firestore for signaling
+    const callDocRef = await addDoc(collection(db, 'calls'), {
+        callerId: user.id,
+        callerName: `${user.firstName} ${user.lastName}`,
+        receiverId: doctor.id,
+        receiverName: doctor.name,
+        status: 'ringing',
+        createdAt: serverTimestamp(),
+    });
+
+    // The channel for the call is now the ID of the call document
+    router.push(`/video-call/${callDocRef.id}`);
   }
 
   const getInitials = (name: string) => {
