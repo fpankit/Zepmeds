@@ -54,10 +54,21 @@ export default function DoctorPage() {
   useEffect(() => {
     setIsLoading(true);
     // Use a simpler query that doesn't require a composite index
-    const doctorsQuery = query(collection(db, "doctors"), orderBy("name"));
+    const doctorsQuery = query(collection(db, "doctors"), orderBy("displayName"));
 
     const unsubscribe = onSnapshot(doctorsQuery, (querySnapshot) => {
-        const fetchedDoctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+        const fetchedDoctors = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: doc.id, 
+                name: data.displayName || "Unnamed Doctor",
+                specialty: data.speciality || "No Specialty", // Field name is speciality
+                experience: data.about || "No experience listed.", // Field name is about
+                image: data.photoURL || "",
+                dataAiHint: "doctor portrait",
+                isOnline: data.isOnline || false,
+             } as Doctor
+        });
         
         // Sort doctors on the client-side to prioritize online ones
         fetchedDoctors.sort((a, b) => {
