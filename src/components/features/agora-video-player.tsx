@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense, useMemo } from 'react';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import {
     LocalVideoTrack,
     RemoteUser,
@@ -11,7 +11,9 @@ import {
     useLocalMicrophoneTrack,
     usePublish,
     useRemoteUsers,
+    AgoraRTCProvider
 } from "agora-rtc-react";
+import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Camera, CameraOff, PhoneOff, AlertTriangle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/context/auth-context';
 
 
 const PatientProfile = dynamic(
@@ -34,22 +37,22 @@ const PatientProfile = dynamic(
     }
 );
 
-interface AgoraVideoPlayerProps {
-    appId: string;
-    channelName: string;
-    token: string | null;
-    patientId: string | null;
-}
-
-export function AgoraVideoPlayer({ appId, channelName, token, patientId }: AgoraVideoPlayerProps) {
+function VideoCallPlayerContent() {
     const router = useRouter();
     const { toast } = useToast();
+    const params = useParams();
+    const searchParams = useSearchParams();
 
     const [micOn, setMic] = useState(true);
     const [cameraOn, setCamera] = useState(true);
     const [hasPermission, setHasPermission] = useState(false);
     const [isPermissionLoading, setIsPermissionLoading] = useState(true);
     const [isJoined, setIsJoined] = useState(false);
+
+    const channelName = params.channel as string;
+    const patientId = searchParams.get('patientId');
+    const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID || '3b649d7a9006490292cd9d82534a6a91';
+    const token = null;
     
     // Request permissions on component mount
     useEffect(() => {
@@ -90,7 +93,7 @@ export function AgoraVideoPlayer({ appId, channelName, token, patientId }: Agora
         }
     );
 
-    usePublish([localMicrophoneTrack, localCameraTrack], isJoined);
+    usePublish([localMicrophoneTrack, localCameraTrack], isJoined && hasPermission);
 
     const remoteUsers = useRemoteUsers();
 
@@ -180,4 +183,15 @@ export function AgoraVideoPlayer({ appId, channelName, token, patientId }: Agora
             </aside>
         </div>
     );
+}
+
+
+export function AgoraVideoPlayer() {
+    const client = useMemo(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }), []);
+
+    return (
+        <AgoraRTCProvider client={client}>
+            <VideoCallPlayerContent />
+        </AgoraRTCProvider>
+    )
 }
