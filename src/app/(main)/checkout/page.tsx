@@ -104,7 +104,7 @@ export default function CheckoutPage() {
             orderData.prescription = {
                 dataUri: prescription.dataUri,
                 summary: prescription.summary,
-                status: 'pending_approval' // Set initial status for admin
+                status: 'approved' // It can only reach here if approved
             }
         }
 

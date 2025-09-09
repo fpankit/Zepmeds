@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +13,11 @@ import Link from "next/link";
 import { PrescriptionUploader } from '@/components/features/prescription-uploader';
 import { GeneratePrescriptionSummaryOutput } from '@/ai/flows/generate-prescription-summary';
 import { PrescriptionDetails } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { useAuth } from '@/context/auth-context';
+
 
 type PrescriptionStatus = 'needed' | 'uploaded' | 'approved' | 'rejected';
 
@@ -20,6 +25,31 @@ export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, clearCart, setPrescription, prescription } = useCart();
   const [prescriptionSummary, setPrescriptionSummary] = useState<GeneratePrescriptionSummaryOutput | null>(null);
   const [prescriptionStatus, setPrescriptionStatus] = useState<PrescriptionStatus>('needed');
+  const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // This effect would simulate an admin approving the prescription
+  // In a real app, this would be a Firestore listener on the user's document or a dedicated 'prescriptions' collection
+  useEffect(() => {
+    if (prescriptionStatus === 'uploaded') {
+       toast({
+        title: "Prescription Awaiting Approval",
+        description: "For this demo, we will simulate an admin approving it in 5 seconds.",
+      });
+      const approvalTimeout = setTimeout(() => {
+        setPrescriptionStatus('approved');
+        toast({
+          title: "Prescription Approved!",
+          description: "You can now proceed to checkout.",
+          variant: "default",
+          className: "bg-green-500 text-white"
+        });
+      }, 5000); // 5-second delay to simulate admin review
+      
+      return () => clearTimeout(approvalTimeout);
+    }
+  }, [prescriptionStatus, toast]);
+  
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = subtotal > 0 ? 50 : 0;
@@ -31,13 +61,9 @@ export default function CartPage() {
       setPrescriptionSummary(details.summary);
       setPrescription(details); // Save details to context
       setPrescriptionStatus('uploaded');
-      // NOTE: The 'approved' status would be set by an admin in a real-world scenario.
-      // For this demo, we can assume it remains 'uploaded' (pending) until checkout,
-      // where it's saved with the order for admin review.
   };
   
-  const isCheckoutDisabled = hasRxItems && prescriptionStatus !== 'uploaded';
-
+  const isCheckoutDisabled = hasRxItems && prescriptionStatus !== 'approved';
 
   if (cart.length === 0) {
     return (
@@ -114,10 +140,20 @@ export default function CartPage() {
                         <Clock className="h-6 w-6 text-blue-500"/>
                         <div>
                             <p className="text-sm font-bold text-blue-400">Prescription Uploaded</p>
-                            <p className="text-xs text-blue-500">Your prescription will be verified by our team after you place the order.</p>
+                            <p className="text-xs text-blue-500">Please wait while our team verifies your prescription. This may take a few minutes.</p>
                         </div>
                     </div>
                 )}
+                 {prescriptionStatus === 'approved' && (
+                     <div className="flex items-center gap-3 p-3 rounded-md bg-green-500/10 border border-green-500/50">
+                        <CheckCircle className="h-6 w-6 text-green-500"/>
+                        <div>
+                            <p className="text-sm font-bold text-green-400">Prescription Approved</p>
+                            <p className="text-xs text-green-500">You may now proceed to checkout.</p>
+                        </div>
+                    </div>
+                )}
+
                  {prescriptionStatus === 'rejected' && ( // This state would be updated from an admin dashboard in a real app
                      <div className="flex flex-col gap-3 p-3 rounded-md bg-destructive/10 border border-destructive/50">
                         <div className="flex items-center gap-3">
@@ -154,7 +190,7 @@ export default function CartPage() {
         <CardFooter>
           <Button className="w-full" asChild={!isCheckoutDisabled} disabled={isCheckoutDisabled}>
             <Link href="/checkout">
-              {isCheckoutDisabled ? 'Upload Prescription to Proceed' : 'Proceed to Checkout'}
+              {isCheckoutDisabled ? 'Awaiting Prescription Approval' : 'Proceed to Checkout'}
             </Link>
           </Button>
         </CardFooter>
