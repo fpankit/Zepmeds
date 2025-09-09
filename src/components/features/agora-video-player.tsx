@@ -47,7 +47,6 @@ export function AgoraVideoPlayer() {
 
     if (client.current) {
         if(isJoined) {
-          // Only unpublish if the user was successfully joined.
           await client.current.unpublish();
         }
         await client.current.leave();
