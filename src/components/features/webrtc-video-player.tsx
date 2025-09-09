@@ -16,7 +16,10 @@ import {
   updateDoc,
   collection,
   addDoc,
+  deleteDoc,
+  getDocs,
 } from 'firebase/firestore';
+import type { Unsubscribe } from 'firebase/firestore';
 import { Call } from '@/hooks/use-calls';
 
 const servers = {
@@ -45,33 +48,148 @@ export function WebRTCVideoPlayer() {
 
   const [isMicOn, setMicOn] = useState(true);
   const [isCameraOn, setCameraOn] = useState(true);
-  const [isConnecting, setIsConnecting] = useState(true);
   const [isLeaving, setIsLeaving] = useState(false);
   const [callData, setCallData] = useState<Call | null>(null);
-  
+  const [callStatus, setCallStatus] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
+
+
+  // Main call setup effect
+  useEffect(() => {
+    if (!user || !callId || user.isGuest) {
+      return;
+    }
+    
+    setCallStatus('connecting');
+    pc.current = new RTCPeerConnection(servers);
+    remoteStream.current = new MediaStream();
+
+    const startMedia = async () => {
+        localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (localVideoRef.current) {
+            localVideoRef.current.srcObject = localStream.current;
+        }
+
+        localStream.current.getTracks().forEach(track => {
+            if (pc.current?.signalingState !== 'closed') {
+                pc.current?.addTrack(track, localStream.current!);
+            }
+        });
+    };
+
+    const setupSignaling = async () => {
+        const callDoc = doc(db, 'calls', callId);
+        const offerCandidates = collection(callDoc, 'offerCandidates');
+        const answerCandidates = collection(callDoc, 'answerCandidates');
+        
+        pc.current!.onicecandidate = async (event) => {
+            if (event.candidate) {
+                await addDoc(offerCandidates, event.candidate.toJSON());
+            }
+        };
+        
+        // Create Offer
+        const offerDescription = await pc.current!.createOffer();
+        await pc.current!.setLocalDescription(offerDescription);
+        const offer = {
+            sdp: offerDescription.sdp,
+            type: offerDescription.type,
+        };
+        await updateDoc(callDoc, { offer });
+
+        // Listen for Answer
+        const unsubAnswer = onSnapshot(callDoc, (snapshot) => {
+            const data = snapshot.data();
+            if (pc.current && pc.current.signalingState !== 'closed' && !pc.current.currentRemoteDescription && data?.answer) {
+                const answerDescription = new RTCSessionDescription(data.answer);
+                pc.current.setRemoteDescription(answerDescription);
+            }
+             if (data?.status === 'ended') {
+                hangUp();
+            }
+        });
+
+        // Listen for ICE candidates from remote
+        const unsubCandidates = onSnapshot(answerCandidates, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added' && pc.current && pc.current.signalingState !== 'closed') {
+                    const candidate = new RTCIceCandidate(change.doc.data());
+                    pc.current.addIceCandidate(candidate);
+                }
+            });
+        });
+        
+        return () => {
+            unsubAnswer();
+            unsubCandidates();
+        }
+    };
+    
+    pc.current.ontrack = (event) => {
+        event.streams[0].getTracks().forEach(track => {
+          remoteStream.current?.addTrack(track);
+        });
+        if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStream.current;
+        }
+        setCallStatus('connected');
+    };
+    
+    let unsubSignal: (()=>void) | undefined;
+    
+    const initialize = async () => {
+        try {
+            await startMedia();
+            unsubSignal = await setupSignaling();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Call Failed', description: error.message });
+            hangUp();
+        }
+    }
+
+    initialize();
+
+    return () => {
+      // This cleanup runs on unmount or dependency change
+      // It should NOT close the PC, only stop tracks and listeners
+      if (unsubSignal) unsubSignal();
+      
+      localStream.current?.getTracks().forEach(track => track.stop());
+      if (localVideoRef.current) {
+          localVideoRef.current.srcObject = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, callId]);
+
   const hangUp = useCallback(async () => {
     if (isLeaving) return;
     setIsLeaving(true);
+    setCallStatus('disconnected');
 
     if (pc.current && pc.current.signalingState !== 'closed') {
-        pc.current.getSenders().forEach(sender => {
-            pc.current?.removeTrack(sender);
-        });
         pc.current.close();
     }
+    pc.current = null;
     
     localStream.current?.getTracks().forEach(track => track.stop());
     remoteStream.current?.getTracks().forEach(track => track.stop());
-    
     localStream.current = null;
     remoteStream.current = null;
-
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    
     if (callId) {
         try {
             const callDoc = doc(db, 'calls', callId);
             const callSnap = await getDoc(callDoc);
-            if (callSnap.exists()) {
+            if (callSnap.exists() && callSnap.data()?.status !== 'ended') {
                  await updateDoc(callDoc, { status: 'ended' });
+                 
+                 // Clean up subcollections
+                 const offerCandidates = await getDocs(collection(callDoc, 'offerCandidates'));
+                 offerCandidates.forEach(async (doc) => await deleteDoc(doc.ref));
+                 const answerCandidates = await getDocs(collection(callDoc, 'answerCandidates'));
+                 answerCandidates.forEach(async (doc) => await deleteDoc(doc.ref));
             }
         } catch (error) {
             console.error("Error ending call in Firestore:", error);
@@ -80,130 +198,38 @@ export function WebRTCVideoPlayer() {
     
     router.push('/home');
   }, [router, callId, isLeaving]);
-
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    const startCall = async () => {
-      if (!user || user.isGuest || isLeaving) {
-        if(!user || user.isGuest) toast({ variant: 'destructive', title: 'Login Required' });
-        router.push('/login');
-        return;
-      }
-      
-      pc.current = new RTCPeerConnection(servers);
-
-      // Get local media
-      localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = localStream.current;
-      }
-      
-      // Push tracks to connection
-      localStream.current.getTracks().forEach(track => {
-        if (pc.current && pc.current.signalingState !== 'closed') {
-            pc.current.addTrack(track, localStream.current!);
-        }
-      });
-
-      // Setup remote stream
-      remoteStream.current = new MediaStream();
-      pc.current.ontrack = (event) => {
-        event.streams[0].getTracks().forEach(track => {
-          remoteStream.current?.addTrack(track);
-        });
-        if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStream.current;
-        }
-        setIsConnecting(false);
-      };
-      
-      const callDoc = doc(db, 'calls', callId);
-      const offerCandidates = collection(callDoc, 'offerCandidates');
-      const answerCandidates = collection(callDoc, 'answerCandidates');
-      
-      pc.current.onicecandidate = async (event) => {
-          if (event.candidate) {
-            await addDoc(offerCandidates, event.candidate.toJSON());
-          }
-      };
-
-      if (isCancelled || pc.current.signalingState === 'closed') return;
-
-      // Create offer
-      const offerDescription = await pc.current.createOffer();
-      await pc.current.setLocalDescription(offerDescription);
-      
-      const offer = {
-        sdp: offerDescription.sdp,
-        type: offerDescription.type,
-      };
-
-      await updateDoc(callDoc, { offer });
-
-      // Listen for answer and ICE candidates from doctor
-      const unsubAnswer = onSnapshot(callDoc, (snapshot) => {
-        const data = snapshot.data();
-        if (pc.current && pc.current.signalingState !== 'closed' && !pc.current.currentRemoteDescription && data?.answer) {
-          const answerDescription = new RTCSessionDescription(data.answer);
-          pc.current.setRemoteDescription(answerDescription);
-        }
-      });
-      
-      const unsubCandidates = onSnapshot(answerCandidates, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added' && pc.current && pc.current.signalingState !== 'closed') {
-            const candidate = new RTCIceCandidate(change.doc.data());
-             pc.current.addIceCandidate(candidate);
-          }
-        });
-      });
-
-      return () => {
-          unsubAnswer();
-          unsubCandidates();
-      }
-    };
-
-    startCall();
-
-    return () => {
-        isCancelled = true;
-        hangUp();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, callId, toast, router]);
   
-  
-    const handleMicToggle = async () => {
-        if (localStream.current) {
-            localStream.current.getAudioTracks().forEach(track => track.enabled = !track.enabled);
-            setMicOn(prev => !prev);
-        }
-    };
+  const handleMicToggle = () => {
+      if (localStream.current) {
+          localStream.current.getAudioTracks().forEach(track => track.enabled = !track.enabled);
+          setMicOn(prev => !prev);
+      }
+  };
 
-    const handleCameraToggle = async () => {
-        if (localStream.current) {
-            localStream.current.getVideoTracks().forEach(track => track.enabled = !track.enabled);
-            setCameraOn(prev => !prev);
-        }
-    };
+  const handleCameraToggle = () => {
+      if (localStream.current) {
+          localStream.current.getVideoTracks().forEach(track => track.enabled = !track.enabled);
+          setCameraOn(prev => !prev);
+      }
+  };
 
   return (
     <div className="flex h-screen w-full flex-col bg-gray-900 text-white">
       <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-700 px-4">
         <h1 className="font-semibold">Zepmeds Video Consultation</h1>
         <div className="text-sm text-gray-400">
-          Status: <span className={cn(!isConnecting && 'text-green-400')}>{isConnecting ? 'Connecting...' : 'Connected'}</span>
+          Status: <span className={cn(callStatus === 'connected' && 'text-green-400')}>{callStatus}</span>
         </div>
       </header>
 
       <main className="flex flex-1 flex-col gap-4 p-4 md:flex-row">
         <div className="relative flex-1 rounded-lg bg-black overflow-hidden">
-            {isConnecting && (
+            {callStatus !== 'connected' && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                     <Loader2 className="h-8 w-8 animate-spin" />
+                     <div className="text-center">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                        <p className="mt-2">{callStatus === 'connecting' ? 'Connecting, please wait...' : 'Waiting for doctor to join...'}</p>
+                     </div>
                  </div>
             )}
             <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
