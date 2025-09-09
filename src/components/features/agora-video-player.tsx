@@ -63,8 +63,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
     const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn && hasPermission);
     const { localCameraTrack } = useLocalCameraTrack(cameraOn && hasPermission);
     
-    // Let Agora assign the UID by not passing the 'uid' field
-    useJoin({ appid: appId, channel: channelName, token: token }, hasPermission);
+    useJoin({ appid: appId, channel: channelName, token: token, uid: null }, hasPermission);
     usePublish([localMicrophoneTrack, localCameraTrack]);
 
     const remoteUsers = useRemoteUsers();
