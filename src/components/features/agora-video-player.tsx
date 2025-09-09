@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import {
     AgoraRTCProvider,
     useJoin,
