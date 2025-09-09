@@ -29,7 +29,7 @@ export default function EchoDocSurveyPage() {
   const form = useForm<SurveyFormValues>({
     resolver: zodResolver(surveySchema),
     defaultValues: {
-      age: undefined,
+      age: '' as any,
       gender: undefined,
       concerns: "",
       history: "",
