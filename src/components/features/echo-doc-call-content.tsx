@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Mic, MicOff, PhoneOff, Bot, Loader2 } from 'lucide-react';
 import { echoDocFlow } from '@/ai/flows/echo-doc-flow';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
     sender: 'user' | 'ai';
@@ -36,6 +37,7 @@ export function EchoDocCallContent() {
     const searchParams = useSearchParams();
     const doctorName = searchParams.get('doctorName');
     const initialSymptoms = searchParams.get('symptoms');
+    const { toast } = useToast();
 
     const [isListening, setIsListening] = useState(false);
     const [isAISpeaking, setIsAISpeaking] = useState(false);
@@ -91,15 +93,19 @@ export function EchoDocCallContent() {
         };
         
         recognition.onend = () => {
-            setIsListening(false);
+            if(isListening) {
+                setIsListening(false);
+            }
         }
 
         recognitionRef.current = recognition;
 
         return () => {
-            recognition.stop();
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
         };
-    }, []);
+    }, [isListening]);
 
     // Process transcript when user stops speaking
     useEffect(() => {
@@ -121,8 +127,21 @@ export function EchoDocCallContent() {
                 audioRef.current.play();
                 audioRef.current.onended = () => setIsAISpeaking(false);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("TTS Error:", error);
+            if (error.message && error.message.includes("429")) {
+                 toast({
+                    variant: "destructive",
+                    title: "Voice Limit Reached",
+                    description: "You've made too many requests. Please wait a moment. Displaying text instead.",
+                });
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "Voice Error",
+                    description: "Could not generate audio. Displaying text instead.",
+                });
+            }
             setIsAISpeaking(false);
         }
     };
@@ -130,11 +149,12 @@ export function EchoDocCallContent() {
     const handleMicToggle = () => {
         if (isListening) {
             recognitionRef.current?.stop();
+            setIsListening(false);
         } else {
             setTranscript(''); // Reset transcript for new input
             recognitionRef.current?.start();
+            setIsListening(true);
         }
-        setIsListening(!isListening);
     };
     
     const handleEndCall = () => {
