@@ -84,14 +84,19 @@ export function AgoraVideoPlayer() {
   }, [user, channelName, toast]);
 
   const leave = useCallback(async () => {
-    if (localAudioTrack.current && localVideoTrack.current && client.current?.localTracks) {
-        await client.current.unpublish([localAudioTrack.current, localVideoTrack.current]);
+    if (localAudioTrack.current) {
+        localAudioTrack.current.close();
+        localAudioTrack.current = null;
     }
-    localAudioTrack.current?.close();
-    localVideoTrack.current?.close();
+    if (localVideoTrack.current) {
+        localVideoTrack.current.close();
+        localVideoTrack.current = null;
+    }
 
-    await client.current?.leave();
-    client.current = null;
+    if (client.current) {
+        await client.current.leave();
+        client.current = null;
+    }
     setIsJoined(false);
     setRemoteUsers([]);
     router.push('/home');
