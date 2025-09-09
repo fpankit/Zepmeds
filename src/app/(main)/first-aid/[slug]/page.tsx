@@ -99,10 +99,10 @@ export default function FirstAidDetailPage() {
       setTranslatedContent(null);
       return;
     }
-    
+
     let procedureToTranslate: string[] = [];
     let avoidToTranslate: string[] = [];
-    
+
     if (aiAdvice && !aiError) {
         procedureToTranslate = aiAdvice.procedure;
         avoidToTranslate = aiAdvice.whatToAvoid;
@@ -114,23 +114,27 @@ export default function FirstAidDetailPage() {
 
     setIsTranslating(true);
     try {
-        const [translatedProcedure, translatedAvoid] = await Promise.all([
-             Promise.all(procedureToTranslate.map(step => translateText({ text: step, targetLanguage: lang }))),
-             Promise.all(avoidToTranslate.map(step => translateText({ text: step, targetLanguage: lang })))
-        ]);
-        
-        setTranslatedContent({
-            procedure: translatedProcedure.map(t => t.translatedText),
-            whatToAvoid: translatedAvoid.map(t => t.translatedText),
-        });
+      // Join array into a single string with a unique separator
+      const procedureText = procedureToTranslate.join('\n---\n');
+      const avoidText = avoidToTranslate.join('\n---\n');
+      
+      const [translatedProcedureResult, translatedAvoidResult] = await Promise.all([
+          procedureText ? translateText({ text: procedureText, targetLanguage: lang }) : Promise.resolve({ translatedText: '' }),
+          avoidText ? translateText({ text: avoidText, targetLanguage: lang }) : Promise.resolve({ translatedText: '' })
+      ]);
 
+      setTranslatedContent({
+        procedure: translatedProcedureResult.translatedText.split('\n---\n'),
+        whatToAvoid: translatedAvoidResult.translatedText.split('\n---\n'),
+      });
     } catch (e) {
-        toast({ variant: 'destructive', title: 'Translation Error', description: 'Could not translate the guide.' });
-        setTranslatedContent(null);
+      console.error("Translation Error: ", e);
+      toast({ variant: 'destructive', title: 'Translation Error', description: 'Could not translate the guide.' });
+      setTranslatedContent(null);
     } finally {
-        setIsTranslating(false);
+      setIsTranslating(false);
     }
-  }
+  };
 
 
   if (!topic) {
@@ -154,7 +158,7 @@ export default function FirstAidDetailPage() {
       </ol>
   );
 
-  const languageOptions = ['English', 'Hindi', 'Punjabi'];
+  const languageOptions = ['English', 'Hindi', 'Punjabi', 'Tamil', 'Telugu', 'Kannada'];
 
   return (
     <div className="flex flex-col h-screen">
@@ -257,3 +261,5 @@ export default function FirstAidDetailPage() {
     </div>
   );
 }
+
+    
