@@ -52,8 +52,9 @@ export function PeerVideoPlayer() {
 
         const initializePeer = async () => {
             const { Peer } = await import('peerjs');
-            // Doctor receives calls on their own ID, Patient uses a random ID
-            const peerInstance = isCaller ? new Peer() : new Peer(user.id);
+            // Caller (patient) gets a random ID.
+            // Receiver (doctor) must use their specific ID to be reachable.
+            const peerInstance = isCaller ? new Peer() : new Peer(remotePeerId);
 
             peerInstance.on('open', (id) => {
                 console.log('My peer ID is: ' + id);
@@ -66,7 +67,7 @@ export function PeerVideoPlayer() {
                 if (err.type === 'peer-unavailable') {
                     toast({ variant: 'destructive', title: 'Doctor Offline', description: 'The doctor is not available for a call right now.' });
                 } else {
-                    toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.type}` });
+                     toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.type}` });
                 }
                 setCallStatus('error');
             });
@@ -81,7 +82,7 @@ export function PeerVideoPlayer() {
             peer?.destroy();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user, remotePeerId, isCaller]);
 
     // Get user media as soon as component loads
     useEffect(() => {
