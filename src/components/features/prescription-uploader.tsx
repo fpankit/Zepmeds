@@ -154,4 +154,3 @@ export function PrescriptionUploader({ onUploadSuccess }: PrescriptionUploaderPr
     </div>
   );
 }
-
