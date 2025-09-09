@@ -119,7 +119,9 @@ export function EchoDocCallContent() {
         };
 
         recognition.onend = () => {
-            setIsListening(false);
+            if (isListening) {
+                setIsListening(false);
+            }
         };
 
         recognition.onerror = (event: any) => {
@@ -129,6 +131,9 @@ export function EchoDocCallContent() {
                 title: 'Mic Error',
                 description: `An error occurred with the microphone: ${event.error}`,
             });
+             if (isListening) {
+                setIsListening(false);
+            }
         };
 
         recognitionRef.current = recognition;
@@ -155,18 +160,13 @@ export function EchoDocCallContent() {
         } catch (error: any) {
             console.error("TTS Error:", error);
             const errorMessage = error.message || '';
-            if (errorMessage.includes("quota")) {
-                 toast({
-                    variant: "destructive",
-                    title: "Daily Voice Quota Exceeded",
-                    description: "The voice service will be available again tomorrow. Displaying text instead.",
-                });
-            } else if (errorMessage.includes("429")) {
-                 toast({
-                    variant: "destructive",
-                    title: "Voice Limit Reached",
-                    description: "You've made too many requests. Please wait a moment. Displaying text instead.",
-                });
+            
+            if (errorMessage.includes("quota") || errorMessage.includes("429")) {
+                const title = errorMessage.includes("Daily") ? "Daily Voice Quota Exceeded" : "Voice Limit Reached";
+                const description = title === "Daily Voice Quota Exceeded" 
+                    ? "The voice service will be available again tomorrow. Displaying text instead."
+                    : "You've made too many requests. Please wait a moment. Displaying text instead.";
+                 toast({ variant: "destructive", title, description });
             } else if (error instanceof TypeError && errorMessage.includes('Failed to fetch')) {
                  toast({
                     variant: "destructive",
@@ -187,6 +187,7 @@ export function EchoDocCallContent() {
     const handleMicToggle = () => {
         if (isListening) {
             recognitionRef.current?.stop();
+            setIsListening(false);
         } else {
             setTranscript('');
             recognitionRef.current?.start();
@@ -276,3 +277,5 @@ export function EchoDocCallContent() {
         </div>
     );
 }
+
+    
