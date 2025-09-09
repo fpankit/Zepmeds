@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useCalls } from "@/hooks/use-calls";
 import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
+import { DelayedSkeleton } from "@/components/features/delayed-skeleton";
 
 interface Doctor {
   id: string;
@@ -28,6 +29,24 @@ interface Doctor {
 }
 
 const DOCTORS_PER_PAGE = 9;
+
+const DoctorCardSkeleton = () => (
+    <Card className="overflow-hidden">
+        <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+            <Skeleton className="h-20 w-20 rounded-full" />
+            <div className="space-y-2 flex-1">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-2/3" />
+            </div>
+        </div>
+        <div className="flex gap-2 mt-4">
+            <Skeleton className="h-10 w-full" />
+        </div>
+        </CardContent>
+    </Card>
+);
 
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -68,11 +87,6 @@ export default function DoctorPage() {
       const doctorsQuery = lastVisibleDoc
         ? query(collection(db, "doctors"), orderBy("name"), startAfter(lastVisibleDoc), limit(DOCTORS_PER_PAGE))
         : query(collection(db, "doctors"), orderBy("name"), limit(DOCTORS_PER_PAGE));
-
-      // Simulate network delay for loading skeletons
-      if (!lastVisibleDoc) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      }
 
       const querySnapshot = await getDocs(doctorsQuery);
       const newDoctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
@@ -147,33 +161,6 @@ export default function DoctorPage() {
     if (!name) return 'Dr';
     return name.split(' ').map(n => n[0]).join('');
   }
-  
-  const renderSkeletons = () => (
-    <>
-        <div className="col-span-full flex flex-col items-center text-center space-y-2 py-10">
-            <Loader2 className="h-10 w-10 animate-spin text-primary"/>
-            <h2 className="text-xl font-semibold">Hang Up! Warming up</h2>
-            <p className="text-muted-foreground">Finding available doctors for you...</p>
-        </div>
-        {Array.from({ length: 6 }).map((_, index) => (
-        <Card key={index} className="overflow-hidden">
-            <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-                <Skeleton className="h-20 w-20 rounded-full" />
-                <div className="space-y-2 flex-1">
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-2/3" />
-                </div>
-            </div>
-            <div className="flex gap-2 mt-4">
-                <Skeleton className="h-10 w-full" />
-            </div>
-            </CardContent>
-        </Card>
-        ))}
-    </>
-  );
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -192,46 +179,48 @@ export default function DoctorPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading && doctors.length === 0 ? (
-          renderSkeletons()
+            Array.from({ length: 6 }).map((_, index) => <DoctorCardSkeleton key={index} />)
         ) : doctors.length > 0 ? (
             doctors.map((doctor) => (
-            <Card key={doctor.id} className="overflow-hidden">
-                <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                    <Avatar className="h-20 w-20 border-4" style={{ borderColor: doctor.isOnline ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }}>
-                        <AvatarImage src={doctor.image} alt={doctor.name} data-ai-hint={doctor.dataAiHint} />
-                        <AvatarFallback>{getInitials(doctor.name)}</AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-1">
-                    <h3 className="font-bold text-lg">{doctor.name || 'Unnamed Doctor'}</h3>
-                    <p className="text-primary font-medium">{doctor.specialty}</p>
-                    <p className="text-sm text-muted-foreground">
-                        {doctor.experience}
-                    </p>
-                    <div className={cn(
-                        "flex items-center gap-1 text-xs font-semibold",
-                        doctor.isOnline ? "text-green-500" : "text-red-500"
-                    )}>
-                        {doctor.isOnline ? <CheckCircle className="h-3 w-3"/> : <XCircle className="h-3 w-3"/>}
-                        {doctor.isOnline ? "Online" : "Offline"}
-                    </div>
-                    </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                    <Button 
-                        className="w-full bg-green-600 hover:bg-green-700" 
-                        disabled={!doctor.isOnline || !!isCalling}
-                        onClick={() => handleInitiateCall(doctor)}
-                    >
-                        {isCalling === doctor.id ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Calling...</>
-                        ) : (
-                            <><Video className="mr-2 h-4 w-4" /> Call Now</>
-                        )}
-                    </Button>
-                </div>
-                </CardContent>
-            </Card>
+                <DelayedSkeleton key={doctor.id} isLoading={false} skeleton={<DoctorCardSkeleton />}>
+                    <Card className="overflow-hidden">
+                        <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                            <Avatar className="h-20 w-20 border-4" style={{ borderColor: doctor.isOnline ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }}>
+                                <AvatarImage src={doctor.image} alt={doctor.name} data-ai-hint={doctor.dataAiHint} />
+                                <AvatarFallback>{getInitials(doctor.name)}</AvatarFallback>
+                            </Avatar>
+                            <div className="space-y-1">
+                            <h3 className="font-bold text-lg">{doctor.name || 'Unnamed Doctor'}</h3>
+                            <p className="text-primary font-medium">{doctor.specialty}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {doctor.experience}
+                            </p>
+                            <div className={cn(
+                                "flex items-center gap-1 text-xs font-semibold",
+                                doctor.isOnline ? "text-green-500" : "text-red-500"
+                            )}>
+                                {doctor.isOnline ? <CheckCircle className="h-3 w-3"/> : <XCircle className="h-3 w-3"/>}
+                                {doctor.isOnline ? "Online" : "Offline"}
+                            </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 mt-4">
+                            <Button 
+                                className="w-full bg-green-600 hover:bg-green-700" 
+                                disabled={!doctor.isOnline || !!isCalling}
+                                onClick={() => handleInitiateCall(doctor)}
+                            >
+                                {isCalling === doctor.id ? (
+                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Calling...</>
+                                ) : (
+                                    <><Video className="mr-2 h-4 w-4" /> Call Now</>
+                                )}
+                            </Button>
+                        </div>
+                        </CardContent>
+                    </Card>
+                </DelayedSkeleton>
             ))
         ) : (
             !isLoading && <div className="col-span-full text-center py-10">
