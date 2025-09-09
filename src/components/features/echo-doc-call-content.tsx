@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mic, MicOff, PhoneOff, Bot, Loader2 } from 'lucide-react';
-import { aiSymptomChecker } from '@/ai/flows/ai-symptom-checker';
+import { echoDocFlow } from '@/ai/flows/echo-doc-flow';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 interface Message {
@@ -153,7 +153,7 @@ export function EchoDocCallContent() {
         setIsProcessing(true);
         
         try {
-            const aiResult = await aiSymptomChecker({ symptoms: text });
+            const aiResult = await echoDocFlow({ query: text });
             const aiResponseText = aiResult.response;
             setMessages(prev => [...prev, { sender: 'ai', text: aiResponseText }]);
             await speak(aiResponseText, language);

@@ -12,3 +12,5 @@ export const ai = genkit({
 import '@/ai/flows/generate-prescription-summary.ts';
 import '@/ai/flows/translate-text.ts';
 import '@/ai/flows/text-to-speech.ts';
+import '@/ai/flows/ai-symptom-checker.ts';
+import '@/ai/flows/echo-doc-flow.ts';
