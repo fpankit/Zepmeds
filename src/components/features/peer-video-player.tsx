@@ -20,10 +20,10 @@ export function PeerVideoPlayer() {
 
     const [peer, setPeer] = useState<Peer | null>(null);
     const [myPeerId, setMyPeerId] = useState('');
-    const [remotePeerId, setRemotePeerId] = useState('');
+    const [callStatus, setCallStatus] = useState('idle'); // idle, ready, calling, connected, ended
+
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-    const [callStatus, setCallStatus] = useState('idle'); // idle, calling, connected, ended
     
     const [micOn, setMic] = useState(true);
     const [cameraOn, setCamera] = useState(true);
@@ -32,9 +32,7 @@ export function PeerVideoPlayer() {
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
     
     const isCaller = searchParams.get('isCaller') === 'true';
-    const doctorId = isCaller ? params.channel as string : null;
-    const patientId = !isCaller ? user?.id : null;
-
+    const doctorId = params.channel as string;
 
     // Initialize PeerJS
     useEffect(() => {
@@ -42,42 +40,18 @@ export function PeerVideoPlayer() {
 
         const initializePeer = async () => {
             const { Peer } = await import('peerjs');
-            // Doctor uses their own ID as peer ID. Patient gets an auto-generated one.
-            const peerInstance = isCaller ? new Peer(user.id) : new Peer();
+            // The doctor's Firebase UID is their Peer ID.
+            // A patient (caller) gets an auto-generated ID from the PeerServer.
+            const peerId = !isCaller ? user.id : undefined; 
+            const peerInstance = new Peer(peerId);
 
             peerInstance.on('open', (id) => {
                 console.log('My peer ID is: ' + id);
                 setMyPeerId(id);
                 setCallStatus('ready');
-                 // If patient is the caller, initiate the call now that we have a peer ID
-                if (isCaller && doctorId) {
-                    initiateCall(doctorId, peerInstance);
-                }
-            });
-
-            peerInstance.on('call', (call) => {
-                console.log('Receiving call from', call.peer);
-                setCallStatus('receiving');
-                setRemotePeerId(call.peer);
-
-                navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-                    .then((stream) => {
-                        setLocalStream(stream);
-                        call.answer(stream); // Answer the call with an A/V stream.
-                        call.on('stream', (remoteStream) => {
-                            console.log('Received remote stream');
-                            setRemoteStream(remoteStream);
-                            setCallStatus('connected');
-                        });
-                         call.on('close', endCall);
-                    })
-                    .catch((err) => {
-                        console.error('Failed to get local stream', err);
-                        toast({ variant: 'destructive', title: 'Media Error', description: 'Could not access your camera or microphone.' });
-                    });
             });
             
-             peerInstance.on('error', (err) => {
+            peerInstance.on('error', (err) => {
                 console.error('PeerJS error:', err);
                 toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.type}` });
                 setCallStatus('error');
@@ -89,48 +63,81 @@ export function PeerVideoPlayer() {
         initializePeer();
 
         return () => {
+            localStream?.getTracks().forEach(track => track.stop());
             peer?.destroy();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, isCaller]);
+    }, [user]);
 
-
-    const initiateCall = (remoteId: string, peerInstance: Peer) => {
-        setRemotePeerId(remoteId);
-        setCallStatus('calling');
+    // Get user media as soon as component loads
+    useEffect(() => {
+        if (!user || localStream) return;
 
         navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then((stream) => {
+            .then(stream => {
                 setLocalStream(stream);
-                console.log(`Calling remote peer: ${remoteId}`);
-                const call = peerInstance.call(remoteId, stream);
+                if (localVideoRef.current) {
+                    localVideoRef.current.srcObject = stream;
+                }
+            })
+            .catch(err => {
+                console.error('Failed to get local stream', err);
+                toast({ variant: 'destructive', title: 'Media Error', description: 'Could not access your camera or microphone. Please check permissions.' });
+            });
+    }, [user, localStream, toast]);
+
+
+    // If we are the caller, initiate the call once we have a Peer ID and local stream
+    useEffect(() => {
+        if (isCaller && peer && localStream && myPeerId && callStatus === 'ready') {
+            initiateCall(doctorId, peer, localStream);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isCaller, peer, localStream, myPeerId, doctorId, callStatus]);
+
+    // Set up listener for incoming calls
+    useEffect(() => {
+        if (peer && localStream && !isCaller) {
+            peer.on('call', (call) => {
+                console.log('Receiving call from', call.peer);
+                setCallStatus('receiving');
+                
+                call.answer(localStream); // Answer the call with our local stream.
                 
                 call.on('stream', (remoteStream) => {
-                    console.log('Received remote stream from answered call');
+                    console.log('Received remote stream');
                     setRemoteStream(remoteStream);
                     setCallStatus('connected');
                 });
-                
+
                 call.on('close', endCall);
-                 call.on('error', (err) => {
-                    console.error("Call error:", err);
-                    toast({ variant: 'destructive', title: "Call Failed", description: "Could not connect to the doctor."});
-                    endCall();
-                });
-            })
-            .catch((err) => {
-                console.error('Failed to get local stream', err);
-                toast({ variant: 'destructive', title: 'Media Error', description: 'Could not access your camera or microphone.' });
             });
+        }
+    }, [peer, localStream, isCaller, endCall]);
+
+
+    const initiateCall = (remoteId: string, peerInstance: Peer, stream: MediaStream) => {
+        setCallStatus('calling');
+        console.log(`Calling remote peer: ${remoteId}`);
+
+        const call = peerInstance.call(remoteId, stream);
+        
+        call.on('stream', (remoteStream) => {
+            console.log('Received remote stream from answered call');
+            setRemoteStream(remoteStream);
+            setCallStatus('connected');
+        });
+        
+        call.on('close', endCall);
+
+        call.on('error', (err) => {
+            console.error("Call error:", err);
+            toast({ variant: 'destructive', title: "Call Failed", description: "Could not connect to the other user."});
+            endCall();
+        });
     };
     
     // Set video streams
-    useEffect(() => {
-        if (localStream && localVideoRef.current) {
-            localVideoRef.current.srcObject = localStream;
-        }
-    }, [localStream]);
-
     useEffect(() => {
         if (remoteStream && remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
@@ -139,13 +146,11 @@ export function PeerVideoPlayer() {
 
 
     const toggleTrack = (type: 'audio' | 'video', enabled: boolean) => {
-        if (localStream) {
-            localStream.getTracks().forEach(track => {
-                if (track.kind === type) {
-                    track.enabled = enabled;
-                }
-            });
-        }
+        localStream?.getTracks().forEach(track => {
+            if (track.kind === type) {
+                track.enabled = enabled;
+            }
+        });
     };
     
     const handleMicToggle = () => {
@@ -164,6 +169,7 @@ export function PeerVideoPlayer() {
         localStream?.getTracks().forEach(track => track.stop());
         peer?.destroy();
         router.push('/home');
+     // eslint-disable-next-line react-hooks/exhaustive-deps
      }, [localStream, peer, router]);
 
 
@@ -197,7 +203,7 @@ export function PeerVideoPlayer() {
                 </div>
 
                  <aside className="w-full shrink-0 md:w-80">
-                     <PatientProfile patientId={isCaller ? null : user?.id || null} />
+                     <PatientProfile patientId={isCaller ? user?.id : null} />
                 </aside>
             </main>
 
@@ -207,6 +213,7 @@ export function PeerVideoPlayer() {
                     size="icon"
                     className={cn('h-12 w-12 rounded-full', micOn ? 'bg-gray-600' : 'bg-red-600')}
                     onClick={handleMicToggle}
+                    disabled={!localStream}
                 >
                     {micOn ? <Mic /> : <MicOff />}
                 </Button>
@@ -215,6 +222,7 @@ export function PeerVideoPlayer() {
                     size="icon"
                     className={cn('h-12 w-12 rounded-full', cameraOn ? 'bg-gray-600' : 'bg-red-600')}
                     onClick={handleCameraToggle}
+                    disabled={!localStream}
                 >
                     {cameraOn ? <Video /> : <VideoOff />}
                 </Button>
@@ -230,4 +238,3 @@ export function PeerVideoPlayer() {
         </div>
     );
 }
-
