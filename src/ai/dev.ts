@@ -10,3 +10,4 @@ export const ai = genkit({
 });
 
 import '@/ai/flows/generate-prescription-summary.ts';
+import '@/ai/flows/translate-text.ts';
