@@ -7,6 +7,10 @@ import { Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AgoraVideoPlayer } from '@/components/features/agora-video-player';
+import AgoraRTC from 'agora-rtc-sdk-ng';
+import { AgoraRTCProvider } from 'agora-rtc-react';
+
+const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
 
 const PatientProfile = dynamic(
     () => import('@/components/features/patient-profile').then(mod => mod.PatientProfile),
@@ -32,23 +36,25 @@ function VideoCallContent() {
     const token = null; // Should be fetched from a secure token server in production
 
     return (
-        <div className="flex h-screen w-full bg-black text-white">
-             {/* Main Video Grid */}
-            <main className="flex-1 flex flex-col relative">
-                {appId ? (
-                     <AgoraVideoPlayer appId={appId} channelName={channelName} token={token} />
-                ) : (
-                    <div className="flex items-center justify-center h-full">
-                        <p>Agora App ID is not configured.</p>
-                    </div>
-                )}
-            </main>
+        <AgoraRTCProvider client={client}>
+            <div className="flex h-screen w-full bg-black text-white">
+                {/* Main Video Grid */}
+                <main className="flex-1 flex flex-col relative">
+                    {appId ? (
+                        <AgoraVideoPlayer appId={appId} channelName={channelName} token={token} />
+                    ) : (
+                        <div className="flex items-center justify-center h-full">
+                            <p>Agora App ID is not configured.</p>
+                        </div>
+                    )}
+                </main>
 
-            {/* Sidebar with Patient Details */}
-             <aside className="w-80 hidden md:block bg-gray-900 border-l border-gray-800 p-4">
-                 {patientId && <PatientProfile patientId={patientId} />}
-             </aside>
-        </div>
+                {/* Sidebar with Patient Details */}
+                <aside className="w-80 hidden md:block bg-gray-900 border-l border-gray-800 p-4">
+                    {patientId && <PatientProfile patientId={patientId} />}
+                </aside>
+            </div>
+        </AgoraRTCProvider>
     );
 }
 
