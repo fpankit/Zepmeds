@@ -35,6 +35,26 @@ export function AgoraVideoPlayer() {
   const [cameraOn, setCamera] = useState(true);
 
 
+  const leave = useCallback(async () => {
+    if (localAudioTrack.current) {
+        localAudioTrack.current.close();
+        localAudioTrack.current = null;
+    }
+    if (localVideoTrack.current) {
+        localVideoTrack.current.close();
+        localVideoTrack.current = null;
+    }
+
+    if (client.current) {
+        await client.current.unpublish();
+        await client.current.leave();
+    }
+    setIsJoined(false);
+    setRemoteUsers([]);
+    router.push('/home');
+  }, [router]);
+
+
   const join = useCallback(async () => {
     if (!user || !channelName) {
       toast({ variant: 'destructive', title: "Missing Information", description: "User or channel not found." });
@@ -82,25 +102,6 @@ export function AgoraVideoPlayer() {
       toast({ variant: 'destructive', title: "Connection Failed", description: error.message });
     }
   }, [user, channelName, toast]);
-
-  const leave = useCallback(async () => {
-    if (localAudioTrack.current) {
-        localAudioTrack.current.close();
-        localAudioTrack.current = null;
-    }
-    if (localVideoTrack.current) {
-        localVideoTrack.current.close();
-        localVideoTrack.current = null;
-    }
-
-    if (client.current) {
-        await client.current.leave();
-        client.current = null;
-    }
-    setIsJoined(false);
-    setRemoteUsers([]);
-    router.push('/home');
-  }, [router]);
   
   useEffect(() => {
     if (user && channelName) {
@@ -108,7 +109,9 @@ export function AgoraVideoPlayer() {
     }
     
     return () => {
-      leave();
+      if (client.current) {
+        leave();
+      }
     };
   }, [user, channelName, join, leave]);
   
