@@ -32,6 +32,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
     const [cameraOn, setCamera] = useState(true);
     const [hasPermission, setHasPermission] = useState(false);
     const [isPermissionLoading, setIsPermissionLoading] = useState(true);
+    const [isJoined, setIsJoined] = useState(false);
     
     // Request permissions on component mount
     useEffect(() => {
@@ -66,10 +67,13 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
             channel: channelName,
             token: token,
         },
-        hasPermission
+        hasPermission,
+        (client) => {
+            setIsJoined(true);
+        }
     );
 
-    usePublish([localMicrophoneTrack, localCameraTrack]);
+    usePublish([localMicrophoneTrack, localCameraTrack], isJoined);
 
     const remoteUsers = useRemoteUsers();
 
@@ -82,6 +86,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
             localMicrophoneTrack.stop();
             localMicrophoneTrack.close();
         }
+        setIsJoined(false);
         router.push('/doctor');
     };
 
