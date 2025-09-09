@@ -35,9 +35,10 @@ function safeUid(firebaseUserId?: string): number | null {
   }
 
   const uid = Math.abs(hash % 65535);
-  // Ensure the UID is within the valid range, although the logic should already handle this.
-  return uid >= 0 && uid <= 65535 ? uid : null;
+  // The result of the modulo operation will always be in the valid range.
+  return uid;
 }
+
 
 export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayerProps) {
     const router = useRouter();
@@ -49,8 +50,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
     const [hasPermission, setHasPermission] = useState(false);
     const [isPermissionLoading, setIsPermissionLoading] = useState(true);
     
-    // Generate a safe numeric UID from the user's string ID
-    const agoraUidToUse = safeUid(user?.id);
+    const agoraUidToUse = user && !user.isGuest ? safeUid(user.id) : null;
     
     useEffect(() => {
         console.log("👉 Joining with UID:", agoraUidToUse);
@@ -88,7 +88,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
             appid: appId,
             channel: channelName,
             token: token,
-            uid: agoraUidToUse ?? null,
+            uid: agoraUidToUse,
         },
         hasPermission
     );
