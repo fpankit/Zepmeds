@@ -66,7 +66,7 @@ export function AgoraVideoPlayer() {
       client.current.on('user-unpublished', handleUserUnpublished);
       client.current.on('user-left', handleUserLeft);
       
-      const uid = user.isDoctor ? user.id : Math.floor(Math.random() * 20000);
+      const uid = user.isDoctor ? Number(user.id.replace(/\D/g, '').slice(0, 5)) : Math.floor(Math.random() * 20000);
       
       await client.current.join(APP_ID, channelName, null, uid);
 
@@ -84,6 +84,9 @@ export function AgoraVideoPlayer() {
   }, [user, channelName, toast]);
 
   const leave = useCallback(async () => {
+    if (localAudioTrack.current && localVideoTrack.current && client.current?.localTracks) {
+        await client.current.unpublish([localAudioTrack.current, localVideoTrack.current]);
+    }
     localAudioTrack.current?.close();
     localVideoTrack.current?.close();
 
@@ -95,12 +98,14 @@ export function AgoraVideoPlayer() {
   }, [router]);
   
   useEffect(() => {
-    join();
+    if (user && channelName) {
+        join();
+    }
+    
     return () => {
       leave();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user, channelName, join, leave]);
   
 
     const handleMicToggle = async () => {
