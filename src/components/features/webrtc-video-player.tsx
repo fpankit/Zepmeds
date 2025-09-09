@@ -60,6 +60,7 @@ export function WebRTCVideoPlayer() {
             pc.current?.removeTrack(sender);
         });
         pc.current.close();
+        pc.current = null;
     }
     
     localStream.current?.getTracks().forEach(track => track.stop());
@@ -67,7 +68,6 @@ export function WebRTCVideoPlayer() {
     
     localStream.current = null;
     remoteStream.current = null;
-    pc.current = null;
 
     if (callId) {
         const callDoc = doc(db, 'calls', callId);
@@ -82,6 +82,9 @@ export function WebRTCVideoPlayer() {
 
 
   useEffect(() => {
+    // Initialize pc.current synchronously right at the start of the effect.
+    pc.current = new RTCPeerConnection(servers);
+
     const startCall = async () => {
       if (!user || user.isGuest) {
         toast({ variant: 'destructive', title: 'Login Required' });
@@ -89,8 +92,6 @@ export function WebRTCVideoPlayer() {
         return;
       }
       
-      pc.current = new RTCPeerConnection(servers);
-
       // Get local media
       localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       if (localVideoRef.current) {
@@ -104,25 +105,29 @@ export function WebRTCVideoPlayer() {
 
       // Setup remote stream
       remoteStream.current = new MediaStream();
-      pc.current.ontrack = (event) => {
-        event.streams[0].getTracks().forEach(track => {
-          remoteStream.current?.addTrack(track);
-        });
-        if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStream.current;
-        }
-        setIsConnecting(false);
-      };
+      if(pc.current) {
+          pc.current.ontrack = (event) => {
+            event.streams[0].getTracks().forEach(track => {
+              remoteStream.current?.addTrack(track);
+            });
+            if (remoteVideoRef.current) {
+                remoteVideoRef.current.srcObject = remoteStream.current;
+            }
+            setIsConnecting(false);
+          };
+      }
       
       const callDoc = doc(db, 'calls', callId);
       const offerCandidates = collection(callDoc, 'offerCandidates');
       const answerCandidates = collection(callDoc, 'answerCandidates');
       
-      pc.current.onicecandidate = async (event) => {
-        if (event.candidate) {
-          await addDoc(offerCandidates, event.candidate.toJSON());
-        }
-      };
+      if(pc.current) {
+        pc.current.onicecandidate = async (event) => {
+            if (event.candidate) {
+              await addDoc(offerCandidates, event.candidate.toJSON());
+            }
+        };
+      }
 
       // Create offer
       const offerDescription = await pc.current.createOffer();
@@ -236,3 +241,4 @@ export function WebRTCVideoPlayer() {
     </div>
   );
 }
+
