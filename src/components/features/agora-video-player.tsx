@@ -15,7 +15,7 @@ import { Mic, MicOff, Video, VideoOff, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-const APP_ID = 'c81aad68e25c42c8ade0e767a228bbc0';
+const APP_ID = 'e946e4b051444cc9988aa908a8f3c9de';
 
 export function AgoraVideoPlayer() {
   const { user } = useAuth();
