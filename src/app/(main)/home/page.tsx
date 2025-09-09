@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
@@ -65,12 +66,12 @@ const sponsorCards = [
 ]
 
 const trendingProducts = [
-  { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular' },
-  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular' },
-  { id: 'prod3', name: 'Digital Thermometer', price: 250.00, category: ['Popular', 'Devices'] },
-  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care' },
-  { id: 'prod5', name: 'Acne Treatment Gel', price: 220.00, category: 'Skin Care' },
-  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular' },
+  { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=1', dataAiHint: 'medicine pills' },
+  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=2', dataAiHint: 'antiseptic bottle' },
+  { id: 'prod3', name: 'Digital Thermometer', price: 250.00, category: ['Popular', 'Devices'], image: 'https://picsum.photos/200/200?random=3', dataAiHint: 'thermometer' },
+  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care', image: 'https://picsum.photos/200/200?random=4', dataAiHint: 'skincare product' },
+  { id: 'prod5', name: 'Acne Treatment Gel', price: 220.00, category: 'Skin Care', image: 'https://picsum.photos/200/200?random=5', dataAiHint: 'cream tube' },
+  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=6', dataAiHint: 'bandages' },
 ];
 
 export default function HomePage() {
@@ -145,14 +146,24 @@ export default function HomePage() {
           {trendingProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             return (
-              <Card key={product.id}>
-                <CardContent className="p-3 flex flex-col justify-between h-full">
+              <Card key={product.id} className="overflow-hidden">
+                <CardContent className="p-0 flex flex-col justify-between h-full">
                   <div>
-                    <h4 className="font-bold text-sm truncate">{product.name}</h4>
-                    <p className="text-xs text-muted-foreground mt-0.5">1 unit</p>
-                    <span className="font-bold text-md mt-2 block">₹{product.price.toFixed(2)}</span>
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      width={200}
+                      height={200}
+                      className="w-full h-32 object-cover"
+                      data-ai-hint={product.dataAiHint}
+                    />
+                    <div className="p-3">
+                      <h4 className="font-bold text-sm truncate">{product.name}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5">1 unit</p>
+                      <span className="font-bold text-md mt-2 block">₹{product.price.toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div className="mt-3">
+                  <div className="p-3 pt-0">
                      {cartItem ? (
                        <div className="flex items-center justify-center gap-1">
                         <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
