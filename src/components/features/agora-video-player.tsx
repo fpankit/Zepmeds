@@ -11,7 +11,6 @@ import {
     useLocalMicrophoneTrack,
     usePublish,
     useRemoteUsers,
-    MediaPlayer,
 } from "agora-rtc-react";
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Camera, CameraOff, PhoneOff, AlertTriangle } from 'lucide-react';
@@ -105,14 +104,14 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
             <div className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                  {/* Local User Video */}
                 <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                    <MediaPlayer videoTrack={localCameraTrack} className="w-full h-full object-cover" />
+                    {localCameraTrack && <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />}
                      <p className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">You</p>
                 </div>
                 
                  {/* Remote Users Video */}
                 {remoteUsers.map((user) => (
                     <div key={user.uid} className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                         <MediaPlayer videoTrack={user.videoTrack} className="w-full h-full object-cover" />
+                         {user.hasVideo && <RemoteUser user={user} playVideo={true} className="w-full h-full object-cover" />}
                         <p className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">Doctor</p>
                     </div>
                 ))}
