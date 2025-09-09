@@ -46,7 +46,13 @@ const detectLanguageFlow = ai.defineFlow(
     outputSchema: DetectLanguageOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+      const {output} = await prompt(input);
+      return output!;
+    } catch (error) {
+        console.error("Language detection failed:", error);
+        // Fallback: default to English on failure.
+        return { language: 'English' };
+    }
   }
 );

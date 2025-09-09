@@ -50,7 +50,13 @@ const translateTextFlow = ai.defineFlow(
     outputSchema: TranslateTextOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+        const {output} = await prompt(input);
+        return output!;
+    } catch (error) {
+        console.error(`Translation to ${input.targetLanguage} failed:`, error);
+        // Fallback: return the original text if translation fails.
+        return { translatedText: input.text };
+    }
   }
 );

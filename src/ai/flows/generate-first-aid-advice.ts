@@ -62,7 +62,13 @@ const generateFirstAidAdviceFlow = ai.defineFlow(
     outputSchema: GenerateFirstAidAdviceOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    try {
+        const {output} = await prompt(input);
+        return output!;
+    } catch (error) {
+        console.error(`First aid advice generation for topic "${input.topic}" failed:`, error);
+        // Fallback: return an empty response so the UI can use the offline guide.
+        return { procedure: [], whatToAvoid: [] };
+    }
   }
 );
