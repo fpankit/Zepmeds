@@ -34,6 +34,16 @@ export function PeerVideoPlayer() {
     const isCaller = searchParams.get('isCaller') === 'true';
     const doctorId = params.channel as string;
 
+    const endCall = useCallback(() => {
+        console.log("Ending call.");
+        setCallStatus('ended');
+        localStream?.getTracks().forEach(track => track.stop());
+        peer?.destroy();
+        router.push('/home');
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+     }, [localStream, peer, router]);
+
+
     // Initialize PeerJS
     useEffect(() => {
         if (!user) return;
@@ -162,15 +172,6 @@ export function PeerVideoPlayer() {
         toggleTrack('video', !cameraOn);
         setCamera(!cameraOn);
     };
-
-     const endCall = useCallback(() => {
-        console.log("Ending call.");
-        setCallStatus('ended');
-        localStream?.getTracks().forEach(track => track.stop());
-        peer?.destroy();
-        router.push('/home');
-     // eslint-disable-next-line react-hooks/exhaustive-deps
-     }, [localStream, peer, router]);
 
 
     return (
