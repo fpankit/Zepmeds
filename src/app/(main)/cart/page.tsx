@@ -17,7 +17,7 @@ import { PrescriptionDetails } from '@/lib/types';
 type PrescriptionStatus = 'needed' | 'uploaded' | 'approved' | 'rejected';
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity, clearCart, setPrescription } = useCart();
+  const { cart, removeFromCart, updateQuantity, clearCart, setPrescription, prescription } = useCart();
   const [prescriptionSummary, setPrescriptionSummary] = useState<GeneratePrescriptionSummaryOutput | null>(null);
   const [prescriptionStatus, setPrescriptionStatus] = useState<PrescriptionStatus>('needed');
 
@@ -27,19 +27,17 @@ export default function CartPage() {
 
   const hasRxItems = useMemo(() => cart.some(item => item.isRx), [cart]);
   
-  // Simulate approval after a delay
   const handlePrescriptionUploaded = (details: PrescriptionDetails) => {
       setPrescriptionSummary(details.summary);
       setPrescription(details); // Save details to context
       setPrescriptionStatus('uploaded');
-      // Simulate admin approval
-      setTimeout(() => {
-          const isApproved = details.summary.medicines && details.summary.medicines.length > 0;
-          setPrescriptionStatus(isApproved ? 'approved' : 'rejected');
-      }, 3000);
+      // NOTE: The 'approved' status would be set by an admin in a real-world scenario.
+      // For this demo, we can assume it remains 'uploaded' (pending) until checkout,
+      // where it's saved with the order for admin review.
   };
   
-  const isCheckoutDisabled = hasRxItems && prescriptionStatus !== 'approved';
+  const isCheckoutDisabled = hasRxItems && prescriptionStatus !== 'uploaded';
+
 
   if (cart.length === 0) {
     return (
@@ -113,21 +111,18 @@ export default function CartPage() {
                 
                 {prescriptionStatus === 'uploaded' && (
                      <div className="flex items-center gap-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/50">
-                        <Clock className="h-6 w-6 text-blue-500 animate-spin"/>
-                        <p className="text-sm text-blue-400">Your prescription has been uploaded and is pending verification. This may take a few moments.</p>
+                        <Clock className="h-6 w-6 text-blue-500"/>
+                        <div>
+                            <p className="text-sm font-bold text-blue-400">Prescription Uploaded</p>
+                            <p className="text-xs text-blue-500">Your prescription will be verified by our team after you place the order.</p>
+                        </div>
                     </div>
                 )}
-                {prescriptionStatus === 'approved' && (
-                     <div className="flex items-center gap-3 p-3 rounded-md bg-green-500/10 border border-green-500/50">
-                        <CheckCircle className="h-6 w-6 text-green-500"/>
-                        <p className="text-sm text-green-400">Prescription approved! You can now proceed to checkout.</p>
-                    </div>
-                )}
-                 {prescriptionStatus === 'rejected' && (
+                 {prescriptionStatus === 'rejected' && ( // This state would be updated from an admin dashboard in a real app
                      <div className="flex flex-col gap-3 p-3 rounded-md bg-destructive/10 border border-destructive/50">
                         <div className="flex items-center gap-3">
                             <AlertTriangle className="h-6 w-6 text-destructive"/>
-                            <p className="text-sm text-destructive">Prescription rejected. Please upload a valid and clear prescription.</p>
+                            <p className="text-sm text-destructive">Your previous prescription was rejected. Please upload a valid one.</p>
                         </div>
                         <Button variant="outline" onClick={() => setPrescriptionStatus('needed')}>Upload Again</Button>
                     </div>
@@ -159,7 +154,7 @@ export default function CartPage() {
         <CardFooter>
           <Button className="w-full" asChild={!isCheckoutDisabled} disabled={isCheckoutDisabled}>
             <Link href="/checkout">
-              {isCheckoutDisabled ? (hasRxItems ? 'Waiting for Prescription Approval' : 'Proceed to Checkout') : 'Proceed to Checkout'}
+              {isCheckoutDisabled ? 'Upload Prescription to Proceed' : 'Proceed to Checkout'}
             </Link>
           </Button>
         </CardFooter>
