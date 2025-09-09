@@ -7,10 +7,16 @@ import { firstAidCategories, FirstAidTopic } from '@/lib/first-aid-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2, Volume2, Video, Languages, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Loader2, Volume2, Video, Languages, AlertTriangle, ShieldCheck, XCircle } from 'lucide-react';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { translateText } from '@/ai/flows/translate-text';
+import { generateFirstAidAdvice, GenerateFirstAidAdviceOutput } from '@/ai/flows/generate-first-aid-advice';
 import { useToast } from '@/hooks/use-toast';
+
+type TranslatedContent = {
+    procedure: string[];
+    whatToAvoid: string[];
+}
 
 export default function FirstAidDetailPage() {
   const router = useRouter();
@@ -19,7 +25,11 @@ export default function FirstAidDetailPage() {
   const slug = params.slug as string;
 
   const [topic, setTopic] = useState<FirstAidTopic | null>(null);
-  const [translatedSteps, setTranslatedSteps] = useState<string[] | null>(null);
+  const [aiAdvice, setAiAdvice] = useState<GenerateFirstAidAdviceOutput | null>(null);
+  const [isLoadingAi, setIsLoadingAi] = useState(true);
+  const [aiError, setAiError] = useState(false);
+
+  const [translatedContent, setTranslatedContent] = useState<TranslatedContent | null>(null);
   const [targetLang, setTargetLang] = useState('English');
   const [isTranslating, setIsTranslating] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -28,16 +38,47 @@ export default function FirstAidDetailPage() {
     const currentTopic = firstAidCategories.find((t) => t.slug === slug);
     if (currentTopic) {
       setTopic(currentTopic);
+      // Fetch AI advice when topic is set
+      generateFirstAidAdvice({ topic: currentTopic.title })
+        .then(advice => {
+          setAiAdvice(advice);
+          setAiError(false);
+        })
+        .catch(error => {
+          console.error("AI advice generation failed:", error);
+          setAiError(true);
+          toast({
+            variant: 'destructive',
+            title: 'AI Failed',
+            description: 'Could not load AI guide. Showing offline version.',
+          });
+        })
+        .finally(() => {
+          setIsLoadingAi(false);
+        });
     } else {
       router.push('/first-aid'); // Redirect if topic not found
     }
-  }, [slug, router]);
+  }, [slug, router, toast]);
 
   const handlePlayAudio = async () => {
-    if (!topic || isSpeaking) return;
-
+    if (isSpeaking) return;
     setIsSpeaking(true);
-    const textToRead = (translatedSteps || topic.steps).join('. ');
+    
+    let textToRead = '';
+    if (aiAdvice && !aiError) {
+        const procedure = translatedContent?.procedure || aiAdvice.procedure;
+        const whatToAvoid = translatedContent?.whatToAvoid || aiAdvice.whatToAvoid;
+        textToRead = `Here is the procedure. ${procedure.join('. ')}. Now, here is what to avoid. ${whatToAvoid.join('. ')}`;
+    } else if (topic) {
+        textToRead = (translatedContent?.procedure || topic.steps).join('. ');
+    }
+
+    if (!textToRead) {
+        setIsSpeaking(false);
+        return;
+    }
+
     try {
       const { audioDataUri, error } = await textToSpeech({ text: textToRead });
       if (error || !audioDataUri) {
@@ -53,22 +94,39 @@ export default function FirstAidDetailPage() {
   };
   
   const handleTranslate = async (lang: string) => {
-    if (!topic || lang === 'English') {
-      setTargetLang('English');
-      setTranslatedSteps(null);
+    setTargetLang(lang);
+    if (lang === 'English') {
+      setTranslatedContent(null);
       return;
     }
+    
+    let procedureToTranslate: string[] = [];
+    let avoidToTranslate: string[] = [];
+    
+    if (aiAdvice && !aiError) {
+        procedureToTranslate = aiAdvice.procedure;
+        avoidToTranslate = aiAdvice.whatToAvoid;
+    } else if(topic) {
+        procedureToTranslate = topic.steps;
+    } else {
+        return; // Nothing to translate
+    }
 
-    setTargetLang(lang);
     setIsTranslating(true);
     try {
-        const translated = await Promise.all(
-            topic.steps.map(step => translateText({ text: step, targetLanguage: lang }))
-        );
-        setTranslatedSteps(translated.map(t => t.translatedText));
+        const [translatedProcedure, translatedAvoid] = await Promise.all([
+             Promise.all(procedureToTranslate.map(step => translateText({ text: step, targetLanguage: lang }))),
+             Promise.all(avoidToTranslate.map(step => translateText({ text: step, targetLanguage: lang })))
+        ]);
+        
+        setTranslatedContent({
+            procedure: translatedProcedure.map(t => t.translatedText),
+            whatToAvoid: translatedAvoid.map(t => t.translatedText),
+        });
+
     } catch (e) {
         toast({ variant: 'destructive', title: 'Translation Error', description: 'Could not translate the guide.' });
-        setTranslatedSteps(null);
+        setTranslatedContent(null);
     } finally {
         setIsTranslating(false);
     }
@@ -82,6 +140,19 @@ export default function FirstAidDetailPage() {
       </div>
     );
   }
+  
+  const renderStepList = (steps: string[], isAvoidList = false) => (
+      <ol className="space-y-4">
+        {steps.map((step, index) => (
+          <li key={index} className="flex items-start gap-4">
+            <div className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center font-bold text-lg ${isAvoidList ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>
+              {isAvoidList ? <XCircle className="h-5 w-5"/> : index + 1}
+            </div>
+            <p className="flex-1 pt-1">{step}</p>
+          </li>
+        ))}
+      </ol>
+  );
 
   const languageOptions = ['English', 'Hindi', 'Punjabi'];
 
@@ -126,11 +197,11 @@ export default function FirstAidDetailPage() {
             )}
           </CardContent>
         </Card>
-
+        
         <Card>
             <CardHeader className="flex-row items-center justify-between">
-                <CardTitle>Step-by-Step Guide</CardTitle>
-                <div className="flex items-center gap-2">
+                <CardTitle>AI First Aid Guide</CardTitle>
+                 <div className="flex items-center gap-2">
                      <Select onValueChange={handleTranslate} defaultValue="English" disabled={isTranslating}>
                         <SelectTrigger className="w-[120px]">
                             <Languages className="h-4 w-4 mr-1" /> <SelectValue placeholder="Language" />
@@ -147,19 +218,38 @@ export default function FirstAidDetailPage() {
                 </div>
             </CardHeader>
             <CardContent>
-                {isTranslating ? (
-                    <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                {isLoadingAi || isTranslating ? (
+                    <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /> <span className="ml-2"> {isTranslating ? 'Translating...' : 'AI is generating advice...'}</span></div>
+                ) : aiError || !aiAdvice ? (
+                     <div>
+                        <CardHeader>
+                            <CardTitle>Step-by-Step Guide (Offline)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {renderStepList(translatedContent?.procedure || topic.steps)}
+                        </CardContent>
+                    </div>
                 ) : (
-                    <ol className="space-y-4">
-                        {(translatedSteps || topic.steps).map((step, index) => (
-                        <li key={index} className="flex items-start gap-4">
-                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
-                            {index + 1}
+                    <div className="space-y-6">
+                        <div>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-green-400"><ShieldCheck className="h-6 w-6"/> Correct Procedure</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {renderStepList(translatedContent?.procedure || aiAdvice.procedure)}
+                            </CardContent>
+                        </div>
+                        {aiAdvice.whatToAvoid.length > 0 && (
+                            <div>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-red-400"><XCircle className="h-6 w-6"/> What to Avoid</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {renderStepList(translatedContent?.whatToAvoid || aiAdvice.whatToAvoid, true)}
+                                </CardContent>
                             </div>
-                            <p className="flex-1 pt-1">{step}</p>
-                        </li>
-                        ))}
-                    </ol>
+                        )}
+                    </div>
                 )}
             </CardContent>
         </Card>
