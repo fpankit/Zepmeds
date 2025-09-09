@@ -145,7 +145,7 @@ export function WebRTCVideoPlayer() {
 
             const unsubAnswer = onSnapshot(callDoc, (snapshot) => {
                 const data = snapshot.data();
-                if (pc.current && !pc.current.currentRemoteDescription && data?.answer) {
+                if (pc.current && !pc.current.currentRemoteDescription && data?.answer && pc.current.signalingState !== 'closed') {
                     pc.current.setRemoteDescription(new RTCSessionDescription(data.answer));
                 }
             });
@@ -153,7 +153,7 @@ export function WebRTCVideoPlayer() {
 
             const unsubCandidates = onSnapshot(answerCandidates, (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added' && pc.current) {
+                    if (change.type === 'added' && pc.current && pc.current.signalingState !== 'closed') {
                         const candidate = new RTCIceCandidate(change.doc.data());
                         pc.current.addIceCandidate(candidate);
                     }
