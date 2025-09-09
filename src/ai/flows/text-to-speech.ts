@@ -18,7 +18,8 @@ const TextToSpeechInputSchema = z.object({
 export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
 const TextToSpeechOutputSchema = z.object({
-  audioDataUri: z.string().describe('The base64 encoded data URI of the generated audio.'),
+  audioDataUri: z.string().optional().describe('The base64 encoded data URI of the generated audio.'),
+  error: z.string().optional().describe('An error message if TTS fails.'),
 });
 export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
@@ -58,33 +59,43 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async ({ text, voice }) => {
-     const { media } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-preview-tts',
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: voice || 'Algenib' },
-          },
-        },
-      },
-      prompt: text,
-    });
+    try {
+        const { media } = await ai.generate({
+            model: 'googleai/gemini-2.5-flash-preview-tts',
+            config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+                voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: voice || 'Algenib' },
+                },
+            },
+            },
+            prompt: text,
+        });
 
-    if (!media) {
-      throw new Error('No audio media returned from the model.');
+        if (!media) {
+            return { error: 'No audio media returned from the model.' };
+        }
+        
+        const audioBuffer = Buffer.from(
+            media.url.substring(media.url.indexOf(',') + 1),
+            'base64'
+        );
+        
+        const wavBase64 = await toWav(audioBuffer);
+
+        return {
+            audioDataUri: 'data:audio/wav;base64,' + wavBase64,
+        };
+    } catch (e: any) {
+        const errorMessage = e.message || '';
+        if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
+            console.warn('TTS quota error:', errorMessage);
+            return { error: 'quota_exceeded' };
+        }
+        console.error('TTS flow error:', e);
+        return { error: 'An unexpected error occurred during text-to-speech conversion.' };
     }
-    
-    const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
-      'base64'
-    );
-    
-    const wavBase64 = await toWav(audioBuffer);
-
-    return {
-      audioDataUri: 'data:audio/wav;base64,' + wavBase64,
-    };
   }
 );
 

@@ -152,34 +152,47 @@ export function EchoDocCallContent() {
         try {
             const voice = languageToVoiceMap[lang] || 'Algenib';
             const response = await textToSpeech({ text, voice });
+            
+            if (response.error === 'quota_exceeded') {
+                toast({
+                    variant: "destructive",
+                    title: "Voice Limit Reached",
+                    description: "You've exceeded the voice request quota. The service will be available again shortly. Displaying text instead.",
+                });
+                setIsAISpeaking(false);
+                return;
+            }
+
+            if (response.error || !response.audioDataUri) {
+                 toast({
+                    variant: "destructive",
+                    title: "Voice Error",
+                    description: response.error || "Could not generate audio. Displaying text instead.",
+                });
+                setIsAISpeaking(false);
+                return;
+            }
+
             if (audioRef.current) {
                 audioRef.current.src = response.audioDataUri;
                 audioRef.current.play();
                 audioRef.current.onended = () => setIsAISpeaking(false);
+                audioRef.current.onerror = () => {
+                    toast({
+                        variant: "destructive",
+                        title: "Audio Playback Error",
+                        description: "Could not play the generated audio.",
+                    });
+                    setIsAISpeaking(false);
+                }
             }
         } catch (error: any) {
-            console.error("TTS Error:", error);
-            const errorMessage = error.message || '';
-            
-            if (errorMessage.includes("quota") || errorMessage.includes("429")) {
-                const title = errorMessage.includes("Daily") ? "Daily Voice Quota Exceeded" : "Voice Limit Reached";
-                const description = title === "Daily Voice Quota Exceeded" 
-                    ? "The voice service will be available again tomorrow. Displaying text instead."
-                    : "You've made too many requests. Please wait a moment. Displaying text instead.";
-                 toast({ variant: "destructive", title, description });
-            } else if (error instanceof TypeError && errorMessage.includes('Failed to fetch')) {
-                 toast({
-                    variant: "destructive",
-                    title: "Network Error",
-                    description: "A network error occurred. Could not generate audio.",
-                });
-            } else {
-                 toast({
-                    variant: "destructive",
-                    title: "Voice Error",
-                    description: "Could not generate audio. Displaying text instead.",
-                });
-            }
+            console.error("Speak function error:", error);
+            toast({
+                variant: "destructive",
+                title: "Network Error",
+                description: "A network error occurred. Could not generate audio.",
+            });
             setIsAISpeaking(false);
         }
     };
@@ -277,5 +290,3 @@ export function EchoDocCallContent() {
         </div>
     );
 }
-
-    
