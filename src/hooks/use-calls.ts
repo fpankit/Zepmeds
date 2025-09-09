@@ -20,7 +20,7 @@ export interface Call {
     callerName: string;
     receiverId: string;
     receiverName: string;
-    status: 'ringing' | 'connected' | 'declined' | 'ended';
+    status: 'ringing' | 'connecting' | 'connected' | 'declined' | 'ended';
     offer?: any;
     answer?: any;
 }
@@ -31,7 +31,7 @@ export const useCalls = () => {
     const [incomingCalls, setIncomingCalls] = useState<Call[]>([]);
 
     useEffect(() => {
-        if (!user || !user.isDoctor) {
+        if (!user || !user.isDoctor || !user.isOnline) {
             setIncomingCalls([]);
             return;
         }
@@ -45,6 +45,9 @@ export const useCalls = () => {
         const unsubscribe = onSnapshot(callsQuery, (snapshot) => {
             const calls = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Call));
             setIncomingCalls(calls);
+        }, (error) => {
+            console.error("Error fetching calls:", error);
+            setIncomingCalls([]);
         });
 
         return () => unsubscribe();

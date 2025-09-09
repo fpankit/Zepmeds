@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle } from "lucide-react";
+import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -37,6 +37,7 @@ const DoctorCardSkeleton = () => (
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isStartingCall, setIsStartingCall] = useState<string | null>(null);
   const { user, updateUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -58,7 +59,7 @@ export default function DoctorPage() {
             return { 
                 id: doc.id, 
                 name: data.displayName || "Unnamed Doctor",
-                specialty: data.speciality || "No Specialty",
+                specialty: data.specialty || "No Specialty", // Corrected from speciality
                 experience: data.about || "No experience listed.",
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
@@ -87,29 +88,46 @@ export default function DoctorPage() {
 
 
   const handleStartCall = async (doctor: Doctor) => {
+    setIsStartingCall(doctor.id);
     if (!user || user.isGuest) {
         toast({ variant: 'destructive', title: 'Please login', description: 'You must be logged in to start a call.'});
         router.push('/login');
+        setIsStartingCall(null);
         return;
     }
     
-    // Create a new call document in Firestore for signaling
-    const callDocRef = await addDoc(collection(db, 'calls'), {
-        callerId: user.id,
-        callerName: `${user.firstName} ${user.lastName}`,
-        receiverId: doctor.id,
-        receiverName: doctor.name,
-        status: 'ringing',
-        createdAt: serverTimestamp(),
-    });
+    try {
+        // Create a new call document in Firestore for signaling
+        const callDocRef = await addDoc(collection(db, 'calls'), {
+            callerId: user.id,
+            callerName: `${user.firstName} ${user.lastName}`,
+            receiverId: doctor.id,
+            receiverName: doctor.name,
+            status: 'ringing',
+            createdAt: serverTimestamp(),
+        });
 
-    // The channel for the call is now the ID of the call document
-    router.push(`/video-call/${callDocRef.id}`);
+        // The channel for the call is now the ID of the call document
+        router.push(`/video-call/${callDocRef.id}`);
+    } catch(error) {
+        console.error("Failed to start call:", error);
+        toast({
+            variant: "destructive",
+            title: "Could not start call",
+            description: "There was an error trying to start the video call. Please try again."
+        });
+    } finally {
+        setIsStartingCall(null);
+    }
   }
 
   const getInitials = (name: string) => {
     if (!name) return 'Dr';
-    return name.split(' ').map(n => n[0]).join('');
+    const parts = name.split(' ');
+    if(parts.length > 1) {
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`;
+    }
+    return name.substring(0,2);
   }
 
   return (
@@ -169,11 +187,15 @@ export default function DoctorPage() {
                     <div className="flex gap-2 mt-4">
                         <Button 
                             className="w-full" 
-                            disabled={!doctor.isOnline}
+                            disabled={!doctor.isOnline || !!isStartingCall}
                             onClick={() => handleStartCall(doctor)}
                         >
-                          <Video className="mr-2 h-4 w-4" /> 
-                          {doctor.isOnline ? 'Start Video Call' : 'Offline'}
+                          {isStartingCall === doctor.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Video className="mr-2 h-4 w-4" /> 
+                          )}
+                          {isStartingCall === doctor.id ? 'Starting...' : (doctor.isOnline ? 'Start Video Call' : 'Offline')}
                         </Button>
                     </div>
                     </CardContent>
