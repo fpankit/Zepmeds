@@ -28,6 +28,7 @@ interface AgoraVideoPlayerProps {
 export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayerProps) {
     const router = useRouter();
     const { toast } = useToast();
+    const { user } = useAuth();
 
     const [micOn, setMic] = useState(true);
     const [cameraOn, setCamera] = useState(true);
@@ -66,7 +67,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
             appid: appId,
             channel: channelName,
             token: token,
-            uid: 1, // Using a hardcoded valid integer UID as requested
+            uid: null, // Let Agora assign a UID automatically.
         },
         hasPermission
     );
