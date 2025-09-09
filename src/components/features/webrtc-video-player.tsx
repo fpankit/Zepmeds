@@ -18,6 +18,7 @@ import {
   addDoc,
   deleteDoc,
   getDocs,
+  Unsubscribe,
 } from 'firebase/firestore';
 import { Call } from '@/hooks/use-calls';
 
@@ -57,77 +58,97 @@ export function WebRTCVideoPlayer() {
       return;
     }
     
-    setCallStatus('connecting');
-    pc.current = new RTCPeerConnection(servers);
-    remoteStream.current = new MediaStream();
+    let isCancelled = false;
+    const unsubscribes: Unsubscribe[] = [];
 
-    const startMedia = async () => {
-        localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (localVideoRef.current) {
-            localVideoRef.current.srcObject = localStream.current;
+    const setupWebRTC = async () => {
+        if (pc.current) return; // Already setup
+
+        pc.current = new RTCPeerConnection(servers);
+        remoteStream.current = new MediaStream();
+        setCallStatus('connecting');
+
+        // Get local media
+        try {
+            localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+             if (localVideoRef.current) {
+                localVideoRef.current.srcObject = localStream.current;
+            }
+
+            // Push tracks to connection
+            localStream.current.getTracks().forEach(track => {
+                if (pc.current?.signalingState !== 'closed') {
+                   pc.current?.addTrack(track, localStream.current!);
+                }
+            });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Media Error', description: `Could not access camera or microphone: ${error.message}` });
+            if (!isCancelled) hangUp();
+            return;
         }
 
-        localStream.current.getTracks().forEach(track => {
-            if (pc.current?.signalingState !== 'closed') {
-                pc.current?.addTrack(track, localStream.current!);
-            }
-        });
-    };
+        if (isCancelled) return;
 
-    const setupSignaling = async () => {
+        // Setup remote stream
+        pc.current.ontrack = (event) => {
+            event.streams[0].getTracks().forEach(track => {
+                remoteStream.current?.addTrack(track);
+            });
+            if (remoteVideoRef.current) {
+                remoteVideoRef.current.srcObject = remoteStream.current;
+            }
+            if (!isCancelled) setCallStatus('connected');
+        };
+
         const callDoc = doc(db, 'calls', callId);
         const offerCandidates = collection(callDoc, 'offerCandidates');
         const answerCandidates = collection(callDoc, 'answerCandidates');
         
         pc.current!.onicecandidate = async (event) => {
-            if (event.candidate) {
-                if (user.isDoctor) {
-                    await addDoc(answerCandidates, event.candidate.toJSON());
-                } else {
-                    await addDoc(offerCandidates, event.candidate.toJSON());
-                }
+            if (event.candidate && pc.current?.signalingState !== 'closed') {
+                const candidatesCollection = user.isDoctor ? answerCandidates : offerCandidates;
+                await addDoc(candidatesCollection, event.candidate.toJSON());
             }
         };
 
         if (user.isDoctor) {
             // Doctor: Answer the call
-            const callSnap = await getDoc(callDoc);
-            if(callSnap.exists() && callSnap.data().offer) {
-                await pc.current!.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
-                const answerDescription = await pc.current!.createAnswer();
-                await pc.current!.setLocalDescription(answerDescription);
-                const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
-                await updateDoc(callDoc, { answer });
-                
-                onSnapshot(offerCandidates, (snapshot) => {
-                    snapshot.docChanges().forEach((change) => {
-                        if (change.type === 'added') {
-                            pc.current?.addIceCandidate(new RTCIceCandidate(change.doc.data()));
-                        }
-                    });
+             const callSnap = await getDoc(callDoc);
+            if(isCancelled || !callSnap.exists() || !callSnap.data().offer) return;
+            
+            await pc.current!.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
+            const answerDescription = await pc.current!.createAnswer();
+            await pc.current!.setLocalDescription(answerDescription);
+
+            const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
+            await updateDoc(callDoc, { answer });
+            
+            const unsub = onSnapshot(offerCandidates, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added' && pc.current?.signalingState !== 'closed') {
+                        pc.current?.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                    }
                 });
-            }
+            });
+            unsubscribes.push(unsub);
         } else {
-             // Patient: Create Offer
+            // Patient: Create Offer
             const offerDescription = await pc.current!.createOffer();
             await pc.current!.setLocalDescription(offerDescription);
-            const offer = {
-                sdp: offerDescription.sdp,
-                type: offerDescription.type,
-            };
+            
+            const offer = { sdp: offerDescription.sdp, type: offerDescription.type };
             await updateDoc(callDoc, { offer });
 
-            // Listen for Answer
-            onSnapshot(callDoc, (snapshot) => {
+            const unsubAnswer = onSnapshot(callDoc, (snapshot) => {
                 const data = snapshot.data();
                 if (pc.current && !pc.current.currentRemoteDescription && data?.answer) {
                     const answerDescription = new RTCSessionDescription(data.answer);
                     pc.current.setRemoteDescription(answerDescription);
                 }
             });
+            unsubscribes.push(unsubAnswer);
 
-            // Listen for ICE candidates from remote
-            onSnapshot(answerCandidates, (snapshot) => {
+            const unsubCandidates = onSnapshot(answerCandidates, (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === 'added' && pc.current) {
                         const candidate = new RTCIceCandidate(change.doc.data());
@@ -135,50 +156,46 @@ export function WebRTCVideoPlayer() {
                     }
                 });
             });
+             unsubscribes.push(unsubCandidates);
         }
     };
     
-    pc.current.ontrack = (event) => {
-        event.streams[0].getTracks().forEach(track => {
-          remoteStream.current?.addTrack(track);
-        });
-        if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStream.current;
-        }
-        setCallStatus('connected');
-    };
-    
-    const initialize = async () => {
-        try {
-            await startMedia();
-            await setupSignaling();
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Call Failed', description: error.message });
-            hangUp();
-        }
-    }
-
-    initialize();
-
-    const callDocRef = doc(db, 'calls', callId);
-    const unsubStatus = onSnapshot(callDocRef, (snapshot) => {
-        const data = snapshot.data();
-        if (data?.status === 'ended') {
-            hangUp();
+    setupWebRTC().catch(err => {
+        if (!isCancelled) {
+             console.error("Setup failed:", err);
+             toast({ variant: 'destructive', title: 'Call Failed', description: err.message });
+             hangUp();
         }
     });
 
+    // Listen for hangup from other party
+    const callDocRef = doc(db, 'calls', callId);
+    const unsubStatus = onSnapshot(callDocRef, (snapshot) => {
+        const data = snapshot.data();
+        if (data?.status === 'ended' && !isCancelled) {
+            hangUp();
+        }
+    });
+    unsubscribes.push(unsubStatus);
+
     return () => {
-      unsubStatus();
+      isCancelled = true;
+      unsubscribes.forEach(unsub => unsub());
       hangUp();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, callId]);
 
   const hangUp = useCallback(async () => {
     if (callStatus === 'disconnected') return;
     setCallStatus('disconnected');
 
-    pc.current?.close();
+    if (pc.current) {
+        if (pc.current.signalingState !== 'closed') {
+           pc.current.close();
+        }
+        pc.current = null;
+    }
     
     localStream.current?.getTracks().forEach(track => track.stop());
     remoteStream.current?.getTracks().forEach(track => track.stop());
@@ -186,6 +203,9 @@ export function WebRTCVideoPlayer() {
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     
+    localStream.current = null;
+    remoteStream.current = null;
+
     if (callId) {
         try {
             const callDoc = doc(db, 'calls', callId);
@@ -194,7 +214,7 @@ export function WebRTCVideoPlayer() {
                  await updateDoc(callDoc, { status: 'ended' });
             }
         } catch (error) {
-            console.error("Error ending call in Firestore:", error);
+            // Ignore error on cleanup
         }
     }
     
