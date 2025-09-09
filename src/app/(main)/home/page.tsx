@@ -154,7 +154,7 @@ export default function HomePage() {
                   <div className="flex justify-between items-center mt-4">
                     <span className="font-bold text-lg">₹{product.price.toFixed(2)}</span>
                     {cartItem ? (
-                      <div className="flex items-center gap-1">
+                       <div className="flex items-center gap-1">
                         <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
                           <Minus className="h-4 w-4" />
                         </Button>
