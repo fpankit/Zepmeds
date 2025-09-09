@@ -100,6 +100,10 @@ export function AgoraVideoPlayer() {
       setIsJoined(true);
       
     } catch (error: any) {
+      if (error?.code === 'WS_ABORT') {
+        console.warn("Join operation was aborted, likely due to a quick leave. This is expected in dev with Strict Mode.");
+        return;
+      }
       console.error('Agora join error:', error);
       toast({ variant: 'destructive', title: "Connection Failed", description: error.message });
     }
