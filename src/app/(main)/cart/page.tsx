@@ -154,7 +154,7 @@ export default function CartPage() {
                     <p className="text-sm text-yellow-400">Your cart contains items that require a valid doctor's prescription. Please upload one to proceed.</p>
                 </div>
                 
-                {prescriptionStatus === 'needed' && <PrescriptionUploader onUploadSuccess={handlePrescriptionUploaded} />}
+                {prescriptionStatus === 'needed' && <PrescriptionUploader onUploadSuccess={handlePrescriptionUploaded} cart={cart}/>}
                 
                 {prescriptionStatus === 'uploaded' && (
                      <div className="flex items-center gap-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/50">

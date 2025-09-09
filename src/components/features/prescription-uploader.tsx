@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/context/auth-context";
+import { CartItem } from "@/lib/types";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -36,10 +37,11 @@ export interface PrescriptionUploadDetails {
 
 interface PrescriptionUploaderProps {
     onUploadSuccess: (details: PrescriptionUploadDetails) => void;
+    cart: CartItem[];
 }
 
 
-export function PrescriptionUploader({ onUploadSuccess }: PrescriptionUploaderProps) {
+export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUploaderProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,6 +89,7 @@ export function PrescriptionUploader({ onUploadSuccess }: PrescriptionUploaderPr
           userPhone: user.phone,
           prescriptionImageUri: dataUri,
           aiSummary: summary,
+          requestedMedicines: cart.map(item => ({ name: item.name, quantity: item.quantity })),
           status: 'pending', // 'pending', 'approved', 'rejected'
           createdAt: serverTimestamp(),
       });
