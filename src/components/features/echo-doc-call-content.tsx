@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Mic, MicOff, PhoneOff, Bot, Loader2 } from 'lucide-react';
 import { echoDocFlow } from '@/ai/flows/echo-doc-flow';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
     sender: 'user' | 'ai';
@@ -96,21 +96,27 @@ export function EchoDocCallContent() {
                 }
             }
         } catch (error: any) {
-            console.error("Speak function error:", error);
-            const errorMessage = error.message || '';
+            console.error("TTS Error:", error);
+            const errorMessage = (error?.message || '').toLowerCase();
             
-            if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
+             if (errorMessage.includes('429') || errorMessage.includes('quota')) {
                  toast({
                     variant: "destructive",
                     title: "Voice Limit Reached",
                     description: "You've exceeded the voice request quota. Displaying text instead.",
                 });
                  setIsTTSDisabled(true);
-            } else {
-                toast({
+            } else if (errorMessage.includes('failed to fetch')) {
+                 toast({
                     variant: "destructive",
                     title: "Network Error",
                     description: "A network error occurred. Could not generate audio.",
+                });
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "Audio Generation Failed",
+                    description: "An unexpected error occurred while generating audio.",
                 });
             }
             setIsAISpeaking(false);
@@ -175,7 +181,8 @@ export function EchoDocCallContent() {
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = 'en-US'; // We will detect language on the backend
+        // The backend handles language detection, so we can be flexible here
+        recognition.lang = 'en-US'; 
 
         recognition.onresult = (event: any) => {
             let interimTranscript = '';
@@ -251,35 +258,67 @@ export function EchoDocCallContent() {
             </header>
 
             <main className="flex-1 flex flex-col items-center justify-center p-4 space-y-8">
-                 <div className="relative">
-                    <Avatar className="h-48 w-48 border-4 border-primary">
-                        <AvatarFallback className="bg-card text-6xl">
-                           <Bot />
-                        </AvatarFallback>
-                    </Avatar>
-                     {(isAISpeaking || isListening) && (
-                        <div className="absolute inset-0 rounded-full border-4 border-green-500 animate-pulse"></div>
-                    )}
+                 <div className="relative h-64 w-64 flex items-center justify-center">
+                    <AnimatePresence>
+                        {(isAISpeaking || isListening) && (
+                            <motion.div
+                                key="speaking"
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } }}
+                                exit={{ scale: 0, opacity: 0, transition: { duration: 0.3, ease: "easeIn" } }}
+                                className="absolute inset-0"
+                            >
+                                <motion.div
+                                    className="w-full h-full rounded-full border-4 border-primary/30"
+                                    animate={{ rotate: 360 }}
+                                    transition={{
+                                        repeat: Infinity,
+                                        duration: 10,
+                                        ease: "linear",
+                                    }}
+                                />
+                                <motion.div
+                                    className="absolute inset-2 w-[calc(100%-16px)] h-[calc(100%-16px)] rounded-full border-4 border-primary/50"
+                                    animate={{ rotate: -360 }}
+                                    transition={{
+                                        repeat: Infinity,
+                                        duration: 12,
+                                        ease: "linear",
+                                    }}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    <motion.div
+                        className="relative h-48 w-48 rounded-full bg-card flex items-center justify-center"
+                        animate={{ scale: isListening ? 1.1 : 1 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                        <Bot className="h-20 w-20 text-primary" />
+                    </motion.div>
                 </div>
 
+
                 <Card className="w-full max-w-lg text-center p-6 bg-card">
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 min-h-[100px] flex flex-col justify-center">
                          {(isLoading || isProcessing) && (
-                            <div className="flex items-center justify-center gap-2 min-h-[56px]">
+                            <div className="flex items-center justify-center gap-2">
                                 <Loader2 className="h-5 w-5 animate-spin" />
                                 <p>{isLoading ? 'Connecting...' : 'AI is thinking...'}</p>
                             </div>
                         )}
 
-                        {!(isLoading || isProcessing) && messages.length > 0 && (
-                             <p className="text-lg font-medium min-h-[56px]">
-                                {transcript || messages[messages.length - 1].text}
-                            </p>
+                        {!(isLoading || isProcessing) && (
+                            <>
+                                <p className="text-lg font-medium">
+                                    {transcript || (messages.length > 0 ? messages[messages.length - 1].text : "How can I help you today?")}
+                                </p>
+                                <div className="text-sm text-muted-foreground">
+                                    <p>{isListening ? "Listening..." : (messages.length > 0 ? "" : "Click the mic to speak")}</p>
+                                </div>
+                            </>
                         )}
                        
-                       <div className="text-sm text-muted-foreground">
-                            <p>{isListening ? "Listening..." : "Click the mic to speak"}</p>
-                       </div>
                     </CardContent>
                 </Card>
             </main>
@@ -303,5 +342,3 @@ export function EchoDocCallContent() {
         </div>
     );
 }
-
-    
