@@ -120,6 +120,10 @@ export function WebRTCVideoPlayer() {
             if(isCancelled || !callSnap.exists() || !callSnap.data().offer || pc.current.signalingState !== 'stable') return;
             
             await pc.current.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
+            
+            // Guard against creating answer in wrong state
+            if(pc.current.signalingState !== 'have-remote-offer') return;
+
             const answerDescription = await pc.current.createAnswer();
             await pc.current.setLocalDescription(answerDescription);
 
