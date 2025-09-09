@@ -57,7 +57,7 @@ export default function DoctorPage() {
         const fetchedDoctors = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return { 
-                id: doc.id, 
+                id: doc.id, // Correctly assign the document ID
                 name: data.displayName || "Unnamed Doctor",
                 specialty: data.specialty || "No Specialty",
                 experience: data.about || "No experience listed.",
