@@ -108,7 +108,11 @@ export function PeerVideoPlayer() {
 
                 peerInstance.on('error', (err: any) => {
                     console.error('PeerJS error:', err);
-                    toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.message}` });
+                    if (err.type === 'peer-unavailable') {
+                        toast({ variant: 'destructive', title: 'User Unavailable', description: 'The user you are trying to call is not available.' });
+                    } else {
+                        toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.message}` });
+                    }
                     setCallStatus('ended');
                     endCall();
                 });
@@ -125,7 +129,9 @@ export function PeerVideoPlayer() {
         return () => {
             callRef.current?.close();
             localStream?.getTracks().forEach(track => track.stop());
-            peerInstance?.destroy();
+            if (peerInstance && !peerInstance.destroyed) {
+                peerInstance.destroy();
+            }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

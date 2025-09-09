@@ -132,14 +132,18 @@ export default function DoctorPage() {
         router.push('/login');
         return;
     }
-    
-    if (!doctor.isOnline || !doctor.peerId) {
+
+    // Re-fetch doctor's doc to get the latest peerId
+    const doctorDocRef = doc(db, "doctors", doctor.id);
+    const doctorSnap = await getDoc(doctorDocRef);
+
+    if (!doctorSnap.exists() || !doctorSnap.data()?.isOnline || !doctorSnap.data()?.peerId) {
         toast({ variant: "destructive", title: "Doctor Offline", description: "The doctor is currently not available for calls. Please try again in a moment." });
         return;
     }
     
-    const remotePeerId = doctor.peerId;
-    console.log(`Attempting to call doctor ${doctor.name} with Peer ID: ${remotePeerId}`);
+    const remotePeerId = doctorSnap.data()?.peerId;
+    console.log(`Attempting to call doctor ${doctor.name} with latest Peer ID: ${remotePeerId}`);
     router.push(`/video-call/${remotePeerId}?isCaller=true`);
   }
 
