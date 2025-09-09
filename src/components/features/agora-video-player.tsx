@@ -46,13 +46,16 @@ export function AgoraVideoPlayer() {
     }
 
     if (client.current) {
-        await client.current.unpublish();
+        if(isJoined) {
+          // Only unpublish if the user was successfully joined.
+          await client.current.unpublish();
+        }
         await client.current.leave();
     }
     setIsJoined(false);
     setRemoteUsers([]);
     router.push('/home');
-  }, [router]);
+  }, [router, isJoined]);
 
 
   const join = useCallback(async () => {
@@ -109,9 +112,7 @@ export function AgoraVideoPlayer() {
     }
     
     return () => {
-      if (client.current) {
-        leave();
-      }
+      leave();
     };
   }, [user, channelName, join, leave]);
   
