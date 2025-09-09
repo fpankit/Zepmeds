@@ -50,11 +50,11 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
     const [isPermissionLoading, setIsPermissionLoading] = useState(true);
     
     // Generate a safe numeric UID from the user's string ID
-    const agoraUid = safeUid(user?.id);
+    const agoraUidToUse = safeUid(user?.id);
     
     useEffect(() => {
-        console.log("👉 Joining with UID:", agoraUid);
-    }, [agoraUid]);
+        console.log("👉 Joining with UID:", agoraUidToUse);
+    }, [agoraUidToUse]);
 
     // Request permissions on component mount
     useEffect(() => {
@@ -88,7 +88,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
             appid: appId,
             channel: channelName,
             token: token,
-            uid: agoraUid,
+            uid: agoraUidToUse ?? null,
         },
         hasPermission
     );
