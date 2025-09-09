@@ -63,7 +63,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
     const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn && hasPermission);
     const { localCameraTrack } = useLocalCameraTrack(cameraOn && hasPermission);
     
-    useJoin({ appid: appId, channel: channelName, token: token, uid: null }, hasPermission);
+    useJoin({ appid: appId, channel: channelName, token: token, uid: 12345 }, hasPermission);
     usePublish([localMicrophoneTrack, localCameraTrack]);
 
     const remoteUsers = useRemoteUsers();
