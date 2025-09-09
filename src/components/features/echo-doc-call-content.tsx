@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,28 @@ export function EchoDocCallContent() {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const recognitionRef = useRef<any | null>(null);
 
+     const handleSendTranscript = useCallback(async (text: string) => {
+        if (!text) return;
+        setMessages(prev => [...prev, { sender: 'user', text }]);
+        setIsProcessing(true);
+        
+        try {
+            const aiResult = await echoDocFlow({ query: text });
+            const aiResponseText = aiResult.response;
+            setMessages(prev => [...prev, { sender: 'ai', text: aiResponseText }]);
+            await speak(aiResponseText, language);
+        } catch (error) {
+            console.error("AI Response Error:", error);
+            const errorMsg = "I'm sorry, I encountered an error. Could you please repeat that?";
+            setMessages(prev => [...prev, { sender: 'ai', text: errorMsg }]);
+            await speak(errorMsg, language);
+        } finally {
+            setIsProcessing(false);
+            setTranscript(''); // Clear transcript after processing
+        }
+    }, [language]);
+
+
     // Initial greeting
     useEffect(() => {
         const greet = async () => {
@@ -71,7 +93,11 @@ export function EchoDocCallContent() {
     // Setup Speech Recognition
     useEffect(() => {
         if (!SpeechRecognition) {
-            console.error("Speech recognition not supported in this browser.");
+            toast({
+                variant: 'destructive',
+                title: 'Browser Not Supported',
+                description: 'Speech recognition is not supported in this browser.',
+            });
             return;
         }
 
@@ -88,15 +114,22 @@ export function EchoDocCallContent() {
                 }
             }
             if (finalTranscript) {
-                setTranscript(t => t + finalTranscript + ' ');
+                 handleSendTranscript(finalTranscript.trim());
             }
         };
-        
+
         recognition.onend = () => {
-            if(isListening) {
-                setIsListening(false);
-            }
-        }
+            setIsListening(false);
+        };
+
+        recognition.onerror = (event: any) => {
+            console.error('Speech recognition error:', event.error);
+            toast({
+                variant: 'destructive',
+                title: 'Mic Error',
+                description: `An error occurred with the microphone: ${event.error}`,
+            });
+        };
 
         recognitionRef.current = recognition;
 
@@ -105,15 +138,7 @@ export function EchoDocCallContent() {
                 recognitionRef.current.stop();
             }
         };
-    }, [isListening]);
-
-    // Process transcript when user stops speaking
-    useEffect(() => {
-        if (!isListening && transcript.trim()) {
-            handleSendTranscript(transcript.trim());
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isListening]);
+    }, [toast, handleSendTranscript]);
 
 
     const speak = async (text: string, lang: string) => {
@@ -155,9 +180,8 @@ export function EchoDocCallContent() {
     const handleMicToggle = () => {
         if (isListening) {
             recognitionRef.current?.stop();
-            setIsListening(false);
         } else {
-            setTranscript(''); // Reset transcript for new input
+            setTranscript('');
             recognitionRef.current?.start();
             setIsListening(true);
         }
@@ -173,28 +197,6 @@ export function EchoDocCallContent() {
         router.push('/home');
     };
     
-    const handleSendTranscript = async (text: string) => {
-        if (!text) return;
-        setMessages(prev => [...prev, { sender: 'user', text }]);
-        setIsProcessing(true);
-        
-        try {
-            const aiResult = await echoDocFlow({ query: text });
-            const aiResponseText = aiResult.response;
-            setMessages(prev => [...prev, { sender: 'ai', text: aiResponseText }]);
-            await speak(aiResponseText, language);
-        } catch (error) {
-            console.error("AI Response Error:", error);
-            const errorMsg = "I'm sorry, I encountered an error. Could you please repeat that?";
-            setMessages(prev => [...prev, { sender: 'ai', text: errorMsg }]);
-            await speak(errorMsg, language);
-        } finally {
-            setIsProcessing(false);
-            setTranscript(''); // Clear transcript after processing
-        }
-    };
-
-
     return (
         <div className="flex h-screen w-full flex-col bg-background text-white">
             <header className="flex-shrink-0 p-4 text-center">
@@ -254,7 +256,7 @@ export function EchoDocCallContent() {
                         size="icon" 
                         className={`h-16 w-16 rounded-full transition-colors ${isListening ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600'}`}
                         onClick={handleMicToggle}
-                        disabled={isAISpeaking || isLoading}
+                        disabled={isAISpeaking || isLoading || isProcessing}
                     >
                         {isListening ? <Mic /> : <MicOff />}
                     </Button>
