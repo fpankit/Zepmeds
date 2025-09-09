@@ -46,30 +46,16 @@ function VideoCallPlayerContent() {
     const [micOn, setMic] = useState(true);
     const [cameraOn, setCamera] = useState(true);
     const [isJoined, setIsJoined] = useState(false);
-    const { user } = useAuth();
     
     const channelName = params.channel as string;
     const patientId = searchParams.get('patientId');
     const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID || '3b649d7a9006490292cd9d82534a6a91';
     const token = null; // Set to null for token-less auth
 
-    const { localMicrophoneTrack, isMuted: isMicMuted } = useLocalMicrophoneTrack(micOn);
-    const { localCameraTrack, isMuted: isCamMuted } = useLocalCameraTrack(cameraOn);
+    const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn);
+    const { localCameraTrack } = useLocalCameraTrack(cameraOn);
 
-    const safeUid = (id?: string): number | null => {
-      if (!id || user?.isGuest) return null;
-      let hash = 0;
-      for (let i = 0; i < id.length; i++) {
-        const char = id.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash |= 0; // Convert to 32bit integer
-      }
-      return Math.abs(hash) % 65535;
-    };
-    
-    const uid = safeUid(user?.id);
-
-    useJoin({ appid: appId, channel: channelName, token: token, uid: uid }, true, () => {
+    useJoin({ appid: appId, channel: channelName, token: token, uid: null }, true, () => {
         setIsJoined(true);
     });
 
