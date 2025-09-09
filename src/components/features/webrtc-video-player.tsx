@@ -38,7 +38,7 @@ export function WebRTCVideoPlayer() {
   
   const callId = params.channel as string;
 
-  const pc = useRef<RTCPeerConnection | null>(null);
+  const pc = useRef<RTCPeerConnection>(new RTCPeerConnection(servers));
   const localStream = useRef<MediaStream | null>(null);
   const remoteStream = useRef<MediaStream | null>(null);
 
@@ -55,7 +55,7 @@ export function WebRTCVideoPlayer() {
     if (isLeaving) return;
     setIsLeaving(true);
 
-    if (pc.current) {
+    if (pc.current && pc.current.signalingState !== 'closed') {
         pc.current.getSenders().forEach(sender => {
             pc.current?.removeTrack(sender);
         });
@@ -69,10 +69,14 @@ export function WebRTCVideoPlayer() {
     remoteStream.current = null;
 
     if (callId) {
-        const callDoc = doc(db, 'calls', callId);
-        const callSnap = await getDoc(callDoc);
-        if (callSnap.exists()) {
-             await updateDoc(callDoc, { status: 'ended' });
+        try {
+            const callDoc = doc(db, 'calls', callId);
+            const callSnap = await getDoc(callDoc);
+            if (callSnap.exists()) {
+                 await updateDoc(callDoc, { status: 'ended' });
+            }
+        } catch (error) {
+            console.error("Error ending call in Firestore:", error);
         }
     }
     
@@ -81,8 +85,6 @@ export function WebRTCVideoPlayer() {
 
 
   useEffect(() => {
-    pc.current = new RTCPeerConnection(servers);
-
     const startCall = async () => {
       if (!user || user.isGuest || isLeaving) {
         if(!user || user.isGuest) toast({ variant: 'destructive', title: 'Login Required' });
@@ -98,12 +100,14 @@ export function WebRTCVideoPlayer() {
       
       // Push tracks to connection
       localStream.current.getTracks().forEach(track => {
-        pc.current?.addTrack(track, localStream.current!);
+        if (pc.current.signalingState !== 'closed') {
+            pc.current.addTrack(track, localStream.current!);
+        }
       });
 
       // Setup remote stream
       remoteStream.current = new MediaStream();
-      if(pc.current) {
+      if(pc.current.signalingState !== 'closed') {
           pc.current.ontrack = (event) => {
             event.streams[0].getTracks().forEach(track => {
               remoteStream.current?.addTrack(track);
@@ -119,7 +123,7 @@ export function WebRTCVideoPlayer() {
       const offerCandidates = collection(callDoc, 'offerCandidates');
       const answerCandidates = collection(callDoc, 'answerCandidates');
       
-      if(pc.current) {
+      if(pc.current.signalingState !== 'closed') {
         pc.current.onicecandidate = async (event) => {
             if (event.candidate) {
               await addDoc(offerCandidates, event.candidate.toJSON());
@@ -127,7 +131,7 @@ export function WebRTCVideoPlayer() {
         };
       }
 
-      if(!pc.current) return;
+      if(pc.current.signalingState === 'closed') return;
 
       // Create offer
       const offerDescription = await pc.current.createOffer();
@@ -141,22 +145,29 @@ export function WebRTCVideoPlayer() {
       await updateDoc(callDoc, { offer });
 
       // Listen for answer and ICE candidates from doctor
-      onSnapshot(callDoc, (snapshot) => {
+      const unsubAnswer = onSnapshot(callDoc, (snapshot) => {
         const data = snapshot.data();
-        if (pc.current && !pc.current.currentRemoteDescription && data?.answer) {
+        if (pc.current && pc.current.signalingState !== 'closed' && !pc.current.currentRemoteDescription && data?.answer) {
           const answerDescription = new RTCSessionDescription(data.answer);
           pc.current.setRemoteDescription(answerDescription);
         }
       });
       
-      onSnapshot(answerCandidates, (snapshot) => {
+      const unsubCandidates = onSnapshot(answerCandidates, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           if (change.type === 'added') {
             const candidate = new RTCIceCandidate(change.doc.data());
-            pc.current?.addIceCandidate(candidate);
+             if (pc.current.signalingState !== 'closed') {
+                pc.current.addIceCandidate(candidate);
+             }
           }
         });
       });
+
+      return () => {
+          unsubAnswer();
+          unsubCandidates();
+      }
     };
 
     startCall();
@@ -193,13 +204,12 @@ export function WebRTCVideoPlayer() {
 
       <main className="flex flex-1 flex-col gap-4 p-4 md:flex-row">
         <div className="relative flex-1 rounded-lg bg-black overflow-hidden">
-            {isConnecting ? (
+            {isConnecting && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                      <Loader2 className="h-8 w-8 animate-spin" />
                  </div>
-            ) : (
-                <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
             )}
+            <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
              <div className="absolute bottom-4 right-4 h-32 w-48 rounded-lg border-2 border-gray-600 bg-black overflow-hidden z-10">
                 <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
                {!isCameraOn && (
