@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Pill, Apple, ShieldAlert, Dumbbell, Stethoscope, Bot, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
 
 type TranslatedContent = {
@@ -110,7 +111,7 @@ function SymptomResults() {
     </div>
   );
   
-  const languageOptions = ['English', 'Hindi', 'Punjabi'];
+  const languageOptions = ['English', 'Hindi', 'Punjabi', 'Tamil', 'Telugu', 'Kannada'];
 
   return (
     <div className="flex flex-col h-screen">
@@ -133,19 +134,17 @@ function SymptomResults() {
                 <p className='text-muted-foreground'>
                    Based on the symptoms you provided, here is a potential course of action. Please remember, this is not a substitute for professional medical advice.
                 </p>
-                 <div className="mt-4 flex gap-2">
-                    {languageOptions.map(lang => (
-                        <Button
-                            key={lang}
-                            variant={targetLang === lang ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => handleTranslate(lang)}
-                            disabled={isTranslating}
-                        >
-                            {isTranslating && targetLang === lang ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            {lang}
-                        </Button>
-                    ))}
+                 <div className="mt-4">
+                    <Select onValueChange={handleTranslate} defaultValue="English" disabled={isTranslating}>
+                        <SelectTrigger className="w-[180px]">
+                             <SelectValue placeholder="Select Language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                             {languageOptions.map(lang => (
+                                <SelectItem key={lang} value={lang}>{lang}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                  </div>
             </CardContent>
         </Card>
@@ -161,7 +160,7 @@ function SymptomResults() {
         ) : (
           (result || translatedResult) && (
             <div className="space-y-4">
-                {isTranslating && <div className="flex items-center justify-center gap-2 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /> <p>Translating...</p></div>}
+                {isTranslating && <div className="flex items-center justify-center gap-2 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /> <p>Translating to {targetLang}...</p></div>}
                 
                 {analysisSections.map(section => (
                     <Card key={section.title}>
