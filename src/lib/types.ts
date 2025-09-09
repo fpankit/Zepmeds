@@ -32,12 +32,3 @@ export interface Product {
     image?: string; // Optional image field
     dataAiHint?: string;
 }
-
-// Types for Agora
-declare global {
-  interface Window {
-    agora_token_builder: any;
-  }
-}
-
-    

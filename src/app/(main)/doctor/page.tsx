@@ -5,9 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Search, Stethoscope, Video, CheckCircle, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, addDoc, serverTimestamp, query, onSnapshot, orderBy, DocumentData } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -136,7 +136,7 @@ export default function DoctorPage() {
                     <div className="flex gap-2 mt-4">
                         <Button 
                             className="w-full" 
-                            disabled={!doctor.isOnline}
+                            disabled={true}
                         >
                           <Video className="mr-2 h-4 w-4" /> Book Appointment
                         </Button>
