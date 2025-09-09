@@ -92,7 +92,7 @@ export default function DoctorPage() {
         router.push('/login');
         return;
     }
-    // The patient will try to call the doctor. The doctor's ID is the Peer ID to connect to.
+    // The patient will try to call the doctor. The doctor's ID is the channel.
     const doctorPeerId = doctor.id;
     router.push(`/video-call/${doctorPeerId}?isCaller=true`);
   }
