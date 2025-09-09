@@ -135,6 +135,12 @@ export function EchoDocCallContent() {
                     title: "Voice Limit Reached",
                     description: "You've made too many requests. Please wait a moment. Displaying text instead.",
                 });
+            } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                 toast({
+                    variant: "destructive",
+                    title: "Network Error",
+                    description: "A network error occurred. Could not generate audio.",
+                });
             } else {
                  toast({
                     variant: "destructive",
