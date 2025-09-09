@@ -53,7 +53,6 @@ export default function DoctorPage() {
   
   useEffect(() => {
     setIsLoading(true);
-    // Use a simpler query that doesn't require a composite index
     const doctorsQuery = query(collection(db, "doctors"), orderBy("displayName"));
 
     const unsubscribe = onSnapshot(doctorsQuery, (querySnapshot) => {
@@ -62,15 +61,14 @@ export default function DoctorPage() {
             return { 
                 id: doc.id, 
                 name: data.displayName || "Unnamed Doctor",
-                specialty: data.speciality || "No Specialty", // Field name is speciality
-                experience: data.about || "No experience listed.", // Field name is about
+                specialty: data.speciality || "No Specialty",
+                experience: data.about || "No experience listed.",
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
                 isOnline: data.isOnline || false,
              } as Doctor
         });
         
-        // Sort doctors on the client-side to prioritize online ones
         fetchedDoctors.sort((a, b) => {
             if (a.isOnline && !b.isOnline) return -1;
             if (!a.isOnline && b.isOnline) return 1;
@@ -85,7 +83,6 @@ export default function DoctorPage() {
         setIsLoading(false);
     });
 
-    // Cleanup the listener when the component unmounts
     return () => unsubscribe();
   }, [toast]);
 
@@ -104,9 +101,9 @@ export default function DoctorPage() {
               patientId: user.id,
               patientName: `${user.firstName} ${user.lastName}`,
               doctorId: doctor.id,
-              doctorName: doctor.name || "Unnamed Doctor",
-              doctorImage: doctor.image || "",
-              doctorSpecialty: doctor.specialty || "N/A",
+              doctorName: doctor.name,
+              doctorImage: doctor.image,
+              doctorSpecialty: doctor.specialty,
               status: "calling",
               createdAt: serverTimestamp(),
           };
@@ -115,7 +112,7 @@ export default function DoctorPage() {
           
           toast({
               title: "Calling Doctor",
-              description: `Waiting for ${doctor.name || 'the doctor'} to respond.`,
+              description: `Waiting for ${doctor.name} to respond.`,
           });
           
           router.push(`/call-status/${docRef.id}`);
@@ -164,7 +161,7 @@ export default function DoctorPage() {
                             <AvatarFallback>{getInitials(doctor.name)}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                        <h3 className="font-bold text-lg">{doctor.name || 'Unnamed Doctor'}</h3>
+                        <h3 className="font-bold text-lg">{doctor.name}</h3>
                         <p className="text-primary font-medium">{doctor.specialty}</p>
                         <p className="text-sm text-muted-foreground">
                             {doctor.experience}
