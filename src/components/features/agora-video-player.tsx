@@ -17,7 +17,6 @@ import { Mic, MicOff, Camera, CameraOff, PhoneOff, AlertTriangle } from 'lucide-
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
-import { useAuth } from '@/context/auth-context';
 
 interface AgoraVideoPlayerProps {
     appId: string;
@@ -25,36 +24,15 @@ interface AgoraVideoPlayerProps {
     token: string | null;
 }
 
-function safeUid(firebaseUserId?: string): number | null {
-  if (!firebaseUserId) return null;
-
-  let hash = 0;
-  for (let i = 0; i < firebaseUserId.length; i++) {
-    hash = (hash << 5) - hash + firebaseUserId.charCodeAt(i);
-    hash |= 0;
-  }
-
-  const uid = Math.abs(hash % 65535);
-  return uid;
-}
-
-
 export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayerProps) {
     const router = useRouter();
     const { toast } = useToast();
-    const { user } = useAuth();
 
     const [micOn, setMic] = useState(true);
     const [cameraOn, setCamera] = useState(true);
     const [hasPermission, setHasPermission] = useState(false);
     const [isPermissionLoading, setIsPermissionLoading] = useState(true);
     
-    const agoraUidToUse = safeUid(user?.isGuest ? undefined : user?.id);
-    
-    useEffect(() => {
-        console.log("👉 Joining with UID:", agoraUidToUse);
-    }, [agoraUidToUse]);
-
     // Request permissions on component mount
     useEffect(() => {
         const requestPermissions = async () => {
@@ -87,7 +65,6 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
             appid: appId,
             channel: channelName,
             token: token,
-            uid: agoraUidToUse,
         },
         hasPermission
     );
