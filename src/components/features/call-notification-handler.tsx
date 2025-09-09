@@ -45,13 +45,13 @@ export function CallNotificationHandler() {
         ),
       });
 
-      // Cleanup: dismiss the toast if the call is no longer 'ringing'
+      // Cleanup: dismiss the toast if the call is no longer 'calling'
       return () => dismiss(toastId);
     } else {
         // If there are no more ringing calls, dismiss all toasts
         dismiss();
     }
-  }, [incomingCalls]);
+  }, [incomingCalls, toast, dismiss, router]);
 
   const handleAccept = async (call: Call) => {
     try {

@@ -57,7 +57,7 @@ export default function DoctorPage() {
         const fetchedDoctors = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return { 
-                id: doc.id, // Correctly assign the document ID
+                id: doc.id,
                 name: data.displayName || "Unnamed Doctor",
                 specialty: data.specialty || "No Specialty",
                 experience: data.about || "No experience listed.",
@@ -100,9 +100,9 @@ export default function DoctorPage() {
         const callDocRef = await addDoc(collection(db, 'calls'), {
             callerId: user.id,
             callerName: `${user.firstName} ${user.lastName}`,
-            receiverId: doctor.id,
+            doctorId: doctor.id,
             receiverName: doctor.name,
-            status: 'ringing',
+            status: 'calling',
             createdAt: serverTimestamp(),
         });
 

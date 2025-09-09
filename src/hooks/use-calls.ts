@@ -18,9 +18,9 @@ export interface Call {
     id: string;
     callerId: string;
     callerName: string;
-    receiverId: string;
+    doctorId: string;
     receiverName: string;
-    status: 'ringing' | 'connecting' | 'connected' | 'declined' | 'ended';
+    status: 'calling' | 'connecting' | 'connected' | 'declined' | 'ended';
     offer?: any;
     answer?: any;
 }
@@ -38,8 +38,8 @@ export const useCalls = () => {
 
         const callsQuery = query(
             collection(db, 'calls'),
-            where('receiverId', '==', user.id),
-            where('status', '==', 'ringing')
+            where('doctorId', '==', user.id),
+            where('status', '==', 'calling')
         );
 
         const unsubscribe = onSnapshot(callsQuery, (snapshot) => {
