@@ -6,22 +6,20 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-
-const AgoraVideoPlayer = dynamic(
-    () => import('@/components/features/agora-video-player').then((mod) => mod.AgoraVideoPlayer),
+const PeerVideoPlayer = dynamic(
+    () => import('@/components/features/peer-video-player').then((mod) => mod.PeerVideoPlayer),
     { 
         ssr: false,
         loading: () => (
             <div className="flex h-screen w-full flex-col bg-gray-900">
                 <header className="flex h-16 items-center justify-between border-b border-gray-700 px-4 text-white">
                     <Skeleton className="h-8 w-48" />
-                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="w-8" />
                 </header>
                 <main className="flex flex-1 flex-col gap-4 p-4 md:flex-row">
                     <div className="flex-1 space-y-4">
                         <Skeleton className="aspect-video w-full rounded-lg" />
                         <div className="grid grid-cols-4 gap-4">
-                           <Skeleton className="aspect-video w-full rounded-lg" />
                            <Skeleton className="aspect-video w-full rounded-lg" />
                         </div>
                     </div>
@@ -41,7 +39,7 @@ const AgoraVideoPlayer = dynamic(
 export default function VideoCallPage() {
     return (
         <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-gray-900"><Loader2 className="h-8 w-8 animate-spin text-white"/></div>}>
-            <AgoraVideoPlayer />
+            <PeerVideoPlayer />
         </Suspense>
     )
 }

@@ -92,8 +92,9 @@ export default function DoctorPage() {
         router.push('/login');
         return;
     }
-    const channelName = doctor.id;
-    router.push(`/video-call/${channelName}?patientId=${user.id}`);
+    // The patient will try to call the doctor. The doctor's ID is the Peer ID to connect to.
+    const doctorPeerId = doctor.id;
+    router.push(`/video-call/${doctorPeerId}?isCaller=true`);
   }
 
   const getInitials = (name: string) => {
