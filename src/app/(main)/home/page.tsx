@@ -125,13 +125,13 @@ export default function HomePage() {
        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {featureCards.map((card) => (
           <Link href={card.href} key={card.title} prefetch={false}>
-            <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-4 text-center items-center aspect-square">
+            <Card className="h-full hover:bg-card/60 transition-colors flex flex-col justify-center p-2 text-center items-center aspect-square">
               <div className={cn("p-3 rounded-xl", card.color)}>
-                <card.icon className="h-8 w-8 text-white" />
+                <card.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
               <div className="mt-2">
-                <h3 className="font-semibold text-sm">{card.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+                <h3 className="font-semibold text-xs sm:text-sm">{card.title}</h3>
+                <p className="text-xs text-muted-foreground mt-1 hidden sm:block">{card.description}</p>
               </div>
             </Card>
           </Link>
