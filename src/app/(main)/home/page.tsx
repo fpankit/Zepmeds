@@ -145,21 +145,19 @@ export default function HomePage() {
           {trendingProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
             return (
-              <Card key={product.id} className="overflow-hidden group">
-                <CardContent className="p-4 flex flex-col justify-between h-full">
-                  <div>
-                    <h4 className="font-semibold truncate">{product.name}</h4>
-                    <p className="text-sm text-muted-foreground">1 unit</p>
-                  </div>
-                  <div className="flex justify-between items-center mt-4">
-                    <span className="font-bold text-lg">₹{product.price.toFixed(2)}</span>
-                    {cartItem ? (
+              <Card key={product.id}>
+                <CardContent className="p-3">
+                  <h4 className="font-bold text-sm truncate">{product.name}</h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">1 unit</p>
+                  <div className="flex justify-between items-center mt-3">
+                    <span className="font-bold text-md">₹{product.price.toFixed(2)}</span>
+                     {cartItem ? (
                        <div className="flex items-center gap-1">
-                        <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
+                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="w-6 text-center font-bold">{cartItem.quantity}</span>
-                        <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
+                        <span className="w-5 text-center font-bold text-sm">{cartItem.quantity}</span>
+                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
