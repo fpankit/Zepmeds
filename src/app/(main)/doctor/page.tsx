@@ -139,6 +139,7 @@ export default function DoctorPage() {
     }
     
     const remotePeerId = doctor.peerId;
+    console.log(`Attempting to call doctor ${doctor.name} with Peer ID: ${remotePeerId}`);
     router.push(`/video-call/${remotePeerId}?isCaller=true`);
   }
 

@@ -18,11 +18,9 @@ export function PeerVideoPlayer() {
     const { toast } = useToast();
 
     const [peer, setPeer] = useState<Peer | null>(null);
-    const [myPeerId, setMyPeerId] = useState('');
-    const [callStatus, setCallStatus] = useState('idle'); // idle, ready, calling, connected, ended
-
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+    const [callStatus, setCallStatus] = useState('connecting'); // connecting, connected, ended
     
     const [micOn, setMic] = useState(true);
     const [cameraOn, setCamera] = useState(true);
@@ -33,138 +31,106 @@ export function PeerVideoPlayer() {
     
     const isCaller = searchParams.get('isCaller') === 'true';
     const remotePeerId = params.channel as string; 
-    const [patientIdForDoctor, setPatientIdForDoctor] = useState<string | null>(null);
 
 
     const endCall = useCallback(() => {
         console.log("Ending call.");
-        callRef.current?.close();
         setCallStatus('ended');
+        callRef.current?.close();
         localStream?.getTracks().forEach(track => track.stop());
         peer?.destroy();
         router.push('/home');
     }, [localStream, peer, router]);
 
 
-    // Initialize PeerJS
+    // Initialize and connect
     useEffect(() => {
-        if (!user) return;
+        if (!user) {
+            toast({ variant: 'destructive', title: "Not Authenticated" });
+            router.push('/login');
+            return;
+        }
 
-        const initializePeer = async () => {
-            const { Peer } = await import('peerjs');
-            // Caller (patient) gets a random ID.
-            // Receiver (doctor) must use their specific ID to be reachable.
-            const peerInstance = isCaller ? new Peer() : new Peer(remotePeerId);
+        let peerInstance: Peer;
 
-            peerInstance.on('open', (id) => {
-                console.log('My peer ID is: ' + id);
-                setMyPeerId(id);
-                setCallStatus('ready');
-            });
-            
-            peerInstance.on('error', (err: any) => {
-                console.error('PeerJS error:', err);
-                if (err.type === 'peer-unavailable') {
-                    toast({ variant: 'destructive', title: 'Doctor Offline', description: 'The doctor is not available for a call right now.' });
-                } else {
-                     toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.type}` });
-                }
-                setCallStatus('error');
-            });
-
-            setPeer(peerInstance);
-        };
-
-        initializePeer();
-
-        return () => {
-            callRef.current?.close();
-            peer?.destroy();
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, remotePeerId, isCaller]);
-
-    // Get user media as soon as component loads
-    useEffect(() => {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then(stream => {
+        const setup = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 setLocalStream(stream);
                 if (localVideoRef.current) {
                     localVideoRef.current.srcObject = stream;
                 }
-            })
-            .catch(err => {
-                console.error('Failed to get local stream', err);
-                toast({ variant: 'destructive', title: 'Media Error', description: 'Could not access your camera or microphone. Please check permissions.' });
-            });
-    }, [toast]);
 
-
-    const initiateCall = useCallback((remoteId: string, peerInstance: Peer, stream: MediaStream) => {
-        if (!user || user.isGuest) return;
-        setCallStatus('calling');
-        console.log(`Calling remote peer: ${remoteId}`);
-
-        try {
-            const call = peerInstance.call(remoteId, stream, { metadata: { callerId: user.id }});
-            if (!call) {
-                console.error("Call object is undefined.");
-                endCall();
-                return;
-            }
-            callRef.current = call;
-            
-            call.on('stream', (remoteStream) => {
-                console.log('Received remote stream from answered call');
-                setRemoteStream(remoteStream);
-                setCallStatus('connected');
-            });
-            
-            call.on('close', endCall);
-
-            call.on('error', (err) => {
-                console.error("Call error:", err);
-                toast({ variant: "destructive", title: "Call Failed", description: "Could not connect to the other user."});
-                endCall();
-            });
-        } catch (e) {
-            console.error("Error initiating call:", e);
-            endCall();
-        }
-    }, [endCall, toast, user]);
-    
-    // If we are the caller, initiate the call once ready.
-    useEffect(() => {
-        if (isCaller && peer && localStream && callStatus === 'ready' && remotePeerId) {
-            initiateCall(remotePeerId, peer, localStream);
-        }
-    }, [isCaller, peer, localStream, callStatus, remotePeerId, initiateCall]);
-
-    // Set up listener for incoming calls (for the doctor)
-    useEffect(() => {
-        if (peer && localStream && !isCaller) { // Only doctors listen for calls
-            peer.on('call', (call) => {
-                console.log('Receiving call from', call.peer);
-                if (call.metadata && call.metadata.callerId) {
-                    setPatientIdForDoctor(call.metadata.callerId);
-                }
-
-                setCallStatus('receiving');
-                call.answer(localStream); // Answer the call with our local stream.
-                callRef.current = call;
+                const { Peer } = await import('peerjs');
                 
-                call.on('stream', (remoteStream) => {
-                    console.log('Received remote stream');
-                    setRemoteStream(remoteStream);
-                    setCallStatus('connected');
+                // If we are the doctor (receiver), we must initialize with our known peerId
+                // If we are the patient (caller), we get a random ID from the peer server
+                peerInstance = isCaller ? new Peer() : new Peer(remotePeerId);
+                setPeer(peerInstance);
+
+                peerInstance.on('open', (id) => {
+                    console.log(`PeerJS initialized. My ID is ${id}.`);
+                    // If we are the caller, now that we are ready, initiate the call
+                    if (isCaller) {
+                        console.log(`Calling remote peer: ${remotePeerId}`);
+                        const call = peerInstance.call(remotePeerId, stream);
+                        callRef.current = call;
+                        
+                        call.on('stream', (remoteStrm) => {
+                            console.log('Received remote stream from answered call');
+                            setRemoteStream(remoteStrm);
+                            setCallStatus('connected');
+                        });
+
+                        call.on('close', endCall);
+                        call.on('error', (err) => {
+                             console.error("Call error:", err);
+                             toast({ variant: "destructive", title: "Call Failed", description: "Could not connect to the other user."});
+                             endCall();
+                        });
+                    }
                 });
 
-                call.on('close', endCall);
-            });
-        }
-    }, [peer, localStream, endCall, isCaller]);
+                // Set up listener for incoming calls (for the doctor)
+                peerInstance.on('call', (call) => {
+                    console.log('Receiving call from', call.peer);
+                    call.answer(stream); // Answer the call with our local stream.
+                    callRef.current = call;
+                    
+                    call.on('stream', (remoteStrm) => {
+                        console.log('Received remote stream on answer');
+                        setRemoteStream(remoteStrm);
+                        setCallStatus('connected');
+                    });
 
-    // Set video streams
+                    call.on('close', endCall);
+                });
+
+                peerInstance.on('error', (err: any) => {
+                    console.error('PeerJS error:', err);
+                    toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.message}` });
+                    setCallStatus('ended');
+                    endCall();
+                });
+
+            } catch (err) {
+                 console.error('Failed to get local stream or initialize PeerJS', err);
+                 toast({ variant: 'destructive', title: 'Media Error', description: 'Could not access your camera or microphone. Please check permissions.' });
+                 endCall();
+            }
+        };
+
+        setup();
+
+        return () => {
+            callRef.current?.close();
+            localStream?.getTracks().forEach(track => track.stop());
+            peerInstance?.destroy();
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Set remote video stream
     useEffect(() => {
         if (remoteStream && remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
@@ -206,12 +172,9 @@ export function PeerVideoPlayer() {
                         <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
                         {callStatus !== 'connected' && (
                              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                                 <p className="text-gray-300">{
-                                    callStatus === 'calling' ? 'Connecting to doctor...' :
-                                    callStatus === 'receiving' ? 'Incoming call...' :
-                                    callStatus === 'ready' ? 'Ready to connect...' :
-                                    'Waiting for other user...'
-                                }</p>
+                                 <p className="text-gray-300">
+                                    {isCaller ? 'Connecting to doctor...' : 'Waiting for user...'}
+                                </p>
                             </div>
                         )}
                         <div className="absolute bottom-4 right-4 h-32 w-48 rounded-lg border-2 border-gray-600 bg-black overflow-hidden">
