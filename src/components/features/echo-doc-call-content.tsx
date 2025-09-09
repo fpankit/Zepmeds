@@ -46,12 +46,81 @@ export function EchoDocCallContent() {
     const [transcript, setTranscript] = useState('');
     const [language, setLanguage] = useState('English');
     const [messages, setMessages] = useState<Message[]>([]);
+    const [isTTSDisabled, setIsTTSDisabled] = useState(false);
     
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const recognitionRef = useRef<any | null>(null);
 
+    const speak = useCallback(async (text: string, lang: string) => {
+        if (!text || isTTSDisabled) {
+            setIsAISpeaking(false);
+            return;
+        };
+        setIsAISpeaking(true);
+        try {
+            const voice = languageToVoiceMap[lang] || 'Algenib';
+            const response = await textToSpeech({ text, voice });
+            
+            if (response.error === 'quota_exceeded') {
+                toast({
+                    variant: "destructive",
+                    title: "Voice Limit Reached",
+                    description: "You've exceeded the voice request quota. Displaying text instead.",
+                });
+                setIsTTSDisabled(true); // Disable TTS for the session
+                setIsAISpeaking(false);
+                return;
+            }
+
+            if (response.error || !response.audioDataUri) {
+                 toast({
+                    variant: "destructive",
+                    title: "Voice Error",
+                    description: response.error || "Could not generate audio. Displaying text instead.",
+                });
+                setIsAISpeaking(false);
+                return;
+            }
+
+            if (audioRef.current) {
+                audioRef.current.src = response.audioDataUri;
+                audioRef.current.play();
+                audioRef.current.onended = () => setIsAISpeaking(false);
+                audioRef.current.onerror = () => {
+                    toast({
+                        variant: "destructive",
+                        title: "Audio Playback Error",
+                        description: "Could not play the generated audio.",
+                    });
+                    setIsAISpeaking(false);
+                }
+            }
+        } catch (error: any) {
+            console.error("Speak function error:", error);
+            const errorMessage = error.message || '';
+            
+            if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
+                 toast({
+                    variant: "destructive",
+                    title: "Voice Limit Reached",
+                    description: "You've exceeded the voice request quota. Displaying text instead.",
+                });
+                 setIsTTSDisabled(true); // Disable TTS for the session
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Network Error",
+                    description: "A network error occurred. Could not generate audio.",
+                });
+            }
+            setIsAISpeaking(false);
+        }
+    }, [isTTSDisabled, toast]);
+
+
      const handleSendTranscript = useCallback(async (text: string) => {
         if (!text) return;
+        setIsListening(false);
         setMessages(prev => [...prev, { sender: 'user', text }]);
         setIsProcessing(true);
         
@@ -69,7 +138,7 @@ export function EchoDocCallContent() {
             setIsProcessing(false);
             setTranscript(''); // Clear transcript after processing
         }
-    }, [language]);
+    }, [language, speak]);
 
 
     // Initial greeting
@@ -107,33 +176,35 @@ export function EchoDocCallContent() {
         recognition.lang = 'en-US';
 
         recognition.onresult = (event: any) => {
+            let interimTranscript = '';
             let finalTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
+                 if (event.results[i].isFinal) {
                     finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
                 }
             }
+             setTranscript(interimTranscript);
             if (finalTranscript) {
                  handleSendTranscript(finalTranscript.trim());
             }
         };
 
         recognition.onend = () => {
-            if (isListening) {
-                setIsListening(false);
-            }
+             setIsListening(false);
         };
 
         recognition.onerror = (event: any) => {
             console.error('Speech recognition error:', event.error);
-            toast({
-                variant: 'destructive',
-                title: 'Mic Error',
-                description: `An error occurred with the microphone: ${event.error}`,
-            });
-             if (isListening) {
-                setIsListening(false);
+            if (event.error !== 'no-speech') {
+                toast({
+                    variant: 'destructive',
+                    title: 'Mic Error',
+                    description: `An error occurred with the microphone: ${event.error}`,
+                });
             }
+            setIsListening(false);
         };
 
         recognitionRef.current = recognition;
@@ -146,56 +217,6 @@ export function EchoDocCallContent() {
     }, [toast, handleSendTranscript]);
 
 
-    const speak = async (text: string, lang: string) => {
-        if (!text) return;
-        setIsAISpeaking(true);
-        try {
-            const voice = languageToVoiceMap[lang] || 'Algenib';
-            const response = await textToSpeech({ text, voice });
-            
-            if (response.error === 'quota_exceeded') {
-                toast({
-                    variant: "destructive",
-                    title: "Voice Limit Reached",
-                    description: "You've exceeded the voice request quota. The service will be available again shortly. Displaying text instead.",
-                });
-                setIsAISpeaking(false);
-                return;
-            }
-
-            if (response.error || !response.audioDataUri) {
-                 toast({
-                    variant: "destructive",
-                    title: "Voice Error",
-                    description: response.error || "Could not generate audio. Displaying text instead.",
-                });
-                setIsAISpeaking(false);
-                return;
-            }
-
-            if (audioRef.current) {
-                audioRef.current.src = response.audioDataUri;
-                audioRef.current.play();
-                audioRef.current.onended = () => setIsAISpeaking(false);
-                audioRef.current.onerror = () => {
-                    toast({
-                        variant: "destructive",
-                        title: "Audio Playback Error",
-                        description: "Could not play the generated audio.",
-                    });
-                    setIsAISpeaking(false);
-                }
-            }
-        } catch (error: any) {
-            console.error("Speak function error:", error);
-            toast({
-                variant: "destructive",
-                title: "Network Error",
-                description: "A network error occurred. Could not generate audio.",
-            });
-            setIsAISpeaking(false);
-        }
-    };
     
     const handleMicToggle = () => {
         if (isListening) {
@@ -250,7 +271,7 @@ export function EchoDocCallContent() {
 
                         {!(isLoading || isProcessing) && messages.length > 0 && (
                              <p className="text-lg font-medium min-h-[56px]">
-                                {messages[messages.length - 1].text}
+                                {transcript || messages[messages.length - 1].text}
                             </p>
                         )}
                        
