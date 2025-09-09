@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     LocalVideoTrack,
@@ -13,18 +13,35 @@ import {
     useRemoteUsers,
 } from "agora-rtc-react";
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Camera, CameraOff, PhoneOff, AlertTriangle } from 'lucide-react';
+import { Mic, MicOff, Camera, CameraOff, PhoneOff, AlertTriangle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+
+const PatientProfile = dynamic(
+    () => import('@/components/features/patient-profile').then(mod => mod.PatientProfile),
+    {
+        ssr: false,
+        loading: () => (
+            <div className='p-4 space-y-4'>
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-40 w-full" />
+            </div>
+        )
+    }
+);
 
 interface AgoraVideoPlayerProps {
     appId: string;
     channelName: string;
     token: string | null;
+    patientId: string | null;
 }
 
-export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayerProps) {
+export function AgoraVideoPlayer({ appId, channelName, token, patientId }: AgoraVideoPlayerProps) {
     const router = useRouter();
     const { toast } = useToast();
 
@@ -68,7 +85,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
             token: token,
         },
         hasPermission,
-        (client) => {
+        () => {
             setIsJoined(true);
         }
     );
@@ -91,12 +108,16 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
     };
 
     if (isPermissionLoading) {
-        return <div className="flex items-center justify-center h-full"><p>Requesting permissions...</p></div>
-    }
-
-    if (!hasPermission) {
         return (
-            <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+            <div className="flex items-center justify-center h-screen w-full bg-background">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
+    
+     if (!hasPermission) {
+        return (
+            <div className="flex h-screen w-full flex-col items-center justify-center p-4 text-center bg-background">
                 <Alert variant="destructive" className="max-w-md">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Permissions Required</AlertTitle>
@@ -110,43 +131,53 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
     }
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Local User Video */}
-                <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                    {localCameraTrack && <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />}
-                    <p className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">You</p>
+        <div className="flex h-screen w-full bg-black text-white">
+            {/* Main Video Grid */}
+            <main className="flex-1 flex flex-col relative">
+                 <div className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Local User Video */}
+                    <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
+                        {localCameraTrack && <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />}
+                        <p className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">You</p>
+                    </div>
+
+                    {/* Remote Users Video */}
+                    {remoteUsers.map((user) => (
+                        <div key={user.uid} className="relative rounded-lg overflow-hidden bg-black aspect-video">
+                            {user.hasVideo && user.videoTrack && <RemoteUser user={user} playVideo={true} className="w-full h-full object-cover" />}
+                            <p className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">Doctor</p>
+                        </div>
+                    ))}
                 </div>
 
-                {/* Remote Users Video */}
-                {remoteUsers.map((user) => (
-                    <div key={user.uid} className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                        {user.hasVideo && user.videoTrack && <RemoteUser user={user} playVideo={true} className="w-full h-full object-cover" />}
-                        <p className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">Doctor</p>
-                    </div>
-                ))}
-            </div>
+                {/* Control Bar */}
+                <div className="bg-gray-900/80 backdrop-blur-sm p-4 flex justify-center items-center gap-4">
+                    <Button
+                        onClick={() => setMic(a => !a)}
+                        variant="secondary"
+                        size="lg"
+                        className={cn("rounded-full h-14 w-14", !micOn && "bg-destructive hover:bg-destructive/80")}
+                    >
+                        {micOn ? <Mic /> : <MicOff />}
+                    </Button>
+                    <Button
+                        onClick={() => setCamera(a => !a)}
+                        variant="secondary"
+                        size="lg"
+                        className={cn("rounded-full h-14 w-14", !cameraOn && "bg-destructive hover:bg-destructive/80")}
+                    >
+                        {cameraOn ? <Camera /> : <CameraOff />}
+                    </Button>
+                    <Button onClick={handleLeave} variant="destructive" size="lg" className="rounded-full h-14 w-14"><PhoneOff /></Button>
+                </div>
+            </main>
 
-            {/* Control Bar */}
-            <div className="bg-gray-900/80 backdrop-blur-sm p-4 flex justify-center items-center gap-4">
-                <Button
-                    onClick={() => setMic(a => !a)}
-                    variant="secondary"
-                    size="lg"
-                    className={cn("rounded-full h-14 w-14", !micOn && "bg-destructive hover:bg-destructive/80")}
-                >
-                    {micOn ? <Mic /> : <MicOff />}
-                </Button>
-                <Button
-                    onClick={() => setCamera(a => !a)}
-                    variant="secondary"
-                    size="lg"
-                    className={cn("rounded-full h-14 w-14", !cameraOn && "bg-destructive hover:bg-destructive/80")}
-                >
-                    {cameraOn ? <Camera /> : <CameraOff />}
-                </Button>
-                <Button onClick={handleLeave} variant="destructive" size="lg" className="rounded-full h-14 w-14"><PhoneOff /></Button>
-            </div>
+            {/* Sidebar with Patient Details */}
+            <aside className="w-80 hidden md:block bg-gray-900 border-l border-gray-800 p-4">
+                <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                  {patientId && <PatientProfile patientId={patientId} />}
+                </Suspense>
+            </aside>
         </div>
     );
 }
