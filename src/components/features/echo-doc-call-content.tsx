@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mic, MicOff, PhoneOff, Bot, Loader2 } from 'lucide-react';
 import { echoDocFlow } from '@/ai/flows/echo-doc-flow';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
@@ -44,7 +43,6 @@ export function EchoDocCallContent() {
     const [isLoading, setIsLoading] = useState(true); // Loading for initial greeting
     const [isProcessing, setIsProcessing] = useState(false); // For subsequent AI responses
     const [transcript, setTranscript] = useState('');
-    const [language, setLanguage] = useState('English');
     const [messages, setMessages] = useState<Message[]>([]);
     const [isTTSDisabled, setIsTTSDisabled] = useState(false);
     
@@ -52,11 +50,13 @@ export function EchoDocCallContent() {
     const recognitionRef = useRef<any | null>(null);
 
     const speak = useCallback(async (text: string, lang: string) => {
+        setIsAISpeaking(true);
+
         if (!text || isTTSDisabled) {
             setIsAISpeaking(false);
             return;
         };
-        setIsAISpeaking(true);
+
         try {
             const voice = languageToVoiceMap[lang] || 'Algenib';
             const response = await textToSpeech({ text, voice });
@@ -105,7 +105,7 @@ export function EchoDocCallContent() {
                     title: "Voice Limit Reached",
                     description: "You've exceeded the voice request quota. Displaying text instead.",
                 });
-                 setIsTTSDisabled(true); // Disable TTS for the session
+                 setIsTTSDisabled(true);
             } else {
                 toast({
                     variant: "destructive",
@@ -127,18 +127,19 @@ export function EchoDocCallContent() {
         try {
             const aiResult = await echoDocFlow({ query: text });
             const aiResponseText = aiResult.response;
+            const detectedLanguage = aiResult.language;
             setMessages(prev => [...prev, { sender: 'ai', text: aiResponseText }]);
-            await speak(aiResponseText, language);
+            await speak(aiResponseText, detectedLanguage);
         } catch (error) {
             console.error("AI Response Error:", error);
             const errorMsg = "I'm sorry, I encountered an error. Could you please repeat that?";
             setMessages(prev => [...prev, { sender: 'ai', text: errorMsg }]);
-            await speak(errorMsg, language);
+            await speak(errorMsg, 'English');
         } finally {
             setIsProcessing(false);
             setTranscript(''); // Clear transcript after processing
         }
-    }, [language, speak]);
+    }, [speak]);
 
 
     // Initial greeting
@@ -173,7 +174,7 @@ export function EchoDocCallContent() {
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = 'en-US';
+        recognition.lang = 'en-US'; // We will detect language on the backend
 
         recognition.onresult = (event: any) => {
             let interimTranscript = '';
@@ -221,7 +222,6 @@ export function EchoDocCallContent() {
     const handleMicToggle = () => {
         if (isListening) {
             recognitionRef.current?.stop();
-            setIsListening(false);
         } else {
             setTranscript('');
             recognitionRef.current?.start();
@@ -284,16 +284,6 @@ export function EchoDocCallContent() {
             
             <footer className="flex-shrink-0 bg-card p-4 rounded-t-2xl">
                  <div className="flex items-center justify-center gap-4">
-                     <Select value={language} onValueChange={setLanguage} disabled={isAISpeaking || isLoading || isListening}>
-                        <SelectTrigger className="w-[150px]">
-                            <SelectValue placeholder="Select Language" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.keys(languageToVoiceMap).map(lang => (
-                                <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
                     <Button 
                         size="icon" 
                         className={`h-16 w-16 rounded-full transition-colors ${isListening ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600'}`}
