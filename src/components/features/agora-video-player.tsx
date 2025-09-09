@@ -45,55 +45,35 @@ function VideoCallPlayerContent() {
 
     const [micOn, setMic] = useState(true);
     const [cameraOn, setCamera] = useState(true);
-    const [hasPermission, setHasPermission] = useState(false);
-    const [isPermissionLoading, setIsPermissionLoading] = useState(true);
     const [isJoined, setIsJoined] = useState(false);
-
+    const { user } = useAuth();
+    
     const channelName = params.channel as string;
     const patientId = searchParams.get('patientId');
     const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID || '3b649d7a9006490292cd9d82534a6a91';
-    const token = null;
+    const token = null; // Set to null for token-less auth
+
+    const { localMicrophoneTrack, isMuted: isMicMuted } = useLocalMicrophoneTrack(micOn);
+    const { localCameraTrack, isMuted: isCamMuted } = useLocalCameraTrack(cameraOn);
+
+    const safeUid = (id?: string): number | null => {
+      if (!id || user?.isGuest) return null;
+      let hash = 0;
+      for (let i = 0; i < id.length; i++) {
+        const char = id.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash |= 0; // Convert to 32bit integer
+      }
+      return Math.abs(hash) % 65535;
+    };
     
-    // Request permissions on component mount
-    useEffect(() => {
-        const requestPermissions = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                stream.getTracks().forEach(track => track.stop());
-                setHasPermission(true);
-            } catch (error) {
-                console.error('Error getting media permissions:', error);
-                toast({
-                    variant: 'destructive',
-                    title: 'Permissions Denied',
-                    description: 'Camera and microphone access is required for video calls.',
-                    duration: 5000,
-                });
-                setHasPermission(false);
-            } finally {
-                setIsPermissionLoading(false);
-            }
-        };
+    const uid = safeUid(user?.id);
 
-        requestPermissions();
-    }, [toast]);
+    useJoin({ appid: appId, channel: channelName, token: token, uid: uid }, true, () => {
+        setIsJoined(true);
+    });
 
-    const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn && hasPermission);
-    const { localCameraTrack } = useLocalCameraTrack(cameraOn && hasPermission);
-
-    useJoin(
-        {
-            appid: appId,
-            channel: channelName,
-            token: token,
-        },
-        hasPermission,
-        () => {
-            setIsJoined(true);
-        }
-    );
-
-    usePublish([localMicrophoneTrack, localCameraTrack], isJoined && hasPermission);
+    usePublish([localMicrophoneTrack, localCameraTrack], isJoined);
 
     const remoteUsers = useRemoteUsers();
 
@@ -110,28 +90,21 @@ function VideoCallPlayerContent() {
         router.push('/doctor');
     };
 
-    if (isPermissionLoading) {
-        return (
-            <div className="flex items-center justify-center h-screen w-full bg-background">
-                <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-        );
-    }
-    
-     if (!hasPermission) {
+    if (appId === '') {
         return (
             <div className="flex h-screen w-full flex-col items-center justify-center p-4 text-center bg-background">
-                <Alert variant="destructive" className="max-w-md">
+                 <Alert variant="destructive" className="max-w-md">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Permissions Required</AlertTitle>
+                    <AlertTitle>Configuration Error</AlertTitle>
                     <AlertDescription>
-                        Zepmeds needs access to your camera and microphone to start a video call. Please grant permissions in your browser settings and refresh the page.
+                        Agora App ID is not configured. Please set the `NEXT_PUBLIC_AGORA_APP_ID` environment variable.
                     </AlertDescription>
                 </Alert>
-                <Button onClick={handleLeave} variant="outline" className="mt-4">Back to safety</Button>
+                <Button onClick={() => router.push('/doctor')} variant="outline" className="mt-4">Back to safety</Button>
             </div>
         )
     }
+
 
     return (
         <div className="flex h-screen w-full bg-black text-white">
@@ -140,15 +113,19 @@ function VideoCallPlayerContent() {
                  <div className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Local User Video */}
                     <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                        {localCameraTrack && <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />}
-                        <p className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">You</p>
+                        <LocalVideoTrack track={localCameraTrack} play={cameraOn} className="w-full h-full object-cover" />
+                         <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">
+                           <p>You</p>
+                        </div>
                     </div>
 
                     {/* Remote Users Video */}
                     {remoteUsers.map((user) => (
                         <div key={user.uid} className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                            {user.hasVideo && user.videoTrack && <RemoteUser user={user} playVideo={true} className="w-full h-full object-cover" />}
-                            <p className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">Doctor</p>
+                           <RemoteUser user={user} playVideo={user.hasVideo} playAudio={user.hasAudio} className="w-full h-full object-cover" />
+                            <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">
+                               <p>Doctor</p>
+                            </div>
                         </div>
                     ))}
                 </div>
