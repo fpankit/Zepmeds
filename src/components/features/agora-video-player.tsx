@@ -140,8 +140,7 @@ export function AgoraVideoPlayer() {
       </header>
 
       <main className="flex flex-1 flex-col gap-4 p-4 md:flex-row">
-        <div className="flex flex-1 flex-col gap-4">
-          <div className="relative flex-1 rounded-lg bg-black overflow-hidden">
+        <div className="relative flex-1 rounded-lg bg-black overflow-hidden">
              {remoteUsers.length > 0 ? (
                   remoteUsers.map(user => {
                       const RemotePlayer = () => {
@@ -167,7 +166,6 @@ export function AgoraVideoPlayer() {
             <div className="absolute bottom-4 right-4 h-32 w-48 rounded-lg border-2 border-gray-600 bg-black overflow-hidden">
               <div id="local-player" className="h-full w-full object-cover" />
             </div>
-          </div>
         </div>
       </main>
 
