@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pill, Stethoscope, Search, Bot, Gift, CreditCard, Star, Minus, Plus, MessageSquare, Siren, PackageSearch } from "lucide-react";
+import { Pill, Stethoscope, Search, Bot, Gift, CreditCard, Star, Minus, Plus, MessageSquare, Siren, PackageSearch, HeartPulse } from "lucide-react";
 import Link from "next/link";
 import {
   Carousel,
@@ -24,8 +24,8 @@ const featureCards = [
     { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker", color: "bg-sky-500" },
     { title: "Echo Doc AI", description: "Talk to a medical AI", icon: MessageSquare, href: "/echo-doc", color: "bg-orange-500" },
     { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor", color: "bg-green-500" },
+    { title: "First Aid Help", description: "Emergency tutorials", icon: HeartPulse, href: "/first-aid", color: "bg-yellow-500" },
     { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "/emergency", color: "bg-red-500" },
-    { title: "Track Order", description: "Check your delivery status", icon: PackageSearch, href: "/order-status", color: "bg-teal-500" },
 ];
 
 const offerCards = [
