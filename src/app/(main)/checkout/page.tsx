@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -254,7 +253,7 @@ export default function CheckoutPage() {
         <Card>
             <CardHeader>
                 <CardTitle className="text-lg">Payment Summary</CardTitle>
-            </Header>
+            </CardHeader>
             <CardContent className="space-y-3">
                 <div className="flex justify-between">
                     <p className="text-muted-foreground">Subtotal</p>
