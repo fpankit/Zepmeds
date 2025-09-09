@@ -28,12 +28,11 @@ export function AgoraVideoPlayer() {
   const client = useRef<IAgoraRTCClient | null>(null);
   const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
   const localVideoTrack = useRef<ICameraVideoTrack | null>(null);
-  const remoteUsers = useRef<IAgoraRTCRemoteUser[]>([]);
-
+  
+  const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
   const [isJoined, setIsJoined] = useState(false);
   const [micOn, setMic] = useState(true);
   const [cameraOn, setCamera] = useState(true);
-  const [, setRemoteVideoUsers] = useState<IAgoraRTCRemoteUser[]>([]);
 
 
   const join = useCallback(async () => {
@@ -45,33 +44,33 @@ export function AgoraVideoPlayer() {
     try {
       client.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
 
-      client.current.on('user-published', async (user, mediaType) => {
+      const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
         await client.current!.subscribe(user, mediaType);
         if (mediaType === 'video') {
-           setRemoteVideoUsers(prev => [...prev, user]);
+            setRemoteUsers(Array.from(client.current!.remoteUsers));
         }
         if (mediaType === 'audio') {
           user.audioTrack?.play();
         }
-      });
-      
-      client.current.on('user-unpublished', (user, mediaType) => {
-        if (mediaType === 'video') {
-            setRemoteVideoUsers(prev => prev.filter(u => u.uid !== user.uid));
-        }
-      });
+      };
 
-      client.current.on('user-left', user => {
-        setRemoteVideoUsers(prev => prev.filter(u => u.uid !== user.uid));
-      });
+      const handleUserUnpublished = (user: IAgoraRTCRemoteUser) => {
+        setRemoteUsers(prevUsers => prevUsers.filter(u => u.uid !== user.uid));
+      };
       
-      // Patient UID is a random number to avoid conflicts. Doctor will use their Firebase UID.
-      const uid = user.isDoctor ? user.id : Math.floor(Math.random() * 10000);
+      const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
+          setRemoteUsers(prevUsers => prevUsers.filter(u => u.uid !== user.uid));
+      };
+
+      client.current.on('user-published', handleUserPublished);
+      client.current.on('user-unpublished', handleUserUnpublished);
+      client.current.on('user-left', handleUserLeft);
+      
+      const uid = user.isDoctor ? user.id : Math.floor(Math.random() * 20000);
       
       await client.current.join(APP_ID, channelName, null, uid);
 
-      localAudioTrack.current = await AgoraRTC.createMicrophoneAudioTrack();
-      localVideoTrack.current = await AgoraRTC.createCameraVideoTrack();
+      [localAudioTrack.current, localVideoTrack.current] = await AgoraRTC.createMicrophoneAndCameraTracks();
 
       await client.current.publish([localAudioTrack.current, localVideoTrack.current]);
 
@@ -91,18 +90,17 @@ export function AgoraVideoPlayer() {
     await client.current?.leave();
     client.current = null;
     setIsJoined(false);
+    setRemoteUsers([]);
     router.push('/home');
   }, [router]);
   
   useEffect(() => {
     join();
     return () => {
-      if (isJoined) {
-          leave();
-      }
+      leave();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [join]);
+  }, []);
   
 
     const handleMicToggle = async () => {
@@ -131,10 +129,23 @@ export function AgoraVideoPlayer() {
       <main className="flex flex-1 flex-col gap-4 p-4 md:flex-row">
         <div className="flex flex-1 flex-col gap-4">
           <div className="relative flex-1 rounded-lg bg-black overflow-hidden">
-             {remoteUsers.current.length > 0 ? (
-                  remoteUsers.current.map(user => (
-                     <div key={user.uid} id={`remote-player-${user.uid}`} className="h-full w-full object-cover"></div>
-                  ))
+             {remoteUsers.length > 0 ? (
+                  remoteUsers.map(user => {
+                      const RemotePlayer = () => {
+                        const videoRef = useRef<HTMLDivElement>(null);
+                        useEffect(() => {
+                          if (videoRef.current && user.videoTrack) {
+                            user.videoTrack.play(videoRef.current);
+                          }
+                          return () => {
+                            user.videoTrack?.stop();
+                          };
+                        }, [user]);
+
+                        return <div ref={videoRef} className="h-full w-full object-cover" />;
+                      };
+                      return <RemotePlayer key={user.uid}/>
+                  })
               ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                      <p className="text-gray-300">Waiting for other user to join...</p>
@@ -178,4 +189,3 @@ export function AgoraVideoPlayer() {
     </div>
   );
 }
-

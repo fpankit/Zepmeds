@@ -32,7 +32,6 @@ export interface User {
   // Doctor specific fields
   isDoctor?: boolean;
   isOnline?: boolean;
-  peerId?: string;
   specialty?: string;
   about?: string;
   photoURL?: string;
@@ -141,7 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user && user.isDoctor) {
         // Doctor goes offline on logout
         const doctorDocRef = doc(db, "doctors", user.id);
-        await updateDoc(doctorDocRef, { isOnline: false, peerId: null });
+        await updateDoc(doctorDocRef, { isOnline: false });
     }
     localStorage.removeItem('user');
     setUser(createGuestUser());
@@ -162,7 +161,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Only update fields relevant to the doctors collection
         const doctorData: Partial<User> = {};
         if ('isOnline' in userData) doctorData.isOnline = userData.isOnline;
-        if ('peerId' in userData) doctorData.peerId = userData.peerId;
         
         if(Object.keys(doctorData).length > 0) {
            await updateDoc(doctorDocRef, doctorData);

@@ -5,16 +5,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
-import { collection, query, onSnapshot, orderBy, getDoc, doc, updateDoc } from "firebase/firestore";
+import { Search, Stethoscope, Video, CheckCircle, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import type { Peer } from 'peerjs';
 
 interface Doctor {
   id: string;
@@ -24,7 +23,6 @@ interface Doctor {
   image: string;
   dataAiHint: string;
   isOnline: boolean;
-  peerId?: string;
 }
 
 const DoctorCardSkeleton = () => (
@@ -52,36 +50,11 @@ export default function DoctorPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const peerRef = useRef<Peer | null>(null);
-
   const handleToggleOnline = async () => {
       if (!user || !user.isDoctor) return;
-
       const newStatus = !user.isOnline;
-      if (newStatus) { // Going online
-          try {
-              const { Peer } = await import('peerjs');
-              const peer = new Peer();
-              peerRef.current = peer;
-
-              peer.on('open', async (id) => {
-                  await updateUser({ isOnline: true, peerId: id });
-                  toast({ title: "You are now online.", description: `Your Peer ID: ${id}` });
-              });
-              peer.on('error', (err) => {
-                  console.error("PeerJS error:", err);
-                  toast({ variant: 'destructive', title: "Connection Error", description: `Could not go online: ${err.message}` });
-              });
-              
-          } catch (e) {
-              console.error("Failed to go online", e);
-          }
-      } else { // Going offline
-          peerRef.current?.destroy();
-          peerRef.current = null;
-          await updateUser({ isOnline: false, peerId: "" });
-          toast({ title: "You are now offline." });
-      }
+      await updateUser({ isOnline: newStatus });
+      toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
   };
 
   useEffect(() => {
@@ -99,7 +72,6 @@ export default function DoctorPage() {
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
                 isOnline: data.isOnline || false,
-                peerId: data.peerId || null,
              } as Doctor
         });
         
@@ -119,9 +91,6 @@ export default function DoctorPage() {
 
     return () => {
         unsubscribe();
-        if (peerRef.current) {
-            peerRef.current.destroy();
-        }
     };
   }, [toast]);
 
@@ -132,19 +101,9 @@ export default function DoctorPage() {
         router.push('/login');
         return;
     }
-
-    // Re-fetch doctor's doc to get the latest peerId, ensuring it's fresh
-    const doctorDocRef = doc(db, "doctors", doctor.id);
-    const doctorSnap = await getDoc(doctorDocRef);
-
-    if (!doctorSnap.exists() || !doctorSnap.data()?.isOnline || !doctorSnap.data()?.peerId) {
-        toast({ variant: "destructive", title: "Doctor Offline", description: "The doctor is currently not available for calls. Please try again in a moment." });
-        return;
-    }
     
-    const remotePeerId = doctorSnap.data()?.peerId;
-    console.log(`Attempting to call doctor ${doctor.name} with latest Peer ID: ${remotePeerId}`);
-    router.push(`/video-call/${remotePeerId}`);
+    // The channel for the call is the doctor's unique ID
+    router.push(`/video-call/${doctor.id}`);
   }
 
   const getInitials = (name: string) => {
@@ -228,5 +187,3 @@ export default function DoctorPage() {
     </div>
   );
 }
-
-    

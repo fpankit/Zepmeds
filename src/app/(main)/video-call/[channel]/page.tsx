@@ -6,8 +6,8 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const PeerVideoPlayer = dynamic(
-    () => import('@/components/features/peer-video-player').then((mod) => mod.PeerVideoPlayer),
+const AgoraVideoPlayer = dynamic(
+    () => import('@/components/features/agora-video-player').then((mod) => mod.AgoraVideoPlayer),
     { 
         ssr: false,
         loading: () => (
@@ -39,7 +39,7 @@ const PeerVideoPlayer = dynamic(
 export default function VideoCallPage() {
     return (
         <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-gray-900"><Loader2 className="h-8 w-8 animate-spin text-white"/></div>}>
-            <PeerVideoPlayer />
+            <AgoraVideoPlayer />
         </Suspense>
     )
 }
