@@ -7,15 +7,34 @@ import AgoraRTC, {
   IAgoraRTCRemoteUser,
   IMicrophoneAudioTrack,
   ICameraVideoTrack,
+  AgoraRTCError,
 } from 'agora-rtc-sdk-ng';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, Phone } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Phone, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '../ui/skeleton';
 
 const APP_ID = 'e946e4b051444cc9988aa908a8f3c9de';
+
+// This functional component renders the remote user's video stream.
+const RemotePlayer = ({ user }: { user: IAgoraRTCRemoteUser }) => {
+  const videoRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current && user.hasVideo) {
+      user.videoTrack?.play(videoRef.current);
+    }
+    return () => {
+      user.videoTrack?.stop();
+    };
+  }, [user]);
+
+  return <div ref={videoRef} className="h-full w-full object-cover" />;
+};
+
 
 export function AgoraVideoPlayer() {
   const { user } = useAuth();
@@ -26,111 +45,113 @@ export function AgoraVideoPlayer() {
   const channelName = params.channel as string;
 
   const client = useRef<IAgoraRTCClient | null>(null);
-  const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
-  const localVideoTrack = useRef<ICameraVideoTrack | null>(null);
+  const localTracks = useRef<{ audio: IMicrophoneAudioTrack | null; video: ICameraVideoTrack | null }>({
+    audio: null,
+    video: null,
+  });
   
   const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
-  const [isJoined, setIsJoined] = useState(false);
-  const [micOn, setMic] = useState(true);
-  const [cameraOn, setCamera] = useState(true);
-
-
+  const [isMicOn, setMicOn] = useState(true);
+  const [isCameraOn, setCameraOn] = useState(true);
+  const [isConnecting, setIsConnecting] = useState(true);
+  const [isLeaving, setIsLeaving] = useState(false);
+  
   const leave = useCallback(async () => {
-    if (localAudioTrack.current) {
-        localAudioTrack.current.close();
-        localAudioTrack.current = null;
-    }
-    if (localVideoTrack.current) {
-        localVideoTrack.current.close();
-        localVideoTrack.current = null;
-    }
+      if (isLeaving) return;
+      setIsLeaving(true);
 
-    if (client.current) {
-        if(isJoined) {
-          await client.current.unpublish();
-        }
-        await client.current.leave();
-    }
-    setIsJoined(false);
-    setRemoteUsers([]);
-    router.push('/home');
-  }, [router, isJoined]);
+      // Stop and close local tracks
+      if (localTracks.current.audio) {
+          localTracks.current.audio.stop();
+          localTracks.current.audio.close();
+          localTracks.current.audio = null;
+      }
+      if (localTracks.current.video) {
+          localTracks.current.video.stop();
+          localTracks.current.video.close();
+          localTracks.current.video = null;
+      }
+
+      // Leave the channel
+      if (client.current && client.current.connectionState === 'CONNECTED') {
+          await client.current.leave();
+      }
+      
+      setRemoteUsers([]);
+      setIsConnecting(true);
+      router.push('/home');
+  }, [router, isLeaving]);
 
 
-  const join = useCallback(async () => {
-    if (!user || !channelName) {
-      toast({ variant: 'destructive', title: "Missing Information", description: "User or channel not found." });
-      return;
+  useEffect(() => {
+    if (!user || !channelName || client.current) {
+        return;
     }
     
-    try {
-      client.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    // Initialize the client once
+    client.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    const agoraClient = client.current;
 
-      const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
-        await client.current!.subscribe(user, mediaType);
-        if (mediaType === 'video') {
-            setRemoteUsers(Array.from(client.current!.remoteUsers));
-        }
-        if (mediaType === 'audio') {
+    const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
+        await agoraClient.subscribe(user, mediaType);
+        setRemoteUsers(Array.from(agoraClient.remoteUsers));
+         if (mediaType === 'audio') {
           user.audioTrack?.play();
         }
-      };
-
-      const handleUserUnpublished = (user: IAgoraRTCRemoteUser) => {
-        setRemoteUsers(prevUsers => prevUsers.filter(u => u.uid !== user.uid));
-      };
-      
-      const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
-          setRemoteUsers(prevUsers => prevUsers.filter(u => u.uid !== user.uid));
-      };
-
-      client.current.on('user-published', handleUserPublished);
-      client.current.on('user-unpublished', handleUserUnpublished);
-      client.current.on('user-left', handleUserLeft);
-      
-      const uid = user.isDoctor ? Number(user.id.replace(/\D/g, '').slice(0, 5)) : Math.floor(Math.random() * 20000);
-      
-      await client.current.join(APP_ID, channelName, null, uid);
-
-      [localAudioTrack.current, localVideoTrack.current] = await AgoraRTC.createMicrophoneAndCameraTracks();
-
-      await client.current.publish([localAudioTrack.current, localVideoTrack.current]);
-
-      localVideoTrack.current.play('local-player');
-      setIsJoined(true);
-      
-    } catch (error: any) {
-      if (error?.code === 'WS_ABORT') {
-        console.warn("Join operation was aborted, likely due to a quick leave. This is expected in dev with Strict Mode.");
-        return;
-      }
-      console.error('Agora join error:', error);
-      toast({ variant: 'destructive', title: "Connection Failed", description: error.message });
-    }
-  }, [user, channelName, toast]);
-  
-  useEffect(() => {
-    if (user && channelName) {
-        join();
-    }
-    
-    return () => {
-      leave();
     };
-  }, [user, channelName, join, leave]);
+
+    const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
+        setRemoteUsers(prevUsers => prevUsers.filter(u => u.uid !== user.uid));
+    };
+
+    const joinChannel = async () => {
+        try {
+            agoraClient.on('user-published', handleUserPublished);
+            agoraClient.on('user-left', handleUserLeft);
+
+            const uid = user.isDoctor ? Number(user.id.replace(/\D/g, '').slice(0, 5)) : Math.floor(Math.random() * 20000);
+            
+            await agoraClient.join(APP_ID, channelName, null, uid);
+
+            const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+            localTracks.current.audio = audioTrack;
+            localTracks.current.video = videoTrack;
+            
+            await agoraClient.publish([audioTrack, videoTrack]);
+            
+            videoTrack.play('local-player');
+            setIsConnecting(false);
+
+        } catch (error) {
+            console.error('Agora join error:', error);
+            if (error instanceof AgoraRTCError && error.code !== 'OPERATION_ABORTED') {
+                 toast({ variant: 'destructive', title: "Connection Failed", description: error.message });
+            }
+            // In case of error, attempt a clean leave to reset state
+            await leave();
+        }
+    };
+
+    joinChannel();
+
+    return () => {
+        leave();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, channelName, toast]);
   
 
     const handleMicToggle = async () => {
-        if (localAudioTrack.current) {
-            await localAudioTrack.current.setMuted(micOn);
-            setMic(!micOn);
+        if (localTracks.current.audio) {
+            await localTracks.current.audio.setMuted(!isMicOn);
+            setMicOn(!isMicOn);
         }
     };
 
     const handleCameraToggle = async () => {
-         if (localVideoTrack.current) {
-            await localVideoTrack.current.setMuted(cameraOn);
-            setCamera(!cameraOn);
+         if (localTracks.current.video) {
+            await localTracks.current.video.setMuted(!isCameraOn);
+            setCameraOn(!isCameraOn);
         }
     };
     
@@ -139,36 +160,30 @@ export function AgoraVideoPlayer() {
       <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-700 px-4">
         <h1 className="font-semibold">Zepmeds Video Consultation</h1>
         <div className="text-sm text-gray-400">
-          Status: <span className={cn(isJoined && 'text-green-400')}>{isJoined ? 'Connected' : 'Connecting...'}</span>
+          Status: <span className={cn(!isConnecting && 'text-green-400')}>{isConnecting ? 'Connecting...' : 'Connected'}</span>
         </div>
       </header>
 
       <main className="flex flex-1 flex-col gap-4 p-4 md:flex-row">
         <div className="relative flex-1 rounded-lg bg-black overflow-hidden">
-             {remoteUsers.length > 0 ? (
-                  remoteUsers.map(user => {
-                      const RemotePlayer = () => {
-                        const videoRef = useRef<HTMLDivElement>(null);
-                        useEffect(() => {
-                          if (videoRef.current && user.videoTrack) {
-                            user.videoTrack.play(videoRef.current);
-                          }
-                          return () => {
-                            user.videoTrack?.stop();
-                          };
-                        }, [user]);
-
-                        return <div ref={videoRef} className="h-full w-full object-cover" />;
-                      };
-                      return <RemotePlayer key={user.uid}/>
-                  })
+            {isConnecting ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                     <Loader2 className="h-8 w-8 animate-spin" />
+                 </div>
+            ) : remoteUsers.length > 0 ? (
+                  remoteUsers.map(user => <RemotePlayer key={user.uid} user={user} />)
               ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                      <p className="text-gray-300">Waiting for other user to join...</p>
                  </div>
               )}
-            <div className="absolute bottom-4 right-4 h-32 w-48 rounded-lg border-2 border-gray-600 bg-black overflow-hidden">
+            <div className="absolute bottom-4 right-4 h-32 w-48 rounded-lg border-2 border-gray-600 bg-black overflow-hidden z-10">
               <div id="local-player" className="h-full w-full object-cover" />
+               {!isCameraOn && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <VideoOff className="h-8 w-8 text-white" />
+                </div>
+              )}
             </div>
         </div>
       </main>
@@ -177,28 +192,29 @@ export function AgoraVideoPlayer() {
         <Button
           variant="ghost"
           size="icon"
-          className={cn('h-12 w-12 rounded-full', micOn ? 'bg-gray-600' : 'bg-red-600')}
+          className={cn('h-12 w-12 rounded-full', isMicOn ? 'bg-gray-600 hover:bg-gray-700' : 'bg-red-600 hover:bg-red-700')}
           onClick={handleMicToggle}
-          disabled={!isJoined}
+          disabled={isConnecting}
         >
-          {micOn ? <Mic /> : <MicOff />}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn('h-12 w-12 rounded-full', cameraOn ? 'bg-gray-600' : 'bg-red-600')}
-          onClick={handleCameraToggle}
-          disabled={!isJoined}
-        >
-          {cameraOn ? <Video /> : <VideoOff />}
+          {isMicOn ? <Mic /> : <MicOff />}
         </Button>
         <Button
           variant="destructive"
           size="icon"
           className="h-16 w-16 rounded-full"
           onClick={leave}
+          disabled={isLeaving}
         >
-          <Phone className="rotate-[135deg]" />
+           {isLeaving ? <Loader2 className="animate-spin"/> : <Phone className="rotate-[135deg]" />}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn('h-12 w-12 rounded-full', isCameraOn ? 'bg-gray-600 hover:bg-gray-700' : 'bg-red-600 hover:bg-red-700')}
+          onClick={handleCameraToggle}
+          disabled={isConnecting}
+        >
+          {isCameraOn ? <Video /> : <VideoOff />}
         </Button>
       </footer>
     </div>
