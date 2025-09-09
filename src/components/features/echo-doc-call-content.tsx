@@ -159,7 +159,7 @@ export function EchoDocCallContent() {
         };
         greet();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [doctorName, initialSymptoms]);
+    }, [doctorName, initialSymptoms, speak]);
     
     // Setup Speech Recognition
     useEffect(() => {
