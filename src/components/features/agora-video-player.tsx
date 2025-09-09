@@ -64,17 +64,18 @@ function VideoCallPlayerContent() {
             }
 
             try {
-                // For simplicity in this fix, we are using a default appId and channel from the URL.
-                // A production app would fetch this from a secure backend or Firestore.
-                console.log(`Using channel: ${callId}`);
+                // In a real app, you would fetch token and other details from Firestore or your backend
+                // For this example, we'll use the callId as the channel name and a default App ID.
+                // A token would be required for production environments.
+                console.log(`Setting up call for channel: ${callId}`);
                 setCallDetails({
                     appId: defaultAppId,
                     channelName: callId,
-                    token: null // Using token-less for simplicity, can be fetched if needed
+                    token: null // Token can be null for testing, but required for production
                 });
 
             } catch (err) {
-                 console.error("Error fetching call details:", err);
+                 console.error("Error setting up call details:", err);
                  setError("Could not retrieve call information. Please try again.");
             } finally {
                  setIsLoading(false);
@@ -88,11 +89,13 @@ function VideoCallPlayerContent() {
     const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn);
     const { localCameraTrack } = useLocalCameraTrack(cameraOn);
 
+    // This is the critical change: `uid` is explicitly set to `null`
+    // to let Agora SDK assign an integer UID automatically.
     useJoin({ 
         appid: callDetails?.appId!, 
         channel: callDetails?.channelName!, 
         token: callDetails?.token,
-        uid: null // Let Agora assign UID automatically
+        uid: null 
     }, isJoined);
 
     usePublish([localMicrophoneTrack, localCameraTrack], isJoined);
@@ -113,6 +116,7 @@ function VideoCallPlayerContent() {
     };
     
     useEffect(() => {
+        // We only attempt to join the call after we have successfully fetched the call details.
         if (callDetails && !isJoined) {
             setIsJoined(true);
         }
@@ -178,7 +182,13 @@ function VideoCallPlayerContent() {
                     {/* Remote Users Video */}
                     {remoteUsers.map((user) => (
                         <div key={user.uid} className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                            <RemoteUser user={user} playVideo={user.hasVideo} playAudio={user.hasAudio} className="w-full h-full object-cover" />
+                            {user.hasVideo ? (
+                                <RemoteUser user={user} playVideo={true} playAudio={true} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+                                    <CameraOff className="h-10 w-10 text-gray-600" />
+                                </div>
+                            )}
                             <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">
                                 <p>Doctor</p>
                             </div>
