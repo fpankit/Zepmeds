@@ -117,7 +117,7 @@ export function WebRTCVideoPlayer() {
         if (user.isDoctor) {
             // Doctor: Answer the call
             const callSnap = await getDoc(callDoc);
-            if(isCancelled || !callSnap.exists() || !callSnap.data().offer || pc.current.signalingState !== 'stable') return;
+            if (isCancelled || !callSnap.exists() || !callSnap.data().offer || pc.current.signalingState !== 'stable') return;
             
             await pc.current.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
             
@@ -188,17 +188,7 @@ export function WebRTCVideoPlayer() {
     return () => {
       isCancelled = true;
       unsubscribes.forEach(unsub => unsub());
-      
-      // Cleanup media tracks, but do not close the connection here to avoid race conditions.
-      // The connection is closed explicitly on hangUp.
-      if (localStream.current) {
-        localStream.current.getTracks().forEach(track => track.stop());
-        localStream.current = null;
-      }
-      if (remoteStream.current) {
-        remoteStream.current.getTracks().forEach(track => track.stop());
-        remoteStream.current = null;
-      }
+      hangUp();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, callId]);
