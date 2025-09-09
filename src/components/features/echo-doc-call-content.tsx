@@ -121,6 +121,7 @@ export function EchoDocCallContent() {
      const handleSendTranscript = useCallback(async (text: string) => {
         if (!text) return;
         setIsListening(false);
+        recognitionRef.current?.stop();
         setMessages(prev => [...prev, { sender: 'user', text }]);
         setIsProcessing(true);
         
@@ -193,9 +194,11 @@ export function EchoDocCallContent() {
         };
 
         recognition.onend = () => {
-             setIsListening(false);
+             if (isListening) {
+                 recognitionRef.current?.start();
+             }
         };
-
+        
         recognition.onerror = (event: any) => {
             console.error('Speech recognition error:', event.error);
             if (event.error !== 'no-speech') {
@@ -215,13 +218,14 @@ export function EchoDocCallContent() {
                 recognitionRef.current.stop();
             }
         };
-    }, [toast, handleSendTranscript]);
+    }, [toast, handleSendTranscript, isListening]);
 
 
     
     const handleMicToggle = () => {
         if (isListening) {
             recognitionRef.current?.stop();
+            setIsListening(false);
         } else {
             setTranscript('');
             recognitionRef.current?.start();

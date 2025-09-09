@@ -5,6 +5,7 @@
  *
  * This flow is designed for a conversational medical AI that can handle greetings,
  * answer general health questions, and provide medical information in a conversational manner.
+ * It now internally handles language detection and translation.
  *
  * @interface EchoDocInput - Represents the input for the EchoDoc flow.
  * @interface EchoDocOutput - Represents the output of the EchoDoc flow.
