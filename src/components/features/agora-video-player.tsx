@@ -28,12 +28,17 @@ interface AgoraVideoPlayerProps {
 // Helper function to convert Firebase UID -> valid Agora UID (0–65535)
 function getAgoraUid(firebaseUid: string | undefined): number | null {
     if (!firebaseUid) return null; // Let agora assign if no user
-    let hash = 0;
-    for (let i = 0; i < firebaseUid.length; i++) {
-        hash = (hash << 5) - hash + firebaseUid.charCodeAt(i);
-        hash |= 0;
+    try {
+        let hash = 0;
+        for (let i = 0; i < firebaseUid.length; i++) {
+            hash = (hash << 5) - hash + firebaseUid.charCodeAt(i);
+            hash |= 0; // Convert to 32bit integer
+        }
+        return Math.abs(hash % 65535);
+    } catch (error) {
+        console.error("Failed to hash Firebase UID, falling back to null:", error);
+        return null;
     }
-    return Math.abs(hash % 65535);
 }
 
 export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayerProps) {
@@ -74,6 +79,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
     const { localCameraTrack } = useLocalCameraTrack(cameraOn && hasPermission);
 
     const agoraUid = getAgoraUid(user?.id);
+    console.log(`[Agora] Joining channel "${channelName}" with UID:`, agoraUid);
 
     useJoin(
         {
