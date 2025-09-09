@@ -46,7 +46,6 @@ const DoctorCardSkeleton = () => (
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCalling, setIsCalling] = useState<string | null>(null);
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -86,47 +85,6 @@ export default function DoctorPage() {
     return () => unsubscribe();
   }, [toast]);
 
-
-  const handleInitiateCall = async (doctor: Doctor) => {
-      if (!user) {
-          toast({ variant: 'destructive', title: "Login Required", description: "You must be logged in to book an appointment." });
-          router.push('/login');
-          return;
-      }
-
-      setIsCalling(doctor.id);
-
-      try {
-          const callData = {
-              patientId: user.id,
-              patientName: `${user.firstName} ${user.lastName}`,
-              doctorId: doctor.id,
-              doctorName: doctor.name,
-              doctorImage: doctor.image,
-              doctorSpecialty: doctor.specialty,
-              status: "calling",
-              createdAt: serverTimestamp(),
-          };
-
-          const docRef = await addDoc(collection(db, "calls"), callData);
-          
-          toast({
-              title: "Calling Doctor",
-              description: `Waiting for ${doctor.name} to respond.`,
-          });
-          
-          router.push(`/call-status/${docRef.id}`);
-
-      } catch (error) {
-          console.error("Failed to initiate call:", error);
-          toast({
-              variant: "destructive",
-              title: "Calling Failed",
-              description: "There was a problem initiating your call. Please try again.",
-          });
-          setIsCalling(null);
-      }
-  }
 
   const getInitials = (name: string) => {
     if (!name) return 'Dr';
@@ -177,15 +135,10 @@ export default function DoctorPage() {
                     </div>
                     <div className="flex gap-2 mt-4">
                         <Button 
-                            className="w-full bg-green-600 hover:bg-green-700" 
-                            disabled={!doctor.isOnline || !!isCalling}
-                            onClick={() => handleInitiateCall(doctor)}
+                            className="w-full" 
+                            disabled={!doctor.isOnline}
                         >
-                            {isCalling === doctor.id ? (
-                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Calling...</>
-                            ) : (
-                                <><Video className="mr-2 h-4 w-4" /> Call Now</>
-                            )}
+                          <Video className="mr-2 h-4 w-4" /> Book Appointment
                         </Button>
                     </div>
                     </CardContent>
