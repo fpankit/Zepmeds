@@ -5,15 +5,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
-import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
+import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { collection, query, onSnapshot, orderBy, getDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import type { Peer } from 'peerjs';
 
 interface Doctor {
   id: string;
@@ -23,6 +24,7 @@ interface Doctor {
   image: string;
   dataAiHint: string;
   isOnline: boolean;
+  peerId?: string;
 }
 
 const DoctorCardSkeleton = () => (
@@ -46,10 +48,42 @@ const DoctorCardSkeleton = () => (
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  
+
+  const peerRef = useRef<Peer | null>(null);
+
+  const handleToggleOnline = async () => {
+      if (!user || !user.isDoctor) return;
+
+      const newStatus = !user.isOnline;
+      if (newStatus) { // Going online
+          try {
+              const { Peer } = await import('peerjs');
+              const peer = new Peer();
+              peerRef.current = peer;
+
+              peer.on('open', async (id) => {
+                  await updateUser({ isOnline: true, peerId: id });
+                  toast({ title: "You are now online.", description: `Your Peer ID: ${id}` });
+              });
+              peer.on('error', (err) => {
+                  console.error("PeerJS error:", err);
+                  toast({ variant: 'destructive', title: "Connection Error", description: `Could not go online: ${err.message}` });
+              });
+              
+          } catch (e) {
+              console.error("Failed to go online", e);
+          }
+      } else { // Going offline
+          peerRef.current?.destroy();
+          peerRef.current = null;
+          await updateUser({ isOnline: false, peerId: "" });
+          toast({ title: "You are now offline." });
+      }
+  };
+
   useEffect(() => {
     setIsLoading(true);
     const doctorsQuery = query(collection(db, "doctors"), orderBy("displayName"));
@@ -65,6 +99,7 @@ export default function DoctorPage() {
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
                 isOnline: data.isOnline || false,
+                peerId: data.peerId || null,
              } as Doctor
         });
         
@@ -82,19 +117,33 @@ export default function DoctorPage() {
         setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribe();
+        if (peerRef.current) {
+            peerRef.current.destroy();
+        }
+    };
   }, [toast]);
 
 
-  const handleStartCall = (doctor: Doctor) => {
+  const handleStartCall = async (doctor: Doctor) => {
     if (!user || user.isGuest) {
         toast({ variant: 'destructive', title: 'Please login', description: 'You must be logged in to start a call.'});
         router.push('/login');
         return;
     }
-    // The patient will try to call the doctor. The doctor's ID is the channel.
-    const doctorPeerId = doctor.id;
-    router.push(`/video-call/${doctorPeerId}?isCaller=true`);
+    
+    // Patient fetches the doctor's current Peer ID from Firestore
+    const doctorDocRef = doc(db, "doctors", doctor.id);
+    const doctorSnap = await getDoc(doctorDocRef);
+
+    if (!doctorSnap.exists() || !doctorSnap.data()?.isOnline || !doctorSnap.data()?.peerId) {
+        toast({ variant: "destructive", title: "Doctor Offline", description: "The doctor is currently not available for calls." });
+        return;
+    }
+    
+    const remotePeerId = doctorSnap.data().peerId;
+    router.push(`/video-call/${remotePeerId}?isCaller=true`);
   }
 
   const getInitials = (name: string) => {
@@ -116,6 +165,18 @@ export default function DoctorPage() {
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
         <Input placeholder="Search by doctor or specialty" className="pl-10" />
       </div>
+
+      {user?.isDoctor && (
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <h3 className="font-bold">Doctor Mode</h3>
+            <p className="text-sm text-muted-foreground">You are currently {user.isOnline ? 'online' : 'offline'}.</p>
+          </div>
+          <Button onClick={handleToggleOnline} variant={user.isOnline ? "destructive" : "default"}>
+            {user.isOnline ? 'Go Offline' : 'Go Online'}
+          </Button>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (

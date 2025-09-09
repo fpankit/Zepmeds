@@ -29,6 +29,13 @@ export interface User {
   referralCode?: string;
   addresses: Address[];
   isGuest?: boolean;
+  // Doctor specific fields
+  isDoctor?: boolean;
+  isOnline?: boolean;
+  peerId?: string;
+  specialty?: string;
+  about?: string;
+  photoURL?: string;
 }
 
 interface NewUserDetails {
@@ -86,11 +93,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userDocRef = doc(db, "users", uid);
     const userDocSnap = await getDoc(userDocRef);
 
+    let finalUser: User;
+
     if (userDocSnap.exists()) {
       // User exists, log them in
-      const userData = { id: userDocSnap.id, ...userDocSnap.data() } as User;
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
+      finalUser = { id: userDocSnap.id, ...userDocSnap.data() } as User;
     } else {
       // New user, sign them up
       if (!newUserDetails) {
@@ -107,35 +114,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           state: 'Haryana',
           address: 'A-123, Main Street, Gurugram, Haryana, 122001'
       };
-      const newUser: User = {
+      finalUser = {
           id: uid,
           ...newUserDetails,
           addresses: [defaultAddress],
           isGuest: false,
+          isDoctor: false, // Default to not a doctor
       };
-      await setDoc(userDocRef, newUser);
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
+      await setDoc(userDocRef, finalUser);
     }
+
+    if (finalUser.isDoctor) {
+        const doctorDocRef = doc(db, "doctors", finalUser.id);
+        const doctorSnap = await getDoc(doctorDocRef);
+        if (doctorSnap.exists()) {
+            finalUser = { ...finalUser, ...doctorSnap.data() };
+        }
+    }
+
+    setUser(finalUser);
+    localStorage.setItem('user', JSON.stringify(finalUser));
     setLoading(false);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (user && user.isDoctor) {
+        // Doctor goes offline on logout
+        const doctorDocRef = doc(db, "doctors", user.id);
+        await updateDoc(doctorDocRef, { isOnline: false, peerId: null });
+    }
     localStorage.removeItem('user');
     setUser(createGuestUser());
   };
 
   const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
-    if (!user) return;
+    if (!user || user.isGuest) return;
 
-    const updatedUser: User = { ...user, ...userData, isGuest: user.isGuest };
+    const updatedUser: User = { ...user, ...userData };
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
 
-    // Only update Firestore if the user is not a guest
-    if (!user.isGuest) {
-        const userDocRef = doc(db, "users", user.id);
-        await updateDoc(userDocRef, userData);
+    const userDocRef = doc(db, "users", user.id);
+    await updateDoc(userDocRef, userData);
+
+    if (user.isDoctor) {
+        const doctorDocRef = doc(db, "doctors", user.id);
+        // Only update fields relevant to the doctors collection
+        const doctorData: Partial<User> = {};
+        if ('isOnline' in userData) doctorData.isOnline = userData.isOnline;
+        if ('peerId' in userData) doctorData.peerId = userData.peerId;
+        
+        if(Object.keys(doctorData).length > 0) {
+           await updateDoc(doctorDocRef, doctorData);
+        }
     }
   };
 

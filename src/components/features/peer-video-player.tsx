@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import type { Peer } from 'peerjs';
+import type { Peer, MediaConnection } from 'peerjs';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, Phone } from 'lucide-react';
@@ -30,12 +30,17 @@ export function PeerVideoPlayer() {
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
+    const callRef = useRef<MediaConnection | null>(null);
     
     const isCaller = searchParams.get('isCaller') === 'true';
-    const channelId = params.channel as string; // The doctor's ID, used as the stable Peer ID
+    // The channel is now the specific, ephemeral Peer ID of the person to call.
+    const remotePeerId = params.channel as string; 
+    const [patientIdForDoctor, setPatientIdForDoctor] = useState<string | null>(null);
+
 
     const endCall = useCallback(() => {
         console.log("Ending call.");
+        callRef.current?.close();
         setCallStatus('ended');
         localStream?.getTracks().forEach(track => track.stop());
         peer?.destroy();
@@ -49,43 +54,31 @@ export function PeerVideoPlayer() {
 
         const initializePeer = async () => {
             const { Peer } = await import('peerjs');
-            // Doctor uses their own ID as the peer ID. Patient gets a random one.
-            const peerId = !isCaller ? channelId : undefined; 
+            const peerInstance = new Peer();
+
+            peerInstance.on('open', (id) => {
+                console.log('My peer ID is: ' + id);
+                setMyPeerId(id);
+                setCallStatus('ready');
+            });
             
-            try {
-                const peerInstance = new Peer(peerId);
+            peerInstance.on('error', (err: any) => {
+                console.error('PeerJS error:', err);
+                toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.type}` });
+                setCallStatus('error');
+            });
 
-                peerInstance.on('open', (id) => {
-                    console.log('My peer ID is: ' + id);
-                    setMyPeerId(id);
-                    setCallStatus('ready');
-                });
-                
-                peerInstance.on('error', (err: any) => {
-                    console.error('PeerJS error:', err);
-                    if (err.type === 'unavailable-id') {
-                        toast({ variant: 'destructive', title: 'Call Error', description: `Doctor ID ${channelId} is already in a call.` });
-                    } else {
-                         toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.type}` });
-                    }
-                    setCallStatus('error');
-                });
-
-                setPeer(peerInstance);
-
-            } catch (e) {
-                console.error("Failed to initialize PeerJS", e);
-                toast({ variant: 'destructive', title: 'Initialization Error', description: "Could not start video call service."});
-            }
+            setPeer(peerInstance);
         };
 
         initializePeer();
 
         return () => {
+            callRef.current?.close();
             peer?.destroy();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, channelId, isCaller]);
+    }, [user]);
 
     // Get user media as soon as component loads
     useEffect(() => {
@@ -106,11 +99,13 @@ export function PeerVideoPlayer() {
 
 
     const initiateCall = useCallback((remoteId: string, peerInstance: Peer, stream: MediaStream) => {
+        if (!user || user.isGuest) return;
         setCallStatus('calling');
         console.log(`Calling remote peer: ${remoteId}`);
 
         try {
-            const call = peerInstance.call(remoteId, stream);
+            const call = peerInstance.call(remoteId, stream, { metadata: { callerId: user.id }});
+            callRef.current = call;
             
             call.on('stream', (remoteStream) => {
                 console.log('Received remote stream from answered call');
@@ -129,23 +124,27 @@ export function PeerVideoPlayer() {
             console.error("Error initiating call:", e);
             endCall();
         }
-    }, [endCall, toast]);
+    }, [endCall, toast, user]);
     
-    // If we are the caller, initiate the call once we have a Peer ID and local stream
+    // If we are the caller, initiate the call once ready.
     useEffect(() => {
-        if (isCaller && peer && localStream && myPeerId && callStatus === 'ready') {
-            initiateCall(channelId, peer, localStream);
+        if (isCaller && peer && localStream && myPeerId && callStatus === 'ready' && remotePeerId) {
+            initiateCall(remotePeerId, peer, localStream);
         }
-    }, [isCaller, peer, localStream, myPeerId, callStatus, channelId, initiateCall]);
+    }, [isCaller, peer, localStream, myPeerId, callStatus, remotePeerId, initiateCall]);
 
-    // Set up listener for incoming calls
+    // Set up listener for incoming calls (for the doctor)
     useEffect(() => {
-        if (peer && localStream && !isCaller) {
+        if (peer && localStream) {
             peer.on('call', (call) => {
                 console.log('Receiving call from', call.peer);
+                if (call.metadata && call.metadata.callerId) {
+                    setPatientIdForDoctor(call.metadata.callerId);
+                }
+
                 setCallStatus('receiving');
-                
                 call.answer(localStream); // Answer the call with our local stream.
+                callRef.current = call;
                 
                 call.on('stream', (remoteStream) => {
                     console.log('Received remote stream');
@@ -156,7 +155,7 @@ export function PeerVideoPlayer() {
                 call.on('close', endCall);
             });
         }
-    }, [peer, localStream, isCaller, endCall]);
+    }, [peer, localStream, endCall]);
 
     // Set video streams
     useEffect(() => {
@@ -215,7 +214,7 @@ export function PeerVideoPlayer() {
                 </div>
 
                  <aside className="w-full shrink-0 md:w-80">
-                     <PatientProfile patientId={isCaller ? user?.id : null} />
+                     <PatientProfile patientId={patientIdForDoctor} />
                 </aside>
             </main>
 

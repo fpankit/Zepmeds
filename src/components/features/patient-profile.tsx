@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import { User } from "@/context/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User as UserIcon, Calendar, Phone, Mail, FileText, History } from "lucide-react";
+import { User as UserIcon, Calendar, Phone, Mail, FileText, History, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "../ui/separator";
 
@@ -22,6 +22,7 @@ export function PatientProfile({ patientId }: { patientId: string | null }) {
   useEffect(() => {
     if (!patientId) {
         setIsLoading(false);
+        setPatient(null);
         return;
     }
 
@@ -31,7 +32,7 @@ export function PatientProfile({ patientId }: { patientId: string | null }) {
         if (docSnap.exists()) {
             setPatient({ id: docSnap.id, ...docSnap.data() } as User);
         } else {
-            console.error("Patient document not found");
+            console.error("Patient document not found:", patientId);
             setPatient(null);
         }
         setIsLoading(false);
@@ -47,28 +48,26 @@ export function PatientProfile({ patientId }: { patientId: string | null }) {
 
   if (isLoading) {
     return (
-        <Card className="w-full h-full bg-gray-800 rounded-lg text-white">
-            <CardHeader><CardTitle>Patient Details</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-center gap-4">
-                    <Skeleton className="h-16 w-16 rounded-full bg-gray-700" />
-                    <div className="space-y-2 flex-1">
-                        <Skeleton className="h-5 w-3/4 bg-gray-700" />
-                        <Skeleton className="h-4 w-1/2 bg-gray-700" />
-                    </div>
-                </div>
-                <Skeleton className="h-4 w-full bg-gray-700" />
-                <Skeleton className="h-4 w-full bg-gray-700" />
-                <Skeleton className="h-4 w-full bg-gray-700" />
-            </CardContent>
+        <Card className="w-full h-full bg-gray-800 rounded-lg text-white p-4">
+           <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-6 w-6 animate-spin" />
+           </div>
         </Card>
     )
   }
   
+  if (!patientId) {
+      return (
+          <Card className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center text-white">
+             <p className="text-gray-400">Waiting for patient to connect...</p>
+          </Card>
+      )
+  }
+
   if (!patient) {
       return (
           <Card className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center text-white">
-             <p>Could not load patient details.</p>
+             <p className="text-destructive">Could not load patient details.</p>
           </Card>
     );
   }
