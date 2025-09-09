@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
@@ -66,12 +67,12 @@ const sponsorCards = [
 ]
 
 const trendingProducts = [
-  { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=1', dataAiHint: 'medicine pills' },
-  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=2', dataAiHint: 'antiseptic bottle' },
-  { id: 'prod3', name: 'Digital Thermometer', price: 250.00, category: ['Popular', 'Devices'], image: 'https://picsum.photos/200/200?random=3', dataAiHint: 'thermometer' },
-  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care', image: 'https://picsum.photos/200/200?random=4', dataAiHint: 'skincare product' },
-  { id: 'prod5', name: 'Acne Treatment Gel', price: 220.00, category: 'Skin Care', image: 'https://picsum.photos/200/200?random=5', dataAiHint: 'cream tube' },
-  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=6', dataAiHint: 'bandages' },
+  { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=1', dataAiHint: 'medicine pills', isRx: false },
+  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=2', dataAiHint: 'antiseptic bottle', isRx: false },
+  { id: 'prod3', name: 'Amoxicillin 250mg', price: 150.00, category: ['Popular', 'Antibiotics'], image: 'https://picsum.photos/200/200?random=3', dataAiHint: 'antibiotic pills', isRx: true },
+  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care', image: 'https://picsum.photos/200/200?random=4', dataAiHint: 'skincare product', isRx: false },
+  { id: 'prod5', name: 'Atorvastatin 10mg', price: 220.00, category: 'Heart', image: 'https://picsum.photos/200/200?random=5', dataAiHint: 'heart medicine', isRx: true },
+  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=6', dataAiHint: 'bandages', isRx: false },
 ];
 
 export default function HomePage() {
@@ -149,14 +150,19 @@ export default function HomePage() {
               <Card key={product.id} className="overflow-hidden">
                 <CardContent className="p-0 flex flex-col justify-between h-full">
                   <div>
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      width={200}
-                      height={200}
-                      className="w-full h-32 object-cover"
-                      data-ai-hint={product.dataAiHint}
-                    />
+                    <div className="relative">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        width={200}
+                        height={200}
+                        className="w-full h-32 object-cover"
+                        data-ai-hint={product.dataAiHint}
+                      />
+                      {product.isRx && (
+                          <Badge variant="destructive" className="absolute top-2 left-2">Rx</Badge>
+                      )}
+                    </div>
                     <div className="p-3">
                       <h4 className="font-bold text-sm truncate">{product.name}</h4>
                       <p className="text-xs text-muted-foreground mt-0.5">1 unit</p>

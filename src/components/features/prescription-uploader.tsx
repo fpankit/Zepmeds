@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, UploadCloud, FileText, X, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useCart } from "@/context/cart-context";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -26,29 +25,29 @@ const formSchema = z.object({
     ),
 });
 
-export function PrescriptionUploader() {
-  const [summary, setSummary] = useState<GeneratePrescriptionSummaryOutput | null>(null);
+interface PrescriptionUploaderProps {
+    onUploadSuccess: (summary: GeneratePrescriptionSummaryOutput) => void;
+}
+
+
+export function PrescriptionUploader({ onUploadSuccess }: PrescriptionUploaderProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { addToCart } = useCart();
-
 
   const form = useForm<z.infer<typeof formSchema>>();
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      form.setValue("prescription", [file]);
-      form.clearErrors("prescription");
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
       // Automatically submit after selecting a file
-      onSubmit({ prescription: file });
+      handleSubmit(file);
     }
   };
 
@@ -60,14 +59,13 @@ export function PrescriptionUploader() {
       reader.onerror = (error) => reject(error);
     });
 
-  async function onSubmit(values: { prescription: File }) {
+  async function handleSubmit(file: File) {
     setIsLoading(true);
-    setSummary(null);
 
     try {
-      const dataUri = await toBase64(values.prescription);
+      const dataUri = await toBase64(file);
       const result = await generatePrescriptionSummary({ prescriptionImageUri: dataUri });
-      setSummary(result);
+      onUploadSuccess(result);
     } catch (err) {
       console.error(err);
       toast({
@@ -79,26 +77,9 @@ export function PrescriptionUploader() {
       setIsLoading(false);
     }
   }
-  
-  const handleAddToCart = (med: { name: string; dosage: string; }) => {
-    // We don't have price info from OCR, so let's add a placeholder
-    const item = {
-      id: `prescribed-${med.name.replace(/\s+/g, '-')}-${Date.now()}`,
-      name: med.name,
-      price: 0, // Placeholder price
-      description: med.dosage,
-      quantity: 1,
-    };
-    addToCart(item);
-    toast({
-      title: "Added to cart",
-      description: `${item.name} has been added to your cart.`,
-    });
-  }
 
   const resetState = () => {
     setPreview(null);
-    setSummary(null);
     form.reset();
     if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -106,15 +87,14 @@ export function PrescriptionUploader() {
   }
 
   return (
-    <Card className="border-primary border-dashed">
-      <CardHeader>
-        <CardTitle>AI Prescription Reader</CardTitle>
-        <CardDescription>
-          Upload an image of your prescription to have our AI extract the medicines for you.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {!preview && (
+    <div>
+        {isLoading && (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground p-8">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <p>AI is analyzing your prescription...</p>
+              </div>
+        )}
+        {!preview && !isLoading && (
           <div
             className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary"
             onClick={() => fileInputRef.current?.click()}
@@ -137,55 +117,6 @@ export function PrescriptionUploader() {
         {form.formState.errors.prescription && (
              <p className="text-sm font-medium text-destructive">{form.formState.errors.prescription.message as string}</p>
         )}
-        
-        {preview && (
-          <div className="space-y-4">
-             <div className="relative w-full max-w-xs mx-auto">
-                <Image src={preview} alt="Prescription preview" width={300} height={200} className="rounded-md object-contain" />
-                <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-7 w-7 rounded-full" onClick={resetState}>
-                    <X className="h-4 w-4"/>
-                </Button>
-             </div>
-
-            {isLoading && (
-              <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <p>AI is analyzing your prescription...</p>
-              </div>
-            )}
-
-            {summary && (
-              <Card className="bg-card/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText />
-                    Extracted Medicines
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                     {(summary.medicines || []).map((med, index) => (
-                        <div key={index} className="flex justify-between items-center p-2 rounded-md bg-background">
-                            <div>
-                                <p className="font-semibold">{med.name}</p>
-                                <p className="text-sm text-muted-foreground">{med.dosage}</p>
-                            </div>
-                             <Button size="sm" variant="outline" onClick={() => handleAddToCart(med)}>
-                                <ShoppingCart className="mr-2 h-4 w-4" />
-                                Add to cart
-                            </Button>
-                        </div>
-                     ))}
-                      {(summary.medicines?.length === 0) && (
-                        <p className="text-muted-foreground">Could not extract any medicines from the prescription.</p>
-                      )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    </div>
   );
 }

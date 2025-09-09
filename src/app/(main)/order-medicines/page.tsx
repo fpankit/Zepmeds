@@ -27,7 +27,6 @@ import { cn } from '@/lib/utils';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/lib/types';
@@ -48,14 +47,6 @@ const categories = [
 
 const PRODUCTS_PER_PAGE = 8;
 
-const DynamicPrescriptionUploader = dynamic(
-  () => import('@/components/features/prescription-uploader').then(mod => mod.PrescriptionUploader),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-48 w-full" />
-  }
-)
-
 const ProductCardSkeleton = () => (
     <Card className="overflow-hidden">
         <CardContent className="p-0">
@@ -73,9 +64,7 @@ const ProductCardSkeleton = () => (
 );
 
 export default function OrderMedicinesPage() {
-  const [showUploader, setShowUploader] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const uploaderRef = useRef<HTMLDivElement>(null);
   const { cart, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
 
@@ -144,13 +133,6 @@ export default function OrderMedicinesPage() {
     }
   }, [entry, hasMore, isLoadingMore, fetchProducts, lastDoc, selectedCategory]);
 
-  const handleUploadClick = () => {
-    setShowUploader(true);
-    setTimeout(() => {
-        uploaderRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  }
-
   const handleAddToCart = (product: Product) => {
     addToCart({ ...product, quantity: 1, name: product.name, price: product.price, image: product.image });
     toast({
@@ -165,21 +147,6 @@ export default function OrderMedicinesPage() {
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
         <Input placeholder="Search for medicines..." className="pl-10" />
       </div>
-
-      <Card className="bg-card/80 p-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <FileText className="h-8 w-8 text-primary" />
-          <div>
-            <h3 className="font-semibold">Have a prescription?</h3>
-            <p className="text-sm text-muted-foreground">
-              Upload it and we'll handle the rest!
-            </p>
-          </div>
-        </div>
-        <Button onClick={handleUploadClick} variant="outline">Upload</Button>
-      </Card>
-      
-      {showUploader && <div ref={uploaderRef}><DynamicPrescriptionUploader /></div>}
 
       <div className="space-y-4">
         <h2 className="text-xl font-bold">Categories</h2>
@@ -237,6 +204,7 @@ export default function OrderMedicinesPage() {
                                     </div>
                                 )}
                                 {product.discount && <Badge className="absolute top-2 left-2 bg-red-500 text-white">{product.discount}</Badge>}
+                                {product.isRx && <Badge variant="destructive" className="absolute top-2 right-2">Rx</Badge>}
                             </div>
                             <div className="p-3 flex-1 flex flex-col justify-between">
                                 <div>

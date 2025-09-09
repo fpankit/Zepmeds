@@ -8,6 +8,7 @@ export type CartItem = {
   image?: string;
   dataAiHint?: string;
   description?: string;
+  isRx?: boolean;
 };
 
 export interface Product {
@@ -19,6 +20,7 @@ export interface Product {
     discount?: string;
     rating: number;
     category: string;
+    isRx?: boolean;
     image?: string; // Optional image field
     dataAiHint?: string;
 }

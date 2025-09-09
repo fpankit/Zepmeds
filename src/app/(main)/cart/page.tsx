@@ -1,20 +1,42 @@
 
 "use client";
 
+import { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/context/cart-context";
-import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Trash2, FileText, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { PrescriptionUploader } from '@/components/features/prescription-uploader';
+import { GeneratePrescriptionSummaryOutput } from '@/ai/flows/generate-prescription-summary';
+
+type PrescriptionStatus = 'needed' | 'uploaded' | 'approved' | 'rejected';
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
+  const [prescriptionSummary, setPrescriptionSummary] = useState<GeneratePrescriptionSummaryOutput | null>(null);
+  const [prescriptionStatus, setPrescriptionStatus] = useState<PrescriptionStatus>('needed');
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = subtotal > 0 ? 50 : 0;
   const total = subtotal + deliveryFee;
+
+  const hasRxItems = useMemo(() => cart.some(item => item.isRx), [cart]);
+  
+  // Simulate approval after a delay
+  const handlePrescriptionUploaded = (summary: GeneratePrescriptionSummaryOutput) => {
+      setPrescriptionSummary(summary);
+      setPrescriptionStatus('uploaded');
+      // Simulate admin approval
+      setTimeout(() => {
+          const isApproved = summary.medicines && summary.medicines.length > 0;
+          setPrescriptionStatus(isApproved ? 'approved' : 'rejected');
+      }, 3000);
+  };
+  
+  const isCheckoutDisabled = hasRxItems && prescriptionStatus !== 'approved';
 
   if (cart.length === 0) {
     return (
@@ -47,7 +69,10 @@ export default function CartPage() {
             {cart.map(item => (
               <div key={item.id} className="flex items-center gap-4">
                 <div className="flex-grow">
-                  <p className="font-semibold">{item.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold">{item.name}</p>
+                    {item.isRx && <span className="text-xs font-bold text-destructive border border-destructive px-1.5 py-0.5 rounded-sm">Rx</span>}
+                  </div>
                   <p className="text-sm text-muted-foreground">₹{item.price.toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -67,6 +92,47 @@ export default function CartPage() {
           </div>
         </CardContent>
       </Card>
+
+      {hasRxItems && (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <FileText className="text-primary"/> Prescription Required
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-3 rounded-md bg-yellow-500/10 border border-yellow-500/50">
+                    <AlertTriangle className="h-6 w-6 text-yellow-500"/>
+                    <p className="text-sm text-yellow-400">Your cart contains items that require a valid doctor's prescription.</p>
+                </div>
+                
+                {prescriptionStatus === 'needed' && <PrescriptionUploader onUploadSuccess={handlePrescriptionUploaded} />}
+                
+                {prescriptionStatus === 'uploaded' && (
+                     <div className="flex items-center gap-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/50">
+                        <Clock className="h-6 w-6 text-blue-500 animate-spin"/>
+                        <p className="text-sm text-blue-400">Your prescription has been uploaded and is pending verification. This may take a few moments.</p>
+                    </div>
+                )}
+                {prescriptionStatus === 'approved' && (
+                     <div className="flex items-center gap-3 p-3 rounded-md bg-green-500/10 border border-green-500/50">
+                        <CheckCircle className="h-6 w-6 text-green-500"/>
+                        <p className="text-sm text-green-400">Prescription approved! You can now proceed to checkout.</p>
+                    </div>
+                )}
+                 {prescriptionStatus === 'rejected' && (
+                     <div className="flex flex-col gap-3 p-3 rounded-md bg-destructive/10 border border-destructive/50">
+                        <div className="flex items-center gap-3">
+                            <AlertTriangle className="h-6 w-6 text-destructive"/>
+                            <p className="text-sm text-destructive">Prescription rejected. Please upload a valid and clear prescription.</p>
+                        </div>
+                        <Button variant="outline" onClick={() => setPrescriptionStatus('needed')}>Upload Again</Button>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader>
@@ -88,8 +154,10 @@ export default function CartPage() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button className="w-full" asChild>
-            <Link href="/checkout">Proceed to Checkout</Link>
+          <Button className="w-full" asChild={!isCheckoutDisabled} disabled={isCheckoutDisabled}>
+            <Link href="/checkout">
+              {isCheckoutDisabled ? (hasRxItems ? 'Waiting for Prescription Approval' : 'Proceed to Checkout') : 'Proceed to Checkout'}
+            </Link>
           </Button>
         </CardFooter>
       </Card>
