@@ -11,7 +11,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const noLayoutRoutes = ["/checkout", "/video-call", "/call-status", "/symptom-checker/results"];
+  const noLayoutRoutes = ["/checkout", "/video-call", "/call-status", "/symptom-checker/results", "/echo-doc/call"];
   
   const isLayoutVisible = !noLayoutRoutes.some(route => pathname.startsWith(route));
 

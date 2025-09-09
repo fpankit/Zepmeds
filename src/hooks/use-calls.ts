@@ -17,6 +17,17 @@ export interface Call {
   createdAt: any;
 }
 
+export interface Doctor {
+  id: string;
+  name: string;
+  specialty: string;
+  experience: string;
+  image: string;
+  dataAiHint: string;
+  isOnline: boolean;
+}
+
+
 export const useCalls = (doctorId: string) => {
   const [calls, setCalls] = useState<Call[]>([]);
   const [isLoading, setIsLoading] = useState(true);

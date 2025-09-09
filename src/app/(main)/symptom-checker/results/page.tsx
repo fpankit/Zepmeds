@@ -3,7 +3,6 @@
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { aiSymptomChecker, AISymptomCheckerOutput } from '@/ai/flows/ai-symptom-checker';
 import { translateText } from '@/ai/flows/translate-text';
 import { Button } from '@/components/ui/button';
@@ -11,9 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Pill, Apple, ShieldAlert, Dumbbell, Stethoscope, Bot, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from '@/lib/utils';
+import { DoctorSuggestionCard } from '@/components/features/doctor-suggestion-card';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Doctor } from '@/hooks/use-calls';
 
 type TranslatedContent = {
+    response?: string;
     medicines?: string;
     diet?: string;
     precautions?: string;
@@ -33,6 +36,7 @@ function SymptomResults() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [targetLang, setTargetLang] = useState('English');
   const [translatedResult, setTranslatedResult] = useState<TranslatedContent | null>(null);
+  const [suggestedDoctors, setSuggestedDoctors] = useState<Doctor[]>([]);
 
   useEffect(() => {
     if (!symptoms) {
@@ -47,6 +51,9 @@ function SymptomResults() {
       try {
         const analysis = await aiSymptomChecker({ symptoms });
         setResult(analysis);
+        if(analysis.suggestedSpecialty) {
+            fetchDoctors(analysis.suggestedSpecialty);
+        }
       } catch (e) {
         console.error(e);
         setError('Failed to get analysis. Please try again.');
@@ -54,6 +61,17 @@ function SymptomResults() {
         setIsLoading(false);
       }
     };
+
+    const fetchDoctors = async (specialty: string) => {
+        try {
+            const q = query(collection(db, "doctors"), where("specialty", "==", specialty), limit(3));
+            const querySnapshot = await getDocs(q);
+            const doctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+            setSuggestedDoctors(doctors);
+        } catch(e) {
+            console.error("Error fetching suggested doctors:", e);
+        }
+    }
 
     getAnalysis();
   }, [symptoms]);
@@ -71,7 +89,8 @@ function SymptomResults() {
     setIsTranslating(true);
     
     try {
-      const [medicines, diet, precautions, workouts, advice] = await Promise.all([
+      const [response, medicines, diet, precautions, workouts, advice] = await Promise.all([
+          translateText({ text: result.response, targetLanguage: lang }),
           translateText({ text: result.medicines, targetLanguage: lang }),
           translateText({ text: result.diet, targetLanguage: lang }),
           translateText({ text: result.precautions, targetLanguage: lang }),
@@ -79,6 +98,7 @@ function SymptomResults() {
           translateText({ text: result.advice, targetLanguage: lang }),
       ]);
       setTranslatedResult({
+          response: response.translatedText,
           medicines: medicines.translatedText,
           diet: diet.translatedText,
           precautions: precautions.translatedText,
@@ -132,7 +152,7 @@ function SymptomResults() {
             </CardHeader>
             <CardContent>
                 <p className='text-muted-foreground'>
-                   Based on the symptoms you provided, here is a potential course of action. Please remember, this is not a substitute for professional medical advice.
+                   {translatedResult?.response || result?.response || "Based on the symptoms you provided, here is a potential course of action. Please remember, this is not a substitute for professional medical advice."}
                 </p>
                  <div className="mt-4">
                     <Select onValueChange={handleTranslate} defaultValue="English" disabled={isTranslating}>
@@ -171,13 +191,29 @@ function SymptomResults() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p>{section.content}</p>
+                            <p className='whitespace-pre-line'>{section.content}</p>
                         </CardContent>
                     </Card>
                 ))}
 
+                 {suggestedDoctors.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <Stethoscope className="h-6 w-6" />
+                                Doctor Suggestions
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {suggestedDoctors.map(doctor => (
+                                <DoctorSuggestionCard key={doctor.id} doctor={doctor} />
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
+
+
                 <Card className="hover:bg-primary/10 border-primary/20 transition-colors">
-                  <Link href="/echo-doc">
                     <CardHeader>
                         <CardTitle className='flex items-center gap-3'>
                             <MessageSquare className='h-8 w-8 text-primary' />
@@ -188,8 +224,10 @@ function SymptomResults() {
                         <p className='text-muted-foreground'>
                             Continue the conversation with our medical AI for more detailed information.
                         </p>
+                         <Button className="mt-4" onClick={() => router.push(`/echo-doc/call?symptoms=${encodeURIComponent(symptoms || '')}`)}>
+                            Chat with AI
+                        </Button>
                     </CardContent>
-                  </Link>
                 </Card>
             </div>
           )
