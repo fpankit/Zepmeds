@@ -146,23 +146,25 @@ export default function HomePage() {
             const cartItem = cart.find(item => item.id === product.id);
             return (
               <Card key={product.id}>
-                <CardContent className="p-3">
-                  <h4 className="font-bold text-sm truncate">{product.name}</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">1 unit</p>
-                  <div className="flex justify-between items-center mt-3">
-                    <span className="font-bold text-md">₹{product.price.toFixed(2)}</span>
+                <CardContent className="p-3 flex flex-col justify-between h-full">
+                  <div>
+                    <h4 className="font-bold text-sm truncate">{product.name}</h4>
+                    <p className="text-xs text-muted-foreground mt-0.5">1 unit</p>
+                    <span className="font-bold text-md mt-2 block">₹{product.price.toFixed(2)}</span>
+                  </div>
+                  <div className="mt-3">
                      {cartItem ? (
-                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
+                       <div className="flex items-center justify-center gap-1">
+                        <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="w-5 text-center font-bold text-sm">{cartItem.quantity}</span>
-                        <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
+                        <span className="w-8 text-center font-bold text-md">{cartItem.quantity}</span>
+                        <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
                     ) : (
-                      <Button size="sm" variant="outline" onClick={() => handleAddToCart(product)}>Add</Button>
+                      <Button size="sm" className="w-full" variant="outline" onClick={() => handleAddToCart(product)}>Add</Button>
                     )}
                   </div>
                 </CardContent>
