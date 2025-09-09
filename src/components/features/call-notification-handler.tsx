@@ -51,7 +51,8 @@ export function CallNotificationHandler() {
         // If there are no more ringing calls, dismiss all toasts
         dismiss();
     }
-  }, [incomingCalls, toast, dismiss, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomingCalls, dismiss, router, toast]);
 
   const handleAccept = async (call: Call) => {
     try {
