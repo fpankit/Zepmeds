@@ -16,13 +16,14 @@ interface Message {
     text: string;
 }
 
+// Updated with supported voice names
 const languageToVoiceMap: Record<string, string> = {
-    'English': 'en-US-Standard-F', // A good female voice
-    'Hindi': 'hi-IN-Wavenet-A',
-    'Punjabi': 'pa-IN-Wavenet-A',
-    'Tamil': 'ta-IN-Wavenet-A',
-    'Telugu': 'te-IN-Wavenet-A',
-    'Kannada': 'kn-IN-Wavenet-A',
+    'English': 'Algenib', // Female
+    'Hindi': 'Achernar', // Male
+    'Punjabi': 'Achird', // Male
+    'Tamil': 'Alnilam', // Female
+    'Telugu': 'Aoede', // Female
+    'Kannada': 'Autonoe', // Female
 };
 
 export function EchoDocCallContent() {
@@ -64,7 +65,7 @@ export function EchoDocCallContent() {
         if (!text) return;
         setIsAISpeaking(true);
         try {
-            const voice = languageToVoiceMap[lang] || 'en-US-Standard-F';
+            const voice = languageToVoiceMap[lang] || 'Algenib';
             const response = await textToSpeech({ text, voice });
             if (audioRef.current) {
                 audioRef.current.src = response.audioDataUri;
