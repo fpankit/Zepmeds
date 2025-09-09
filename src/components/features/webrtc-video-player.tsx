@@ -60,7 +60,6 @@ export function WebRTCVideoPlayer() {
             pc.current?.removeTrack(sender);
         });
         pc.current.close();
-        pc.current = null;
     }
     
     localStream.current?.getTracks().forEach(track => track.stop());
@@ -82,12 +81,11 @@ export function WebRTCVideoPlayer() {
 
 
   useEffect(() => {
-    // Initialize pc.current synchronously right at the start of the effect.
     pc.current = new RTCPeerConnection(servers);
 
     const startCall = async () => {
-      if (!user || user.isGuest) {
-        toast({ variant: 'destructive', title: 'Login Required' });
+      if (!user || user.isGuest || isLeaving) {
+        if(!user || user.isGuest) toast({ variant: 'destructive', title: 'Login Required' });
         router.push('/login');
         return;
       }
@@ -129,6 +127,8 @@ export function WebRTCVideoPlayer() {
         };
       }
 
+      if(!pc.current) return;
+
       // Create offer
       const offerDescription = await pc.current.createOffer();
       await pc.current.setLocalDescription(offerDescription);
@@ -143,9 +143,9 @@ export function WebRTCVideoPlayer() {
       // Listen for answer and ICE candidates from doctor
       onSnapshot(callDoc, (snapshot) => {
         const data = snapshot.data();
-        if (!pc.current?.currentRemoteDescription && data?.answer) {
+        if (pc.current && !pc.current.currentRemoteDescription && data?.answer) {
           const answerDescription = new RTCSessionDescription(data.answer);
-          pc.current?.setRemoteDescription(answerDescription);
+          pc.current.setRemoteDescription(answerDescription);
         }
       });
       
@@ -241,4 +241,3 @@ export function WebRTCVideoPlayer() {
     </div>
   );
 }
-
