@@ -1,11 +1,9 @@
 
 'use client';
 
-import { Suspense } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { Suspense, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
 import { AgoraRTCProvider } from 'agora-rtc-react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
@@ -22,11 +20,20 @@ const VideoCallContent = dynamic(
     }
 );
 
+// Wrapper component to handle Agora client initialization
+function VideoCallWrapper() {
+    const client = useMemo(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }), []);
+    return (
+        <AgoraRTCProvider client={client}>
+            <VideoCallContent />
+        </AgoraRTCProvider>
+    );
+}
 
 export default function VideoCallPage() {
     return (
         <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-            <VideoCallContent />
+            <VideoCallWrapper />
         </Suspense>
     )
 }
