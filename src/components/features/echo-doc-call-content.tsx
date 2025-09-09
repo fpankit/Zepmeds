@@ -154,13 +154,20 @@ export function EchoDocCallContent() {
             }
         } catch (error: any) {
             console.error("TTS Error:", error);
-            if (error.message && error.message.includes("429")) {
+            const errorMessage = error.message || '';
+            if (errorMessage.includes("quota")) {
+                 toast({
+                    variant: "destructive",
+                    title: "Daily Voice Quota Exceeded",
+                    description: "The voice service will be available again tomorrow. Displaying text instead.",
+                });
+            } else if (errorMessage.includes("429")) {
                  toast({
                     variant: "destructive",
                     title: "Voice Limit Reached",
                     description: "You've made too many requests. Please wait a moment. Displaying text instead.",
                 });
-            } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            } else if (error instanceof TypeError && errorMessage.includes('Failed to fetch')) {
                  toast({
                     variant: "destructive",
                     title: "Network Error",
