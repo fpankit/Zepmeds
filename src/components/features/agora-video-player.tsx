@@ -111,7 +111,7 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
                  {/* Remote Users Video */}
                 {remoteUsers.map((user) => (
                     <div key={user.uid} className="relative rounded-lg overflow-hidden bg-black aspect-video">
-                         {user.hasVideo && <RemoteUser user={user} playVideo={true} className="w-full h-full object-cover" />}
+                         {user.hasVideo && user.videoTrack && <RemoteUser user={user} playVideo={true} className="w-full h-full object-cover" />}
                         <p className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded-md text-sm">Doctor</p>
                     </div>
                 ))}

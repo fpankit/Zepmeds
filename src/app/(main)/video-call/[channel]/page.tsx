@@ -2,15 +2,25 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AgoraVideoPlayer } from '@/components/features/agora-video-player';
-import AgoraRTC from 'agora-rtc-sdk-ng';
 import { AgoraRTCProvider } from 'agora-rtc-react';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 
-const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+// Dynamically import the AgoraVideoPlayer to ensure it only runs on the client-side
+const AgoraVideoPlayer = dynamic(
+    () => import('@/components/features/agora-video-player').then(mod => mod.AgoraVideoPlayer),
+    { 
+        ssr: false,
+        loading: () => (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        )
+    }
+);
 
 const PatientProfile = dynamic(
     () => import('@/components/features/patient-profile').then(mod => mod.PatientProfile),
@@ -25,6 +35,8 @@ const PatientProfile = dynamic(
     }
 );
 
+// Create the client instance inside the component that runs client-side
+const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
 
 function VideoCallContent() {
     const params = useParams();
@@ -32,7 +44,7 @@ function VideoCallContent() {
     const channelName = params.channel as string;
     const patientId = searchParams.get('patientId');
 
-    const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID || '';
+    const appId = process.env.NEXT_PUBLIC_AGORA_APP_ID || '3b649d7a9006490292cd9d82534a6a91';
     const token = null; // Should be fetched from a secure token server in production
 
     return (
