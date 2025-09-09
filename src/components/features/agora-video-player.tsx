@@ -13,7 +13,7 @@ import {
     RemoteUser,
     LocalVideoTrack,
 } from 'agora-rtc-react';
-import AgoraRTC, { IAgoraRTCClient } from 'agora-rtc-sdk-ng';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, Phone, Users, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -40,6 +40,7 @@ function VideoCallPlayerContent() {
     
     usePublish([localMicrophoneTrack, localCameraTrack]);
     
+    // Explicitly set uid to null to let Agora auto-assign an integer UID
     useJoin({ appid: appId, channel: channelName, token, uid: null }, isJoined);
 
     const remoteUsers = useRemoteUsers();
