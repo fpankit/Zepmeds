@@ -11,7 +11,7 @@ export default function EchoDocDashboardPage() {
   const router = useRouter();
 
   const handleStartConsultation = () => {
-    router.push('/echo-doc/survey');
+    router.push('/echo-doc/call');
   };
 
   return (
@@ -36,10 +36,10 @@ export default function EchoDocDashboardPage() {
                  </div>
                 <h2 className="text-2xl font-semibold">Start a New AI Consultation</h2>
                 <p className="text-muted-foreground max-w-md">
-                    Get instant medical advice, diet plans, and medicine recommendations from our advanced AI.
+                    Talk directly to our advanced medical AI for instant advice, diet plans, and medicine recommendations.
                 </p>
                 <Button size="lg" className="mt-4" onClick={handleStartConsultation}>
-                    Start New Consultation
+                    Start Voice Consultation
                 </Button>
             </CardContent>
         </Card>
