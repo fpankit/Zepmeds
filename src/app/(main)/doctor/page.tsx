@@ -86,6 +86,16 @@ export default function DoctorPage() {
   }, [toast]);
 
 
+  const handleStartCall = (doctor: Doctor) => {
+    if (!user || user.isGuest) {
+        toast({ variant: 'destructive', title: 'Please login', description: 'You must be logged in to start a call.'});
+        router.push('/login');
+        return;
+    }
+    const channelName = doctor.id;
+    router.push(`/video-call/${channelName}?patientId=${user.id}`);
+  }
+
   const getInitials = (name: string) => {
     if (!name) return 'Dr';
     return name.split(' ').map(n => n[0]).join('');
@@ -136,9 +146,11 @@ export default function DoctorPage() {
                     <div className="flex gap-2 mt-4">
                         <Button 
                             className="w-full" 
-                            disabled={true}
+                            disabled={!doctor.isOnline}
+                            onClick={() => handleStartCall(doctor)}
                         >
-                          <Video className="mr-2 h-4 w-4" /> Book Appointment
+                          <Video className="mr-2 h-4 w-4" /> 
+                          {doctor.isOnline ? 'Start Video Call' : 'Offline'}
                         </Button>
                     </div>
                     </CardContent>
