@@ -5,7 +5,7 @@
  *
  * This flow is designed for a conversational medical AI that can handle greetings,
  * answer general health questions, and provide medical information in a conversational manner.
- * It now internally handles language detection and translation.
+ * It now internally handles language detection and translation, with fallbacks.
  *
  * @interface EchoDocInput - Represents the input for the EchoDoc flow.
  * @interface EchoDocOutput - Represents the output of the EchoDoc flow.
@@ -58,28 +58,57 @@ const echoDocFlowInternal = ai.defineFlow(
     outputSchema: EchoDocOutputSchema,
   },
   async (input) => {
-    // 1. Detect language
-    const { language } = await detectLanguage({ text: input.query });
-
-    // 2. Translate to English for the main prompt
+    let detectedLanguage = 'English';
     let queryInEnglish = input.query;
-    if (language !== 'English') {
-        const translationResult = await translateText({ text: input.query, targetLanguage: 'English' });
-        queryInEnglish = translationResult.translatedText;
+    let finalResponse = '';
+
+    try {
+        // 1. Detect language, with fallback
+        try {
+            const langResult = await detectLanguage({ text: input.query });
+            detectedLanguage = langResult.language;
+        } catch (e) {
+            console.error("Language detection failed, falling back to English.", e);
+            detectedLanguage = 'English';
+        }
+
+        // 2. Translate to English for the main prompt, if necessary
+        if (detectedLanguage !== 'English') {
+            try {
+                const translationResult = await translateText({ text: input.query, targetLanguage: 'English' });
+                queryInEnglish = translationResult.translatedText;
+            } catch (e) {
+                console.error("Translation to English failed, using original query.", e);
+                queryInEnglish = input.query; // Fallback to original query
+                detectedLanguage = 'English'; // Treat as english if translation fails
+            }
+        }
+
+        // 3. Get the AI response in English
+        const { output } = await prompt({ query: queryInEnglish });
+        const responseInEnglish = output!.response;
+        finalResponse = responseInEnglish;
+
+        // 4. Translate back to the original language if needed
+        if (detectedLanguage !== 'English') {
+            try {
+                const translationResult = await translateText({ text: responseInEnglish, targetLanguage: detectedLanguage });
+                finalResponse = translationResult.translatedText;
+            } catch(e) {
+                 console.error(`Translation to ${detectedLanguage} failed, returning English response.`, e);
+                 finalResponse = responseInEnglish; // Fallback to English response
+            }
+        }
+        
+    } catch (e) {
+        console.error("Core EchoDoc flow failed:", e);
+        // Fallback response in case of critical failure in the main prompt
+        finalResponse = "I'm sorry, I encountered an issue and couldn't process your request. Please try again in a moment.";
+        detectedLanguage = 'English';
     }
 
-    // 3. Get the AI response in English
-    const { output } = await prompt({ query: queryInEnglish });
-    const responseInEnglish = output!.response;
 
-    // 4. Translate back to the original language if needed
-    let finalResponse = responseInEnglish;
-    if (language !== 'English') {
-        const translationResult = await translateText({ text: responseInEnglish, targetLanguage: language });
-        finalResponse = translationResult.translatedText;
-    }
-
-    return { response: finalResponse, language: language };
+    return { response: finalResponse, language: detectedLanguage };
   }
 );
 
