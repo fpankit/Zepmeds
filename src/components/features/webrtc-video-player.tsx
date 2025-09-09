@@ -16,8 +16,6 @@ import {
   updateDoc,
   collection,
   addDoc,
-  deleteDoc,
-  setDoc,
 } from 'firebase/firestore';
 import { Call } from '@/hooks/use-calls';
 
@@ -38,7 +36,7 @@ export function WebRTCVideoPlayer() {
   
   const callId = params.channel as string;
 
-  const pc = useRef<RTCPeerConnection>(new RTCPeerConnection(servers));
+  const pc = useRef<RTCPeerConnection | null>(null);
   const localStream = useRef<MediaStream | null>(null);
   const remoteStream = useRef<MediaStream | null>(null);
 
@@ -85,6 +83,8 @@ export function WebRTCVideoPlayer() {
 
 
   useEffect(() => {
+    let isCancelled = false;
+
     const startCall = async () => {
       if (!user || user.isGuest || isLeaving) {
         if(!user || user.isGuest) toast({ variant: 'destructive', title: 'Login Required' });
@@ -92,6 +92,8 @@ export function WebRTCVideoPlayer() {
         return;
       }
       
+      pc.current = new RTCPeerConnection(servers);
+
       // Get local media
       localStream.current = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       if (localVideoRef.current) {
@@ -100,38 +102,34 @@ export function WebRTCVideoPlayer() {
       
       // Push tracks to connection
       localStream.current.getTracks().forEach(track => {
-        if (pc.current.signalingState !== 'closed') {
+        if (pc.current && pc.current.signalingState !== 'closed') {
             pc.current.addTrack(track, localStream.current!);
         }
       });
 
       // Setup remote stream
       remoteStream.current = new MediaStream();
-      if(pc.current.signalingState !== 'closed') {
-          pc.current.ontrack = (event) => {
-            event.streams[0].getTracks().forEach(track => {
-              remoteStream.current?.addTrack(track);
-            });
-            if (remoteVideoRef.current) {
-                remoteVideoRef.current.srcObject = remoteStream.current;
-            }
-            setIsConnecting(false);
-          };
-      }
+      pc.current.ontrack = (event) => {
+        event.streams[0].getTracks().forEach(track => {
+          remoteStream.current?.addTrack(track);
+        });
+        if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStream.current;
+        }
+        setIsConnecting(false);
+      };
       
       const callDoc = doc(db, 'calls', callId);
       const offerCandidates = collection(callDoc, 'offerCandidates');
       const answerCandidates = collection(callDoc, 'answerCandidates');
       
-      if(pc.current.signalingState !== 'closed') {
-        pc.current.onicecandidate = async (event) => {
-            if (event.candidate) {
-              await addDoc(offerCandidates, event.candidate.toJSON());
-            }
-        };
-      }
+      pc.current.onicecandidate = async (event) => {
+          if (event.candidate) {
+            await addDoc(offerCandidates, event.candidate.toJSON());
+          }
+      };
 
-      if(pc.current.signalingState === 'closed') return;
+      if (isCancelled || pc.current.signalingState === 'closed') return;
 
       // Create offer
       const offerDescription = await pc.current.createOffer();
@@ -155,11 +153,9 @@ export function WebRTCVideoPlayer() {
       
       const unsubCandidates = onSnapshot(answerCandidates, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
+          if (change.type === 'added' && pc.current && pc.current.signalingState !== 'closed') {
             const candidate = new RTCIceCandidate(change.doc.data());
-             if (pc.current.signalingState !== 'closed') {
-                pc.current.addIceCandidate(candidate);
-             }
+             pc.current.addIceCandidate(candidate);
           }
         });
       });
@@ -173,6 +169,7 @@ export function WebRTCVideoPlayer() {
     startCall();
 
     return () => {
+        isCancelled = true;
         hangUp();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
