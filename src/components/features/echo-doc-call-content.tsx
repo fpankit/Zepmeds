@@ -194,14 +194,12 @@ export function EchoDocCallContent() {
         };
 
         recognition.onend = () => {
-             if (isListening) {
-                 recognitionRef.current?.start();
-             }
+            setIsListening(false);
         };
         
         recognition.onerror = (event: any) => {
             console.error('Speech recognition error:', event.error);
-            if (event.error !== 'no-speech') {
+            if (event.error !== 'no-speech' && event.error !== 'aborted') {
                 toast({
                     variant: 'destructive',
                     title: 'Mic Error',
@@ -215,10 +213,10 @@ export function EchoDocCallContent() {
 
         return () => {
             if (recognitionRef.current) {
-                recognitionRef.current.stop();
+                recognitionRef.current.abort();
             }
         };
-    }, [toast, handleSendTranscript, isListening]);
+    }, [toast, handleSendTranscript]);
 
 
     
@@ -305,3 +303,5 @@ export function EchoDocCallContent() {
         </div>
     );
 }
+
+    
