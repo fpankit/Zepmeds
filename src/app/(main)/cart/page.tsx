@@ -10,9 +10,7 @@ import { useCart } from "@/context/cart-context";
 import { Minus, Plus, ShoppingCart, Trash2, FileText, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { PrescriptionUploader } from '@/components/features/prescription-uploader';
-import { GeneratePrescriptionSummaryOutput } from '@/ai/flows/generate-prescription-summary';
-import { PrescriptionDetails } from '@/lib/types';
+import { PrescriptionUploader, PrescriptionUploadDetails } from '@/components/features/prescription-uploader';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -22,33 +20,46 @@ import { useAuth } from '@/context/auth-context';
 type PrescriptionStatus = 'needed' | 'uploaded' | 'approved' | 'rejected';
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity, clearCart, setPrescription, prescription } = useCart();
-  const [prescriptionSummary, setPrescriptionSummary] = useState<GeneratePrescriptionSummaryOutput | null>(null);
+  const { cart, removeFromCart, updateQuantity, clearCart, setPrescriptionForCheckout, prescriptionForCheckout } = useCart();
+  const [prescriptionId, setPrescriptionId] = useState<string | null>(null);
   const [prescriptionStatus, setPrescriptionStatus] = useState<PrescriptionStatus>('needed');
   const { toast } = useToast();
   const { user } = useAuth();
-  
-  // This effect would simulate an admin approving the prescription
-  // In a real app, this would be a Firestore listener on the user's document or a dedicated 'prescriptions' collection
+
+  // Listen for real-time updates on the prescription document
   useEffect(() => {
-    if (prescriptionStatus === 'uploaded') {
-       toast({
-        title: "Prescription Awaiting Approval",
-        description: "For this demo, we will simulate an admin approving it in 5 seconds.",
-      });
-      const approvalTimeout = setTimeout(() => {
-        setPrescriptionStatus('approved');
-        toast({
-          title: "Prescription Approved!",
-          description: "You can now proceed to checkout.",
-          variant: "default",
-          className: "bg-green-500 text-white"
-        });
-      }, 5000); // 5-second delay to simulate admin review
-      
-      return () => clearTimeout(approvalTimeout);
-    }
-  }, [prescriptionStatus, toast]);
+    if (!prescriptionId) return;
+
+    const unsub = onSnapshot(doc(db, "prescriptions", prescriptionId), (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            switch (data.status) {
+                case 'approved':
+                    setPrescriptionStatus('approved');
+                    toast({
+                        title: "Prescription Approved!",
+                        description: "You can now proceed to checkout.",
+                        variant: "default",
+                        className: "bg-green-500 text-white"
+                    });
+                    break;
+                case 'rejected':
+                    setPrescriptionStatus('rejected');
+                     toast({
+                        variant: "destructive",
+                        title: "Prescription Rejected",
+                        description: data.rejectionReason || "Your prescription was rejected. Please upload a new one.",
+                    });
+                    break;
+                default:
+                    setPrescriptionStatus('uploaded');
+                    break;
+            }
+        }
+    });
+
+    return () => unsub();
+  }, [prescriptionId, toast]);
   
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -57,11 +68,21 @@ export default function CartPage() {
 
   const hasRxItems = useMemo(() => cart.some(item => item.isRx), [cart]);
   
-  const handlePrescriptionUploaded = (details: PrescriptionDetails) => {
-      setPrescriptionSummary(details.summary);
-      setPrescription(details); // Save details to context
+  const handlePrescriptionUploaded = (details: PrescriptionUploadDetails) => {
+      setPrescriptionForCheckout({
+          id: details.prescriptionId,
+          summary: details.summary,
+          dataUri: details.dataUri
+      });
+      setPrescriptionId(details.prescriptionId);
       setPrescriptionStatus('uploaded');
   };
+
+  const resetPrescription = () => {
+    setPrescriptionForCheckout(null);
+    setPrescriptionId(null);
+    setPrescriptionStatus('needed');
+  }
   
   const isCheckoutDisabled = hasRxItems && prescriptionStatus !== 'approved';
 
@@ -130,7 +151,7 @@ export default function CartPage() {
             <CardContent className="space-y-4">
                 <div className="flex items-center gap-3 p-3 rounded-md bg-yellow-500/10 border border-yellow-500/50">
                     <AlertTriangle className="h-6 w-6 text-yellow-500"/>
-                    <p className="text-sm text-yellow-400">Your cart contains items that require a valid doctor's prescription.</p>
+                    <p className="text-sm text-yellow-400">Your cart contains items that require a valid doctor's prescription. Please upload one to proceed.</p>
                 </div>
                 
                 {prescriptionStatus === 'needed' && <PrescriptionUploader onUploadSuccess={handlePrescriptionUploaded} />}
@@ -139,8 +160,8 @@ export default function CartPage() {
                      <div className="flex items-center gap-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/50">
                         <Clock className="h-6 w-6 text-blue-500"/>
                         <div>
-                            <p className="text-sm font-bold text-blue-400">Prescription Uploaded</p>
-                            <p className="text-xs text-blue-500">Please wait while our team verifies your prescription. This may take a few minutes.</p>
+                            <p className="text-sm font-bold text-blue-400">Prescription Submitted</p>
+                            <p className="text-xs text-blue-500">Please wait while our pharmacy team verifies your prescription. This may take a few minutes.</p>
                         </div>
                     </div>
                 )}
@@ -154,13 +175,13 @@ export default function CartPage() {
                     </div>
                 )}
 
-                 {prescriptionStatus === 'rejected' && ( // This state would be updated from an admin dashboard in a real app
+                 {prescriptionStatus === 'rejected' && ( 
                      <div className="flex flex-col gap-3 p-3 rounded-md bg-destructive/10 border border-destructive/50">
                         <div className="flex items-center gap-3">
                             <AlertTriangle className="h-6 w-6 text-destructive"/>
-                            <p className="text-sm text-destructive">Your previous prescription was rejected. Please upload a valid one.</p>
+                            <p className="text-sm text-destructive">Your prescription was rejected. Please upload a valid one to continue.</p>
                         </div>
-                        <Button variant="outline" onClick={() => setPrescriptionStatus('needed')}>Upload Again</Button>
+                        <Button variant="outline" onClick={resetPrescription}>Upload Again</Button>
                     </div>
                 )}
             </CardContent>

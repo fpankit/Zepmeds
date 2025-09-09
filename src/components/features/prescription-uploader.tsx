@@ -1,17 +1,18 @@
 
-
 "use client";
 
 import { useState, useRef, ChangeEvent } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { generatePrescriptionSummary } from "@/ai/flows/generate-prescription-summary";
+import { generatePrescriptionSummary, GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, UploadCloud, FileText, X, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { PrescriptionDetails } from "@/lib/types";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "@/context/auth-context";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -27,8 +28,14 @@ const formSchema = z.object({
     ),
 });
 
+export interface PrescriptionUploadDetails {
+    prescriptionId: string;
+    summary: GeneratePrescriptionSummaryOutput;
+    dataUri: string;
+}
+
 interface PrescriptionUploaderProps {
-    onUploadSuccess: (details: PrescriptionDetails) => void;
+    onUploadSuccess: (details: PrescriptionUploadDetails) => void;
 }
 
 
@@ -37,6 +44,7 @@ export function PrescriptionUploader({ onUploadSuccess }: PrescriptionUploaderPr
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>();
 
@@ -62,19 +70,43 @@ export function PrescriptionUploader({ onUploadSuccess }: PrescriptionUploaderPr
     });
 
   async function handleSubmit(file: File) {
+    if (!user || user.isGuest) {
+        toast({ variant: 'destructive', title: "Please login to upload a prescription." });
+        return;
+    }
     setIsLoading(true);
 
     try {
       const dataUri = await toBase64(file);
-      const result = await generatePrescriptionSummary({ prescriptionImageUri: dataUri });
-      onUploadSuccess({ summary: result, dataUri });
+      const summary = await generatePrescriptionSummary({ prescriptionImageUri: dataUri });
+      
+      // Save to the new 'prescriptions' collection for admin review
+      const prescriptionDocRef = await addDoc(collection(db, "prescriptions"), {
+          userId: user.id,
+          userName: `${user.firstName} ${user.lastName}`,
+          userPhone: user.phone,
+          prescriptionImageUri: dataUri,
+          aiSummary: summary,
+          status: 'pending', // 'pending', 'approved', 'rejected'
+          createdAt: serverTimestamp(),
+      });
+      
+      toast({
+          title: "Prescription Uploaded",
+          description: "Our team will now verify your prescription. You will be notified once it's approved.",
+      });
+
+      // Pass the new document ID and other details back to the cart page
+      onUploadSuccess({ prescriptionId: prescriptionDocRef.id, summary, dataUri });
+
     } catch (err) {
       console.error(err);
       toast({
         variant: "destructive",
-        title: "AI Summarization Failed",
-        description: "Failed to summarize prescription. Please try again.",
+        title: "Upload Failed",
+        description: "Failed to upload or analyze prescription. Please try again.",
       });
+      resetState();
     } finally {
       setIsLoading(false);
     }
@@ -122,3 +154,4 @@ export function PrescriptionUploader({ onUploadSuccess }: PrescriptionUploaderPr
     </div>
   );
 }
+

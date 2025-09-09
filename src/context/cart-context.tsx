@@ -2,8 +2,15 @@
 
 "use client";
 
-import { CartItem, PrescriptionDetails } from "@/lib/types";
+import { CartItem } from "@/lib/types";
+import { GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
 import React, { createContext, useContext, useState, ReactNode } from "react";
+
+export interface PrescriptionForCheckout {
+    id: string;
+    summary: GeneratePrescriptionSummaryOutput;
+    dataUri: string;
+}
 
 interface CartContextType {
   cart: CartItem[];
@@ -11,15 +18,15 @@ interface CartContextType {
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
-  prescription: PrescriptionDetails | null;
-  setPrescription: (prescription: PrescriptionDetails | null) => void;
+  prescriptionForCheckout: PrescriptionForCheckout | null;
+  setPrescriptionForCheckout: (prescription: PrescriptionForCheckout | null) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [prescription, setPrescription] = useState<PrescriptionDetails | null>(null);
+  const [prescriptionForCheckout, setPrescriptionForCheckout] = useState<PrescriptionForCheckout | null>(null);
 
   const addToCart = (item: CartItem) => {
     setCart((prevCart) => {
@@ -51,12 +58,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => {
     setCart([]);
-    setPrescription(null);
+    setPrescriptionForCheckout(null);
   };
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, prescription, setPrescription }}
+      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, prescriptionForCheckout, setPrescriptionForCheckout }}
     >
       {children}
     </CartContext.Provider>
@@ -70,4 +77,3 @@ export const useCart = () => {
   }
   return context;
 };
-

@@ -40,7 +40,7 @@ const iconMap: Record<"Home" | "Work" | "Other", React.ElementType> = {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, clearCart, prescription } = useCart();
+  const { cart, clearCart, prescriptionForCheckout } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -100,11 +100,12 @@ export default function CheckoutPage() {
             orderDate: serverTimestamp(),
         };
 
-        if (prescription) {
+        if (prescriptionForCheckout) {
             orderData.prescription = {
-                dataUri: prescription.dataUri,
-                summary: prescription.summary,
-                status: 'approved' // It can only reach here if approved
+                id: prescriptionForCheckout.id,
+                dataUri: prescriptionForCheckout.dataUri,
+                summary: prescriptionForCheckout.summary,
+                status: 'approved' // Can only reach checkout if prescription is approved
             }
         }
 
@@ -253,7 +254,7 @@ export default function CheckoutPage() {
         <Card>
             <CardHeader>
                 <CardTitle className="text-lg">Payment Summary</CardTitle>
-            </CardHeader>
+            </Header>
             <CardContent className="space-y-3">
                 <div className="flex justify-between">
                     <p className="text-muted-foreground">Subtotal</p>
@@ -299,5 +300,3 @@ function LabelRadio({ value, label, description, icon: Icon, price, isSelected, 
         </label>
     )
 }
-
-    
