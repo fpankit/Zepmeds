@@ -19,7 +19,6 @@ import {
   deleteDoc,
   getDocs,
 } from 'firebase/firestore';
-import type { Unsubscribe } from 'firebase/firestore';
 import { Call } from '@/hooks/use-calls';
 
 const servers = {
@@ -48,7 +47,6 @@ export function WebRTCVideoPlayer() {
 
   const [isMicOn, setMicOn] = useState(true);
   const [isCameraOn, setCameraOn] = useState(true);
-  const [isLeaving, setIsLeaving] = useState(false);
   const [callData, setCallData] = useState<Call | null>(null);
   const [callStatus, setCallStatus] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
 
@@ -83,44 +81,60 @@ export function WebRTCVideoPlayer() {
         
         pc.current!.onicecandidate = async (event) => {
             if (event.candidate) {
-                await addDoc(offerCandidates, event.candidate.toJSON());
+                if (user.isDoctor) {
+                    await addDoc(answerCandidates, event.candidate.toJSON());
+                } else {
+                    await addDoc(offerCandidates, event.candidate.toJSON());
+                }
             }
         };
-        
-        // Create Offer
-        const offerDescription = await pc.current!.createOffer();
-        await pc.current!.setLocalDescription(offerDescription);
-        const offer = {
-            sdp: offerDescription.sdp,
-            type: offerDescription.type,
-        };
-        await updateDoc(callDoc, { offer });
 
-        // Listen for Answer
-        const unsubAnswer = onSnapshot(callDoc, (snapshot) => {
-            const data = snapshot.data();
-            if (pc.current && pc.current.signalingState !== 'closed' && !pc.current.currentRemoteDescription && data?.answer) {
-                const answerDescription = new RTCSessionDescription(data.answer);
-                pc.current.setRemoteDescription(answerDescription);
+        if (user.isDoctor) {
+            // Doctor: Answer the call
+            const callSnap = await getDoc(callDoc);
+            if(callSnap.exists() && callSnap.data().offer) {
+                await pc.current!.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
+                const answerDescription = await pc.current!.createAnswer();
+                await pc.current!.setLocalDescription(answerDescription);
+                const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
+                await updateDoc(callDoc, { answer });
+                
+                onSnapshot(offerCandidates, (snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            pc.current?.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                        }
+                    });
+                });
             }
-             if (data?.status === 'ended') {
-                hangUp();
-            }
-        });
+        } else {
+             // Patient: Create Offer
+            const offerDescription = await pc.current!.createOffer();
+            await pc.current!.setLocalDescription(offerDescription);
+            const offer = {
+                sdp: offerDescription.sdp,
+                type: offerDescription.type,
+            };
+            await updateDoc(callDoc, { offer });
 
-        // Listen for ICE candidates from remote
-        const unsubCandidates = onSnapshot(answerCandidates, (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added' && pc.current && pc.current.signalingState !== 'closed') {
-                    const candidate = new RTCIceCandidate(change.doc.data());
-                    pc.current.addIceCandidate(candidate);
+            // Listen for Answer
+            onSnapshot(callDoc, (snapshot) => {
+                const data = snapshot.data();
+                if (pc.current && !pc.current.currentRemoteDescription && data?.answer) {
+                    const answerDescription = new RTCSessionDescription(data.answer);
+                    pc.current.setRemoteDescription(answerDescription);
                 }
             });
-        });
-        
-        return () => {
-            unsubAnswer();
-            unsubCandidates();
+
+            // Listen for ICE candidates from remote
+            onSnapshot(answerCandidates, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added' && pc.current) {
+                        const candidate = new RTCIceCandidate(change.doc.data());
+                        pc.current.addIceCandidate(candidate);
+                    }
+                });
+            });
         }
     };
     
@@ -134,12 +148,10 @@ export function WebRTCVideoPlayer() {
         setCallStatus('connected');
     };
     
-    let unsubSignal: (()=>void) | undefined;
-    
     const initialize = async () => {
         try {
             await startMedia();
-            unsubSignal = await setupSignaling();
+            await setupSignaling();
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Call Failed', description: error.message });
             hangUp();
@@ -148,33 +160,29 @@ export function WebRTCVideoPlayer() {
 
     initialize();
 
+    const callDocRef = doc(db, 'calls', callId);
+    const unsubStatus = onSnapshot(callDocRef, (snapshot) => {
+        const data = snapshot.data();
+        if (data?.status === 'ended') {
+            hangUp();
+        }
+    });
+
     return () => {
-      // This cleanup runs on unmount or dependency change
-      // It should NOT close the PC, only stop tracks and listeners
-      if (unsubSignal) unsubSignal();
-      
-      localStream.current?.getTracks().forEach(track => track.stop());
-      if (localVideoRef.current) {
-          localVideoRef.current.srcObject = null;
-      }
+      unsubStatus();
+      hangUp();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, callId]);
 
   const hangUp = useCallback(async () => {
-    if (isLeaving) return;
-    setIsLeaving(true);
+    if (callStatus === 'disconnected') return;
     setCallStatus('disconnected');
 
-    if (pc.current && pc.current.signalingState !== 'closed') {
-        pc.current.close();
-    }
-    pc.current = null;
+    pc.current?.close();
     
     localStream.current?.getTracks().forEach(track => track.stop());
     remoteStream.current?.getTracks().forEach(track => track.stop());
-    localStream.current = null;
-    remoteStream.current = null;
+    
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
     
@@ -184,12 +192,6 @@ export function WebRTCVideoPlayer() {
             const callSnap = await getDoc(callDoc);
             if (callSnap.exists() && callSnap.data()?.status !== 'ended') {
                  await updateDoc(callDoc, { status: 'ended' });
-                 
-                 // Clean up subcollections
-                 const offerCandidates = await getDocs(collection(callDoc, 'offerCandidates'));
-                 offerCandidates.forEach(async (doc) => await deleteDoc(doc.ref));
-                 const answerCandidates = await getDocs(collection(callDoc, 'answerCandidates'));
-                 answerCandidates.forEach(async (doc) => await deleteDoc(doc.ref));
             }
         } catch (error) {
             console.error("Error ending call in Firestore:", error);
@@ -197,7 +199,7 @@ export function WebRTCVideoPlayer() {
     }
     
     router.push('/home');
-  }, [router, callId, isLeaving]);
+  }, [router, callId, callStatus]);
   
   const handleMicToggle = () => {
       if (localStream.current) {
@@ -258,9 +260,9 @@ export function WebRTCVideoPlayer() {
           size="icon"
           className="h-16 w-16 rounded-full"
           onClick={hangUp}
-          disabled={isLeaving}
+          disabled={callStatus === 'disconnected'}
         >
-           {isLeaving ? <Loader2 className="animate-spin"/> : <Phone className="rotate-[135deg]" />}
+           {callStatus === 'disconnected' ? <Loader2 className="animate-spin"/> : <Phone className="rotate-[135deg]" />}
         </Button>
         <Button
           variant="ghost"
