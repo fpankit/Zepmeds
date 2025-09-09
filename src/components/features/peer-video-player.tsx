@@ -14,13 +14,14 @@ export function PeerVideoPlayer() {
     const { user } = useAuth();
     const router = useRouter();
     const params = useParams();
-    const searchParams = useSearchParams();
     const { toast } = useToast();
+
+    const remotePeerId = params.channel as string;
 
     const [peer, setPeer] = useState<Peer | null>(null);
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-    const [callStatus, setCallStatus] = useState('connecting'); // connecting, connected, ended
+    const [callStatus, setCallStatus] = useState('connecting'); // 'connecting', 'connected', 'ended'
     
     const [micOn, setMic] = useState(true);
     const [cameraOn, setCamera] = useState(true);
@@ -29,23 +30,24 @@ export function PeerVideoPlayer() {
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
     const callRef = useRef<MediaConnection | null>(null);
     
-    const isCaller = searchParams.get('isCaller') === 'true';
-    const remotePeerId = params.channel as string; 
-
-
     const endCall = useCallback(() => {
+        if (callStatus === 'ended') return;
         console.log("Ending call.");
         setCallStatus('ended');
         callRef.current?.close();
-        localStream?.getTracks().forEach(track => track.stop());
-        peer?.destroy();
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+        if (peer && !peer.destroyed) {
+            peer.destroy();
+        }
         router.push('/home');
-    }, [localStream, peer, router]);
+    }, [localStream, peer, router, callStatus]);
+    
 
-
-    // Initialize and connect
+    // Initialize Peer and get media
     useEffect(() => {
-        if (!user) {
+        if (!user || user.isGuest) {
             toast({ variant: 'destructive', title: "Not Authenticated" });
             router.push('/login');
             return;
@@ -55,45 +57,49 @@ export function PeerVideoPlayer() {
 
         const setup = async () => {
             try {
+                // 1. Get user media first
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 setLocalStream(stream);
                 if (localVideoRef.current) {
                     localVideoRef.current.srcObject = stream;
                 }
 
+                // 2. Initialize PeerJS
                 const { Peer } = await import('peerjs');
-                
-                // If we are the doctor (receiver), we must initialize with our known peerId
-                // If we are the patient (caller), we get a random ID from the peer server
-                peerInstance = isCaller ? new Peer() : new Peer(remotePeerId);
+                peerInstance = new Peer();
                 setPeer(peerInstance);
 
+                // 3. Once PeerJS is open, place the call
                 peerInstance.on('open', (id) => {
-                    console.log(`PeerJS initialized. My ID is ${id}.`);
-                    // If we are the caller, now that we are ready, initiate the call
-                    if (isCaller) {
-                        console.log(`Calling remote peer: ${remotePeerId}`);
-                        const call = peerInstance.call(remotePeerId, stream);
-                        callRef.current = call;
-                        
-                        call.on('stream', (remoteStrm) => {
-                            console.log('Received remote stream from answered call');
-                            setRemoteStream(remoteStrm);
-                            setCallStatus('connected');
-                        });
-
-                        call.on('close', endCall);
-                        call.on('error', (err) => {
-                             console.error("Call error:", err);
-                             toast({ variant: "destructive", title: "Call Failed", description: "Could not connect to the other user."});
-                             endCall();
-                        });
+                    console.log(`PeerJS initialized for caller. My ID is ${id}.`);
+                    console.log(`Attempting to call remote peer: ${remotePeerId}`);
+                    
+                    if (!remotePeerId) {
+                        toast({ variant: 'destructive', title: 'Error', description: 'No remote user to call.'});
+                        endCall();
+                        return;
                     }
-                });
 
-                // Set up listener for incoming calls (for the doctor)
+                    const call = peerInstance.call(remotePeerId, stream);
+                    callRef.current = call;
+                    
+                    call.on('stream', (remoteStrm) => {
+                        console.log('Received remote stream from answered call');
+                        setRemoteStream(remoteStrm);
+                        setCallStatus('connected');
+                    });
+
+                    call.on('close', endCall);
+                    call.on('error', (err) => {
+                         console.error("Call error:", err);
+                         toast({ variant: "destructive", title: "Call Failed", description: `Could not connect to the other user.`});
+                         endCall();
+                    });
+                });
+                
+                // For the caller, also handle incoming calls in case of a cross-connection race condition
                 peerInstance.on('call', (call) => {
-                    console.log('Receiving call from', call.peer);
+                    console.log('Unexpected incoming call, answering.');
                     call.answer(stream); // Answer the call with our local stream.
                     callRef.current = call;
                     
@@ -113,7 +119,6 @@ export function PeerVideoPlayer() {
                     } else {
                         toast({ variant: 'destructive', title: 'Connection Error', description: `A connection error occurred: ${err.message}` });
                     }
-                    setCallStatus('ended');
                     endCall();
                 });
 
@@ -127,11 +132,7 @@ export function PeerVideoPlayer() {
         setup();
 
         return () => {
-            callRef.current?.close();
-            localStream?.getTracks().forEach(track => track.stop());
-            if (peerInstance && !peerInstance.destroyed) {
-                peerInstance.destroy();
-            }
+            endCall();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -153,13 +154,15 @@ export function PeerVideoPlayer() {
     };
     
     const handleMicToggle = () => {
-        toggleTrack('audio', !micOn);
-        setMic(!micOn);
+        const newMicState = !micOn;
+        toggleTrack('audio', newMicState);
+        setMic(newMicState);
     };
 
     const handleCameraToggle = () => {
-        toggleTrack('video', !cameraOn);
-        setCamera(!cameraOn);
+        const newCameraState = !cameraOn;
+        toggleTrack('video', newCameraState);
+        setCamera(newCameraState);
     };
 
 
@@ -179,7 +182,7 @@ export function PeerVideoPlayer() {
                         {callStatus !== 'connected' && (
                              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                                  <p className="text-gray-300">
-                                    {isCaller ? 'Connecting to doctor...' : 'Waiting for user...'}
+                                    Connecting to doctor...
                                 </p>
                             </div>
                         )}
@@ -221,3 +224,5 @@ export function PeerVideoPlayer() {
         </div>
     );
 }
+
+    

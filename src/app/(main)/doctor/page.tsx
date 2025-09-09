@@ -133,7 +133,7 @@ export default function DoctorPage() {
         return;
     }
 
-    // Re-fetch doctor's doc to get the latest peerId
+    // Re-fetch doctor's doc to get the latest peerId, ensuring it's fresh
     const doctorDocRef = doc(db, "doctors", doctor.id);
     const doctorSnap = await getDoc(doctorDocRef);
 
@@ -144,7 +144,7 @@ export default function DoctorPage() {
     
     const remotePeerId = doctorSnap.data()?.peerId;
     console.log(`Attempting to call doctor ${doctor.name} with latest Peer ID: ${remotePeerId}`);
-    router.push(`/video-call/${remotePeerId}?isCaller=true`);
+    router.push(`/video-call/${remotePeerId}`);
   }
 
   const getInitials = (name: string) => {
@@ -228,3 +228,5 @@ export default function DoctorPage() {
     </div>
   );
 }
+
+    
