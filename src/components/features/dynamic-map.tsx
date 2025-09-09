@@ -38,12 +38,20 @@ export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }:
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(mapInstanceRef.current);
+        }
+    }, [position.lat, position.lng, zoom]);
 
+     useEffect(() => {
+        if (mapInstanceRef.current) {
             L.marker([position.lat, position.lng]).addTo(mapInstanceRef.current)
                 .bindPopup(popupText)
                 .openPopup();
+            
+            mapInstanceRef.current.setView([position.lat, position.lng], zoom);
         }
+    }, [position, zoom, popupText]);
 
+    useEffect(() => {
         // Cleanup function to destroy the map instance when component unmounts
         return () => {
             if (mapInstanceRef.current) {
@@ -51,7 +59,7 @@ export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }:
                 mapInstanceRef.current = null;
             }
         };
-    }, [position, zoom, popupText]);
+    }, []);
 
     return (
         <div 
