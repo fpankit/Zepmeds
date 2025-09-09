@@ -59,7 +59,7 @@ export default function DoctorPage() {
             return { 
                 id: doc.id, 
                 name: data.displayName || "Unnamed Doctor",
-                specialty: data.specialty || "No Specialty", // Corrected from speciality
+                specialty: data.specialty || "No Specialty",
                 experience: data.about || "No experience listed.",
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
@@ -97,7 +97,6 @@ export default function DoctorPage() {
     }
     
     try {
-        // Create a new call document in Firestore for signaling
         const callDocRef = await addDoc(collection(db, 'calls'), {
             callerId: user.id,
             callerName: `${user.firstName} ${user.lastName}`,
@@ -107,7 +106,6 @@ export default function DoctorPage() {
             createdAt: serverTimestamp(),
         });
 
-        // The channel for the call is now the ID of the call document
         router.push(`/video-call/${callDocRef.id}`);
     } catch(error) {
         console.error("Failed to start call:", error);
