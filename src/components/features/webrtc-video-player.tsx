@@ -19,6 +19,8 @@ import {
   deleteDoc,
   getDocs,
   Unsubscribe,
+  setDoc,
+  DocumentReference,
 } from 'firebase/firestore';
 import { Call } from '@/hooks/use-calls';
 
@@ -54,7 +56,7 @@ export function WebRTCVideoPlayer() {
 
   // Main call setup effect
   useEffect(() => {
-    if (!user || !callId || user.isGuest) {
+    if (!user || !callId || user.isGuest || pc.current) {
       return;
     }
     
@@ -62,8 +64,6 @@ export function WebRTCVideoPlayer() {
     const unsubscribes: Unsubscribe[] = [];
 
     const setupWebRTC = async () => {
-        if (pc.current) return; // Already setup
-
         pc.current = new RTCPeerConnection(servers);
         remoteStream.current = new MediaStream();
         setCallStatus('connecting');
@@ -114,7 +114,7 @@ export function WebRTCVideoPlayer() {
         if (user.isDoctor) {
             // Doctor: Answer the call
              const callSnap = await getDoc(callDoc);
-            if(isCancelled || !callSnap.exists() || !callSnap.data().offer) return;
+            if(isCancelled || !callSnap.exists() || !callSnap.data().offer || pc.current.signalingState !== 'stable') return;
             
             await pc.current!.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
             const answerDescription = await pc.current!.createAnswer();
@@ -133,6 +133,7 @@ export function WebRTCVideoPlayer() {
             unsubscribes.push(unsub);
         } else {
             // Patient: Create Offer
+            if(pc.current.signalingState !== 'stable') return;
             const offerDescription = await pc.current!.createOffer();
             await pc.current!.setLocalDescription(offerDescription);
             
@@ -194,7 +195,6 @@ export function WebRTCVideoPlayer() {
         if (pc.current.signalingState !== 'closed') {
            pc.current.close();
         }
-        pc.current = null;
     }
     
     localStream.current?.getTracks().forEach(track => track.stop());
@@ -205,6 +205,7 @@ export function WebRTCVideoPlayer() {
     
     localStream.current = null;
     remoteStream.current = null;
+    pc.current = null;
 
     if (callId) {
         try {
