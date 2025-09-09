@@ -26,6 +26,7 @@ const token = null; // Using token-less for simplicity, can be replaced with a f
 function VideoCallPlayerContent() {
     const params = useParams();
     const searchParams = useSearchParams();
+    const router = useRouter();
     const channelName = params.channel as string;
     const patientId = searchParams.get('patientId');
     const { toast } = useToast();
@@ -97,35 +98,35 @@ function VideoCallPlayerContent() {
             <footer className="flex h-20 flex-shrink-0 items-center justify-center gap-4 border-t border-gray-700 bg-gray-800">
                  <Button
                     variant="ghost"
-                    size="circle"
-                    className={cn('h-12 w-12', micOn ? 'bg-gray-600' : 'bg-red-600')}
+                    size="icon"
+                    className={cn('h-12 w-12 rounded-full', micOn ? 'bg-gray-600' : 'bg-red-600')}
                     onClick={() => setMic(!micOn)}
                 >
                     {micOn ? <Mic /> : <MicOff />}
                 </Button>
                  <Button
                     variant="ghost"
-                    size="circle"
-                    className={cn('h-12 w-12', cameraOn ? 'bg-gray-600' : 'bg-red-600')}
+                    size="icon"
+                    className={cn('h-12 w-12 rounded-full', cameraOn ? 'bg-gray-600' : 'bg-red-600')}
                     onClick={() => setCamera(!cameraOn)}
                 >
                     {cameraOn ? <Video /> : <VideoOff />}
                 </Button>
                 <Button
                     variant="destructive"
-                    size="circle"
-                    className="h-16 w-16"
+                    size="icon"
+                    className="h-16 w-16 rounded-full"
                     onClick={() => {
                         setIsJoined(false);
-                        window.history.back();
+                        router.back();
                     }}
                 >
                     <Phone className="rotate-[135deg]" />
                 </Button>
-                 <Button variant="ghost" size="circle" className="h-12 w-12 bg-gray-600">
+                 <Button variant="ghost" size="icon" className="h-12 w-12 rounded-full bg-gray-600">
                     <MessageSquare />
                 </Button>
-                 <Button variant="ghost" size="circle" className="h-12 w-12 bg-gray-600">
+                 <Button variant="ghost" size="icon" className="h-12 w-12 rounded-full bg-gray-600">
                     <Users />
                 </Button>
             </footer>
