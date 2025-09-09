@@ -1,15 +1,17 @@
 
+
 "use client";
 
 import { useState, useRef, ChangeEvent } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { generatePrescriptionSummary, GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
+import { generatePrescriptionSummary } from "@/ai/flows/generate-prescription-summary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, UploadCloud, FileText, X, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PrescriptionDetails } from "@/lib/types";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -26,7 +28,7 @@ const formSchema = z.object({
 });
 
 interface PrescriptionUploaderProps {
-    onUploadSuccess: (summary: GeneratePrescriptionSummaryOutput) => void;
+    onUploadSuccess: (details: PrescriptionDetails) => void;
 }
 
 
@@ -65,7 +67,7 @@ export function PrescriptionUploader({ onUploadSuccess }: PrescriptionUploaderPr
     try {
       const dataUri = await toBase64(file);
       const result = await generatePrescriptionSummary({ prescriptionImageUri: dataUri });
-      onUploadSuccess(result);
+      onUploadSuccess({ summary: result, dataUri });
     } catch (err) {
       console.error(err);
       toast({

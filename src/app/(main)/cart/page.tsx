@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -11,11 +12,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { PrescriptionUploader } from '@/components/features/prescription-uploader';
 import { GeneratePrescriptionSummaryOutput } from '@/ai/flows/generate-prescription-summary';
+import { PrescriptionDetails } from '@/lib/types';
 
 type PrescriptionStatus = 'needed' | 'uploaded' | 'approved' | 'rejected';
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
+  const { cart, removeFromCart, updateQuantity, clearCart, setPrescription } = useCart();
   const [prescriptionSummary, setPrescriptionSummary] = useState<GeneratePrescriptionSummaryOutput | null>(null);
   const [prescriptionStatus, setPrescriptionStatus] = useState<PrescriptionStatus>('needed');
 
@@ -26,12 +28,13 @@ export default function CartPage() {
   const hasRxItems = useMemo(() => cart.some(item => item.isRx), [cart]);
   
   // Simulate approval after a delay
-  const handlePrescriptionUploaded = (summary: GeneratePrescriptionSummaryOutput) => {
-      setPrescriptionSummary(summary);
+  const handlePrescriptionUploaded = (details: PrescriptionDetails) => {
+      setPrescriptionSummary(details.summary);
+      setPrescription(details); // Save details to context
       setPrescriptionStatus('uploaded');
       // Simulate admin approval
       setTimeout(() => {
-          const isApproved = summary.medicines && summary.medicines.length > 0;
+          const isApproved = details.summary.medicines && details.summary.medicines.length > 0;
           setPrescriptionStatus(isApproved ? 'approved' : 'rejected');
       }, 3000);
   };

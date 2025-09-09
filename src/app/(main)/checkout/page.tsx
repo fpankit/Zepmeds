@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ const iconMap: Record<"Home" | "Work" | "Other", React.ElementType> = {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, clearCart } = useCart();
+  const { cart, clearCart, prescription } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -79,7 +80,7 @@ export default function CheckoutPage() {
     }
 
     try {
-        const orderData = {
+        const orderData: any = {
             userId: user.id,
             cart: cart.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
             total,
@@ -98,6 +99,15 @@ export default function CheckoutPage() {
             status: "Order Confirmed",
             orderDate: serverTimestamp(),
         };
+
+        if (prescription) {
+            orderData.prescription = {
+                dataUri: prescription.dataUri,
+                summary: prescription.summary,
+                status: 'pending_approval' // Set initial status for admin
+            }
+        }
+
 
         const docRef = await addDoc(collection(db, "orders"), orderData);
         console.log("Order placed with ID: ", docRef.id);

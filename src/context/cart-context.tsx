@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import { CartItem } from "@/lib/types";
+import { CartItem, PrescriptionDetails } from "@/lib/types";
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
 interface CartContextType {
@@ -10,12 +11,15 @@ interface CartContextType {
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
+  prescription: PrescriptionDetails | null;
+  setPrescription: (prescription: PrescriptionDetails | null) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [prescription, setPrescription] = useState<PrescriptionDetails | null>(null);
 
   const addToCart = (item: CartItem) => {
     setCart((prevCart) => {
@@ -47,11 +51,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => {
     setCart([]);
+    setPrescription(null);
   };
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart }}
+      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, prescription, setPrescription }}
     >
       {children}
     </CartContext.Provider>
@@ -65,3 +70,4 @@ export const useCart = () => {
   }
   return context;
 };
+

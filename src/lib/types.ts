@@ -1,5 +1,7 @@
 
 
+import { GeneratePrescriptionSummaryOutput } from "./ai/flows/generate-prescription-summary";
+
 export type CartItem = {
   id: string;
   name: string;
@@ -10,6 +12,12 @@ export type CartItem = {
   description?: string;
   isRx?: boolean;
 };
+
+export interface PrescriptionDetails {
+    summary: GeneratePrescriptionSummaryOutput;
+    dataUri: string;
+}
+
 
 export interface Product {
     id: string;
