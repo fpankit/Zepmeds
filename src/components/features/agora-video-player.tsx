@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     LocalVideoTrack,
@@ -14,8 +14,10 @@ import {
     MediaPlayer,
 } from "agora-rtc-react";
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Camera, CameraOff, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Camera, CameraOff, PhoneOff, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 
 interface AgoraVideoPlayerProps {
@@ -26,14 +28,43 @@ interface AgoraVideoPlayerProps {
 
 export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayerProps) {
     const router = useRouter();
+    const { toast } = useToast();
 
     const [micOn, setMic] = useState(true);
     const [cameraOn, setCamera] = useState(true);
+    const [hasPermission, setHasPermission] = useState(false);
+    const [isPermissionLoading, setIsPermissionLoading] = useState(true);
 
-    const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn);
-    const { localCameraTrack } = useLocalCameraTrack(cameraOn);
+    // Request permissions on component mount
+    useEffect(() => {
+        const requestPermissions = async () => {
+            try {
+                // Request both camera and microphone permissions
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                // Stop the tracks immediately as we only needed to ask for permission
+                stream.getTracks().forEach(track => track.stop());
+                setHasPermission(true);
+            } catch (error) {
+                console.error('Error getting media permissions:', error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Permissions Denied',
+                    description: 'Camera and microphone access is required for video calls.',
+                    duration: 5000,
+                });
+                setHasPermission(false);
+            } finally {
+                setIsPermissionLoading(false);
+            }
+        };
+
+        requestPermissions();
+    }, [toast]);
+
+    const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn && hasPermission);
+    const { localCameraTrack } = useLocalCameraTrack(cameraOn && hasPermission);
     
-    useJoin({ appid: appId, channel: channelName, token: token });
+    useJoin({ appid: appId, channel: channelName, token: token }, hasPermission);
     usePublish([localMicrophoneTrack, localCameraTrack]);
 
     const remoteUsers = useRemoteUsers();
@@ -49,6 +80,25 @@ export function AgoraVideoPlayer({ appId, channelName, token }: AgoraVideoPlayer
         }
         router.push('/doctor');
     };
+
+    if (isPermissionLoading) {
+        return <div className="flex items-center justify-center h-full"><p>Requesting permissions...</p></div>
+    }
+
+    if (!hasPermission) {
+        return (
+             <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                <Alert variant="destructive" className="max-w-md">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Permissions Required</AlertTitle>
+                    <AlertDescription>
+                        Zepmeds needs access to your camera and microphone to start a video call. Please grant permissions in your browser settings and refresh the page.
+                    </AlertDescription>
+                </Alert>
+                 <Button onClick={handleLeave} variant="outline" className="mt-4">Back to safety</Button>
+            </div>
+        )
+    }
 
     return (
         <div className="flex flex-col h-full">
