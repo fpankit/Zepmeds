@@ -53,15 +53,24 @@ export default function DoctorPage() {
   
   useEffect(() => {
     setIsLoading(true);
+    // Use a simpler query that doesn't require a composite index
     const doctorsQuery = query(collection(db, "doctors"), orderBy("name"));
 
     const unsubscribe = onSnapshot(doctorsQuery, (querySnapshot) => {
         const fetchedDoctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+        
+        // Sort doctors on the client-side to prioritize online ones
+        fetchedDoctors.sort((a, b) => {
+            if (a.isOnline && !b.isOnline) return -1;
+            if (!a.isOnline && b.isOnline) return 1;
+            return a.name.localeCompare(b.name);
+        });
+
         setDoctors(fetchedDoctors);
         setIsLoading(false);
     }, (error) => {
         console.error("Error fetching doctors with real-time listener: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctors.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctors. Please ensure Firestore permissions are correct.' });
         setIsLoading(false);
     });
 
