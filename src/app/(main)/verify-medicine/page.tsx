@@ -136,7 +136,6 @@ export default function VerifyMedicinePage() {
       try {
         parsedData = JSON.parse(data);
       } catch (e) {
-        // This is the fix: catch the JSON parsing error and show a toast
         console.error('QR Parse Error:', e);
         toast({
             variant: 'destructive',
@@ -144,13 +143,19 @@ export default function VerifyMedicinePage() {
             description: 'The QR code is invalid or not in the correct format.',
         });
         setIsLoading(false);
-        // Allow user to scan again
         setTimeout(() => setIsScanning(true), 2000);
-        return; // Exit the function
+        return;
       }
 
       if (!parsedData.medicine_id || !parsedData.batch_no || !parsedData.expiry_date || !parsedData.manufacturer) {
-        throw new Error('Invalid QR code format.');
+        toast({
+            variant: 'destructive',
+            title: 'Scan Failed',
+            description: 'The QR code is missing required information.',
+        });
+        setIsLoading(false);
+        setTimeout(() => setIsScanning(true), 2000);
+        return;
       }
 
       const medDocRef = doc(db, 'medicines', parsedData.medicine_id);
@@ -195,9 +200,8 @@ export default function VerifyMedicinePage() {
       toast({
         variant: 'destructive',
         title: 'Scan Failed',
-        description: error.message || 'The QR code is invalid or not recognized. Please try a different one.',
+        description: error.message || 'The QR code is not recognized. Please try a different one.',
       });
-      // Allow user to scan again after a failed attempt
        setTimeout(() => setIsScanning(true), 2000);
     } finally {
       setIsLoading(false);
@@ -342,7 +346,3 @@ export default function VerifyMedicinePage() {
     </div>
   );
 }
-
-    
-
-    
