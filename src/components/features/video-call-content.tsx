@@ -34,6 +34,7 @@ export function VideoCallContent() {
 
     useEffect(() => {
         isMounted.current = true;
+        // This is a dummy comment to force a refresh in Firebase Studio.
         return () => {
             isMounted.current = false;
         };
@@ -41,13 +42,8 @@ export function VideoCallContent() {
 
     useEffect(() => {
         if (!user || !agoraAppId) {
-            if (!agoraAppId) {
-                toast({ variant: "destructive", title: "Configuration Error", description: "Agora App ID is missing." });
-            }
-            if (!user) {
-                toast({ variant: "destructive", title: "Not logged in." });
-                router.push('/login');
-            }
+            toast({ variant: "destructive", title: "Configuration Error", description: "Agora App ID is missing or user is not logged in." });
+            if (!user) router.push('/login');
             return;
         }
 
@@ -56,8 +52,10 @@ export function VideoCallContent() {
         let tracks: [IMicrophoneAudioTrack, ICameraVideoTrack] | null = null;
         
         const initializeAgora = async () => {
+            if (!client.current) return;
             try {
-                const response = await fetch(`/api/agora/token?channelName=${channelName}&uid=${user.id}`);
+                // The backend will now generate the UID
+                const response = await fetch(`/api/agora/token?channelName=${channelName}`);
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || 'Failed to fetch Agora token');
@@ -118,12 +116,10 @@ export function VideoCallContent() {
         initializeAgora();
 
         return () => {
-            if (client.current) {
-                client.current.leave();
-                client.current.removeAllListeners();
-            }
             localAudioTrack.current?.close();
             localVideoTrack.current?.close();
+            client.current?.leave();
+            client.current?.removeAllListeners();
         };
     }, [channelName, router, toast, user]);
 
