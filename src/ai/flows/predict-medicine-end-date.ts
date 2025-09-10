@@ -49,10 +49,13 @@ const predictMedicineEndDateFlow = ai.defineFlow(
       return { predictedDate: futureDate.toISOString() };
     }
     
+    // Duration is total tablets divided by daily consumption.
+    // We use Math.floor because a partial day still means you have medicine for that day.
     const durationInDays = Math.floor(totalTablets / dailyConsumption);
     
     const start = new Date(startDate);
-    const endDate = add(start, { days: durationInDays });
+    // Subtract 1 from duration because the start day is day 1 of consumption.
+    const endDate = add(start, { days: durationInDays > 0 ? durationInDays - 1 : 0 });
 
     return {
       predictedDate: endDate.toISOString(),

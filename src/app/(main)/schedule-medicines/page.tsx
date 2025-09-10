@@ -164,9 +164,10 @@ export default function ScheduleMedicinesPage() {
     setIsSubmitting(true);
     try {
       // AI Prediction
+      const tabletsPerDose = parseInt(data.dosage.split(' ')[0]) || 1;
       const { predictedDate } = await predictMedicineEndDate({
         startDate: data.startDate.toISOString(),
-        tabletsPerDose: parseInt(data.dosage) || 1,
+        tabletsPerDose,
         timesPerDay: parseInt(data.frequency) || 1,
         totalTablets: data.quantity,
       });
