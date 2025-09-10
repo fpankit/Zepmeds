@@ -11,9 +11,11 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const noHeaderRoutes = ["/activity"];
   const noLayoutRoutes = ["/checkout", "/symptom-checker/results", "/echo-doc/call", "/first-aid/", "/verify-medicine"];
   
   const isLayoutVisible = !noLayoutRoutes.some(route => pathname.startsWith(route) || pathname === '/order-status');
+  const isHeaderHidden = noHeaderRoutes.includes(pathname);
 
 
   if (!isLayoutVisible && pathname.startsWith('/order-status')) {
@@ -26,7 +28,7 @@ export default function MainLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
+      {!isHeaderHidden && <Header />}
       <main className="flex-1 pb-20">
         {children}
       </main>
