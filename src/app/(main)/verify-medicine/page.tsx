@@ -39,7 +39,7 @@ export default function VerifyMedicinePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [isScanning, setIsScanning] = useState(true);
+  const [isScanning, setIsScanning] = useState(isScanning);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
@@ -158,7 +158,7 @@ export default function VerifyMedicinePage() {
         return;
       }
 
-      const medDocRef = doc(db, 'medicines', parsedData.medicine_id);
+      const medDocRef = doc(db, 'products', parsedData.medicine_id);
       const medDocSnap = await getDoc(medDocRef);
 
       let verificationStatus: VerificationResult['status'];
@@ -347,4 +347,5 @@ export default function VerifyMedicinePage() {
   );
 }
 
+    
     
