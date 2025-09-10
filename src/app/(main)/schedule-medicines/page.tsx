@@ -178,7 +178,7 @@ export default function ScheduleMedicinesPage() {
         quantity: data.quantity,
         frequency: data.frequency,
         start_date: data.startDate,
-        end_date: data.endDate,
+        end_date: data.endDate || null,
         predicted_end_date: predictedDate ? new Date(predictedDate) : null,
         auto_order_status: data.autoOrder ? 'Pending' : 'Off',
         last_updated: serverTimestamp(),
@@ -480,3 +480,5 @@ export default function ScheduleMedicinesPage() {
     </div>
   );
 }
+
+    
