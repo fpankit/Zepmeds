@@ -36,6 +36,7 @@ export function WebRTCVideoPlayer() {
   
   const callId = params.channel as string;
 
+  // Use a ref to hold the RTCPeerConnection instance. Initialize it once.
   const pc = useRef<RTCPeerConnection>(new RTCPeerConnection(servers));
   
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -49,24 +50,20 @@ export function WebRTCVideoPlayer() {
   const [callStatus, setCallStatus] = useState<'idle' | 'connecting' | 'connected' | 'disconnected'>('idle');
 
 
+  // The hangUp function is now the single source of truth for ending a call.
   const hangUp = useCallback(async () => {
-    if (callStatus === 'disconnected') return;
+    // Prevent multiple hangup calls
+    if (pc.current.signalingState === 'closed') {
+        return;
+    }
     setCallStatus('disconnected');
 
     // Close the peer connection
-    if (pc.current && pc.current.signalingState !== 'closed') {
-        pc.current.close();
-    }
+    pc.current.close();
     
     // Stop and clear all media streams
-    if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
-        localStreamRef.current = null;
-    }
-    if (remoteStreamRef.current) {
-        remoteStreamRef.current.getTracks().forEach(track => track.stop());
-        remoteStreamRef.current = null;
-    }
+    localStreamRef.current?.getTracks().forEach(track => track.stop());
+    remoteStreamRef.current?.getTracks().forEach(track => track.stop());
     
     // Clear video elements
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
@@ -85,8 +82,9 @@ export function WebRTCVideoPlayer() {
         }
     }
     
-    router.push('/home');
-  }, [router, callId, callStatus]);
+    // Use a slight delay before routing to allow cleanup to complete
+    setTimeout(() => router.push('/home'), 300);
+  }, [router, callId]);
   
   // Main call setup effect
   useEffect(() => {
@@ -96,7 +94,9 @@ export function WebRTCVideoPlayer() {
       return;
     }
     
+    // This flag prevents operations on an unmounted component
     let isCancelled = false;
+    // Store all Firestore listeners to unsubscribe on cleanup
     const unsubscribes: Unsubscribe[] = [];
 
     const setupCall = async () => {
@@ -136,79 +136,80 @@ export function WebRTCVideoPlayer() {
         const answerCandidates = collection(callDocRef, 'answerCandidates');
         
         pc.current.onicecandidate = async (event) => {
-            if (event.candidate) {
+            if (event.candidate && pc.current.signalingState !== 'closed') {
                 const candidatesCollection = user.isDoctor ? answerCandidates : offerCandidates;
-                 if (pc.current.signalingState !== 'closed') {
-                    await addDoc(candidatesCollection, event.candidate.toJSON());
-                 }
+                await addDoc(candidatesCollection, event.candidate.toJSON());
             }
         };
 
-        if (user.isDoctor) { // Doctor answers
-            const callSnap = await getDoc(callDocRef);
-            if (isCancelled || !callSnap.exists() || !callSnap.data().offer) return;
-            
-            await pc.current.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
-            
-            if(pc.current.signalingState !== 'have-remote-offer') return;
+        try {
+            if (user.isDoctor) { // Doctor answers
+                const callSnap = await getDoc(callDocRef);
+                if (isCancelled || !callSnap.exists() || !callSnap.data().offer) return;
+                
+                await pc.current.setRemoteDescription(new RTCSessionDescription(callSnap.data().offer));
+                
+                if(pc.current.signalingState !== 'have-remote-offer') return;
 
-            const answerDescription = await pc.current.createAnswer();
-            await pc.current.setLocalDescription(answerDescription);
+                const answerDescription = await pc.current.createAnswer();
+                await pc.current.setLocalDescription(answerDescription);
 
-            const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
-            await updateDoc(callDocRef, { answer });
-            
-            const unsub = onSnapshot(offerCandidates, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added' && pc.current.signalingState !== 'closed') {
-                        pc.current.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                const answer = { type: answerDescription.type, sdp: answerDescription.sdp };
+                await updateDoc(callDocRef, { answer });
+                
+                const unsub = onSnapshot(offerCandidates, (snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added' && pc.current.signalingState !== 'closed') {
+                            pc.current.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                        }
+                    });
+                });
+                unsubscribes.push(unsub);
+            } else { // Patient creates offer
+                const offerDescription = await pc.current.createOffer();
+                await pc.current.setLocalDescription(offerDescription);
+                
+                const offer = { sdp: offerDescription.sdp, type: offerDescription.type };
+                await updateDoc(callDocRef, { offer });
+
+                const unsubAnswer = onSnapshot(callDocRef, (snapshot) => {
+                    const data = snapshot.data();
+                    if (!pc.current.currentRemoteDescription && data?.answer && pc.current.signalingState !== 'closed') {
+                        pc.current.setRemoteDescription(new RTCSessionDescription(data.answer));
                     }
                 });
-            });
-            unsubscribes.push(unsub);
-        } else { // Patient creates offer
-            const offerDescription = await pc.current.createOffer();
-            await pc.current.setLocalDescription(offerDescription);
-            
-            const offer = { sdp: offerDescription.sdp, type: offerDescription.type };
-            await updateDoc(callDocRef, { offer });
+                unsubscribes.push(unsubAnswer);
 
-            const unsubAnswer = onSnapshot(callDocRef, (snapshot) => {
+                const unsubCandidates = onSnapshot(answerCandidates, (snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added' && pc.current.signalingState !== 'closed') {
+                            pc.current.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                        }
+                    });
+                });
+                 unsubscribes.push(unsubCandidates);
+            }
+
+            // Listen for remote hangup
+            const unsubStatus = onSnapshot(callDocRef, (snapshot) => {
                 const data = snapshot.data();
-                if (pc.current && !pc.current.currentRemoteDescription && data?.answer && pc.current.signalingState !== 'closed') {
-                    pc.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+                if (data?.status === 'ended' && !isCancelled && pc.current.signalingState !== 'closed') {
+                    hangUp();
                 }
             });
-            unsubscribes.push(unsubAnswer);
-
-            const unsubCandidates = onSnapshot(answerCandidates, (snapshot) => {
-                snapshot.docChanges().forEach((change) => {
-                    if (change.type === 'added' && pc.current && pc.current.signalingState !== 'closed') {
-                        pc.current.addIceCandidate(new RTCIceCandidate(change.doc.data()));
-                    }
-                });
-            });
-             unsubscribes.push(unsubCandidates);
-        }
-
-        // Listen for remote hangup
-        const unsubStatus = onSnapshot(callDocRef, (snapshot) => {
-            const data = snapshot.data();
-            if (data?.status === 'ended' && !isCancelled) {
-                hangUp();
+            unsubscribes.push(unsubStatus);
+        } catch (err) {
+             if (!isCancelled) {
+                 console.error("Call setup failed:", err);
+                 toast({ variant: 'destructive', title: 'Call Failed', description: "Could not establish a connection. Please try again." });
+                 hangUp();
             }
-        });
-        unsubscribes.push(unsubStatus);
+        }
     };
     
-    setupCall().catch(err => {
-        if (!isCancelled) {
-             console.error("Call setup failed:", err);
-             toast({ variant: 'destructive', title: 'Call Failed', description: "Could not establish a connection. Please try again." });
-             hangUp();
-        }
-    });
+    setupCall();
 
+    // This cleanup function ONLY detaches listeners. It does NOT close the connection.
     return () => {
       isCancelled = true;
       unsubscribes.forEach(unsub => unsub());
@@ -216,7 +217,7 @@ export function WebRTCVideoPlayer() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, callId]);
   
-  // This separate effect handles the final cleanup when the component unmounts
+  // This separate effect handles the FINAL cleanup when the component truly unmounts.
   useEffect(() => {
     return () => {
         hangUp();
@@ -300,5 +301,3 @@ export function WebRTCVideoPlayer() {
     </div>
   );
 }
-
-    
