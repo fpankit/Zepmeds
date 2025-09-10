@@ -124,8 +124,14 @@ export default function VerifyMedicinePage() {
       if (!data) {
         throw new Error("QR code is empty.");
       }
+      
+      let parsedData: ScannedData;
+      try {
+        parsedData = JSON.parse(data);
+      } catch (e) {
+        throw new Error('Invalid QR code format.');
+      }
 
-      const parsedData: ScannedData = JSON.parse(data);
       if (!parsedData.medicine_id || !parsedData.batch_no || !parsedData.expiry_date || !parsedData.manufacturer) {
         throw new Error('Invalid QR code format.');
       }
@@ -167,12 +173,12 @@ export default function VerifyMedicinePage() {
       setResult(finalResult);
       saveScanToHistory(finalResult);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Scan handling error:', error);
       toast({
         variant: 'destructive',
         title: 'Scan Failed',
-        description: 'The QR code is invalid or not recognized. Please try a different one.',
+        description: error.message || 'The QR code is invalid or not recognized. Please try a different one.',
       });
       // Allow user to scan again after a failed attempt
        setTimeout(() => setIsScanning(true), 2000);
@@ -319,3 +325,5 @@ export default function VerifyMedicinePage() {
     </div>
   );
 }
+
+    
