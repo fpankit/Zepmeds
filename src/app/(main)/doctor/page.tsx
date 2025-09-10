@@ -58,7 +58,13 @@ export default function DoctorPage() {
   };
 
   const handleStartCall = (doctor: Doctor) => {
-    router.push(`/echo-doc/call?doctorName=${encodeURIComponent(doctor.name)}`);
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Please login to start a call.' });
+        router.push('/login');
+        return;
+    }
+    const channelName = `call_${user.id}_${doctor.id}`;
+    router.push(`/call?channel=${channelName}&doctorName=${encodeURIComponent(doctor.name)}&userName=${encodeURIComponent(user.firstName)}`);
   };
 
   useEffect(() => {
