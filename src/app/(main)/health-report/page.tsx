@@ -11,6 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 import { generateDietPlan, GenerateDietPlanOutput } from '@/ai/flows/generate-diet-plan';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import jsPDF from 'jspdf';
+import { Logo } from '@/components/icons/logo';
+
 
 type Section = {
   id: string;
@@ -88,16 +91,173 @@ export default function HealthReportPage() {
     }
   }
 
- const handleDownload = () => {
-    if (!reportRef.current) {
-      toast({
-        variant: 'destructive',
-        title: 'Cannot Download',
-        description: 'Report content is not available to download.',
-      });
-      return;
+ const handleDownload = async () => {
+    if (!report || !user) {
+        toast({
+            variant: "destructive",
+            title: "Cannot Download",
+            description: "Please generate a report first.",
+        });
+        return;
     }
-    window.print();
+
+    const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'px',
+        format: 'a4',
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 40;
+    let yPos = margin;
+
+    const addPageIfNeeded = (neededHeight: number) => {
+        if (yPos + neededHeight > pageHeight - margin) {
+            pdf.addPage();
+            yPos = margin;
+        }
+    };
+
+    // --- Fonts and Colors ---
+    const primaryColor = '#FACC15'; 
+
+    // --- PDF Content ---
+
+    // 1. Header
+    pdf.setFontSize(24);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text("Zepmeds", margin, yPos);
+    yPos += 30;
+
+    pdf.setFontSize(18);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text("Your Personalized Health Report", margin, yPos);
+    yPos += 20;
+
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`For: ${user.firstName} ${user.lastName}`, margin, yPos);
+    yPos += 15;
+    pdf.text(`Email: ${user.email}`, margin, yPos);
+    yPos += 25;
+
+
+    // 2. Health Risk Analysis
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text("Health Risk Analysis", margin, yPos);
+    yPos += 20;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'italic');
+    const summaryLines = pdf.splitTextToSize(report.healthAnalysis.riskSummary, pageWidth - (margin * 2));
+    pdf.text(summaryLines, margin, yPos);
+    yPos += (summaryLines.length * 10) + 10;
+    
+
+    report.healthAnalysis.risks.forEach((risk) => {
+        const riskCardHeight = 40; // Approximate height
+        addPageIfNeeded(riskCardHeight);
+
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`${risk.condition}: `, margin, yPos);
+        const conditionWidth = pdf.getStringUnitWidth(risk.condition) * 11;
+        pdf.setTextColor(risk.level === 'Low' ? '#22C55E' : risk.level === 'Moderate' ? '#EAB308' : '#EF4444');
+        pdf.text(risk.level, margin + conditionWidth + 5, yPos);
+        pdf.setTextColor(0, 0, 0); // Reset color
+        yPos += 15;
+        
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        const reasonLines = pdf.splitTextToSize(risk.reason, pageWidth - (margin * 2));
+        pdf.text(reasonLines, margin, yPos);
+        yPos += (reasonLines.length * 10) + 10;
+    });
+
+    // 3. Diet Plan
+    addPageIfNeeded(100);
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text("Diet Plan", margin, yPos);
+    yPos += 20;
+    
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text("Morning:", margin, yPos);
+    yPos += 15;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    let dietLines = pdf.splitTextToSize(report.dietPlan.morning, pageWidth - (margin * 2));
+    pdf.text(dietLines, margin, yPos);
+    yPos += (dietLines.length * 10) + 10;
+
+    addPageIfNeeded(50);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text("Lunch:", margin, yPos);
+    yPos += 15;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    dietLines = pdf.splitTextToSize(report.dietPlan.lunch, pageWidth - (margin * 2));
+    pdf.text(dietLines, margin, yPos);
+    yPos += (dietLines.length * 10) + 10;
+
+    addPageIfNeeded(50);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text("Dinner:", margin, yPos);
+    yPos += 15;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    dietLines = pdf.splitTextToSize(report.dietPlan.dinner, pageWidth - (margin * 2));
+    pdf.text(dietLines, margin, yPos);
+    yPos += (dietLines.length * 10) + 10;
+
+    // 4. Other Sections (as lists)
+    const listSections = [
+        { title: "Exercise Tips", items: report.exerciseTips },
+        { title: "Home Remedies", items: report.homeRemedies },
+        { title: "Do's", items: report.doAndDont.dos },
+        { title: "Don'ts", items: report.doAndDont.donts },
+    ];
+
+    listSections.forEach(section => {
+        addPageIfNeeded(section.items.length * 15 + 30);
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(section.title, margin, yPos);
+        yPos += 20;
+
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        section.items.forEach(item => {
+            addPageIfNeeded(15);
+            const itemLines = pdf.splitTextToSize(`• ${item}`, pageWidth - (margin * 2) - 10);
+            pdf.text(itemLines, margin + 5, yPos);
+            yPos += (itemLines.length * 10);
+        });
+        yPos += 10;
+    });
+
+    // Add Disclaimer Footer to all pages
+    const pageCount = pdf.internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(150);
+        pdf.text(
+            'Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice.',
+            margin,
+            pageHeight - 15
+        );
+        pdf.setTextColor(0);
+    }
+
+
+    pdf.save(`Zepmeds_Health_Report_${user.firstName}.pdf`);
   };
 
   const getRiskColor = (level: string) => {
