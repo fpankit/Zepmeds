@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/auth-context";
 import { healthMetrics, HealthMetric } from "@/lib/health-data";
 import { EditMetricDialog } from "@/components/features/edit-metric-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 
 const weeklyStepsData = [
@@ -32,6 +33,7 @@ export default function ActivityPage() {
     const router = useRouter();
     const { cart } = useCart();
     const { user, updateUser } = useAuth();
+    const { toast } = useToast();
     
     const [editingMetric, setEditingMetric] = useState<HealthMetric | null>(null);
 
@@ -160,7 +162,11 @@ export default function ActivityPage() {
             })}
         </div>
 
-        <Button variant="outline" className="w-full h-14 border-primary border-2 text-primary text-lg font-bold">
+        <Button 
+            variant="outline" 
+            className="w-full h-14 border-primary border-2 text-primary text-lg font-bold"
+            onClick={() => toast({ title: "Coming Soon!", description: "Google Fit integration is under development."})}
+        >
             <GitMerge className="mr-3 h-6 w-6"/>
             Sync with Google Fit
         </Button>
@@ -178,3 +184,5 @@ export default function ActivityPage() {
     </div>
   );
 }
+
+    
