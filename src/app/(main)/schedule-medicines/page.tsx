@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -228,6 +228,24 @@ export default function ScheduleMedicinesPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="my-medicines" className="mt-6">
+           <Card className="bg-primary/10 border-primary/20 mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-6 w-6 text-primary" />
+                  AI Scheduling Suggestion
+                </CardTitle>
+                <CardDescription>
+                  Let our AI analyze your past orders to suggest a medicine schedule for you. This is helpful if you frequently buy the same medicines.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => toast({ title: "Coming Soon!", description: "This feature is under development." })}>
+                  Analyze My Orders
+                </Button>
+              </CardContent>
+            </Card>
+
+
           {!showForm && (
             <Button className="w-full" onClick={() => setShowForm(true)}>
               <PlusCircle className="mr-2 h-4 w-4" /> Add New Medicine
@@ -487,6 +505,3 @@ export default function ScheduleMedicinesPage() {
     </div>
   );
 }
-
-    
-    
