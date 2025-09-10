@@ -15,6 +15,7 @@ import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Doctor } from "@/hooks/use-calls";
+import { generate100msToken } from "@/ai/flows/generate-100ms-token";
 
 const DoctorCardSkeleton = () => (
     <Card className="overflow-hidden">
@@ -97,22 +98,39 @@ export default function DoctorPage() {
     }
     
     try {
-        const callDocRef = await addDoc(collection(db, 'calls'), {
-            callerId: user.id,
-            callerName: `${user.firstName} ${user.lastName}`,
-            doctorId: doctor.id,
-            receiverName: doctor.name,
-            status: 'calling',
-            createdAt: serverTimestamp(),
-        });
+      // Step 1: Create a room using 100ms API.
+      // In a real app, you would make an API call to your backend to create a room.
+      // For this prototype, we'll use a hardcoded room ID for simplicity,
+      // assuming a pre-created room for each doctor or a generic one.
+      const roomId = "668c0e91a5ba8326e6eb80ab"; // Replace with your actual room creation logic
 
-        router.push(`/video-call/${callDocRef.id}`);
-    } catch(error) {
+      // Step 2: Add call to Firestore with 'ringing' status
+      const callDocRef = await addDoc(collection(db, 'calls'), {
+          callerId: user.id,
+          callerName: `${user.firstName} ${user.lastName}`,
+          doctorId: doctor.id,
+          receiverName: doctor.name,
+          roomId: roomId,
+          status: 'ringing',
+          createdAt: serverTimestamp(),
+      });
+
+      // Step 3: Generate token for the patient
+      const { token, error } = await generate100msToken({ userId: user.id, roomId, role: 'guest' });
+
+      if (error || !token) {
+          throw new Error(error || "Failed to get call token.");
+      }
+
+      // Step 4: Navigate to the call page
+      router.push(`/video-call/${callDocRef.id}?token=${token}`);
+
+    } catch(error: any) {
         console.error("Failed to start call:", error);
         toast({
             variant: "destructive",
             title: "Could not start call",
-            description: "There was an error trying to start the video call. Please try again."
+            description: error.message || "There was an error trying to start the video call. Please try again."
         });
     } finally {
         setIsStartingCall(null);

@@ -5,9 +5,10 @@ import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { HMSPrebuilt } from '@100mslive/roomkit-react';
 
-const WebRTCVideoPlayer = dynamic(
-    () => import('@/components/features/webrtc-video-player').then((mod) => mod.WebRTCVideoPlayer),
+const HundredMSVideoPlayer = dynamic(
+    () => import('@/components/features/100ms-video-player').then((mod) => mod.HundredMSVideoPlayer),
     { 
         ssr: false,
         loading: () => (
@@ -17,13 +18,7 @@ const WebRTCVideoPlayer = dynamic(
                     <div className="w-8" />
                 </header>
                 <main className="flex flex-1 flex-col gap-4 p-4 md:flex-row">
-                    <div className="flex-1 space-y-4">
-                        <Skeleton className="aspect-video w-full rounded-lg" />
-                        <div className="grid grid-cols-4 gap-4">
-                           <Skeleton className="aspect-video w-full rounded-lg" />
-                        </div>
-                    </div>
-                    <Skeleton className="w-full md:w-80" />
+                    <Skeleton className="aspect-video w-full rounded-lg" />
                 </main>
                  <footer className="flex h-20 items-center justify-center gap-4 border-t border-gray-700 bg-gray-800">
                     <Skeleton className="h-12 w-12 rounded-full" />
@@ -39,7 +34,7 @@ const WebRTCVideoPlayer = dynamic(
 export default function VideoCallPage() {
     return (
         <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-gray-900"><Loader2 className="h-8 w-8 animate-spin text-white"/></div>}>
-            <WebRTCVideoPlayer />
+            <HundredMSVideoPlayer />
         </Suspense>
     )
 }

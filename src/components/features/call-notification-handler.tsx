@@ -9,8 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Phone, PhoneOff } from 'lucide-react';
 import { updateDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
+import { generate100msToken } from '@/ai/flows/generate-100ms-token';
 
 export function CallNotificationHandler() {
+  const { user } = useAuth();
   const { incomingCalls } = useCalls();
   const { toast, dismiss } = useToast();
   const router = useRouter();
@@ -45,28 +48,33 @@ export function CallNotificationHandler() {
         ),
       });
 
-      // Cleanup: dismiss the toast if the call is no longer 'calling'
+      // Cleanup: dismiss the toast if the call is no longer 'ringing'
       return () => dismiss(toastId);
     } else {
         // If there are no more ringing calls, dismiss all toasts
         dismiss();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomingCalls, dismiss, router, toast]);
+  }, [incomingCalls]);
 
   const handleAccept = async (call: Call) => {
+    if (!user || !user.isDoctor) return;
+
     try {
-        const callDocRef = doc(db, 'calls', call.id);
-        // Update status to prevent other doctors from accepting
-        await updateDoc(callDocRef, { status: 'connecting' }); 
+        const { token, error } = await generate100msToken({ userId: user.id, roomId: call.roomId, role: 'host' });
+        
+        if (error || !token) {
+            throw new Error(error || "Failed to get call token for doctor.");
+        }
+        
         dismiss(); // Close the toast
-        router.push(`/video-call/${call.id}`);
-    } catch (error) {
+        router.push(`/video-call/${call.id}?token=${token}`);
+    } catch (error: any) {
         console.error("Error accepting call:", error);
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'Could not accept the call. Please try again.'
+            description: error.message || 'Could not accept the call. Please try again.'
         });
     }
   };
