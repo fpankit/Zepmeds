@@ -5,7 +5,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import jsQR from 'jsqr';
 import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, Loader2, CameraOff, QrCode, History } from 'lucide-react';
@@ -17,7 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ScannedData {
+  batch_id: string;
   medicine_id: string;
+  name: string;
   batch_no: string;
   expiry_date: string;
   manufacturer: string;
@@ -26,7 +27,6 @@ interface ScannedData {
 interface VerificationResult {
   status: 'verified' | 'counterfeit' | 'expired';
   data: ScannedData;
-  productName: string;
   scannedAt: string;
 }
 
@@ -48,7 +48,11 @@ export default function VerifyMedicinePage() {
     // Load scan history from local storage
     const storedHistory = localStorage.getItem('zepmeds_scan_history');
     if (storedHistory) {
-      setScanHistory(JSON.parse(storedHistory));
+      try {
+        setScanHistory(JSON.parse(storedHistory));
+      } catch (e) {
+        console.error("Failed to parse scan history:", e);
+      }
     }
   }, []);
 
@@ -60,6 +64,7 @@ export default function VerifyMedicinePage() {
 
 
   const getCameraPermission = useCallback(async () => {
+    if (hasCameraPermission) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       if (videoRef.current) {
@@ -75,7 +80,7 @@ export default function VerifyMedicinePage() {
         description: 'Please enable camera permissions to use this feature.',
       });
     }
-  }, [toast]);
+  }, [toast, hasCameraPermission]);
 
   useEffect(() => {
     getCameraPermission();
@@ -89,7 +94,7 @@ export default function VerifyMedicinePage() {
   }, [getCameraPermission]);
 
   const tick = useCallback(() => {
-    if (isScanning && videoRef.current && videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA && canvasRef.current) {
+    if (isScanning && videoRef.current?.HAVE_ENOUGH_DATA && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
@@ -107,47 +112,37 @@ export default function VerifyMedicinePage() {
         }
       }
     }
-    requestAnimationFrame(tick);
-  }, [isScanning]);
+    if (hasCameraPermission) {
+       requestAnimationFrame(tick);
+    }
+  }, [isScanning, hasCameraPermission]);
 
   useEffect(() => {
-    if (hasCameraPermission) {
-      requestAnimationFrame(tick);
-    }
-  }, [hasCameraPermission, tick]);
+    requestAnimationFrame(tick);
+  }, [tick]);
 
   const handleScan = async (data: string) => {
     setIsLoading(true);
     setResult(null);
 
     try {
-      if (!data) {
-        toast({
+      let parsedData: ScannedData;
+      try {
+        parsedData = JSON.parse(data);
+      } catch (e) {
+         toast({
             variant: 'destructive',
             title: 'Scan Failed',
-            description: 'The QR code appears to be empty.',
+            description: 'The QR code is invalid or not in the correct JSON format.',
         });
         setIsLoading(false);
         setTimeout(() => setIsScanning(true), 2000);
         return;
       }
       
-      let parsedData: ScannedData;
-      try {
-        parsedData = JSON.parse(data);
-      } catch (e) {
-        console.error('QR Parse Error:', e);
-        toast({
-            variant: 'destructive',
-            title: 'Scan Failed',
-            description: 'The QR code is invalid or not in the correct format.',
-        });
-        setIsLoading(false);
-        setTimeout(() => setIsScanning(true), 2000);
-        return;
-      }
+      const { batch_id, medicine_id, name, batch_no, expiry_date, manufacturer } = parsedData;
 
-      if (!parsedData.medicine_id || !parsedData.batch_no || !parsedData.expiry_date || !parsedData.manufacturer) {
+      if (!batch_id || !medicine_id || !name || !batch_no || !expiry_date || !manufacturer) {
         toast({
             variant: 'destructive',
             title: 'Scan Failed',
@@ -158,28 +153,17 @@ export default function VerifyMedicinePage() {
         return;
       }
 
-      const medDocRef = doc(db, 'products', parsedData.medicine_id);
+      const medDocRef = doc(db, 'medicines', batch_id);
       const medDocSnap = await getDoc(medDocRef);
 
       let verificationStatus: VerificationResult['status'];
-      let productName = "Unknown Medicine";
 
       if (medDocSnap.exists()) {
-        const firestoreData = medDocSnap.data();
-        productName = firestoreData.name || "Unknown Medicine";
-
-        if (
-          firestoreData.batch_no === parsedData.batch_no &&
-          firestoreData.manufacturer === parsedData.manufacturer
-        ) {
-          const expiryDate = new Date(parsedData.expiry_date);
-          if (expiryDate < new Date()) {
-            verificationStatus = 'expired';
-          } else {
-            verificationStatus = 'verified';
-          }
+        const expiryDate = new Date(expiry_date);
+        if (expiryDate < new Date()) {
+          verificationStatus = 'expired';
         } else {
-          verificationStatus = 'counterfeit';
+          verificationStatus = 'verified';
         }
       } else {
         verificationStatus = 'counterfeit';
@@ -188,7 +172,6 @@ export default function VerifyMedicinePage() {
       const finalResult: VerificationResult = {
         status: verificationStatus,
         data: parsedData,
-        productName: productName,
         scannedAt: new Date().toISOString(),
       };
 
@@ -199,8 +182,8 @@ export default function VerifyMedicinePage() {
       console.error('Scan handling error:', error);
       toast({
         variant: 'destructive',
-        title: 'Scan Failed',
-        description: error.message || 'The QR code is not recognized. Please try a different one.',
+        title: 'An Error Occurred',
+        description: error.message || 'Could not process the QR code. Please try again.',
       });
        setTimeout(() => setIsScanning(true), 2000);
     } finally {
@@ -240,7 +223,7 @@ export default function VerifyMedicinePage() {
           <p className="text-muted-foreground">{currentStatus.description}</p>
         </CardHeader>
         <CardContent className="text-left space-y-2">
-            <p><strong>Product:</strong> {result.productName}</p>
+            <p><strong>Product:</strong> {result.data.name}</p>
             <p><strong>Batch No:</strong> {result.data.batch_no}</p>
             <p><strong>Expiry Date:</strong> {format(new Date(result.data.expiry_date), 'MMMM yyyy')}</p>
             <p><strong>Manufacturer:</strong> {result.data.manufacturer}</p>
@@ -266,7 +249,7 @@ export default function VerifyMedicinePage() {
                 {currentStatus.icon}
               </div>
               <div className="flex-1">
-                  <p className="font-bold">{item.productName}</p>
+                  <p className="font-bold">{item.data.name}</p>
                   <p className="text-sm">Batch: {item.data.batch_no}</p>
                   <p className="text-xs text-muted-foreground mt-1">{format(new Date(item.scannedAt), 'PP, p')}</p>
               </div>
@@ -346,3 +329,5 @@ export default function VerifyMedicinePage() {
     </div>
   );
 }
+
+    
