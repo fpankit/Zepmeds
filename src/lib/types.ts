@@ -31,4 +31,8 @@ export interface Product {
     isRx?: boolean;
     image?: string; // Optional image field
     dataAiHint?: string;
+    // Fields for verification
+    batch_no?: string;
+    expiry_date?: string; // Stored as ISO string e.g., "2025-12-31"
+    manufacturer?: string;
 }

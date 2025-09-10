@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pill, Stethoscope, Search, Bot, Gift, CreditCard, Star, Minus, Plus, MessageSquare, Siren, PackageSearch, HeartPulse } from "lucide-react";
+import { Pill, Stethoscope, Search, Bot, Gift, CreditCard, Star, Minus, Plus, MessageSquare, Siren, PackageSearch, HeartPulse, QrCode } from "lucide-react";
 import Link from "next/link";
 import {
   Carousel,
@@ -121,6 +121,13 @@ export default function HomePage() {
           className="pl-10"
         />
       </div>
+
+       <Link href="/verify-medicine" className="w-full">
+            <Button variant="outline" className="w-full h-14 border-primary border-2 text-primary text-lg font-bold">
+                <QrCode className="mr-3 h-6 w-6"/>
+                Scan & Verify Medicine
+            </Button>
+       </Link>
 
        {/* Feature Cards */}
        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
