@@ -34,16 +34,14 @@ export function VideoCallContent() {
 
     useEffect(() => {
         isMounted.current = true;
-        // This is a dummy comment to force a refresh in Firebase Studio.
         return () => {
             isMounted.current = false;
         };
     }, []);
 
     useEffect(() => {
-        if (!user || !agoraAppId) {
-            toast({ variant: "destructive", title: "Configuration Error", description: "Agora App ID is missing or user is not logged in." });
-            if (!user) router.push('/login');
+        if (!agoraAppId) {
+            toast({ variant: "destructive", title: "Configuration Error", description: "Agora App ID is missing." });
             return;
         }
 
@@ -54,7 +52,6 @@ export function VideoCallContent() {
         const initializeAgora = async () => {
             if (!client.current) return;
             try {
-                // The backend will now generate the UID
                 const response = await fetch(`/api/agora/token?channelName=${channelName}`);
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -68,6 +65,7 @@ export function VideoCallContent() {
                 localAudioTrack.current = tracks[0];
                 localVideoTrack.current = tracks[1];
                 
+                // Only play local video in the dedicated local player
                 const localPlayerContainer = document.getElementById('local-video');
                 if (localPlayerContainer) {
                     localVideoTrack.current.play(localPlayerContainer);
@@ -98,6 +96,8 @@ export function VideoCallContent() {
                 if (isMounted.current) setRemoteUser(user);
                 const remotePlayerContainer = document.getElementById('remote-video');
                 if (remotePlayerContainer) {
+                    // This ensures we don't try to play on a non-existent element
+                    remotePlayerContainer.innerHTML = ''; // Clear previous content
                     user.videoTrack?.play(remotePlayerContainer);
                 }
             }
@@ -116,12 +116,18 @@ export function VideoCallContent() {
         initializeAgora();
 
         return () => {
-            localAudioTrack.current?.close();
-            localVideoTrack.current?.close();
+            if (localAudioTrack.current) {
+                localAudioTrack.current.close();
+                localAudioTrack.current = null;
+            }
+            if (localVideoTrack.current) {
+                localVideoTrack.current.close();
+                localVideoTrack.current = null;
+            }
             client.current?.leave();
             client.current?.removeAllListeners();
         };
-    }, [channelName, router, toast, user]);
+    }, [channelName, router, toast]);
 
 
     const handleLeave = async () => {
@@ -162,18 +168,20 @@ export function VideoCallContent() {
             </header>
 
             <main className="relative flex-1">
+                {/* Remote video container */}
                 <div 
                     id="remote-video"
-                    className="absolute inset-0 h-full w-full"
+                    className="absolute inset-0 h-full w-full bg-black"
                 >
                    {!remoteUser && !isLoading && (
                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
                         <Loader2 className="h-8 w-8 animate-spin" />
-                        <p className="mt-4">Waiting for the doctor to join...</p>
+                        <p className="mt-4">Waiting for {doctorName} to join...</p>
                     </div>
                    )}
                 </div>
                 
+                {/* Local video container */}
                 <div 
                     id="local-video" 
                     className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10"
