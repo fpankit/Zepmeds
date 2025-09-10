@@ -20,13 +20,13 @@ export function VideoCallContent() {
     const client = useRef<IAgoraRTCClient | null>(null);
     const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
     const localVideoTrack = useRef<ICameraVideoTrack | null>(null);
-    const isInitialized = useRef(false); // Flag to prevent double initialization
+    const remoteVideoContainer = useRef<HTMLDivElement | null>(null);
 
     const [channelName] = useState(searchParams.get('channel') || 'default_channel');
     const [doctorName] = useState(searchParams.get('doctorName') || 'Doctor');
     const [userName] = useState(searchParams.get('userName') || 'Patient');
 
-    const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
+    const [remoteUser, setRemoteUser] = useState<IAgoraRTCRemoteUser | null>(null);
     const [isJoined, setIsJoined] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
@@ -39,91 +39,88 @@ export function VideoCallContent() {
             return;
         }
 
-        // Prevent initialization from running twice
-        if (isInitialized.current) {
-            return;
-        }
-        isInitialized.current = true;
-
+        let isMounted = true;
+        const agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+        client.current = agoraClient;
+        let tracks: [IMicrophoneAudioTrack, ICameraVideoTrack] | null = null;
+        
         const initializeAgora = async () => {
             try {
-                // Initialize Agora Client
-                client.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-
                 // Fetch token from our API route
                 const response = await fetch(`/api/agora/token?channelName=${channelName}&uid=${user.id}`);
                 if (!response.ok) throw new Error('Failed to fetch Agora token');
                 const { token, uid } = await response.json();
                 
                 // Join the channel
-                await client.current.join(agoraAppId, channelName, token, uid);
+                await agoraClient.join(agoraAppId, channelName, token, uid);
 
                 // Create and publish local tracks
-                [localAudioTrack.current, localVideoTrack.current] = await AgoraRTC.createMicrophoneAndCameraTracks();
+                tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+                localAudioTrack.current = tracks[0];
+                localVideoTrack.current = tracks[1];
                 
-                // Play local video
                 const localPlayerContainer = document.getElementById('local-video');
                 if (localPlayerContainer) {
                     localVideoTrack.current.play(localPlayerContainer);
                 }
                 
-                // Publish tracks
-                await client.current.publish([localAudioTrack.current, localVideoTrack.current]);
+                await agoraClient.publish(tracks);
 
-                setIsJoined(true);
+                if (isMounted) {
+                    setIsJoined(true);
+                }
+
             } catch (error: any) {
                 console.error('Agora initialization failed:', error);
-                toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call.' });
-                router.back();
+                if (isMounted) {
+                    toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call.' });
+                    router.back();
+                }
             } finally {
-                setIsLoading(false);
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
-        // Event listeners for remote users
         const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
-            await client.current?.subscribe(user, mediaType);
+            await agoraClient.subscribe(user, mediaType);
             if (mediaType === 'video') {
-                setRemoteUsers(prev => [...prev.filter(u => u.uid !== user.uid), user]);
+                setRemoteUser(user);
+                // Ensure remote video container exists before playing
+                setTimeout(() => {
+                    const remotePlayerContainer = document.getElementById('remote-video');
+                    if(remotePlayerContainer) {
+                        user.videoTrack?.play(remotePlayerContainer);
+                    }
+                }, 0);
             }
             if (mediaType === 'audio') {
                 user.audioTrack?.play();
             }
         };
 
-        const handleUserUnpublished = (user: IAgoraRTCRemoteUser) => {
-            setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
-        };
-
         const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
-            setRemoteUsers(prev => prev.filter(u => u.uid !== user.uid));
+            setRemoteUser(null);
         };
-
-        if (client.current) {
-            client.current.on('user-published', handleUserPublished);
-            client.current.on('user-unpublished', handleUserUnpublished);
-            client.current.on('user-left', handleUserLeft);
-        }
+        
+        agoraClient.on('user-published', handleUserPublished);
+        agoraClient.on('user-left', handleUserLeft);
         
         initializeAgora();
 
         return () => {
-            // Cleanup on unmount
+            isMounted = false;
             localAudioTrack.current?.close();
             localVideoTrack.current?.close();
-            client.current?.leave();
-            client.current?.off('user-published', handleUserPublished);
-            client.current?.off('user-unpublished', handleUserUnpublished);
-            client.current?.off('user-left', handleUserLeft);
-            isInitialized.current = false; // Reset on cleanup
+            agoraClient.leave();
+            agoraClient.removeAllListeners();
         };
     }, [channelName, router, toast, user]);
 
 
     const handleLeave = async () => {
         try {
-            localAudioTrack.current?.close();
-            localVideoTrack.current?.close();
             await client.current?.leave();
             router.push('/home');
         } catch (error) {
@@ -161,16 +158,12 @@ export function VideoCallContent() {
 
             <main className="relative flex-1">
                 {/* Remote User Video */}
-                {remoteUsers.length > 0 ? (
-                    remoteUsers.map(user => (
-                        <div 
-                            key={user.uid} 
-                            id={`remote-video-${user.uid}`} 
-                            className="absolute inset-0 h-full w-full"
-                        >
-                           {user.videoTrack && user.videoTrack.play(`remote-video-${user.uid}`)}
-                        </div>
-                    ))
+                {remoteUser ? (
+                    <div 
+                        id="remote-video"
+                        ref={remoteVideoContainer}
+                        className="absolute inset-0 h-full w-full"
+                    />
                 ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
                         <Loader2 className="h-8 w-8 animate-spin" />
