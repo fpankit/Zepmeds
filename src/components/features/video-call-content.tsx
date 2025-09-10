@@ -20,6 +20,7 @@ export function VideoCallContent() {
     const client = useRef<IAgoraRTCClient | null>(null);
     const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
     const localVideoTrack = useRef<ICameraVideoTrack | null>(null);
+    const isInitialized = useRef(false); // Flag to prevent double initialization
 
     const [channelName] = useState(searchParams.get('channel') || 'default_channel');
     const [doctorName] = useState(searchParams.get('doctorName') || 'Doctor');
@@ -37,6 +38,12 @@ export function VideoCallContent() {
             router.push('/login');
             return;
         }
+
+        // Prevent initialization from running twice
+        if (isInitialized.current) {
+            return;
+        }
+        isInitialized.current = true;
 
         const initializeAgora = async () => {
             try {
@@ -108,6 +115,7 @@ export function VideoCallContent() {
             client.current?.off('user-published', handleUserPublished);
             client.current?.off('user-unpublished', handleUserUnpublished);
             client.current?.off('user-left', handleUserLeft);
+            isInitialized.current = false; // Reset on cleanup
         };
     }, [channelName, router, toast, user]);
 
