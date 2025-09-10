@@ -21,6 +21,8 @@ const LocalVideoPlayer = ({ videoTrack }: { videoTrack: ILocalVideoTrack | null 
             videoTrack.play(currentRef);
         }
         return () => {
+            // The track is managed by the parent component's cleanup,
+            // so we just stop playback here.
             videoTrack?.stop();
         };
     }, [videoTrack]);
@@ -37,9 +39,7 @@ const RemoteVideoPlayer = ({ videoTrack }: { videoTrack: IRemoteVideoTrack | nul
         if (currentRef && videoTrack) {
             videoTrack.play(currentRef);
         }
-        return () => {
-            videoTrack?.stop();
-        };
+        // Cleanup is handled by Agora's 'user-left' event
     }, [videoTrack]);
 
     return <div ref={ref} className="h-full w-full bg-black"></div>;
@@ -51,11 +51,11 @@ export function VideoCallContent() {
     const { toast } = useToast();
     
     const client = useRef<IAgoraRTCClient | null>(null);
+    const localTracksRef = useRef<{ audio: IMicrophoneAudioTrack | null, video: ICameraVideoTrack | null }>({ audio: null, video: null });
     
     const [channelName] = useState(searchParams.get('channel') || 'default_channel');
     const [doctorName] = useState(searchParams.get('doctorName') || 'Doctor');
     
-    const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
     const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
     const [remoteVideoTrack, setRemoteVideoTrack] = useState<IRemoteVideoTrack | null>(null);
 
@@ -67,8 +67,6 @@ export function VideoCallContent() {
         let isMounted = true;
         const agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         client.current = agoraClient;
-        
-        let tracks: [IMicrophoneAudioTrack, ICameraVideoTrack] | null = null;
 
         const initializeAgora = async () => {
             try {
@@ -80,10 +78,12 @@ export function VideoCallContent() {
                 if (!isMounted) return;
                 await agoraClient.join(agoraAppId, channelName, token, uid);
 
-                tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+                const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+                
+                localTracksRef.current.audio = tracks[0];
+                localTracksRef.current.video = tracks[1];
                 
                 if (isMounted) {
-                    setLocalAudioTrack(tracks[0]);
                     setLocalVideoTrack(tracks[1]);
                 }
 
@@ -110,8 +110,6 @@ export function VideoCallContent() {
         };
 
         const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
-            // When any user leaves, clear the remote track.
-            // In a one-to-one call, this means the other person left.
             if (isMounted) {
                 setRemoteVideoTrack(null);
             }
@@ -124,10 +122,11 @@ export function VideoCallContent() {
 
         return () => {
             isMounted = false;
-            tracks?.forEach(track => {
-                track.stop();
-                track.close();
-            });
+            localTracksRef.current.audio?.stop();
+            localTracksRef.current.audio?.close();
+            localTracksRef.current.video?.stop();
+            localTracksRef.current.video?.close();
+            
             agoraClient.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
             agoraClient.removeAllListeners();
         };
@@ -144,15 +143,15 @@ export function VideoCallContent() {
     };
 
     const toggleAudio = async () => {
-        if (localAudioTrack) {
-            await localAudioTrack.setMuted(!isAudioMuted);
+        if (localTracksRef.current.audio) {
+            await localTracksRef.current.audio.setMuted(!isAudioMuted);
             setIsAudioMuted(!isAudioMuted);
         }
     };
 
     const toggleVideo = async () => {
-        if (localVideoTrack) {
-            await localVideoTrack.setMuted(!isVideoMuted);
+        if (localTracksRef.current.video) {
+            await localTracksRef.current.video.setMuted(!isVideoMuted);
             setIsVideoMuted(!isVideoMuted);
         }
     };
