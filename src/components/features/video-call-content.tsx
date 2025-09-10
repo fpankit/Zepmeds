@@ -21,8 +21,6 @@ const LocalVideoPlayer = ({ videoTrack }: { videoTrack: ILocalVideoTrack | null 
             videoTrack.play(currentRef);
         }
         return () => {
-            // The track is managed by the parent component's cleanup,
-            // so we just stop playback here.
             videoTrack?.stop();
         };
     }, [videoTrack]);
@@ -39,7 +37,6 @@ const RemoteVideoPlayer = ({ videoTrack }: { videoTrack: IRemoteVideoTrack | nul
         if (currentRef && videoTrack) {
             videoTrack.play(currentRef);
         }
-        // Cleanup is handled by Agora's 'user-left' event
     }, [videoTrack]);
 
     return <div ref={ref} className="h-full w-full bg-black"></div>;
@@ -76,6 +73,21 @@ export function VideoCallContent() {
                 const { token, uid } = await response.json();
                 
                 if (!isMounted) return;
+                
+                agoraClient.on('user-published', async (user, mediaType) => {
+                    await agoraClient.subscribe(user, mediaType);
+                    if (mediaType === 'video') {
+                        setRemoteVideoTrack(user.videoTrack || null);
+                    }
+                    if (mediaType === 'audio') {
+                        user.audioTrack?.play();
+                    }
+                });
+
+                agoraClient.on('user-left', () => {
+                    setRemoteVideoTrack(null);
+                });
+
                 await agoraClient.join(agoraAppId, channelName, token, uid);
 
                 const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
@@ -98,25 +110,6 @@ export function VideoCallContent() {
                 if (isMounted) setIsLoading(false);
             }
         };
-
-        const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
-            await agoraClient.subscribe(user, mediaType);
-            if (mediaType === 'video' && user.videoTrack) {
-                if (isMounted) setRemoteVideoTrack(user.videoTrack);
-            }
-            if (mediaType === 'audio') {
-                user.audioTrack?.play();
-            }
-        };
-
-        const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
-            if (isMounted) {
-                setRemoteVideoTrack(null);
-            }
-        };
-        
-        agoraClient.on('user-published', handleUserPublished);
-        agoraClient.on('user-left', handleUserLeft);
         
         initializeAgora();
 
