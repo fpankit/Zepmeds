@@ -12,35 +12,37 @@ import { Mic, MicOff, PhoneOff, Video, VideoOff, Loader2 } from 'lucide-react';
 const agoraAppId = "5bbb95c735a84da6af004432f4ced817";
 
 // Dedicated component to handle playing a local video track
-const LocalVideoPlayer = ({ videoTrack }: { videoTrack: ILocalVideoTrack }) => {
+const LocalVideoPlayer = ({ videoTrack }: { videoTrack: ILocalVideoTrack | null }) => {
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (ref.current) {
-            videoTrack.play(ref.current);
+        const currentRef = ref.current;
+        if (currentRef && videoTrack) {
+            videoTrack.play(currentRef);
         }
         return () => {
-            videoTrack.stop();
+            videoTrack?.stop();
         };
     }, [videoTrack]);
 
-    return <div ref={ref} className="h-full w-full"></div>;
+    return <div ref={ref} className="h-full w-full bg-black"></div>;
 };
 
 // Dedicated component to handle playing a remote video track
-const RemoteVideoPlayer = ({ videoTrack }: { videoTrack: IRemoteVideoTrack }) => {
+const RemoteVideoPlayer = ({ videoTrack }: { videoTrack: IRemoteVideoTrack | null }) => {
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (ref.current) {
-            videoTrack.play(ref.current);
+        const currentRef = ref.current;
+        if (currentRef && videoTrack) {
+            videoTrack.play(currentRef);
         }
         return () => {
-            videoTrack.stop();
+            videoTrack?.stop();
         };
     }, [videoTrack]);
 
-    return <div ref={ref} className="h-full w-full"></div>;
+    return <div ref={ref} className="h-full w-full bg-black"></div>;
 };
 
 export function VideoCallContent() {
@@ -119,7 +121,10 @@ export function VideoCallContent() {
 
         return () => {
             isMounted = false;
-            tracks?.forEach(track => track.close());
+            tracks?.forEach(track => {
+                track.stop();
+                track.close();
+            });
             agoraClient.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
             agoraClient.removeAllListeners();
         };
@@ -177,7 +182,7 @@ export function VideoCallContent() {
                 
                 {/* Local video container */}
                 <div className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10">
-                    {localVideoTrack && !isVideoMuted && <LocalVideoPlayer videoTrack={localVideoTrack} />}
+                   {!isVideoMuted && <LocalVideoPlayer videoTrack={localVideoTrack} />}
                 </div>
             </main>
 
