@@ -13,6 +13,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Logo } from '@/components/icons/logo';
 import { cn } from '@/lib/utils';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 type Section = {
   id: string;
@@ -113,7 +114,7 @@ export default function HealthReportPage() {
       const canvas = await html2canvas(element, { 
         scale: 4, 
         useCORS: true,
-        backgroundColor: null
+        backgroundColor: '#0c0a09' // Match the dark background
       });
 
       if (wasHidden) {
@@ -133,7 +134,6 @@ export default function HealthReportPage() {
     };
   
     try {
-      // Find all report sections by a common class or attribute
       const sections = reportContainer.querySelectorAll<HTMLElement>('[data-report-section]');
       
       for (const section of Array.from(sections)) {
@@ -148,8 +148,9 @@ export default function HealthReportPage() {
   };
   
   const getRiskColor = (level: string) => {
-    switch (level.toLowerCase()) {
+    switch (level?.toLowerCase()) {
         case 'high': return 'text-red-500';
+        case 'very high': return 'text-red-700';
         case 'moderate': return 'text-yellow-500';
         case 'low': return 'text-green-500';
         default: return 'text-gray-400';
@@ -170,6 +171,16 @@ export default function HealthReportPage() {
     const htmlContent = content.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
     return <div className="text-[11px] whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
   }
+
+  const chartData = user?.healthData ? [
+      { name: 'Steps', value: parseInt(user.healthData.dailySteps?.replace(/,/g, '') || '0') },
+      { name: 'Water (glasses)', value: parseInt(user.healthData.waterIntake?.split(' ')[0] || '0') },
+      { name: 'Calories', value: parseInt(user.healthData.caloriesBurned?.replace(/ cals/g, '') || '0') },
+  ] : [];
+
+  const pieChartData = report?.healthAnalysis.risks.map(r => ({ name: r.condition, value: r.level === 'Low' ? 1 : (r.level === 'Moderate' ? 2 : 3)}));
+  const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
+
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -226,23 +237,25 @@ export default function HealthReportPage() {
         {report && user && (
             <div ref={reportRef} className="bg-card rounded-lg border border-border p-4">
                 {/* This wrapper is for on-screen display. The PDF will be built section-by-section. */}
-
+                {/* PDF Header section */}
                 <div data-report-section id="pdf-header" className="bg-background text-foreground p-6">
                     <div className="flex items-center justify-between">
                        <Logo className="h-8 w-auto" />
-                       <div className="text-right text-[24px] text-muted-foreground">
-                            <p>{user.firstName} {user.lastName}</p>
-                            <p>{user.email}</p>
+                       <div className="text-right text-muted-foreground">
+                            <p className="text-[24px]">{user.firstName} {user.lastName}</p>
+                            <p className="text-[24px]">{user.email}</p>
                        </div>
                     </div>
                     <hr className="border-border my-4" />
                 </div>
                 
+                {/* PDF Title Section */}
                 <div data-report-section id="pdf-title" className="text-center my-6 bg-background text-foreground p-6">
                     <h2 className="text-[17px] font-bold tracking-wider uppercase text-muted-foreground">Your Personalized Health Report</h2>
                     <p className="text-[14px] text-muted-foreground mt-1">Generated on {new Date().toLocaleDateString()}</p>
                 </div>
 
+                {/* PDF Analysis Section */}
                 <div data-report-section id="pdf-analysis" className="p-4 rounded-lg bg-card border border-border mb-4">
                     <h3 className="font-bold flex items-center gap-2 text-[14px] mb-3">
                         <HeartPulse className="h-5 w-5 text-primary" /> Health Risk Analysis
@@ -261,9 +274,10 @@ export default function HealthReportPage() {
                     </div>
                 </div>
                 
+                {/* PDF Main Content Sections */}
                 {sections.map(({ id, title, icon: Icon, color, content, isList }) => (
-                     <div data-report-section id={`pdf-${id}`} key={id} className="p-4 rounded-lg bg-card border border-border mb-4">
-                        <h3 className={`font-bold flex items-center gap-2 text-[14px] mb-3 ${color}`}>
+                     <div data-report-section id={`pdf-${id}`} key={id} className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
+                        <h3 className={cn("font-bold flex items-center gap-2 text-[14px] mb-3", color)}>
                             <Icon className="h-5 w-5" /> {title}
                         </h3>
                         {isList && Array.isArray(content) ? (
@@ -276,6 +290,40 @@ export default function HealthReportPage() {
                     </div>
                 ))}
                 
+                {/* PDF Charts Section */}
+                <div data-report-section id="pdf-charts" className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
+                    <h3 className="font-bold flex items-center gap-2 text-[14px] mb-3">
+                        <FileBarChart className="h-5 w-5 text-primary" /> Health Charts
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                       <div>
+                           <h4 className="text-center font-semibold text-[12px] mb-2">Daily Activity</h4>
+                           <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={chartData}>
+                                    <XAxis dataKey="name" stroke="#888888" fontSize={10} tickLine={false} axisLine={false}/>
+                                    <YAxis stroke="#888888" fontSize={10} tickLine={false} axisLine={false}/>
+                                    <Tooltip wrapperClassName="!bg-background !border-border" cursor={{fill: 'hsla(var(--muted))'}}/>
+                                    <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                           </ResponsiveContainer>
+                        </div>
+                        <div>
+                           <h4 className="text-center font-semibold text-[12px] mb-2">Risk Distribution</h4>
+                            <ResponsiveContainer width="100%" height={200}>
+                                <PieChart>
+                                    <Pie data={pieChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                                        {pieChartData?.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip wrapperClassName="!bg-background !border-border"/>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+
+                {/* PDF Footer section */}
                 <div data-report-section id="pdf-footer" className="text-center pt-6 text-[10px] text-muted-foreground bg-background text-foreground p-6">
                     <p>Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice. Always consult with a qualified healthcare provider for any health concerns.</p>
                     <p className="mt-2 font-headline">&copy; {new Date().getFullYear()} Zepmeds</p>

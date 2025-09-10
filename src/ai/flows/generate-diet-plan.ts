@@ -30,30 +30,30 @@ const GenerateDietPlanInputSchema = z.object({
 export type GenerateDietPlanInput = z.infer<typeof GenerateDietPlanInputSchema>;
 
 const DietPlanSchema = z.object({
-    morning: z.string().describe('Breakfast suggestion.'),
-    lunch: z.string().describe('Lunch suggestion.'),
-    dinner: z.string().describe('Dinner suggestion.'),
+    morning: z.string().describe('A detailed breakfast suggestion.'),
+    lunch: z.string().describe('A detailed lunch suggestion.'),
+    dinner: z.string().describe('A detailed dinner suggestion.'),
 });
 
 const DoAndDontSchema = z.object({
-    dos: z.array(z.string()).describe('A list of things the user should do.'),
-    donts: z.array(z.string()).describe('A list of things the user should avoid.'),
+    dos: z.array(z.string()).describe('A detailed list of at least 5 things the user should do.'),
+    donts: z.array(z.string()).describe('A detailed list of at least 5 things the user should avoid.'),
 });
 
 const HealthAnalysisSchema = z.object({
     riskSummary: z.string().describe("A brief, 1-2 sentence summary of the user's overall health risk based on the data."),
     risks: z.array(z.object({
-        condition: z.string().describe("The health condition being analyzed (e.g., 'Diabetes', 'High Blood Pressure', 'Obesity', 'Low Stamina')."),
-        level: z.string().describe("The assessed risk level ('Low', 'Moderate', 'High')."),
-        reason: z.string().describe("A brief reason for the assessment.")
-    })).describe("An array of health risk assessments.")
+        condition: z.string().describe("The health condition being analyzed (e.g., 'Diabetes', 'High Blood Pressure', 'Obesity', 'Low Stamina', 'Cardiac Stress')."),
+        level: z.string().describe("The assessed risk level ('Low', 'Moderate', 'High', 'Very High')."),
+        reason: z.string().describe("A detailed reason for the assessment, explaining how the user's data contributes to this risk level.")
+    })).describe("An array of health risk assessments. MUST include Diabetes, High Blood Pressure, Obesity, and Low Stamina.")
 });
 
 const GenerateDietPlanOutputSchema = z.object({
   healthAnalysis: HealthAnalysisSchema,
   dietPlan: DietPlanSchema,
-  exerciseTips: z.array(z.string()).describe('A list of exercise or activity recommendations.'),
-  homeRemedies: z.array(z.string()).describe('A list of local, culturally relevant home remedies ("ghar ke nuskhe").'),
+  exerciseTips: z.array(z.string()).describe('A detailed list of at least 4 exercise or activity recommendations.'),
+  homeRemedies: z.array(z.string()).describe('A detailed list of at least 4 local, culturally relevant home remedies ("ghar ke nuskhe").'),
   doAndDont: DoAndDontSchema,
 });
 export type GenerateDietPlanOutput = z.infer<typeof GenerateDietPlanOutputSchema>;
@@ -63,7 +63,7 @@ const englishPrompt = ai.definePrompt({
   name: 'generateDietPlanEnglishPrompt',
   input: {schema: HealthMetricsSchema},
   output: {schema: GenerateDietPlanOutputSchema},
-  prompt: `You are an expert nutritionist and lifestyle coach from India. Based on the user's health metrics, create a personalized health report. The suggestions should be practical and culturally relevant for an average person in India.
+  prompt: `You are an expert nutritionist and lifestyle coach from India. Based on the user's health metrics, create a personalized and comprehensive health report. The suggestions must be practical and culturally relevant for an average person in India. Generate detailed content for each section to be informative.
 
   User's Health Data:
   - Blood Pressure: {{{bloodPressure}}}
@@ -73,13 +73,13 @@ const englishPrompt = ai.definePrompt({
   - Calories Burned: {{{caloriesBurned}}}
 
   Your response MUST include the following sections:
-  1. **Health Risk Analysis**:
-     - Provide a brief, 1-2 sentence summary of the user's overall health risk.
-     - Analyze the risk ('Low', 'Moderate', 'High') for the following conditions: Diabetes, High Blood Pressure, Obesity, and Low Stamina. Provide a short reason for each assessment.
-  2.  **Diet Plan**: Suggest simple, common Indian meals for breakfast (morning), lunch, and dinner.
-  3.  **Exercise Tips**: Provide 3-4 practical activity or exercise tips.
-  4.  **Home Remedies**: Suggest 2-3 local home remedies (ghar ke nuskhe) relevant to the user's BP or Sugar levels.
-  5.  **Do's and Don'ts**: Provide a list of important do's and another list of important don'ts.
+  1. **Health Risk Analysis**: 
+     - You MUST analyze the risk ('Low', 'Moderate', 'High', 'Very High') for ALL of the following conditions: Diabetes, High Blood Pressure, Obesity, and Low Stamina. Provide a detailed, specific reason for each assessment based on the user's data.
+     - CRITICAL: Also analyze the risk of over-exertion or negative effects. For example, if 'dailySteps' is excessively high (e.g., > 30,000), identify a risk of 'Joint Problems' or 'Cardiac Stress'. If water intake is extremely high, mention risks like hyponatremia. Provide a detailed explanation.
+  2.  **Diet Plan**: Suggest detailed, common Indian meals for breakfast (morning), lunch, and dinner. Provide enough detail to fill a section on a page.
+  3.  **Exercise Tips**: Provide at least 4-5 practical and detailed activity or exercise tips.
+  4.  **Home Remedies**: Suggest at least 4 detailed local home remedies (ghar ke nuskhe) relevant to the user's potential health risks.
+  5.  **Do's and Don'ts**: Provide a detailed list of at least 5 important do's and at least 5 important don'ts.
 
   Keep the language simple and encouraging. Generate the entire response in English.
   `,
