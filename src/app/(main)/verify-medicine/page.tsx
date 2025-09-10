@@ -98,7 +98,7 @@ export default function VerifyMedicinePage() {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      if (context) {
+      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
         canvas.height = video.videoHeight;
         canvas.width = video.videoWidth;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
