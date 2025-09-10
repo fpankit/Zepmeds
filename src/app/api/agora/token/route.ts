@@ -35,7 +35,7 @@ export async function GET(request: Request) {
             appId,
             appCertificate,
             channelName,
-            Number(uid),
+            Number(uid), // Ensure UID is a number
             role,
             privilegeExpiredTs
         );
