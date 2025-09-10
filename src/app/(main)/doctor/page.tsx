@@ -7,23 +7,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-
-export interface Doctor {
-  id: string;
-  name: string;
-  specialty: string;
-  experience: string;
-  image: string;
-  isOnline: boolean;
-  dataAiHint?: string;
-}
+import { Doctor } from "@/hooks/use-calls";
 
 const DoctorCardSkeleton = () => (
     <Card className="overflow-hidden">
@@ -57,14 +48,43 @@ export default function DoctorPage() {
       toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
   };
 
-  const handleStartCall = (doctor: Doctor) => {
+  const handleStartCall = async (doctor: Doctor) => {
     if (!user) {
         toast({ variant: 'destructive', title: 'Please login to start a call.' });
         router.push('/login');
         return;
     }
+    if (user.isDoctor) {
+        toast({ variant: 'destructive', title: 'Action not allowed', description: 'Doctors cannot initiate calls with other doctors.' });
+        return;
+    }
+
     const channelName = `call_${user.id}_${doctor.id}`;
-    router.push(`/call?channel=${channelName}&doctorName=${encodeURIComponent(doctor.name)}&userName=${encodeURIComponent(user.firstName)}`);
+    const callId = channelName; // Use the channel name as a unique call ID
+
+    try {
+        // Create a 'call' document in Firestore to notify the doctor
+        await setDoc(doc(db, "calls", callId), {
+            callerId: user.id,
+            callerName: `${user.firstName} ${user.lastName}`,
+            doctorId: doctor.id,
+            receiverName: doctor.name,
+            roomId: channelName,
+            status: 'ringing',
+            createdAt: serverTimestamp(),
+        });
+        
+        // Navigate the user to the call page
+        router.push(`/call?channel=${channelName}&doctorName=${encodeURIComponent(doctor.name)}&userName=${encodeURIComponent(user.firstName)}`);
+
+    } catch (error) {
+        console.error("Error creating call document: ", error);
+        toast({
+            variant: "destructive",
+            title: "Call Failed",
+            description: "Could not initiate the call. Please try again."
+        });
+    }
   };
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from '@/components/layout/providers';
+import { IncomingCallManager } from '@/components/features/incoming-call-manager';
 
 export const metadata: Metadata = {
   title: 'Zepmeds: Online Medicine Delivery',
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <Providers>
           {children}
+          <IncomingCallManager />
           <Toaster />
         </Providers>
       </body>

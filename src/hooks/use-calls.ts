@@ -35,9 +35,18 @@ export const useCalls = () => {
             return;
         }
 
-        // The video call feature is disabled, so this will not fetch any calls.
-        // Keeping the hook structure to avoid breaking imports.
-        const unsubscribe = () => {};
+        const callsQuery = query(
+            collection(db, "calls"),
+            where("doctorId", "==", user.id),
+            where("status", "==", "ringing")
+        );
+
+        const unsubscribe = onSnapshot(callsQuery, (querySnapshot) => {
+            const calls = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Call));
+            setIncomingCalls(calls);
+        }, (error) => {
+            console.error("Error listening for incoming calls: ", error);
+        });
 
         return () => unsubscribe();
     }, [user]);
