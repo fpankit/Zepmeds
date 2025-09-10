@@ -1,3 +1,4 @@
+
 import type { SVGProps } from 'react';
 
 export function Logo(props: SVGProps<SVGSVGElement>) {
@@ -27,7 +28,7 @@ export function Logo(props: SVGProps<SVGSVGElement>) {
         x="55"
         y="35"
         fontFamily="Space Grotesk, sans-serif"
-        fontSize="30"
+        fontSize="32"
         fontWeight="bold"
         fill="hsl(var(--foreground))"
       >

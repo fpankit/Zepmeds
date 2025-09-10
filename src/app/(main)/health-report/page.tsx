@@ -15,6 +15,7 @@ import { Logo } from '@/components/icons/logo';
 import { cn } from '@/lib/utils';
 
 type Section = {
+  id: string;
   title: string;
   icon: React.ElementType;
   color: string;
@@ -90,46 +91,59 @@ export default function HealthReportPage() {
   }
 
   const handleDownload = async () => {
-    const reportElement = reportRef.current;
-    if (!reportElement) return;
+    const reportContainer = reportRef.current;
+    if (!reportContainer) return;
+  
+    toast({ title: "Preparing Download...", description: "Please wait while we generate your PDF." });
+  
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const contentWidth = pdfWidth - margin * 2;
+    let yPos = margin;
+  
+    const addElementToPdf = async (element: HTMLElement) => {
+      // Temporarily remove hidden class to measure and capture
+      const wasHidden = element.classList.contains('hidden');
+      if (wasHidden) {
+        element.classList.remove('hidden');
+      }
 
-    toast({ title: "Preparing Download...", description: "Please wait while we generate your PDF."});
+      const canvas = await html2canvas(element, { 
+        scale: 4, 
+        useCORS: true,
+        backgroundColor: null
+      });
 
+      if (wasHidden) {
+        element.classList.add('hidden');
+      }
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgHeight = (canvas.height * contentWidth) / canvas.width;
+  
+      if (yPos + imgHeight > pdfHeight - margin) {
+        pdf.addPage();
+        yPos = margin;
+      }
+  
+      pdf.addImage(imgData, 'PNG', margin, yPos, contentWidth, imgHeight);
+      yPos += imgHeight + 5; // Add some padding after each section
+    };
+  
     try {
-        const canvas = await html2canvas(reportElement, { 
-          scale: 4, // Increased scale for much higher quality rendering
-          backgroundColor: null, // Use transparent background
-          useCORS: true 
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        const ratio = imgWidth / imgHeight;
-        
-        const contentWidth = pdfWidth - 20; // 10mm margin on each side
-        let contentHeight = contentWidth / ratio;
-        
-        let heightLeft = contentHeight;
-        let position = 10; // Top margin
-
-        pdf.addImage(imgData, 'PNG', 10, position, contentWidth, contentHeight);
-        heightLeft -= (pdfHeight - 20);
-
-        while (heightLeft > 0) {
-            position = heightLeft - contentHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 10, position, contentWidth, contentHeight);
-            heightLeft -= pdfHeight;
-        }
-
-        pdf.save(`Zepmeds_Health_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      // Find all report sections by a common class or attribute
+      const sections = reportContainer.querySelectorAll<HTMLElement>('[data-report-section]');
+      
+      for (const section of Array.from(sections)) {
+        await addElementToPdf(section);
+      }
+  
+      pdf.save(`Zepmeds_Health_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
-        console.error("Failed to download PDF:", error);
-        toast({ variant: 'destructive', title: "Download Failed", description: "Could not create the PDF file."});
+      console.error("Failed to download PDF:", error);
+      toast({ variant: 'destructive', title: "Download Failed", description: "Could not create the PDF file." });
     }
   };
   
@@ -143,18 +157,18 @@ export default function HealthReportPage() {
   }
 
   const sections: Section[] = report ? [
-    { title: 'Diet Plan', icon: Utensils, color: 'text-green-500', content: `**Morning:** ${report.dietPlan.morning}\n\n**Lunch:** ${report.dietPlan.lunch}\n\n**Dinner:** ${report.dietPlan.dinner}` },
-    { title: 'Exercise Tips', icon: Dumbbell, color: 'text-orange-500', content: report.exerciseTips, isList: true },
-    { title: 'Home Remedies', icon: ShieldCheck, color: 'text-blue-500', content: report.homeRemedies, isList: true },
-    { title: "Do's", icon: ListChecks, color: 'text-sky-500', content: report.doAndDont.dos, isList: true },
-    { title: "Don'ts", icon: ListX, color: 'text-red-500', content: report.doAndDont.donts, isList: true },
+    { id: 'diet-plan', title: 'Diet Plan', icon: Utensils, color: 'text-green-500', content: `**Morning:** ${report.dietPlan.morning}\n\n**Lunch:** ${report.dietPlan.lunch}\n\n**Dinner:** ${report.dietPlan.dinner}` },
+    { id: 'exercise-tips', title: 'Exercise Tips', icon: Dumbbell, color: 'text-orange-500', content: report.exerciseTips, isList: true },
+    { id: 'home-remedies', title: 'Home Remedies', icon: ShieldCheck, color: 'text-blue-500', content: report.homeRemedies, isList: true },
+    { id: 'dos', title: "Do's", icon: ListChecks, color: 'text-sky-500', content: report.doAndDont.dos, isList: true },
+    { id: 'donts', title: "Don'ts", icon: ListX, color: 'text-red-500', content: report.doAndDont.donts, isList: true },
   ] : [];
 
   const languageOptions = ['English', 'Hindi', 'Punjabi', 'Tamil', 'Telugu', 'Kannada'];
 
   const renderContent = (content: string) => {
     const htmlContent = content.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
-    return <div className="text-[14px] whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    return <div className="text-[11px] whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
   }
 
   return (
@@ -210,68 +224,64 @@ export default function HealthReportPage() {
         )}
 
         {report && user && (
-            <div className="p-4 md:p-8 bg-card rounded-lg border border-border">
-                <div ref={reportRef} className="space-y-6 bg-background text-foreground p-6">
-                    {/* Report Header for PDF */}
+            <div ref={reportRef} className="bg-card rounded-lg border border-border p-4">
+                {/* This wrapper is for on-screen display. The PDF will be built section-by-section. */}
+
+                <div data-report-section id="pdf-header" className="bg-background text-foreground p-6">
                     <div className="flex items-center justify-between">
-                       <h1 className="text-[26px] font-headline font-bold text-primary">Zepmeds</h1>
-                       <div className="text-right text-[12px] text-muted-foreground">
+                       <Logo className="h-8 w-auto" />
+                       <div className="text-right text-[24px] text-muted-foreground">
                             <p>{user.firstName} {user.lastName}</p>
                             <p>{user.email}</p>
                        </div>
                     </div>
                     <hr className="border-border my-4" />
-                    
-                    {/* Main Title */}
-                    <div className="text-center my-6">
-                        <h2 className="text-[17px] font-bold tracking-wider uppercase text-muted-foreground">Your Personalized Health Report</h2>
-                        <p className="text-[14px] text-muted-foreground mt-1">Generated on {new Date().toLocaleDateString()}</p>
-                    </div>
+                </div>
+                
+                <div data-report-section id="pdf-title" className="text-center my-6 bg-background text-foreground p-6">
+                    <h2 className="text-[17px] font-bold tracking-wider uppercase text-muted-foreground">Your Personalized Health Report</h2>
+                    <p className="text-[14px] text-muted-foreground mt-1">Generated on {new Date().toLocaleDateString()}</p>
+                </div>
 
-                    {/* Health Risk Analysis */}
-                    <div className="p-4 rounded-lg bg-card border border-border">
-                        <h3 className="font-bold flex items-center gap-2 text-[16px] mb-3">
-                            <HeartPulse className="h-5 w-5 text-primary" /> Health Risk Analysis
-                        </h3>
-                        <p className="text-[14px] text-muted-foreground italic mb-4">{report.healthAnalysis.riskSummary}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {report.healthAnalysis.risks.map((risk, i) => (
-                                <div key={i} className="p-3 rounded-md bg-background border">
-                                    <div className="flex justify-between items-center">
-                                        <h4 className="font-semibold text-[14px]">{risk.condition}</h4>
-                                        <span className={cn("font-bold text-[14px]", getRiskColor(risk.level))}>{risk.level}</span>
-                                    </div>
-                                    <p className="text-[13px] text-muted-foreground mt-1">{risk.reason}</p>
+                <div data-report-section id="pdf-analysis" className="p-4 rounded-lg bg-card border border-border mb-4">
+                    <h3 className="font-bold flex items-center gap-2 text-[14px] mb-3">
+                        <HeartPulse className="h-5 w-5 text-primary" /> Health Risk Analysis
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground italic mb-4">{report.healthAnalysis.riskSummary}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {report.healthAnalysis.risks.map((risk, i) => (
+                            <div key={i} className="p-3 rounded-md bg-background border">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="font-semibold text-[14px]">{risk.condition}</h4>
+                                    <span className={cn("font-bold text-[14px]", getRiskColor(risk.level))}>{risk.level}</span>
                                 </div>
-                            ))}
-                        </div>
+                                <p className="text-[11px] text-muted-foreground mt-1">{risk.reason}</p>
+                            </div>
+                        ))}
                     </div>
-                    
-                    {/* Other Sections */}
-                    {sections.map(({ title, icon: Icon, color, content, isList }) => (
-                         <div key={title} className="p-4 rounded-lg bg-card border border-border">
-                            <h3 className={`font-bold flex items-center gap-2 text-[16px] mb-3 ${color}`}>
-                                <Icon className="h-5 w-5" /> {title}
-                            </h3>
-                            {isList && Array.isArray(content) ? (
-                                <ul className="list-disc pl-5 space-y-2 text-[14px]">
-                                    {content.map((item, i) => <li key={i}>{item}</li>)}
-                                </ul>
-                            ) : (
-                                renderContent(content as string)
-                            )}
-                        </div>
-                    ))}
-
-                    <div className="text-center pt-6 text-[10px] text-muted-foreground">
-                        <p>Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice. Always consult with a qualified healthcare provider for any health concerns.</p>
-                        <p className="mt-2 font-headline">&copy; {new Date().getFullYear()} Zepmeds</p>
+                </div>
+                
+                {sections.map(({ id, title, icon: Icon, color, content, isList }) => (
+                     <div data-report-section id={`pdf-${id}`} key={id} className="p-4 rounded-lg bg-card border border-border mb-4">
+                        <h3 className={`font-bold flex items-center gap-2 text-[14px] mb-3 ${color}`}>
+                            <Icon className="h-5 w-5" /> {title}
+                        </h3>
+                        {isList && Array.isArray(content) ? (
+                            <ul className="list-disc pl-5 space-y-2 text-[11px]">
+                                {content.map((item, i) => <li key={i}>{item}</li>)}
+                            </ul>
+                        ) : (
+                            renderContent(content as string)
+                        )}
                     </div>
+                ))}
+                
+                <div data-report-section id="pdf-footer" className="text-center pt-6 text-[10px] text-muted-foreground bg-background text-foreground p-6">
+                    <p>Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice. Always consult with a qualified healthcare provider for any health concerns.</p>
+                    <p className="mt-2 font-headline">&copy; {new Date().getFullYear()} Zepmeds</p>
                 </div>
             </div>
         )}
     </div>
   );
 }
-
-    
