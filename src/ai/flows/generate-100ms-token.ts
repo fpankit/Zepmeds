@@ -9,6 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
+import * as jose from 'jose';
 
 // Define input schema for the flow
 const Generate100msTokenInputSchema = z.object({
@@ -36,13 +37,14 @@ export async function generate100msToken(input: Generate100msTokenInput): Promis
 // Internal function to sign a JWT token
 // This mimics what a server-side library like 'jsonwebtoken' would do
 async function signJwt(payload: object, secret: string): Promise<string> {
-    const { Jose, JWT } = await import('jose-jwe');
-    return JWT.sign(payload, secret, {
-        alg: 'HS256',
-        iat: true,
-        exp: '24h', // Token valid for 24 hours
-        jti: uuidv4(),
-    });
+    const iat = Math.floor(Date.now() / 1000);
+    const exp = iat + 24 * 60 * 60; // 24 hours
+
+    return new jose.SignJWT({ ...payload, iat, exp, jti: uuidv4() })
+        .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+        .setIssuedAt(iat)
+        .setExpirationTime('24h')
+        .sign(new TextEncoder().encode(secret));
 }
 
 

@@ -5,10 +5,9 @@ import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { HMSPrebuilt } from '@100mslive/roomkit-react';
 
 const HundredMSVideoPlayer = dynamic(
-    () => import('@/components/features/100ms-video-player').then((mod) => mod.HundredMSVideoPlayer),
+    () => Promise.resolve(() => <div className="flex h-screen w-full flex-col items-center justify-center bg-gray-900 text-white"><p>Video conferencing is temporarily unavailable.</p></div>),
     { 
         ssr: false,
         loading: () => (
