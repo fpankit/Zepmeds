@@ -34,6 +34,12 @@ const metricFilters = [
     { label: "Diet", icon: Beef },
 ]
 
+const logMetrics = [
+  { label: "Steps", icon: Footprints },
+  { label: "Heart Rate", icon: Heart },
+  { label: "Blood Sugar", icon: Droplets },
+];
+
 export default function ActivityPage() {
   const [activeTab, setActiveTab] = useState("Week")
   const [activeMetric, setActiveMetric] = useState("Steps")
@@ -114,18 +120,16 @@ export default function ActivityPage() {
                 <CardTitle>Log Health Metrics</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-3 gap-4">
-                <Button variant="outline" className="flex-col h-20">
-                    <Footprints className="h-6 w-6 mb-1"/>
-                    Steps
-                </Button>
-                 <Button variant="outline" className="flex-col h-20">
-                    <Heart className="h-6 w-6 mb-1"/>
-                    Heart Rate
-                </Button>
-                 <Button variant="outline" className="flex-col h-20">
-                    <Droplets className="h-6 w-6 mb-1"/>
-                    Blood Sugar
-                </Button>
+               {logMetrics.map((metric) => (
+                  <Button
+                    key={metric.label}
+                    variant="secondary"
+                    className="flex h-24 flex-col items-center justify-center gap-2 rounded-xl bg-card hover:bg-card/80"
+                  >
+                    <metric.icon className="h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm font-semibold">{metric.label}</span>
+                  </Button>
+                ))}
             </CardContent>
         </Card>
         
