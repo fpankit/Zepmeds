@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Bell, Edit, BarChart } from "lucide-react";
+import { ArrowLeft, Bell, Edit, BarChart, GitMerge } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/cart-context";
 import { Badge } from "@/components/ui/badge";
@@ -128,7 +128,6 @@ export default function ActivityPage() {
 
         <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold tracking-tight">Log Health Metrics</h2>
-            <Button variant="link">Sync with Google Fit</Button>
         </div>
         
         <div className="flex justify-between items-center">
@@ -160,6 +159,11 @@ export default function ActivityPage() {
                 )
             })}
         </div>
+
+        <Button variant="outline" className="w-full h-14 border-primary border-2 text-primary text-lg font-bold">
+            <GitMerge className="mr-3 h-6 w-6"/>
+            Sync with Google Fit
+        </Button>
       </main>
       
       {editingMetric && (

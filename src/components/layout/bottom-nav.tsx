@@ -21,11 +21,15 @@ function BottomNavComponent() {
   const pathname = usePathname();
   const { cart } = useCart();
 
+  // A more robust check for activity page and its children
+  const isActivityActive = pathname === '/activity' || pathname.startsWith('/activity/');
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/80 bg-background/95 backdrop-blur-lg">
       <div className="flex h-16 items-center justify-around">
         {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          // Special check for activity tab
+          const isActive = item.href === '/activity' ? isActivityActive : pathname.startsWith(item.href);
           return (
             <Link
               key={item.label}
