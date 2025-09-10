@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { HMSPrebuilt } from '@100mslive/roomkit-react';
 
 export function HundredMSVideoPlayer() {
   const router = useRouter();
@@ -26,16 +27,6 @@ export function HundredMSVideoPlayer() {
     }
     router.push('/home');
   };
-
-  useEffect(() => {
-    toast({
-        variant: 'destructive',
-        title: 'Video Unavailable',
-        description: 'The video conferencing service is temporarily down. Please try again later.',
-      });
-      router.push('/home');
-  }, [router, toast]);
-
 
   if (!authToken || !user) {
       toast({
@@ -56,7 +47,11 @@ export function HundredMSVideoPlayer() {
 
   return (
       <div style={{ height: '100vh' }}>
-          <p>Video conferencing is temporarily unavailable.</p>
+        <HMSPrebuilt
+            roomCode="qoo-bvy-air"
+            authToken={authToken}
+            onLeave={handleLeave}
+        />
     </div>
   )
 }

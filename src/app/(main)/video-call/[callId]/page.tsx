@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const HundredMSVideoPlayer = dynamic(
-    () => Promise.resolve(() => <div className="flex h-screen w-full flex-col items-center justify-center bg-gray-900 text-white"><p>Video conferencing is temporarily unavailable.</p></div>),
+    () => import('@/components/features/100ms-video-player').then(mod => mod.HundredMSVideoPlayer),
     { 
         ssr: false,
         loading: () => (
