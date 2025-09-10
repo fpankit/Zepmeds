@@ -14,8 +14,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { detectLanguage } from './detect-language';
-import { translateText } from './translate-text';
 
 const EchoDocInputSchema = z.object({
   query: z.string().describe('The user\'s voice input or question.'),
@@ -33,25 +31,23 @@ export type EchoDocOutput = z.infer<typeof EchoDocOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'echoDocPrompt',
+  model: 'googleai/gemini-2.5-pro',
   input: {schema: z.object({ query: z.string() })},
-  output: {schema: z.object({ response: z.string() })},
-  prompt: `You are EchoDoc, a friendly, empathetic, and highly skilled AI medical assistant. 
-  
-  Your primary role is to have a natural, supportive conversation with the user about their health concerns. Your tone should be caring, reassuring, and professional.
+  output: {schema: z.object({ response: z.string(), language: z.string().describe('The language of the user\'s query, e.g., "Hindi", "English".') })},
+  system: `You are EchoDoc, a friendly, empathetic, and highly skilled AI medical assistant. Your primary role is to have a natural, supportive conversation with the user about their health concerns. Your tone should be caring, reassuring, and professional.
 
+  - First, detect the user's language.
+  - You MUST then generate your response in that same detected language.
+  - Your internal reasoning should be in English, but the final response must be in the user's language.
   - If the user greets you, greet them back warmly.
   - If the user asks a medical question, provide a clear, helpful, and concise answer.
-  - For common ailments like headaches, stomachaches, bee stings, congestion, coughs, or colds, you MUST first suggest a simple and safe Ayurvedic home remedy. 
+  - For common ailments like headaches, stomachaches, bee stings, congestion, coughs, or colds, you MUST first suggest a simple and safe Ayurvedic home remedy.
   - If a home remedy is not suitable or available for the user's symptoms, you should then recommend an appropriate over-the-counter medicine. Always try to provide some form of remedy.
   - If the user describes more serious symptoms, you can provide potential information, but you MUST advise them to consult a real doctor for a diagnosis.
   - Always maintain a supportive and caring tone.
   - Keep your responses relatively short and suitable for a voice conversation.
-  - VERY IMPORTANT: Do NOT include a disclaimer like "I am not a real doctor" in every single response. Only mention it when providing specific medical information or symptom analysis. For general conversation, it's not needed.
-
-  User's message (translated to English): {{{query}}}
-
-  Respond in English.
-  `,
+  - VERY IMPORTANT: Do NOT include a disclaimer like "I am not a real doctor" in every single response. Only mention it when providing specific medical information or symptom analysis. For general conversation, it's not needed.`,
+  prompt: `User's message: {{{query}}}`,
 });
 
 const echoDocFlowInternal = ai.defineFlow(
@@ -61,57 +57,20 @@ const echoDocFlowInternal = ai.defineFlow(
     outputSchema: EchoDocOutputSchema,
   },
   async (input) => {
-    let detectedLanguage = 'English';
-    let queryInEnglish = input.query;
-    let finalResponse = '';
-
     try {
-        // 1. Detect language, with fallback
-        try {
-            const langResult = await detectLanguage({ text: input.query });
-            detectedLanguage = langResult.language;
-        } catch (e) {
-            console.error("Language detection failed, falling back to English.", e);
-            detectedLanguage = 'English';
+        const { output } = await prompt({ query: input.query });
+        if (!output) {
+            throw new Error("AI did not return a valid response.");
         }
-
-        // 2. Translate to English for the main prompt, if necessary
-        if (detectedLanguage !== 'English') {
-            try {
-                const translationResult = await translateText({ text: input.query, targetLanguage: 'English' });
-                queryInEnglish = translationResult.translatedText;
-            } catch (e) {
-                console.error("Translation to English failed, using original query.", e);
-                queryInEnglish = input.query; // Fallback to original query
-                detectedLanguage = 'English'; // Treat as english if translation fails
-            }
-        }
-
-        // 3. Get the AI response in English
-        const { output } = await prompt({ query: queryInEnglish });
-        const responseInEnglish = output!.response;
-        finalResponse = responseInEnglish;
-
-        // 4. Translate back to the original language if needed
-        if (detectedLanguage !== 'English') {
-            try {
-                const translationResult = await translateText({ text: responseInEnglish, targetLanguage: detectedLanguage });
-                finalResponse = translationResult.translatedText;
-            } catch(e) {
-                 console.error(`Translation to ${detectedLanguage} failed, returning English response.`, e);
-                 finalResponse = responseInEnglish; // Fallback to English response
-            }
-        }
-        
+        return { response: output.response, language: output.language };
     } catch (e) {
         console.error("Core EchoDoc flow failed:", e);
-        // Fallback response in case of critical failure in the main prompt
-        finalResponse = "I'm sorry, I encountered an issue and couldn't process your request. Please try again in a moment.";
-        detectedLanguage = 'English';
+        // Fallback response in case of critical failure
+        return { 
+            response: "I'm sorry, I encountered an issue and couldn't process your request. Please try again in a moment.",
+            language: 'English' 
+        };
     }
-
-
-    return { response: finalResponse, language: detectedLanguage };
   }
 );
 
