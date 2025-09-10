@@ -57,6 +57,10 @@ export default function DoctorPage() {
       toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
   };
 
+  const handleStartCall = (doctor: Doctor) => {
+    router.push(`/echo-doc/call?doctorName=${encodeURIComponent(doctor.name)}`);
+  };
+
   useEffect(() => {
     setIsLoading(true);
     const doctorsQuery = query(collection(db, "doctors"), orderBy("displayName"));
@@ -162,7 +166,7 @@ export default function DoctorPage() {
                         <Button 
                             className="w-full" 
                             disabled={!doctor.isOnline}
-                            onClick={() => toast({ title: 'Feature unavailable', description: 'Video call feature is temporarily disabled.'})}
+                            onClick={() => handleStartCall(doctor)}
                         >
                             <Video className="mr-2 h-4 w-4" /> 
                           {doctor.isOnline ? 'Start Video Call' : 'Offline'}
