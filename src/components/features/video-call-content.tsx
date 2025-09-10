@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -28,6 +27,22 @@ const RemoteVideoPlayer = ({ videoTrack }: { videoTrack: IRemoteVideoTrack | nul
     return <div ref={ref} className="h-full w-full bg-black"></div>;
 };
 
+const LocalVideoPlayer = ({ videoTrack }: { videoTrack: ICameraVideoTrack | null }) => {
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const currentRef = ref.current;
+        if (currentRef && videoTrack) {
+            videoTrack.play(currentRef, { fit: 'cover' });
+        }
+        return () => {
+            videoTrack?.stop();
+        };
+    }, [videoTrack]);
+
+    return <div ref={ref} className="h-full w-full bg-black"></div>;
+}
+
 
 export function VideoCallContent() {
     const router = useRouter();
@@ -35,39 +50,33 @@ export function VideoCallContent() {
     const { toast } = useToast();
     
     const client = useRef<IAgoraRTCClient | null>(null);
-    const localTracks = useRef<{ audio: IMicrophoneAudioTrack | null, video: ICameraVideoTrack | null }>({ audio: null, video: null });
-    const localVideoRef = useRef<HTMLDivElement>(null);
     
     const [channelName] = useState(searchParams.get('channel') || 'default_channel');
     const [doctorName] = useState(searchParams.get('doctorName') || 'Doctor');
     
-    const [remoteVideoTrack, setRemoteVideoTrack] = useState<IRemoteVideoTrack | null>(null);
+    const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
+    const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
     const [remoteUser, setRemoteUser] = useState<IAgoraRTCRemoteUser | null>(null);
+    const [remoteVideoTrack, setRemoteVideoTrack] = useState<IRemoteVideoTrack | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [isVideoMuted, setIsVideoMuted] = useState(false);
 
     useEffect(() => {
+        if (!channelName) return;
+
         let isMounted = true;
         const agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         client.current = agoraClient;
 
         const initializeAgora = async () => {
             try {
-                // Fetch token
-                const response = await fetch(`/api/agora/token?channelName=${channelName}`);
-                if (!response.ok) throw new Error('Failed to fetch Agora token');
-                const { token, uid } = await response.json();
-
-                if (!isMounted) return;
-
                 // Event Handlers
                 agoraClient.on('user-published', async (user, mediaType) => {
                     await agoraClient.subscribe(user, mediaType);
                     if (mediaType === 'video') {
-                        setRemoteUser(user);
-                        setRemoteVideoTrack(user.videoTrack || null);
+                       setRemoteUser(user);
                     }
                     if (mediaType === 'audio') {
                         user.audioTrack?.play();
@@ -79,7 +88,13 @@ export function VideoCallContent() {
                     setRemoteVideoTrack(null);
                 });
 
-                // Join channel
+                // Fetch token
+                const response = await fetch(`/api/agora/token?channelName=${channelName}`);
+                if (!response.ok) throw new Error('Failed to fetch Agora token');
+                const { token, uid } = await response.json();
+
+                if (!isMounted) return;
+                
                 await agoraClient.join(agoraAppId, channelName, token, uid);
                 
                 // Create and publish local tracks
@@ -91,12 +106,8 @@ export function VideoCallContent() {
                     return;
                 }
 
-                localTracks.current.audio = audioTrack;
-                localTracks.current.video = videoTrack;
-
-                if (localVideoRef.current) {
-                    videoTrack.play(localVideoRef.current, { fit: 'cover' });
-                }
+                setLocalAudioTrack(audioTrack);
+                setLocalVideoTrack(videoTrack);
 
                 await agoraClient.publish([audioTrack, videoTrack]);
                 setIsLoading(false);
@@ -114,13 +125,21 @@ export function VideoCallContent() {
 
         return () => {
             isMounted = false;
-            localTracks.current.audio?.close();
-            localTracks.current.video?.close();
+            localAudioTrack?.close();
+            localVideoTrack?.close();
             
             agoraClient.removeAllListeners();
             agoraClient.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [channelName, router, toast]);
+
+    // This effect specifically handles setting the remote video track when the remote user changes.
+    useEffect(() => {
+      if (remoteUser) {
+        setRemoteVideoTrack(remoteUser.videoTrack || null);
+      }
+    }, [remoteUser]);
 
 
     const handleLeave = async () => {
@@ -133,15 +152,15 @@ export function VideoCallContent() {
     };
 
     const toggleAudio = async () => {
-        if (localTracks.current.audio) {
-            await localTracks.current.audio.setMuted(!isAudioMuted);
+        if (localAudioTrack) {
+            await localAudioTrack.setMuted(!isAudioMuted);
             setIsAudioMuted(!isAudioMuted);
         }
     };
 
     const toggleVideo = async () => {
-        if (localTracks.current.video) {
-            await localTracks.current.video.setMuted(!isVideoMuted);
+        if (localVideoTrack) {
+            await localVideoTrack.setMuted(!isVideoMuted);
             setIsVideoMuted(!isVideoMuted);
         }
     };
@@ -162,7 +181,7 @@ export function VideoCallContent() {
             <main className="relative flex-1">
                 {/* Remote video container */}
                 <div className="absolute inset-0 h-full w-full bg-black">
-                   {remoteVideoTrack && remoteUser ? (
+                   {remoteVideoTrack ? (
                        <RemoteVideoPlayer videoTrack={remoteVideoTrack} />
                    ) : (
                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
@@ -173,8 +192,12 @@ export function VideoCallContent() {
                 </div>
                 
                 {/* Local video container */}
-                <div ref={localVideoRef} className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10">
-                   {isVideoMuted && <div className="h-full w-full bg-black flex items-center justify-center"><VideoOff className="h-8 w-8 text-white"/></div>}
+                <div className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10">
+                   {localVideoTrack && !isVideoMuted ? (
+                       <LocalVideoPlayer videoTrack={localVideoTrack} />
+                   ): (
+                      <div className="h-full w-full bg-black flex items-center justify-center"><VideoOff className="h-8 w-8 text-white"/></div>
+                   )}
                 </div>
             </main>
 
