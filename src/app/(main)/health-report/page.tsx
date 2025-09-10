@@ -5,7 +5,6 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, Download, FileBarChart, Loader2, Sparkles, Languages, Utensils, Dumbbell, ShieldCheck, ListChecks, ListX } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -142,6 +141,12 @@ export default function HealthReportPage() {
 
   const languageOptions = ['English', 'Hindi', 'Punjabi', 'Tamil', 'Telugu', 'Kannada'];
 
+  // Helper function to render content with bold tags
+  const renderContent = (content: string) => {
+    const htmlContent = content.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>');
+    return <p className="whitespace-pre-line" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+  }
+
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
        <Card className="bg-primary/10 border-primary/20">
@@ -195,8 +200,8 @@ export default function HealthReportPage() {
         )}
 
         {report && (
-             <ScrollArea className="h-full">
-                <div ref={reportRef} className="p-4 bg-background space-y-4">
+             <div ref={reportRef} className="space-y-4">
+                 <div className="p-4 bg-background">
                      <div className="text-center mb-6">
                         <h1 className="text-2xl font-bold">Your Personalized Health Report</h1>
                         <p className="text-muted-foreground">Generated on {new Date().toLocaleDateString()}</p>
@@ -214,13 +219,13 @@ export default function HealthReportPage() {
                                         {content.map((item, i) => <li key={i}>{item}</li>)}
                                     </ul>
                                 ) : (
-                                    <p className="whitespace-pre-line">{typeof content === 'string' ? content.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>') : ''}</p>
+                                    renderContent(content as string)
                                 )}
                             </CardContent>
                         </Card>
                     ))}
                 </div>
-             </ScrollArea>
+             </div>
         )}
     </div>
   );
