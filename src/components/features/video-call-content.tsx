@@ -77,6 +77,7 @@ export function VideoCallContent() {
                 
                 const { token, uid } = await response.json();
                 
+                if (!isMounted) return;
                 await agoraClient.join(agoraAppId, channelName, token, uid);
 
                 tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
@@ -109,8 +110,10 @@ export function VideoCallContent() {
         };
 
         const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
-            if (remoteVideoTrack?.getUserId() === user.uid) {
-                if (isMounted) setRemoteVideoTrack(null);
+            // When any user leaves, clear the remote track.
+            // In a one-to-one call, this means the other person left.
+            if (isMounted) {
+                setRemoteVideoTrack(null);
             }
         };
         
