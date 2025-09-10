@@ -121,6 +121,10 @@ export default function VerifyMedicinePage() {
     setResult(null);
 
     try {
+      if (!data) {
+        throw new Error("QR code is empty.");
+      }
+
       const parsedData: ScannedData = JSON.parse(data);
       if (!parsedData.medicine_id || !parsedData.batch_no || !parsedData.expiry_date || !parsedData.manufacturer) {
         throw new Error('Invalid QR code format.');
