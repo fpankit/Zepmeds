@@ -89,7 +89,7 @@ export default function HealthReportPage() {
     }
   }
 
-  const handleDownload = () => {
+ const handleDownload = () => {
     if (!report || !user) {
         toast({ variant: "destructive", title: "Cannot Download", description: "Please generate a report first." });
         return;
@@ -112,107 +112,139 @@ export default function HealthReportPage() {
         }
     };
     
-    const addWrappedText = (text: string | string[], options: any) => {
-        const lines = pdf.splitTextToSize(text, contentWidth - (options.x || 0));
-        const textHeight = pdf.getTextDimensions(lines).h;
-        checkPageBreak(yPos + textHeight);
-        pdf.text(lines, options.x || margin, yPos, options);
-        yPos += textHeight + (options.lineSpacing || 0);
-    };
-    
     // --- Fonts and Colors ---
-    const primaryColor = '#2f32bd'; // Zepmeds primary color
+    const primaryColor = '#FACC15'; // Approximation of primary color
+    pdf.addFont('/fonts/Inter-Regular.ttf', 'Inter', 'normal');
+    pdf.addFont('/fonts/Inter-Bold.ttf', 'Inter', 'bold');
+    pdf.addFont('/fonts/SpaceGrotesk-Bold.ttf', 'SpaceGrotesk', 'bold');
+
     const textColor = '#333333';
     const mutedColor = '#666666';
-    const whiteColor = '#FFFFFF';
+
+    const addWrappedText = (text: string | string[], options: any, isList: boolean = false) => {
+        const textArray = Array.isArray(text) ? text : [text];
+        const lines = pdf.splitTextToSize(textArray.join('\n'), contentWidth - (options.x || margin));
+        const textHeight = (pdf.getLineHeight() / pdf.getPointScale_()) * lines.length;
+        
+        checkPageBreak(textHeight + 5);
+
+        if (isList) {
+             const listLines = text.join('\n').split('\n');
+             listLines.forEach(line => {
+                const singleLineHeight = (pdf.getLineHeight() / pdf.getPointScale_()) * pdf.splitTextToSize(line, contentWidth - 5).length;
+                checkPageBreak(singleLineHeight + 2);
+                pdf.text(`• ${line}`, options.x || margin + 5, yPos);
+                yPos += singleLineHeight + 2;
+             });
+        } else {
+            pdf.text(lines, options.x || margin, yPos);
+            yPos += textHeight + (options.lineSpacing || 0);
+        }
+    };
 
     // --- PDF Content Generation ---
-
-    // 1. Header
+    // Page 1: Header and User Info
+    pdf.setFont('SpaceGrotesk', 'bold');
     pdf.setFontSize(32);
-    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(primaryColor);
-    pdf.text("Zepmeds", margin, yPos);
-    yPos += 15;
+    addWrappedText("Zepmeds", { lineSpacing: 15 });
     
+    pdf.setFont('Inter', 'bold');
     pdf.setFontSize(24);
-    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(textColor);
     addWrappedText(`${user.firstName} ${user.lastName}`, { lineSpacing: 2 });
-    addWrappedText(user.email, { lineSpacing: 8 });
+
+    pdf.setFont('Inter', 'normal');
+    pdf.setFontSize(14);
+    pdf.setTextColor(mutedColor);
+    addWrappedText(user.email, { lineSpacing: 2 });
+    yPos += 5;
     
     pdf.setDrawColor(mutedColor);
     pdf.line(margin, yPos, pageWidth - margin, yPos);
     yPos += 10;
     
-    // 2. Report Title
+    pdf.setFont('Inter', 'bold');
     pdf.setFontSize(17);
-    pdf.setFont('helvetica', 'bold');
-    addWrappedText("Your Personalized Health Report", { align: 'center', lineSpacing: 4 });
+    pdf.setTextColor(textColor);
+    addWrappedText("Your Personalized Health Report", { lineSpacing: 4 });
     
+    pdf.setFont('Inter', 'normal');
     pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(mutedColor);
-    addWrappedText(`Generated on ${new Date().toLocaleDateString()}`, { align: 'center', lineSpacing: 15 });
+    addWrappedText(`Generated on ${new Date().toLocaleDateString()}`, { lineSpacing: 10 });
     pdf.setTextColor(textColor);
 
-    // 3. Health Risk Analysis
+
+    // Health Risk Analysis
     pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
+    pdf.setFont('Inter', 'bold');
     pdf.setTextColor(primaryColor);
     addWrappedText("Health Risk Analysis", { lineSpacing: 5 });
 
+    pdf.setFont('Inter', 'normal');
     pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'normal');
-    addWrappedText(report.healthAnalysis.riskSummary, { lineSpacing: 6 });
+    addWrappedText(report.healthAnalysis.riskSummary, { lineSpacing: 8 });
 
-    report.healthAnalysis.risks.forEach((risk, index) => {
-        // Custom page break logic for the risk analysis section
-        if (index === 2) { // After Diabetes and BP, add a page break
-           pdf.addPage();
-           yPos = margin;
-        }
-        const riskText = `• ${risk.condition} (${risk.level}): ${risk.reason}`;
-        addWrappedText(riskText, { lineSpacing: 2 });
+    report.healthAnalysis.risks.forEach((risk) => {
+        const riskText = `${risk.condition} (${risk.level}): ${risk.reason}`;
+        const riskLines = pdf.splitTextToSize(riskText, contentWidth - 5);
+        const riskHeight = (pdf.getLineHeight() / pdf.getPointScale_()) * riskLines.length + 4;
+        checkPageBreak(riskHeight);
+
+        pdf.setFont('Inter', 'bold');
+        pdf.text(`• ${risk.condition} (${risk.level})`, margin, yPos);
+        yPos += 5;
+
+        pdf.setFont('Inter', 'normal');
+        const reasonLines = pdf.splitTextToSize(risk.reason, contentWidth - 5);
+        pdf.text(reasonLines, margin + 5, yPos);
+        yPos += (pdf.getLineHeight() / pdf.getPointScale_()) * reasonLines.length + 4;
     });
-    yPos += 10;
-    
-    // 4. Other Sections (Diet, Exercise, etc.)
+
+    // Other Sections
+    pdf.addPage();
+    yPos = margin;
+
     const reportSections = [
         { title: 'Diet Plan', content: `**Morning:** ${report.dietPlan.morning}\n\n**Lunch:** ${report.dietPlan.lunch}\n\n**Dinner:** ${report.dietPlan.dinner}` },
-        { title: 'Exercise Tips', content: report.exerciseTips.map(tip => `• ${tip}`).join('\n') },
-        { title: 'Home Remedies', content: report.homeRemedies.map(remedy => `• ${remedy}`).join('\n') },
-        { title: "Do's", content: report.doAndDont.dos.map(d => `• ${d}`).join('\n') },
-        { title: "Don'ts", content: report.doAndDont.donts.map(d => `• ${d}`).join('\n') },
+        { title: 'Exercise Tips', content: report.exerciseTips, isList: true },
+        { title: 'Home Remedies', content: report.homeRemedies, isList: true },
+        { title: "Do's", content: report.doAndDont.dos, isList: true },
+        { title: "Don'ts", content: report.doAndDont.donts, isList: true },
     ];
     
     reportSections.forEach(section => {
-        const contentLines = pdf.splitTextToSize(section.content.replace(/\*\*/g, ''), contentWidth);
-        const sectionHeight = pdf.getTextDimensions(contentLines).h + 20; // Title height + content height + spacing
-        checkPageBreak(sectionHeight);
+        const titleHeight = 10;
+        checkPageBreak(titleHeight);
 
+        pdf.setFont('Inter', 'bold');
         pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(primaryColor);
         addWrappedText(section.title, { lineSpacing: 5 });
         
+        pdf.setFont('Inter', 'normal');
         pdf.setFontSize(11);
-        pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(textColor);
-        
-        const formattedContent = section.content.replace(/\*\*(.*?)\*\*/g, "$1");
-        addWrappedText(formattedContent, { lineSpacing: 6 });
+
+        if (section.isList && Array.isArray(section.content)) {
+            addWrappedText(section.content, {}, true);
+        } else {
+            const formattedContent = (section.content as string).replace(/\*\*/g, ""); // Remove markdown
+            addWrappedText(formattedContent, { lineSpacing: 4 });
+        }
+        yPos += 10; // Spacing between sections
     });
 
     // --- Footer ---
-    const footerText = "Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice. Always consult with a qualified healthcare provider for any health concerns.";
-    const footerLines = pdf.splitTextToSize(footerText, contentWidth);
-    const footerHeight = pdf.getTextDimensions(footerLines).h + 5;
-    
-    checkPageBreak(footerHeight + 10); // Check if footer needs a new page
-    pdf.setFontSize(8);
-    pdf.setTextColor(mutedColor);
-    pdf.text(footerLines, margin, pageHeight - margin - footerHeight);
+    const pageCount = pdf.internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        const footerText = "Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice.";
+        pdf.setFontSize(8);
+        pdf.setTextColor(mutedColor);
+        pdf.text(footerText, margin, pageHeight - 10, { align: 'center', maxWidth: contentWidth });
+    }
 
     pdf.save(`Zepmeds_Health_Report_${new Date().toISOString().split('T')[0]}.pdf`);
 };
@@ -378,5 +410,6 @@ export default function HealthReportPage() {
     </div>
   );
 }
+
 
     
