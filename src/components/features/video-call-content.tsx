@@ -4,21 +4,21 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IAgoraRTCRemoteUser, ILocalVideoTrack, IRemoteVideoTrack } from 'agora-rtc-sdk-ng';
+import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IAgoraRTCRemoteUser, IRemoteVideoTrack } from 'agora-rtc-sdk-ng';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, PhoneOff, Video, VideoOff, Loader2 } from 'lucide-react';
 
 const agoraAppId = "5bbb95c735a84da6af004432f4ced817";
 
-// Dedicated component to handle playing a local video track
-const LocalVideoPlayer = ({ videoTrack }: { videoTrack: ILocalVideoTrack | null }) => {
+// Dedicated component to handle playing a remote video track
+const RemoteVideoPlayer = ({ videoTrack }: { videoTrack: IRemoteVideoTrack | null }) => {
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const currentRef = ref.current;
         if (currentRef && videoTrack) {
-            videoTrack.play(currentRef);
+            videoTrack.play(currentRef, { fit: 'cover' });
         }
         return () => {
             videoTrack?.stop();
@@ -28,19 +28,6 @@ const LocalVideoPlayer = ({ videoTrack }: { videoTrack: ILocalVideoTrack | null 
     return <div ref={ref} className="h-full w-full bg-black"></div>;
 };
 
-// Dedicated component to handle playing a remote video track
-const RemoteVideoPlayer = ({ videoTrack }: { videoTrack: IRemoteVideoTrack | null }) => {
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const currentRef = ref.current;
-        if (currentRef && videoTrack) {
-            videoTrack.play(currentRef);
-        }
-    }, [videoTrack]);
-
-    return <div ref={ref} className="h-full w-full bg-black"></div>;
-};
 
 export function VideoCallContent() {
     const router = useRouter();
@@ -48,13 +35,14 @@ export function VideoCallContent() {
     const { toast } = useToast();
     
     const client = useRef<IAgoraRTCClient | null>(null);
-    const localTracksRef = useRef<{ audio: IMicrophoneAudioTrack | null, video: ICameraVideoTrack | null }>({ audio: null, video: null });
+    const localTracks = useRef<{ audio: IMicrophoneAudioTrack | null, video: ICameraVideoTrack | null }>({ audio: null, video: null });
+    const localVideoRef = useRef<HTMLDivElement>(null);
     
     const [channelName] = useState(searchParams.get('channel') || 'default_channel');
     const [doctorName] = useState(searchParams.get('doctorName') || 'Doctor');
     
-    const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
     const [remoteVideoTrack, setRemoteVideoTrack] = useState<IRemoteVideoTrack | null>(null);
+    const [remoteUser, setRemoteUser] = useState<IAgoraRTCRemoteUser | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
@@ -67,16 +55,18 @@ export function VideoCallContent() {
 
         const initializeAgora = async () => {
             try {
+                // Fetch token
                 const response = await fetch(`/api/agora/token?channelName=${channelName}`);
                 if (!response.ok) throw new Error('Failed to fetch Agora token');
-                
                 const { token, uid } = await response.json();
-                
+
                 if (!isMounted) return;
-                
+
+                // Event Handlers
                 agoraClient.on('user-published', async (user, mediaType) => {
                     await agoraClient.subscribe(user, mediaType);
                     if (mediaType === 'video') {
+                        setRemoteUser(user);
                         setRemoteVideoTrack(user.videoTrack || null);
                     }
                     if (mediaType === 'audio') {
@@ -85,29 +75,38 @@ export function VideoCallContent() {
                 });
 
                 agoraClient.on('user-left', () => {
+                    setRemoteUser(null);
                     setRemoteVideoTrack(null);
                 });
 
+                // Join channel
                 await agoraClient.join(agoraAppId, channelName, token, uid);
-
-                const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
                 
-                localTracksRef.current.audio = tracks[0];
-                localTracksRef.current.video = tracks[1];
+                // Create and publish local tracks
+                const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
                 
-                if (isMounted) {
-                    setLocalVideoTrack(tracks[1]);
+                if (!isMounted) {
+                    audioTrack.close();
+                    videoTrack.close();
+                    return;
                 }
 
-                await agoraClient.publish(Object.values(tracks));
+                localTracks.current.audio = audioTrack;
+                localTracks.current.video = videoTrack;
+
+                if (localVideoRef.current) {
+                    videoTrack.play(localVideoRef.current, { fit: 'cover' });
+                }
+
+                await agoraClient.publish([audioTrack, videoTrack]);
+                setIsLoading(false);
+
             } catch (error: any) {
                 console.error('Agora initialization failed:', error);
                 if (isMounted) {
                     toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call.' });
                     router.back();
                 }
-            } finally {
-                if (isMounted) setIsLoading(false);
             }
         };
         
@@ -115,10 +114,8 @@ export function VideoCallContent() {
 
         return () => {
             isMounted = false;
-            localTracksRef.current.audio?.stop();
-            localTracksRef.current.audio?.close();
-            localTracksRef.current.video?.stop();
-            localTracksRef.current.video?.close();
+            localTracks.current.audio?.close();
+            localTracks.current.video?.close();
             
             agoraClient.removeAllListeners();
             agoraClient.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
@@ -136,15 +133,15 @@ export function VideoCallContent() {
     };
 
     const toggleAudio = async () => {
-        if (localTracksRef.current.audio) {
-            await localTracksRef.current.audio.setMuted(!isAudioMuted);
+        if (localTracks.current.audio) {
+            await localTracks.current.audio.setMuted(!isAudioMuted);
             setIsAudioMuted(!isAudioMuted);
         }
     };
 
     const toggleVideo = async () => {
-        if (localTracksRef.current.video) {
-            await localTracksRef.current.video.setMuted(!isVideoMuted);
+        if (localTracks.current.video) {
+            await localTracks.current.video.setMuted(!isVideoMuted);
             setIsVideoMuted(!isVideoMuted);
         }
     };
@@ -165,7 +162,7 @@ export function VideoCallContent() {
             <main className="relative flex-1">
                 {/* Remote video container */}
                 <div className="absolute inset-0 h-full w-full bg-black">
-                   {remoteVideoTrack ? (
+                   {remoteVideoTrack && remoteUser ? (
                        <RemoteVideoPlayer videoTrack={remoteVideoTrack} />
                    ) : (
                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
@@ -176,8 +173,8 @@ export function VideoCallContent() {
                 </div>
                 
                 {/* Local video container */}
-                <div className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10">
-                   {!isVideoMuted && <LocalVideoPlayer videoTrack={localVideoTrack} />}
+                <div ref={localVideoRef} className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10">
+                   {isVideoMuted && <div className="h-full w-full bg-black flex items-center justify-center"><VideoOff className="h-8 w-8 text-white"/></div>}
                 </div>
             </main>
 
