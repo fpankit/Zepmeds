@@ -127,8 +127,8 @@ export function VideoCallContent() {
             localTracksRef.current.video?.stop();
             localTracksRef.current.video?.close();
             
-            agoraClient.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
             agoraClient.removeAllListeners();
+            agoraClient.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
         };
     }, [channelName, router, toast]);
 
