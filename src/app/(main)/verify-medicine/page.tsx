@@ -39,7 +39,7 @@ export default function VerifyMedicinePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [isScanning, setIsScanning] = useState(isScanning);
+  const [isScanning, setIsScanning] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
@@ -346,6 +346,3 @@ export default function VerifyMedicinePage() {
     </div>
   );
 }
-
-    
-    
