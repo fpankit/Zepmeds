@@ -119,16 +119,15 @@ export default function ActivityPage() {
             <CardHeader>
                 <CardTitle>Log Health Metrics</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-3 gap-4">
+            <CardContent className="flex justify-around items-center pt-6">
                {logMetrics.map((metric) => (
-                  <Button
+                  <button
                     key={metric.label}
-                    variant="secondary"
-                    className="flex h-24 flex-col items-center justify-center gap-2 rounded-xl bg-card hover:bg-card/80"
+                    className="flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary transition-colors"
                   >
-                    <metric.icon className="h-8 w-8 text-muted-foreground" />
+                    <metric.icon className="h-8 w-8" />
                     <span className="text-sm font-semibold">{metric.label}</span>
-                  </Button>
+                  </button>
                 ))}
             </CardContent>
         </Card>
