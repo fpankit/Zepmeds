@@ -55,9 +55,9 @@ export default function ActivityPage() {
       <main className="flex-1 overflow-y-auto p-4 space-y-6">
         <Card className="bg-card/80">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <CardTitle>Health Statistics</CardTitle>
-                <div className="flex items-center gap-1 p-1 rounded-lg bg-muted">
+                <div className="flex items-center gap-1 p-1 rounded-lg bg-muted self-start sm:self-auto">
                     {["Day", "Week", "Month"].map(tab => (
                         <Button 
                             key={tab}
@@ -86,7 +86,7 @@ export default function ActivityPage() {
                 ))}
             </div>
             
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {healthMetrics.map(metric => (
                     <Card key={metric.label} className="p-4 bg-muted/50 text-center">
                         <p className="text-sm text-muted-foreground">{metric.label}</p>
@@ -129,7 +129,7 @@ export default function ActivityPage() {
             </CardContent>
         </Card>
         
-        <Card className="flex items-center justify-between p-4 bg-gradient-to-r from-green-500 to-teal-500">
+        <Card className="flex flex-col sm:flex-row items-center justify-between p-4 bg-gradient-to-r from-green-500 to-teal-500 gap-4">
             <div className="flex items-center gap-3">
                 <Image src="/google-fit.svg" alt="Google Fit" width={32} height={32} />
                 <div className="text-white">
@@ -137,7 +137,7 @@ export default function ActivityPage() {
                     <p className="text-xs">Keep your health data updated.</p>
                 </div>
             </div>
-            <Button variant="secondary">Sync Now</Button>
+            <Button variant="secondary" className="w-full sm:w-auto">Sync Now</Button>
         </Card>
 
       </main>
