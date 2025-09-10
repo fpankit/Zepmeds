@@ -21,11 +21,12 @@ export function VideoCallContent() {
     const client = useRef<IAgoraRTCClient | null>(null);
     const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
     const localVideoTrack = useRef<ICameraVideoTrack | null>(null);
+    const remoteUserRef = useRef<IAgoraRTCRemoteUser | null>(null);
     
     const [channelName] = useState(searchParams.get('channel') || 'default_channel');
     const [doctorName] = useState(searchParams.get('doctorName') || 'Doctor');
     
-    const [remoteUser, setRemoteUser] = useState<IAgoraRTCRemoteUser | null>(null);
+    const [hasRemoteUser, setHasRemoteUser] = useState(false);
     const [isJoined, setIsJoined] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
@@ -36,12 +37,14 @@ export function VideoCallContent() {
         isMounted.current = true;
         
         // This is a critical cleanup function.
-        // It ensures that when the component is unmounted (e.g., navigating away),
-        // all Agora resources are properly released to prevent memory leaks and errors.
         return () => {
             isMounted.current = false;
+            // Stop tracks before leaving
+            localAudioTrack.current?.stop();
             localAudioTrack.current?.close();
+            localVideoTrack.current?.stop();
             localVideoTrack.current?.close();
+            
             client.current?.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
         };
     }, []);
@@ -99,7 +102,8 @@ export function VideoCallContent() {
         const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
             await agoraClient.subscribe(user, mediaType);
             if (mediaType === 'video') {
-                if (isMounted.current) setRemoteUser(user);
+                remoteUserRef.current = user;
+                if (isMounted.current) setHasRemoteUser(true);
                 const remotePlayerContainer = document.getElementById('remote-video');
                 if (remotePlayerContainer) {
                     user.videoTrack?.play(remotePlayerContainer);
@@ -111,8 +115,11 @@ export function VideoCallContent() {
         };
 
         const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
-            if (isMounted.current) {
-                setRemoteUser(null);
+            if (remoteUserRef.current?.uid === user.uid) {
+                remoteUserRef.current = null;
+                if (isMounted.current) {
+                   setHasRemoteUser(false);
+                }
             }
         };
         
@@ -172,7 +179,7 @@ export function VideoCallContent() {
                     id="remote-video"
                     className="absolute inset-0 h-full w-full bg-black"
                 >
-                   {!remoteUser && !isLoading && (
+                   {!hasRemoteUser && !isLoading && (
                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
                         <Loader2 className="h-8 w-8 animate-spin" />
                         <p className="mt-4">Waiting for {doctorName} to join...</p>
