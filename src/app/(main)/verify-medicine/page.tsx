@@ -129,7 +129,17 @@ export default function VerifyMedicinePage() {
       try {
         parsedData = JSON.parse(data);
       } catch (e) {
-        throw new Error('Invalid QR code format.');
+        // This is the fix: catch the JSON parsing error and show a toast
+        console.error('QR Parse Error:', e);
+        toast({
+            variant: 'destructive',
+            title: 'Scan Failed',
+            description: 'The QR code is invalid or not in the correct format.',
+        });
+        setIsLoading(false);
+        // Allow user to scan again
+        setTimeout(() => setIsScanning(true), 2000);
+        return; // Exit the function
       }
 
       if (!parsedData.medicine_id || !parsedData.batch_no || !parsedData.expiry_date || !parsedData.manufacturer) {
