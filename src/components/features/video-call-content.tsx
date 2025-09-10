@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -20,41 +21,51 @@ export function VideoCallContent() {
     const client = useRef<IAgoraRTCClient | null>(null);
     const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
     const localVideoTrack = useRef<ICameraVideoTrack | null>(null);
-    const remoteVideoContainer = useRef<HTMLDivElement | null>(null);
-
+    
     const [channelName] = useState(searchParams.get('channel') || 'default_channel');
     const [doctorName] = useState(searchParams.get('doctorName') || 'Doctor');
-    const [userName] = useState(searchParams.get('userName') || 'Patient');
-
+    
     const [remoteUser, setRemoteUser] = useState<IAgoraRTCRemoteUser | null>(null);
     const [isJoined, setIsJoined] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [isVideoMuted, setIsVideoMuted] = useState(false);
+    const isMounted = useRef(true);
 
     useEffect(() => {
-        if (!user) {
-            toast({ variant: "destructive", title: "Not logged in." });
-            router.push('/login');
+        isMounted.current = true;
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!user || !agoraAppId) {
+            if (!agoraAppId) {
+                toast({ variant: "destructive", title: "Configuration Error", description: "Agora App ID is missing." });
+            }
+            if (!user) {
+                toast({ variant: "destructive", title: "Not logged in." });
+                router.push('/login');
+            }
             return;
         }
 
-        let isMounted = true;
         const agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         client.current = agoraClient;
         let tracks: [IMicrophoneAudioTrack, ICameraVideoTrack] | null = null;
         
         const initializeAgora = async () => {
             try {
-                // Fetch token from our API route
                 const response = await fetch(`/api/agora/token?channelName=${channelName}&uid=${user.id}`);
-                if (!response.ok) throw new Error('Failed to fetch Agora token');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch Agora token');
+                }
                 const { token, uid } = await response.json();
                 
-                // Join the channel
                 await agoraClient.join(agoraAppId, channelName, token, uid);
 
-                // Create and publish local tracks
                 tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
                 localAudioTrack.current = tracks[0];
                 localVideoTrack.current = tracks[1];
@@ -66,18 +77,18 @@ export function VideoCallContent() {
                 
                 await agoraClient.publish(tracks);
 
-                if (isMounted) {
+                if (isMounted.current) {
                     setIsJoined(true);
                 }
 
             } catch (error: any) {
                 console.error('Agora initialization failed:', error);
-                if (isMounted) {
+                if (isMounted.current) {
                     toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call.' });
                     router.back();
                 }
             } finally {
-                if (isMounted) {
+                if (isMounted.current) {
                     setIsLoading(false);
                 }
             }
@@ -86,14 +97,11 @@ export function VideoCallContent() {
         const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
             await agoraClient.subscribe(user, mediaType);
             if (mediaType === 'video') {
-                setRemoteUser(user);
-                // Ensure remote video container exists before playing
-                setTimeout(() => {
-                    const remotePlayerContainer = document.getElementById('remote-video');
-                    if(remotePlayerContainer) {
-                        user.videoTrack?.play(remotePlayerContainer);
-                    }
-                }, 0);
+                if (isMounted.current) setRemoteUser(user);
+                const remotePlayerContainer = document.getElementById('remote-video');
+                if (remotePlayerContainer) {
+                    user.videoTrack?.play(remotePlayerContainer);
+                }
             }
             if (mediaType === 'audio') {
                 user.audioTrack?.play();
@@ -101,7 +109,7 @@ export function VideoCallContent() {
         };
 
         const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
-            setRemoteUser(null);
+            if (isMounted.current) setRemoteUser(null);
         };
         
         agoraClient.on('user-published', handleUserPublished);
@@ -110,11 +118,12 @@ export function VideoCallContent() {
         initializeAgora();
 
         return () => {
-            isMounted = false;
+            if (client.current) {
+                client.current.leave();
+                client.current.removeAllListeners();
+            }
             localAudioTrack.current?.close();
             localVideoTrack.current?.close();
-            agoraClient.leave();
-            agoraClient.removeAllListeners();
         };
     }, [channelName, router, toast, user]);
 
@@ -157,21 +166,18 @@ export function VideoCallContent() {
             </header>
 
             <main className="relative flex-1">
-                {/* Remote User Video */}
-                {remoteUser ? (
-                    <div 
-                        id="remote-video"
-                        ref={remoteVideoContainer}
-                        className="absolute inset-0 h-full w-full"
-                    />
-                ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
+                <div 
+                    id="remote-video"
+                    className="absolute inset-0 h-full w-full"
+                >
+                   {!remoteUser && !isLoading && (
+                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
                         <Loader2 className="h-8 w-8 animate-spin" />
                         <p className="mt-4">Waiting for the doctor to join...</p>
                     </div>
-                )}
+                   )}
+                </div>
                 
-                {/* Local User Video */}
                 <div 
                     id="local-video" 
                     className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10"
