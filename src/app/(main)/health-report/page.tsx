@@ -96,34 +96,34 @@ export default function HealthReportPage() {
     toast({ title: "Preparing Download...", description: "Please wait while we generate your PDF."});
 
     try {
-        const canvas = await html2canvas(reportElement, { scale: 2, backgroundColor: '#0c0a09' }); // Using a dark background color
-        const imgData = canvas.toDataURL('image/png');
-        
-        const pdf = new jsPDF({
-            orientation: 'p',
-            unit: 'mm',
-            format: 'a4',
+        const canvas = await html2canvas(reportElement, { 
+          scale: 4, // Increased scale for much higher quality rendering
+          backgroundColor: null, // Use transparent background
+          useCORS: true 
         });
 
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const ratio = canvasWidth / canvasHeight;
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = imgWidth / imgHeight;
         
-        let imgHeight = pdfWidth / ratio;
-        let heightLeft = imgHeight;
-
-        let position = 10; // Add top margin
-        const pageMargin = 10;
+        const contentWidth = pdfWidth - 20; // 10mm margin on each side
+        let contentHeight = contentWidth / ratio;
         
-        pdf.addImage(imgData, 'PNG', pageMargin, position, pdfWidth - (pageMargin * 2), imgHeight);
-        heightLeft -= (pdf.internal.pageSize.getHeight() - (position + pageMargin));
+        let heightLeft = contentHeight;
+        let position = 10; // Top margin
 
-        while (heightLeft >= 0) {
-            position = heightLeft - imgHeight;
+        pdf.addImage(imgData, 'PNG', 10, position, contentWidth, contentHeight);
+        heightLeft -= (pdfHeight - 20);
+
+        while (heightLeft > 0) {
+            position = heightLeft - contentHeight;
             pdf.addPage();
-            pdf.addImage(imgData, 'PNG', pageMargin, position, pdfWidth - (pageMargin * 2), imgHeight);
-            heightLeft -= pdf.internal.pageSize.getHeight();
+            pdf.addImage(imgData, 'PNG', 10, position, contentWidth, contentHeight);
+            heightLeft -= pdfHeight;
         }
 
         pdf.save(`Zepmeds_Health_Report_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -135,27 +135,26 @@ export default function HealthReportPage() {
   
   const getRiskColor = (level: string) => {
     switch (level.toLowerCase()) {
-        case 'high': return 'text-red-400';
-        case 'moderate': return 'text-yellow-400';
-        case 'low': return 'text-green-400';
-        default: return 'text-muted-foreground';
+        case 'high': return 'text-red-500';
+        case 'moderate': return 'text-yellow-500';
+        case 'low': return 'text-green-500';
+        default: return 'text-gray-400';
     }
   }
 
   const sections: Section[] = report ? [
-    { title: 'Diet Plan', icon: Utensils, color: 'text-green-400', content: `**Morning:** ${report.dietPlan.morning}\n\n**Lunch:** ${report.dietPlan.lunch}\n\n**Dinner:** ${report.dietPlan.dinner}` },
-    { title: 'Exercise Tips', icon: Dumbbell, color: 'text-orange-400', content: report.exerciseTips, isList: true },
-    { title: 'Home Remedies', icon: ShieldCheck, color: 'text-blue-400', content: report.homeRemedies, isList: true },
-    { title: "Do's", icon: ListChecks, color: 'text-sky-400', content: report.doAndDont.dos, isList: true },
-    { title: "Don'ts", icon: ListX, color: 'text-red-400', content: report.doAndDont.donts, isList: true },
+    { title: 'Diet Plan', icon: Utensils, color: 'text-green-500', content: `**Morning:** ${report.dietPlan.morning}\n\n**Lunch:** ${report.dietPlan.lunch}\n\n**Dinner:** ${report.dietPlan.dinner}` },
+    { title: 'Exercise Tips', icon: Dumbbell, color: 'text-orange-500', content: report.exerciseTips, isList: true },
+    { title: 'Home Remedies', icon: ShieldCheck, color: 'text-blue-500', content: report.homeRemedies, isList: true },
+    { title: "Do's", icon: ListChecks, color: 'text-sky-500', content: report.doAndDont.dos, isList: true },
+    { title: "Don'ts", icon: ListX, color: 'text-red-500', content: report.doAndDont.donts, isList: true },
   ] : [];
 
   const languageOptions = ['English', 'Hindi', 'Punjabi', 'Tamil', 'Telugu', 'Kannada'];
 
-  // Helper function to render content with bold tags
   const renderContent = (content: string) => {
     const htmlContent = content.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
-    return <p className="whitespace-pre-line" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    return <div className="text-[14px] whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
   }
 
   return (
@@ -212,68 +211,67 @@ export default function HealthReportPage() {
 
         {report && user && (
             <div className="p-4 md:p-8 bg-card rounded-lg border border-border">
-                <div ref={reportRef} className="space-y-8 bg-card text-card-foreground p-2">
-                    {/* Report Header */}
-                    <div className="space-y-4">
-                       <Logo className="h-6" />
-                       <div className="text-sm text-muted-foreground">
-                            <p><strong className="font-semibold text-foreground">Name:</strong> {user.firstName} {user.lastName}</p>
-                            <p><strong className="font-semibold text-foreground">Age:</strong> {user.age}</p>
-                            <p><strong className="font-semibold text-foreground">Email:</strong> {user.email}</p>
+                <div ref={reportRef} className="space-y-6 bg-background text-foreground p-6">
+                    {/* Report Header for PDF */}
+                    <div className="flex items-center justify-between">
+                       <h1 className="text-[26px] font-headline font-bold text-primary">Zepmeds</h1>
+                       <div className="text-right text-[12px] text-muted-foreground">
+                            <p>{user.firstName} {user.lastName}</p>
+                            <p>{user.email}</p>
                        </div>
                     </div>
+                    <hr className="border-border my-4" />
                     
                     {/* Main Title */}
-                    <div className="text-center my-8">
-                        <h1 className="text-3xl md:text-4xl font-bold">Your Personalized Health Report</h1>
-                        <p className="text-muted-foreground mt-2">Generated on {new Date().toLocaleDateString()}</p>
+                    <div className="text-center my-6">
+                        <h2 className="text-[17px] font-bold tracking-wider uppercase text-muted-foreground">Your Personalized Health Report</h2>
+                        <p className="text-[14px] text-muted-foreground mt-1">Generated on {new Date().toLocaleDateString()}</p>
                     </div>
 
                     {/* Health Risk Analysis */}
-                    <Card className="bg-background/50">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl text-primary">
-                                <HeartPulse className="h-6 w-6" /> Health Risk Analysis
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-muted-foreground italic">{report.healthAnalysis.riskSummary}</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {report.healthAnalysis.risks.map((risk, i) => (
-                                    <div key={i} className="p-4 rounded-lg bg-card border">
-                                        <div className="flex justify-between items-center">
-                                            <h4 className="font-semibold">{risk.condition}</h4>
-                                            <span className={cn("font-bold", getRiskColor(risk.level))}>{risk.level}</span>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground mt-1">{risk.reason}</p>
+                    <div className="p-4 rounded-lg bg-card border border-border">
+                        <h3 className="font-bold flex items-center gap-2 text-[16px] mb-3">
+                            <HeartPulse className="h-5 w-5 text-primary" /> Health Risk Analysis
+                        </h3>
+                        <p className="text-[14px] text-muted-foreground italic mb-4">{report.healthAnalysis.riskSummary}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {report.healthAnalysis.risks.map((risk, i) => (
+                                <div key={i} className="p-3 rounded-md bg-background border">
+                                    <div className="flex justify-between items-center">
+                                        <h4 className="font-semibold text-[14px]">{risk.condition}</h4>
+                                        <span className={cn("font-bold text-[14px]", getRiskColor(risk.level))}>{risk.level}</span>
                                     </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    <p className="text-[13px] text-muted-foreground mt-1">{risk.reason}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                     
                     {/* Other Sections */}
                     {sections.map(({ title, icon: Icon, color, content, isList }) => (
-                         <Card key={title} className="bg-background/50">
-                            <CardHeader>
-                                <CardTitle className={`flex items-center gap-2 text-xl ${color}`}>
-                                    <Icon className="h-6 w-6" /> {title}
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {isList && Array.isArray(content) ? (
-                                    <ul className="list-disc pl-5 space-y-2">
-                                        {content.map((item, i) => <li key={i}>{item}</li>)}
-                                    </ul>
-                                ) : (
-                                    renderContent(content as string)
-                                )}
-                            </CardContent>
-                        </Card>
+                         <div key={title} className="p-4 rounded-lg bg-card border border-border">
+                            <h3 className={`font-bold flex items-center gap-2 text-[16px] mb-3 ${color}`}>
+                                <Icon className="h-5 w-5" /> {title}
+                            </h3>
+                            {isList && Array.isArray(content) ? (
+                                <ul className="list-disc pl-5 space-y-2 text-[14px]">
+                                    {content.map((item, i) => <li key={i}>{item}</li>)}
+                                </ul>
+                            ) : (
+                                renderContent(content as string)
+                            )}
+                        </div>
                     ))}
+
+                    <div className="text-center pt-6 text-[10px] text-muted-foreground">
+                        <p>Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice. Always consult with a qualified healthcare provider for any health concerns.</p>
+                        <p className="mt-2 font-headline">&copy; {new Date().getFullYear()} Zepmeds</p>
+                    </div>
                 </div>
             </div>
         )}
     </div>
   );
 }
+
+    
