@@ -9,7 +9,6 @@ import { Bot, Download, FileBarChart, Loader2, Sparkles, Languages, Utensils, Du
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { generateDietPlan, GenerateDietPlanOutput } from '@/ai/flows/generate-diet-plan';
-import jsPDF from 'jspdf';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
@@ -70,12 +69,12 @@ export default function HealthReportPage() {
         targetLanguage: language,
       });
       setReport(generatedReport);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate report:', error);
       toast({
         variant: 'destructive',
         title: 'Generation Failed',
-        description: 'Could not generate the health report. Please try again.',
+        description: error.message || 'Could not generate the health report. The AI service may be busy. Please try again.',
       });
     } finally {
       setIsLoading(false);
@@ -90,164 +89,16 @@ export default function HealthReportPage() {
   }
 
  const handleDownload = () => {
-    if (!report || !user) {
-        toast({ variant: "destructive", title: "Cannot Download", description: "Please generate a report first." });
-        return;
+    if (!reportRef.current) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot Download',
+        description: 'Report content is not available to download.',
+      });
+      return;
     }
-    
-    toast({ title: "Preparing Download...", description: "Please wait while we generate your PDF." });
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const margin = 15;
-    const contentWidth = pageWidth - margin * 2;
-    let yPos = margin;
-
-    // --- Helper function for page breaks ---
-    const checkPageBreak = (requiredHeight: number) => {
-        if (yPos + requiredHeight > pageHeight - margin) {
-            pdf.addPage();
-            yPos = margin;
-        }
-    };
-    
-    // --- Fonts and Colors ---
-    const primaryColor = '#FACC15'; // Approximation of primary color
-    pdf.addFont('/fonts/Inter-Regular.ttf', 'Inter', 'normal');
-    pdf.addFont('/fonts/Inter-Bold.ttf', 'Inter', 'bold');
-    pdf.addFont('/fonts/SpaceGrotesk-Bold.ttf', 'SpaceGrotesk', 'bold');
-
-    const textColor = '#333333';
-    const mutedColor = '#666666';
-
-    const addWrappedText = (text: string | string[], options: any, isList: boolean = false) => {
-        const textArray = Array.isArray(text) ? text : [text];
-        const lines = pdf.splitTextToSize(textArray.join('\n'), contentWidth - (options.x || margin));
-        const textHeight = (pdf.getLineHeight() / pdf.getPointScale_()) * lines.length;
-        
-        checkPageBreak(textHeight + 5);
-
-        if (isList) {
-             const listLines = text.join('\n').split('\n');
-             listLines.forEach(line => {
-                const singleLineHeight = (pdf.getLineHeight() / pdf.getPointScale_()) * pdf.splitTextToSize(line, contentWidth - 5).length;
-                checkPageBreak(singleLineHeight + 2);
-                pdf.text(`• ${line}`, options.x || margin + 5, yPos);
-                yPos += singleLineHeight + 2;
-             });
-        } else {
-            pdf.text(lines, options.x || margin, yPos);
-            yPos += textHeight + (options.lineSpacing || 0);
-        }
-    };
-
-    // --- PDF Content Generation ---
-    // Page 1: Header and User Info
-    pdf.setFont('SpaceGrotesk', 'bold');
-    pdf.setFontSize(32);
-    pdf.setTextColor(primaryColor);
-    addWrappedText("Zepmeds", { lineSpacing: 15 });
-    
-    pdf.setFont('Inter', 'bold');
-    pdf.setFontSize(24);
-    pdf.setTextColor(textColor);
-    addWrappedText(`${user.firstName} ${user.lastName}`, { lineSpacing: 2 });
-
-    pdf.setFont('Inter', 'normal');
-    pdf.setFontSize(14);
-    pdf.setTextColor(mutedColor);
-    addWrappedText(user.email, { lineSpacing: 2 });
-    yPos += 5;
-    
-    pdf.setDrawColor(mutedColor);
-    pdf.line(margin, yPos, pageWidth - margin, yPos);
-    yPos += 10;
-    
-    pdf.setFont('Inter', 'bold');
-    pdf.setFontSize(17);
-    pdf.setTextColor(textColor);
-    addWrappedText("Your Personalized Health Report", { lineSpacing: 4 });
-    
-    pdf.setFont('Inter', 'normal');
-    pdf.setFontSize(11);
-    pdf.setTextColor(mutedColor);
-    addWrappedText(`Generated on ${new Date().toLocaleDateString()}`, { lineSpacing: 10 });
-    pdf.setTextColor(textColor);
-
-
-    // Health Risk Analysis
-    pdf.setFontSize(14);
-    pdf.setFont('Inter', 'bold');
-    pdf.setTextColor(primaryColor);
-    addWrappedText("Health Risk Analysis", { lineSpacing: 5 });
-
-    pdf.setFont('Inter', 'normal');
-    pdf.setFontSize(11);
-    addWrappedText(report.healthAnalysis.riskSummary, { lineSpacing: 8 });
-
-    report.healthAnalysis.risks.forEach((risk) => {
-        const riskText = `${risk.condition} (${risk.level}): ${risk.reason}`;
-        const riskLines = pdf.splitTextToSize(riskText, contentWidth - 5);
-        const riskHeight = (pdf.getLineHeight() / pdf.getPointScale_()) * riskLines.length + 4;
-        checkPageBreak(riskHeight);
-
-        pdf.setFont('Inter', 'bold');
-        pdf.text(`• ${risk.condition} (${risk.level})`, margin, yPos);
-        yPos += 5;
-
-        pdf.setFont('Inter', 'normal');
-        const reasonLines = pdf.splitTextToSize(risk.reason, contentWidth - 5);
-        pdf.text(reasonLines, margin + 5, yPos);
-        yPos += (pdf.getLineHeight() / pdf.getPointScale_()) * reasonLines.length + 4;
-    });
-
-    // Other Sections
-    pdf.addPage();
-    yPos = margin;
-
-    const reportSections = [
-        { title: 'Diet Plan', content: `**Morning:** ${report.dietPlan.morning}\n\n**Lunch:** ${report.dietPlan.lunch}\n\n**Dinner:** ${report.dietPlan.dinner}` },
-        { title: 'Exercise Tips', content: report.exerciseTips, isList: true },
-        { title: 'Home Remedies', content: report.homeRemedies, isList: true },
-        { title: "Do's", content: report.doAndDont.dos, isList: true },
-        { title: "Don'ts", content: report.doAndDont.donts, isList: true },
-    ];
-    
-    reportSections.forEach(section => {
-        const titleHeight = 10;
-        checkPageBreak(titleHeight);
-
-        pdf.setFont('Inter', 'bold');
-        pdf.setFontSize(14);
-        pdf.setTextColor(primaryColor);
-        addWrappedText(section.title, { lineSpacing: 5 });
-        
-        pdf.setFont('Inter', 'normal');
-        pdf.setFontSize(11);
-        pdf.setTextColor(textColor);
-
-        if (section.isList && Array.isArray(section.content)) {
-            addWrappedText(section.content, {}, true);
-        } else {
-            const formattedContent = (section.content as string).replace(/\*\*/g, ""); // Remove markdown
-            addWrappedText(formattedContent, { lineSpacing: 4 });
-        }
-        yPos += 10; // Spacing between sections
-    });
-
-    // --- Footer ---
-    const pageCount = pdf.internal.getNumberOfPages();
-    for(let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i);
-        const footerText = "Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice.";
-        pdf.setFontSize(8);
-        pdf.setTextColor(mutedColor);
-        pdf.text(footerText, margin, pageHeight - 10, { align: 'center', maxWidth: contentWidth });
-    }
-
-    pdf.save(`Zepmeds_Health_Report_${new Date().toISOString().split('T')[0]}.pdf`);
-};
+    window.print();
+  };
 
   const getRiskColor = (level: string) => {
     switch (level?.toLowerCase()) {
@@ -285,8 +136,25 @@ export default function HealthReportPage() {
 
 
   return (
-    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
-       <Card className="bg-primary/10 border-primary/20">
+    <>
+    <style jsx global>{`
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    `}</style>
+    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6 print:space-y-0">
+       <Card className="bg-primary/10 border-primary/20 print:hidden">
             <CardHeader>
                 <CardTitle className="flex items-center gap-3 text-2xl">
                     <FileBarChart className="h-8 w-8 text-primary" />
@@ -298,7 +166,7 @@ export default function HealthReportPage() {
             </CardHeader>
         </Card>
 
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 print:hidden">
              <Select onValueChange={onLanguageChange} defaultValue={targetLang}>
                 <SelectTrigger>
                     <div className="flex items-center gap-2">
@@ -329,7 +197,7 @@ export default function HealthReportPage() {
         {isLoading && <ReportSkeleton />}
 
         {!isLoading && !report && (
-             <Card className="text-center p-10 border-dashed">
+             <Card className="text-center p-10 border-dashed print:hidden">
                 <Bot className="mx-auto h-16 w-16 text-muted-foreground" />
                 <h3 className="mt-4 text-xl font-semibold">Your report will appear here</h3>
                 <p className="mt-2 text-muted-foreground">Click the button above to generate your personalized health plan.</p>
@@ -337,34 +205,48 @@ export default function HealthReportPage() {
         )}
 
         {report && user && (
-            <div ref={reportRef} className="bg-background rounded-lg p-4">
-                <div id="pdf-content-wrapper" className="space-y-4">
-                    <div className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
-                        <h3 className="font-bold flex items-center gap-2 text-lg mb-3">
+            <div id="print-area" ref={reportRef} className="bg-background rounded-lg print:p-8">
+                <div className="space-y-4 print:space-y-6">
+                    <div className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid print:p-0 print:border-none">
+                        {/* Report Header */}
+                         <div className="flex items-center gap-4 mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" className="h-8 w-auto">
+                              <path d="M10 25 C 15 10, 25 10, 30 25 S 40 40, 45 25" stroke="hsl(var(--primary))" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round"></path>
+                              <text x="55" y="35" fontFamily="Space Grotesk, sans-serif" fontSize="32" fontWeight="bold" fill="hsl(var(--foreground))">Zepmeds</text>
+                            </svg>
+                        </div>
+                        <div className="mb-4">
+                            <h2 className="text-2xl font-bold">{`${user.firstName} ${user.lastName}`}</h2>
+                            <p className="text-muted-foreground">{user.email}</p>
+                        </div>
+                        <h1 className="text-xl font-bold mb-6">Your Personalized Health Report</h1>
+                         <hr className="mb-6"/>
+
+                        <h3 className="font-bold flex items-center gap-2 text-lg mb-3 print:text-base">
                             <HeartPulse className="h-5 w-5 text-primary" /> Health Risk Analysis
                         </h3>
-                        <p className="text-sm text-muted-foreground italic mb-4">{report.healthAnalysis.riskSummary}</p>
+                        <p className="text-sm text-muted-foreground italic mb-4 print:text-xs">{report.healthAnalysis.riskSummary}</p>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 print:grid-cols-2">
                             {report.healthAnalysis.risks.map((risk, i) => (
-                                <div key={i} data-risk-card className="p-3 rounded-md bg-background border break-inside-avoid">
+                                <div key={i} data-risk-card className="p-3 rounded-md bg-background border break-inside-avoid print:p-0 print:border-none">
                                     <div className="flex justify-between items-center">
-                                        <h4 className="font-semibold text-md">{risk.condition}</h4>
-                                        <span className={cn("font-bold text-md", getRiskColor(risk.level))}>{risk.level}</span>
+                                        <h4 className="font-semibold text-md print:text-sm">{risk.condition}</h4>
+                                        <span className={cn("font-bold text-md print:text-sm", getRiskColor(risk.level))}>{risk.level}</span>
                                     </div>
-                                    <p className="text-sm text-muted-foreground mt-1">{risk.reason}</p>
+                                    <p className="text-sm text-muted-foreground mt-1 print:text-xs">{risk.reason}</p>
                                 </div>
                             ))}
                         </div>
                     </div>
                     
                     {sections.map(({ id, title, icon: Icon, color, content, isList }) => (
-                         <div data-report-section id={`pdf-${id}`} key={id} className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
-                            <h3 className={cn("font-bold flex items-center gap-2 text-lg mb-3", color)}>
+                         <div data-report-section id={`pdf-${id}`} key={id} className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid print:p-0 print:border-none">
+                            <h3 className={cn("font-bold flex items-center gap-2 text-lg mb-3 print:text-base", color)}>
                                 <Icon className="h-5 w-5" /> {title}
                             </h3>
                             {isList && Array.isArray(content) ? (
-                                <ul className="list-disc pl-5 space-y-2 text-sm">
+                                <ul className="list-disc pl-5 space-y-2 text-sm print:text-xs">
                                     {content.map((item, i) => <li key={i}>{item}</li>)}
                                 </ul>
                             ) : (
@@ -373,13 +255,13 @@ export default function HealthReportPage() {
                         </div>
                     ))}
                     
-                    <div data-report-section id="pdf-charts" className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
-                        <h3 className="font-bold flex items-center gap-2 text-lg mb-3">
+                    <div data-report-section id="pdf-charts" className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid print:p-0 print:border-none">
+                        <h3 className="font-bold flex items-center gap-2 text-lg mb-3 print:text-base">
                             <FileBarChart className="h-5 w-5 text-primary" /> Health Charts
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4 print:grid-cols-2">
                            <div>
-                               <h4 className="text-center font-semibold text-sm mb-2">Daily Activity</h4>
+                               <h4 className="text-center font-semibold text-sm mb-2 print:text-xs">Daily Activity</h4>
                                <ResponsiveContainer width="100%" height={200}>
                                     <BarChart data={chartData}>
                                         <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false}/>
@@ -390,7 +272,7 @@ export default function HealthReportPage() {
                                </ResponsiveContainer>
                             </div>
                             <div>
-                               <h4 className="text-center font-semibold text-sm mb-2">Risk Distribution</h4>
+                               <h4 className="text-center font-semibold text-sm mb-2 print:text-xs">Risk Distribution</h4>
                                 <ResponsiveContainer width="100%" height={200}>
                                     <PieChart>
                                         <Pie data={pieChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
@@ -404,12 +286,13 @@ export default function HealthReportPage() {
                             </div>
                         </div>
                     </div>
+                     <div className="text-xs text-muted-foreground text-center pt-4 border-t border-dashed mt-4 break-before-page">
+                        Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice.
+                    </div>
                 </div>
             </div>
         )}
     </div>
+    </>
   );
 }
-
-
-    
