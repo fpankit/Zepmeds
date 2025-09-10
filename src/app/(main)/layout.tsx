@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Header } from "@/components/layout/header";
@@ -11,8 +10,8 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const noHeaderRoutes = ["/activity"];
-  const noLayoutRoutes = ["/checkout", "/symptom-checker/results", "/echo-doc/call", "/first-aid/", "/verify-medicine"];
+  const noHeaderRoutes: string[] = [];
+  const noLayoutRoutes = ["/checkout", "/symptom-checker/results", "/echo-doc/call", "/first-aid/", "/verify-medicine", "/activity"];
   
   const isLayoutVisible = !noLayoutRoutes.some(route => pathname.startsWith(route) || pathname === '/order-status');
   const isHeaderHidden = noHeaderRoutes.includes(pathname);
