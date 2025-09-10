@@ -5,12 +5,14 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bot, Download, FileBarChart, Loader2, Sparkles, Languages, Utensils, Dumbbell, ShieldCheck, ListChecks, ListX } from 'lucide-react';
+import { Bot, Download, FileBarChart, Loader2, Sparkles, Languages, Utensils, Dumbbell, ShieldCheck, ListChecks, ListX, HeartPulse } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { generateDietPlan, GenerateDietPlanOutput } from '@/ai/flows/generate-diet-plan';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { Logo } from '@/components/icons/logo';
+import { cn } from '@/lib/utils';
 
 type Section = {
   title: string;
@@ -94,7 +96,7 @@ export default function HealthReportPage() {
     toast({ title: "Preparing Download...", description: "Please wait while we generate your PDF."});
 
     try {
-        const canvas = await html2canvas(reportElement, { scale: 2, backgroundColor: '#0c0a09' });
+        const canvas = await html2canvas(reportElement, { scale: 2, backgroundColor: '#0c0a09' }); // Using a dark background color
         const imgData = canvas.toDataURL('image/png');
         
         const pdf = new jsPDF({
@@ -104,7 +106,6 @@ export default function HealthReportPage() {
         });
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         const ratio = canvasWidth / canvasHeight;
@@ -112,16 +113,17 @@ export default function HealthReportPage() {
         let imgHeight = pdfWidth / ratio;
         let heightLeft = imgHeight;
 
-        let position = 0;
+        let position = 10; // Add top margin
+        const pageMargin = 10;
         
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdfHeight;
+        pdf.addImage(imgData, 'PNG', pageMargin, position, pdfWidth - (pageMargin * 2), imgHeight);
+        heightLeft -= (pdf.internal.pageSize.getHeight() - (position + pageMargin));
 
         while (heightLeft >= 0) {
             position = heightLeft - imgHeight;
             pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-            heightLeft -= pdfHeight;
+            pdf.addImage(imgData, 'PNG', pageMargin, position, pdfWidth - (pageMargin * 2), imgHeight);
+            heightLeft -= pdf.internal.pageSize.getHeight();
         }
 
         pdf.save(`Zepmeds_Health_Report_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -131,6 +133,15 @@ export default function HealthReportPage() {
     }
   };
   
+  const getRiskColor = (level: string) => {
+    switch (level.toLowerCase()) {
+        case 'high': return 'text-red-400';
+        case 'moderate': return 'text-yellow-400';
+        case 'low': return 'text-green-400';
+        default: return 'text-muted-foreground';
+    }
+  }
+
   const sections: Section[] = report ? [
     { title: 'Diet Plan', icon: Utensils, color: 'text-green-400', content: `**Morning:** ${report.dietPlan.morning}\n\n**Lunch:** ${report.dietPlan.lunch}\n\n**Dinner:** ${report.dietPlan.dinner}` },
     { title: 'Exercise Tips', icon: Dumbbell, color: 'text-orange-400', content: report.exerciseTips, isList: true },
@@ -143,7 +154,7 @@ export default function HealthReportPage() {
 
   // Helper function to render content with bold tags
   const renderContent = (content: string) => {
-    const htmlContent = content.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>');
+    const htmlContent = content.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
     return <p className="whitespace-pre-line" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
   }
 
@@ -199,17 +210,53 @@ export default function HealthReportPage() {
             </Card>
         )}
 
-        {report && (
-             <div ref={reportRef} className="space-y-4">
-                 <div className="p-4 bg-background">
-                     <div className="text-center mb-6">
-                        <h1 className="text-2xl font-bold">Your Personalized Health Report</h1>
-                        <p className="text-muted-foreground">Generated on {new Date().toLocaleDateString()}</p>
+        {report && user && (
+            <div className="p-4 md:p-8 bg-card rounded-lg border border-border">
+                <div ref={reportRef} className="space-y-8 bg-card text-card-foreground p-2">
+                    {/* Report Header */}
+                    <div className="space-y-4">
+                       <Logo className="h-6" />
+                       <div className="text-sm text-muted-foreground">
+                            <p><strong className="font-semibold text-foreground">Name:</strong> {user.firstName} {user.lastName}</p>
+                            <p><strong className="font-semibold text-foreground">Age:</strong> {user.age}</p>
+                            <p><strong className="font-semibold text-foreground">Email:</strong> {user.email}</p>
+                       </div>
                     </div>
+                    
+                    {/* Main Title */}
+                    <div className="text-center my-8">
+                        <h1 className="text-3xl md:text-4xl font-bold">Your Personalized Health Report</h1>
+                        <p className="text-muted-foreground mt-2">Generated on {new Date().toLocaleDateString()}</p>
+                    </div>
+
+                    {/* Health Risk Analysis */}
+                    <Card className="bg-background/50">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-xl text-primary">
+                                <HeartPulse className="h-6 w-6" /> Health Risk Analysis
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-muted-foreground italic">{report.healthAnalysis.riskSummary}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {report.healthAnalysis.risks.map((risk, i) => (
+                                    <div key={i} className="p-4 rounded-lg bg-card border">
+                                        <div className="flex justify-between items-center">
+                                            <h4 className="font-semibold">{risk.condition}</h4>
+                                            <span className={cn("font-bold", getRiskColor(risk.level))}>{risk.level}</span>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground mt-1">{risk.reason}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                    
+                    {/* Other Sections */}
                     {sections.map(({ title, icon: Icon, color, content, isList }) => (
-                         <Card key={title}>
+                         <Card key={title} className="bg-background/50">
                             <CardHeader>
-                                <CardTitle className={`flex items-center gap-2 ${color}`}>
+                                <CardTitle className={`flex items-center gap-2 text-xl ${color}`}>
                                     <Icon className="h-6 w-6" /> {title}
                                 </CardTitle>
                             </CardHeader>
@@ -225,7 +272,7 @@ export default function HealthReportPage() {
                         </Card>
                     ))}
                 </div>
-             </div>
+            </div>
         )}
     </div>
   );
