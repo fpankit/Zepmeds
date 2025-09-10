@@ -2,13 +2,16 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Bell, Edit, Footprints, GlassWater, Flame, Heart, Droplets as BloodDrop } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Bell, Edit, Footprints, GlassWater, Flame, Heart, Droplets as BloodDrop, TrendingUp, BarChart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/cart-context";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { useState }from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 const healthMetrics = [
@@ -19,6 +22,17 @@ const healthMetrics = [
     { title: "Blood Glucose", value: "95 mg/dL", icon: BloodDrop, color: "text-sky-400", bg: "bg-sky-900/50" },
     { title: "Heart Rate", value: "72 bpm", icon: Heart, color: "text-rose-400", bg: "bg-rose-900/50" },
 ];
+
+const weeklyStepsData = [
+  { day: 'Mon', steps: 7500 },
+  { day: 'Tue', steps: 8200 },
+  { day: 'Wed', steps: 6800 },
+  { day: 'Thu', steps: 9500 },
+  { day: 'Fri', steps: 7100 },
+  { day: 'Sat', steps: 10500 },
+  { day: 'Sun', steps: 6200 },
+];
+
 
 export default function ActivityPage() {
     const router = useRouter();
@@ -54,6 +68,56 @@ export default function ActivityPage() {
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 space-y-6">
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <BarChart className="h-6 w-6" />
+                    Health Statistics
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <Tabs defaultValue="week" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="day">Day</TabsTrigger>
+                        <TabsTrigger value="week">Week</TabsTrigger>
+                        <TabsTrigger value="month">Month</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="week">
+                         <div className="h-[200px] w-full mt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RechartsBarChart data={weeklyStepsData}>
+                                <XAxis dataKey="day" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value / 1000}k`} />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'hsl(var(--background))',
+                                        borderColor: 'hsl(var(--border))',
+                                    }}
+                                />
+                                <Bar dataKey="steps" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                </RechartsBarChart>
+                            </ResponsiveContainer>
+                        </div>
+                         <div className="grid grid-cols-3 gap-4 mt-4 text-center">
+                            <Card className="p-3 bg-card/50">
+                                <p className="text-sm text-muted-foreground">Total Steps</p>
+                                <p className="text-lg font-bold">55.8k</p>
+                            </Card>
+                             <Card className="p-3 bg-card/50">
+                                <p className="text-sm text-muted-foreground">Calories</p>
+                                <p className="text-lg font-bold">2.1k</p>
+                            </Card>
+                             <Card className="p-3 bg-card/50">
+                                <p className="text-sm text-muted-foreground">Water</p>
+                                <p className="text-lg font-bold">42L</p>
+                            </Card>
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
+        </Card>
+
         <h2 className="text-2xl font-bold tracking-tight">Log Health Metrics</h2>
         
         <div className="flex justify-between items-center">
@@ -85,3 +149,5 @@ export default function ActivityPage() {
     </div>
   );
 }
+
+    
