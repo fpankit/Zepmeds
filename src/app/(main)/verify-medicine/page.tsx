@@ -122,7 +122,14 @@ export default function VerifyMedicinePage() {
 
     try {
       if (!data) {
-        throw new Error("QR code is empty.");
+        toast({
+            variant: 'destructive',
+            title: 'Scan Failed',
+            description: 'The QR code appears to be empty.',
+        });
+        setIsLoading(false);
+        setTimeout(() => setIsScanning(true), 2000);
+        return;
       }
       
       let parsedData: ScannedData;
@@ -335,5 +342,7 @@ export default function VerifyMedicinePage() {
     </div>
   );
 }
+
+    
 
     
