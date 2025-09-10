@@ -35,19 +35,9 @@ export const useCalls = () => {
             return;
         }
 
-        const callsQuery = query(
-            collection(db, 'calls'),
-            where('doctorId', '==', user.id),
-            where('status', '==', 'ringing')
-        );
-
-        const unsubscribe = onSnapshot(callsQuery, (snapshot) => {
-            const calls = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Call));
-            setIncomingCalls(calls);
-        }, (error) => {
-            console.error("Error fetching calls:", error);
-            setIncomingCalls([]);
-        });
+        // The video call feature is disabled, so this will not fetch any calls.
+        // Keeping the hook structure to avoid breaking imports.
+        const unsubscribe = () => {};
 
         return () => unsubscribe();
     }, [user]);
