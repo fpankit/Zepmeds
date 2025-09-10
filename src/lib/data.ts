@@ -1,10 +1,11 @@
 
-import { User, MapPin, History, HeartPulse, FileText, Wallet, Tag, LifeBuoy } from "lucide-react";
+import { User, MapPin, History, HeartPulse, FileText, Wallet, Tag, LifeBuoy, Calendar } from "lucide-react";
 
 export const profileLinks = [
     { icon: User, text: "Personal Details", href: "/profile/edit" },
     { icon: MapPin, text: "Addresses", href: "#" },
     { icon: History, text: "Order History", href: "/orders" },
+    { icon: Calendar, text: "Schedule Medicines", href: "/schedule-medicines" },
     { icon: HeartPulse, text: "Past Medicines", href: "#" },
     { icon: FileText, text: "Diagnosed Reports", href: "#" },
   ];
