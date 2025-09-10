@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef } from 'react';
@@ -91,60 +90,87 @@ export default function HealthReportPage() {
     }
   }
 
-  const handleDownload = async () => {
+ const handleDownload = async () => {
     const reportContainer = reportRef.current;
     if (!reportContainer) return;
-  
+
     toast({ title: "Preparing Download...", description: "Please wait while we generate your PDF." });
-  
+
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const margin = 10;
     const contentWidth = pdfWidth - margin * 2;
     let yPos = margin;
-  
-    // Function to add an element to the PDF, handling page breaks
+
     const addElementToPdf = async (element: HTMLElement) => {
-      // Temporarily remove any "hidden" class to ensure it's rendered for canvas capture
-      const wasHidden = element.classList.contains('hidden');
-      if (wasHidden) element.classList.remove('hidden');
+        const canvas = await html2canvas(element, {
+            scale: 3,
+            useCORS: true,
+            backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--background').trim() === '240 5% 8.5%' ? '#0c0a09' : '#ffffff',
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
 
-      const canvas = await html2canvas(element, {
-        scale: 3, // Increased scale for better quality
-        useCORS: true,
-        backgroundColor: '#0c0a09' // Match the app's dark background for consistency
-      });
+        if (yPos > margin && yPos + imgHeight > pdfHeight - margin) {
+            pdf.addPage();
+            yPos = margin;
+        }
 
-      // Restore hidden class if it was there
-      if (wasHidden) element.classList.add('hidden');
-
-      const imgData = canvas.toDataURL('image/png');
-      const imgHeight = (canvas.height * contentWidth) / canvas.width;
-      
-      // Check if the element fits on the current page, if not, add a new page
-      if (yPos > margin && yPos + imgHeight > pdfHeight - margin) {
-        pdf.addPage();
-        yPos = margin; // Reset y position for the new page
-      }
-      
-      pdf.addImage(imgData, 'PNG', margin, yPos, contentWidth, imgHeight);
-      yPos += imgHeight + 5; // Add some padding after the element
+        pdf.addImage(imgData, 'PNG', margin, yPos, contentWidth, imgHeight);
+        yPos += imgHeight + 5;
     };
-  
+
     try {
-      const sections = reportContainer.querySelectorAll<HTMLElement>('[data-report-section]');
-      
-      for (const section of Array.from(sections)) {
-        await addElementToPdf(section);
-      }
-  
-      pdf.save(`Zepmeds_Health_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+        const header = reportContainer.querySelector<HTMLElement>('#pdf-header');
+        if (header) await addElementToPdf(header);
+
+        const title = reportContainer.querySelector<HTMLElement>('#pdf-title');
+        if (title) await addElementToPdf(title);
+
+        const analysisSection = reportContainer.querySelector<HTMLElement>('#pdf-analysis');
+        if (analysisSection) {
+            const analysisHeader = analysisSection.querySelector<HTMLElement>('#analysis-header');
+            const riskSummary = analysisSection.querySelector<HTMLElement>('#risk-summary');
+            const riskCards = analysisSection.querySelectorAll<HTMLElement>('[data-risk-card]');
+
+            if (analysisHeader) await addElementToPdf(analysisHeader);
+            if (riskSummary) await addElementToPdf(riskSummary);
+
+            for (const card of Array.from(riskCards)) {
+                 await addElementToPdf(card);
+            }
+        }
+        
+        const otherSections = reportContainer.querySelectorAll<HTMLElement>('[data-report-section]:not(#pdf-header):not(#pdf-title):not(#pdf-analysis):not(#pdf-charts):not(#pdf-footer)');
+        for (const section of Array.from(otherSections)) {
+            await addElementToPdf(section);
+        }
+
+        const charts = reportContainer.querySelector<HTMLElement>('#pdf-charts');
+        if (charts) await addElementToPdf(charts);
+
+        const footer = reportContainer.querySelector<HTMLElement>('#pdf-footer');
+        if (footer) {
+             const footerCanvas = await html2canvas(footer, { scale: 3, useCORS: true, backgroundColor: '#0c0a09' });
+             const footerImgData = footerCanvas.toDataURL('image/png');
+             const footerImgHeight = (footerCanvas.height * contentWidth) / footerCanvas.width;
+             
+             // Place footer at the bottom of the last page
+             if (yPos + footerImgHeight > pdfHeight - margin) {
+                 pdf.addPage();
+             }
+             pdf.addImage(footerImgData, 'PNG', margin, pdfHeight - margin - footerImgHeight, contentWidth, footerImgHeight);
+        }
+
+
+        pdf.save(`Zepmeds_Health_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
-      console.error("Failed to download PDF:", error);
-      toast({ variant: 'destructive', title: "Download Failed", description: "Could not create the PDF file." });
+        console.error("Failed to download PDF:", error);
+        toast({ variant: 'destructive', title: "Download Failed", description: "Could not create the PDF file." });
     }
-  };
+};
+
   
   const getRiskColor = (level: string) => {
     switch (level?.toLowerCase()) {
@@ -168,7 +194,6 @@ export default function HealthReportPage() {
 
   const renderContent = (content: string) => {
     const htmlContent = content.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
-    // Using a specific class for PDF text size
     return <div className="pdf-text-sm whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
   }
 
@@ -185,7 +210,7 @@ export default function HealthReportPage() {
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
       <style jsx global>{`
-        .pdf-header-logo { font-size: 32px !important; }
+        .pdf-header-logo { height: 32px !important; }
         .pdf-header-info { font-size: 24px !important; }
         .pdf-title { font-size: 17px !important; }
         .pdf-section-header { font-size: 14px !important; }
@@ -243,34 +268,32 @@ export default function HealthReportPage() {
 
         {report && user && (
             <div ref={reportRef} className="bg-card rounded-lg border border-border p-4">
-                {/* This wrapper is for on-screen display. The PDF will be built section-by-section. */}
-                {/* PDF Header section */}
-                <div data-report-section id="pdf-header" className="bg-background text-foreground p-6">
+                <div id="pdf-header" className="bg-background text-foreground p-6 break-after-page">
                     <div className="flex items-center justify-between">
-                       <Logo className="h-8 w-auto pdf-header-logo" />
+                       <Logo className="pdf-header-logo" />
                        <div className="text-right text-muted-foreground">
                             <p className="pdf-header-info">{user.firstName} {user.lastName}</p>
                             <p className="pdf-header-info">{user.email}</p>
                        </div>
                     </div>
                     <hr className="border-border my-4" />
+                     <div id="pdf-title" className="text-center my-6">
+                        <h2 className="font-bold tracking-wider uppercase text-muted-foreground pdf-title">Your Personalized Health Report</h2>
+                        <p className="text-[14px] text-muted-foreground mt-1">Generated on {new Date().toLocaleDateString()}</p>
+                    </div>
                 </div>
                 
-                {/* PDF Title Section */}
-                <div data-report-section id="pdf-title" className="text-center my-6 bg-background text-foreground p-6">
-                    <h2 className="font-bold tracking-wider uppercase text-muted-foreground pdf-title">Your Personalized Health Report</h2>
-                    <p className="text-[14px] text-muted-foreground mt-1">Generated on {new Date().toLocaleDateString()}</p>
-                </div>
-
-                {/* PDF Analysis Section */}
-                <div data-report-section id="pdf-analysis" className="p-4 rounded-lg bg-card border border-border mb-4">
-                    <h3 className="font-bold flex items-center gap-2 pdf-section-header mb-3">
-                        <HeartPulse className="h-5 w-5 text-primary" /> Health Risk Analysis
-                    </h3>
-                    <p className="pdf-text-sm text-muted-foreground italic mb-4">{report.healthAnalysis.riskSummary}</p>
+                <div id="pdf-analysis" className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
+                    <div id="analysis-header">
+                        <h3 className="font-bold flex items-center gap-2 pdf-section-header mb-3">
+                            <HeartPulse className="h-5 w-5 text-primary" /> Health Risk Analysis
+                        </h3>
+                    </div>
+                    <div id="risk-summary" className="pdf-text-sm text-muted-foreground italic mb-4">{report.healthAnalysis.riskSummary}</div>
+                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {report.healthAnalysis.risks.map((risk, i) => (
-                            <div key={i} className="p-3 rounded-md bg-background border">
+                            <div key={i} data-risk-card className="p-3 rounded-md bg-background border break-inside-avoid">
                                 <div className="flex justify-between items-center">
                                     <h4 className="font-semibold pdf-section-header">{risk.condition}</h4>
                                     <span className={cn("font-bold pdf-section-header", getRiskColor(risk.level))}>{risk.level}</span>
@@ -281,7 +304,6 @@ export default function HealthReportPage() {
                     </div>
                 </div>
                 
-                {/* PDF Main Content Sections */}
                 {sections.map(({ id, title, icon: Icon, color, content, isList }) => (
                      <div data-report-section id={`pdf-${id}`} key={id} className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
                         <h3 className={cn("font-bold flex items-center gap-2 pdf-section-header mb-3", color)}>
@@ -297,7 +319,6 @@ export default function HealthReportPage() {
                     </div>
                 ))}
                 
-                {/* PDF Charts Section */}
                 <div data-report-section id="pdf-charts" className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
                     <h3 className="font-bold flex items-center gap-2 pdf-section-header mb-3">
                         <FileBarChart className="h-5 w-5 text-primary" /> Health Charts
@@ -330,8 +351,7 @@ export default function HealthReportPage() {
                     </div>
                 </div>
 
-                {/* PDF Footer section */}
-                <div data-report-section id="pdf-footer" className="text-center pt-6 text-[10px] text-muted-foreground bg-background text-foreground p-6">
+                <div id="pdf-footer" className="text-center pt-6 text-[10px] text-muted-foreground bg-background text-foreground p-6 mt-auto">
                     <p>Disclaimer: This report is generated by an AI and is for informational purposes only. It is not a substitute for professional medical advice. Always consult with a qualified healthcare provider for any health concerns.</p>
                     <p className="mt-2 font-headline">&copy; {new Date().getFullYear()} Zepmeds</p>
                 </div>
@@ -340,5 +360,3 @@ export default function HealthReportPage() {
     </div>
   );
 }
-
-    
