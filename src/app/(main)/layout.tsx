@@ -13,8 +13,12 @@ export default function MainLayout({
   const pathname = usePathname();
   const noLayoutRoutes = ["/checkout", "/symptom-checker/results", "/echo-doc/call", "/first-aid/"];
   
-  const isLayoutVisible = !noLayoutRoutes.some(route => pathname.startsWith(route));
+  const isLayoutVisible = !noLayoutRoutes.some(route => pathname.startsWith(route) || pathname === '/order-status');
 
+
+  if (!isLayoutVisible && pathname.startsWith('/order-status')) {
+      return <main>{children}</main>;
+  }
 
   if (!isLayoutVisible) {
     return <main>{children}</main>;

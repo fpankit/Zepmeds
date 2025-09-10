@@ -4,7 +4,7 @@ import { User, MapPin, History, HeartPulse, FileText, Wallet, Tag, LifeBuoy } fr
 export const profileLinks = [
     { icon: User, text: "Personal Details", href: "/profile/edit" },
     { icon: MapPin, text: "Addresses", href: "#" },
-    { icon: History, text: "Order History", href: "/order-status" },
+    { icon: History, text: "Order History", href: "/orders" },
     { icon: HeartPulse, text: "Past Medicines", href: "#" },
     { icon: FileText, text: "Diagnosed Reports", href: "#" },
   ];
