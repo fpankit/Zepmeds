@@ -3,25 +3,19 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Bell, Edit, Footprints, GlassWater, Flame, Heart, Droplets as BloodDrop, TrendingUp, BarChart } from "lucide-react";
+import { ArrowLeft, Bell, Edit, BarChart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/cart-context";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-import { useState }from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/context/auth-context";
+import { healthMetrics, HealthMetric } from "@/lib/health-data";
+import { EditMetricDialog } from "@/components/features/edit-metric-dialog";
 
-
-const healthMetrics = [
-    { title: "Daily Steps", value: "7,642", icon: Footprints, color: "text-blue-400", bg: "bg-blue-900/50" },
-    { title: "Water Intake", value: "6 glasses", icon: GlassWater, color: "text-cyan-400", bg: "bg-cyan-900/50" },
-    { title: "Calories Burned", value: "420 cals", icon: Flame, color: "text-orange-400", bg: "bg-orange-900/50" },
-    { title: "Blood Pressure", value: "120/80 mmHg", icon: Heart, color: "text-red-400", bg: "bg-red-900/50" },
-    { title: "Blood Glucose", value: "95 mg/dL", icon: BloodDrop, color: "text-sky-400", bg: "bg-sky-900/50" },
-    { title: "Heart Rate", value: "72 bpm", icon: Heart, color: "text-rose-400", bg: "bg-rose-900/50" },
-];
 
 const weeklyStepsData = [
   { day: 'Mon', steps: 7500 },
@@ -37,7 +31,21 @@ const weeklyStepsData = [
 export default function ActivityPage() {
     const router = useRouter();
     const { cart } = useCart();
+    const { user, updateUser } = useAuth();
     
+    const [editingMetric, setEditingMetric] = useState<HealthMetric | null>(null);
+
+    const handleSaveMetric = async (metricId: string, newValue: string) => {
+        if (user) {
+            const newHealthData = {
+                ...user.healthData,
+                [metricId]: newValue,
+            };
+            await updateUser({ healthData: newHealthData });
+        }
+        setEditingMetric(null);
+    };
+
     // Get current date in MM/DD/YYYY format
     const currentDate = new Date().toLocaleDateString('en-US', {
         month: 'numeric',
@@ -118,7 +126,10 @@ export default function ActivityPage() {
             </CardContent>
         </Card>
 
-        <h2 className="text-2xl font-bold tracking-tight">Log Health Metrics</h2>
+        <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold tracking-tight">Log Health Metrics</h2>
+            <Button variant="link">Sync with Google Fit</Button>
+        </div>
         
         <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold text-muted-foreground">Today's Health</h3>
@@ -126,28 +137,40 @@ export default function ActivityPage() {
         </div>
 
         <div className="space-y-3">
-            {healthMetrics.map((metric) => (
-                 <Card key={metric.title} className="bg-card/80">
-                    <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className={cn("p-3 rounded-full", metric.bg)}>
-                                <metric.icon className={cn("h-6 w-6", metric.color)} />
+            {healthMetrics.map((metric) => {
+                const userValue = user?.healthData?.[metric.id];
+                const displayValue = userValue || metric.defaultValue;
+                return (
+                    <Card key={metric.id} className="bg-card/80">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className={cn("p-3 rounded-full", metric.bg)}>
+                                    <metric.icon className={cn("h-6 w-6", metric.color)} />
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground">{metric.title}</p>
+                                    <p className={cn("text-lg font-bold", metric.color)}>{displayValue}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-muted-foreground">{metric.title}</p>
-                                <p className={cn("text-lg font-bold", metric.color)}>{metric.value}</p>
-                            </div>
-                        </div>
-                         <Button variant="ghost" size="icon">
-                            <Edit className="h-5 w-5 text-muted-foreground" />
-                        </Button>
-                    </CardContent>
-                </Card>
-            ))}
+                            <Button variant="ghost" size="icon" onClick={() => setEditingMetric(metric)}>
+                                <Edit className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                        </CardContent>
+                    </Card>
+                )
+            })}
         </div>
       </main>
+      
+      {editingMetric && (
+        <EditMetricDialog
+            isOpen={!!editingMetric}
+            onClose={() => setEditingMetric(null)}
+            metric={editingMetric}
+            currentValue={user?.healthData?.[editingMetric.id] || editingMetric.defaultValue}
+            onSave={handleSaveMetric}
+        />
+      )}
     </div>
   );
 }
-
-    

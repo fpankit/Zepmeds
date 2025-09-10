@@ -18,6 +18,9 @@ export interface Address {
   icon?: React.ElementType;
 }
 
+export interface HealthData {
+  [metricId: string]: string;
+}
 
 export interface User {
   id: string; 
@@ -29,6 +32,7 @@ export interface User {
   referralCode?: string;
   addresses: Address[];
   isGuest?: boolean;
+  healthData?: HealthData;
   // Doctor specific fields
   isDoctor?: boolean;
   isOnline?: boolean;
@@ -66,6 +70,7 @@ const createGuestUser = (): User => ({
     phone: "",
     age: 0,
     addresses: [],
+    healthData: {},
     isGuest: true,
 });
 
@@ -117,6 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           id: uid,
           ...newUserDetails,
           addresses: [defaultAddress],
+          healthData: {},
           isGuest: false,
           isDoctor: false, // Default to not a doctor
       };
