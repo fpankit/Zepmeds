@@ -93,11 +93,19 @@ const generateDietPlanFlow = ai.defineFlow(
     outputSchema: GenerateDietPlanOutputSchema,
   },
   async ({ healthMetrics, targetLanguage }) => {
-    // 1. Generate the report in English
-    const { output: englishResult } = await englishPrompt(healthMetrics);
-    
-    if (!englishResult) {
-        throw new Error("Failed to generate diet plan in English.");
+    let englishResult: GenerateDietPlanOutput | undefined;
+    try {
+      // 1. Generate the report in English
+      const { output } = await englishPrompt(healthMetrics);
+      englishResult = output;
+
+      if (!englishResult) {
+          throw new Error("Failed to generate diet plan in English.");
+      }
+    } catch (e: any) {
+        console.error("AI report generation failed:", e);
+        // This makes the error more user-friendly if it bubbles up to the UI
+        throw new Error("The AI service is currently busy. Please wait a moment and try generating the report again.");
     }
     
     // 2. If target language is English, return directly
