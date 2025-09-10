@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 import { Button } from '@/components/ui/button';
@@ -34,8 +34,15 @@ export function VideoCallContent() {
 
     useEffect(() => {
         isMounted.current = true;
+        
+        // This is a critical cleanup function.
+        // It ensures that when the component is unmounted (e.g., navigating away),
+        // all Agora resources are properly released to prevent memory leaks and errors.
         return () => {
             isMounted.current = false;
+            localAudioTrack.current?.close();
+            localVideoTrack.current?.close();
+            client.current?.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
         };
     }, []);
 
@@ -106,10 +113,6 @@ export function VideoCallContent() {
         const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
             if (isMounted.current) {
                 setRemoteUser(null);
-                 const remotePlayerContainer = document.getElementById('remote-video');
-                if (remotePlayerContainer) {
-                   remotePlayerContainer.innerHTML = ''; // Clean up container when user leaves
-                }
             }
         };
         
@@ -118,19 +121,10 @@ export function VideoCallContent() {
         
         initializeAgora();
 
+        // The cleanup function for this effect
         return () => {
-            isMounted.current = false; // Set mounted to false on cleanup
-            // Close local tracks
-            localAudioTrack.current?.close();
-            localVideoTrack.current?.close();
-            // Leave the channel and remove listeners
-            client.current?.leave().then(() => {
-                console.log("Left Agora channel successfully.");
-            }).catch(e => {
-                console.error("Error leaving Agora channel:", e);
-            }).finally(() => {
-                client.current?.removeAllListeners();
-            });
+             // We do the main cleanup in the first useEffect, but we can remove listeners here.
+             agoraClient.removeAllListeners();
         };
     }, [channelName, router, toast]);
 
