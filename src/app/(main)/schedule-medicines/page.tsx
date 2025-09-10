@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -269,6 +269,9 @@ export default function ScheduleMedicinesPage() {
                              <FormControl>
                                 <Input placeholder="e.g., 1 tablet" {...field} />
                              </FormControl>
+                             <FormDescription>
+                                Tablets to take at one time.
+                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -282,6 +285,9 @@ export default function ScheduleMedicinesPage() {
                             <FormControl>
                                <Input type="number" placeholder="e.g., 30" {...field} />
                             </FormControl>
+                             <FormDescription>
+                                Total tablets you have.
+                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -482,4 +488,5 @@ export default function ScheduleMedicinesPage() {
   );
 }
 
+    
     
