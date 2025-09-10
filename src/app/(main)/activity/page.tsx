@@ -6,7 +6,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { ArrowLeft, Bell, Footprints, Heart, Droplets, Flame, GlassWater, Beef, PlusCircle } from "lucide-react"
+import { ArrowLeft, Bell, Footprints, Heart, Droplets, Flame, GlassWater, Beef } from "lucide-react"
 import Image from "next/image"
 
 const chartData = [
@@ -43,6 +43,7 @@ const logMetrics = [
 export default function ActivityPage() {
   const [activeTab, setActiveTab] = useState("Week")
   const [activeMetric, setActiveMetric] = useState("Steps")
+  const [activeLogMetric, setActiveLogMetric] = useState("Steps");
 
   return (
     <div className="flex flex-col h-full">
@@ -124,9 +125,10 @@ export default function ActivityPage() {
                   <button
                     key={metric.label}
                     className="flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+                    onClick={() => setActiveLogMetric(metric.label)}
                   >
-                    <metric.icon className="h-8 w-8" />
-                    <span className="text-sm font-semibold">{metric.label}</span>
+                    <metric.icon className={cn("h-10 w-10 transition-colors", activeLogMetric === metric.label ? 'text-primary' : 'text-muted-foreground')} />
+                    <span className={cn("text-sm font-semibold transition-colors", activeLogMetric === metric.label ? 'text-primary' : 'text-muted-foreground')}>{metric.label}</span>
                   </button>
                 ))}
             </CardContent>
