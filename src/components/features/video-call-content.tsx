@@ -60,24 +60,14 @@ export function VideoCallContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [isVideoMuted, setIsVideoMuted] = useState(false);
-    const isMounted = useRef(true);
 
     useEffect(() => {
-        isMounted.current = true;
-        
-        // Main cleanup function on component unmount
-        return () => {
-            isMounted.current = false;
-            localAudioTrack?.close();
-            localVideoTrack?.close();
-            client.current?.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
-        };
-    }, [localAudioTrack, localVideoTrack]);
-
-    useEffect(() => {
+        let isMounted = true;
         const agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         client.current = agoraClient;
         
+        let tracks: [IMicrophoneAudioTrack, ICameraVideoTrack] | null = null;
+
         const initializeAgora = async () => {
             try {
                 const response = await fetch(`/api/agora/token?channelName=${channelName}`);
@@ -87,29 +77,29 @@ export function VideoCallContent() {
                 
                 await agoraClient.join(agoraAppId, channelName, token, uid);
 
-                const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+                tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
                 
-                if (isMounted.current) {
-                    setLocalAudioTrack(audioTrack);
-                    setLocalVideoTrack(videoTrack);
+                if (isMounted) {
+                    setLocalAudioTrack(tracks[0]);
+                    setLocalVideoTrack(tracks[1]);
                 }
 
-                await agoraClient.publish([audioTrack, videoTrack]);
+                await agoraClient.publish(Object.values(tracks));
             } catch (error: any) {
                 console.error('Agora initialization failed:', error);
-                if (isMounted.current) {
+                if (isMounted) {
                     toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call.' });
                     router.back();
                 }
             } finally {
-                if (isMounted.current) setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         };
 
         const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
             await agoraClient.subscribe(user, mediaType);
             if (mediaType === 'video' && user.videoTrack) {
-                if (isMounted.current) setRemoteVideoTrack(user.videoTrack);
+                if (isMounted) setRemoteVideoTrack(user.videoTrack);
             }
             if (mediaType === 'audio') {
                 user.audioTrack?.play();
@@ -118,7 +108,7 @@ export function VideoCallContent() {
 
         const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
             if (remoteVideoTrack?.getUserId() === user.uid) {
-                if (isMounted.current) setRemoteVideoTrack(null);
+                if (isMounted) setRemoteVideoTrack(null);
             }
         };
         
@@ -128,9 +118,12 @@ export function VideoCallContent() {
         initializeAgora();
 
         return () => {
-             agoraClient.removeAllListeners();
+            isMounted = false;
+            tracks?.forEach(track => track.close());
+            agoraClient.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
+            agoraClient.removeAllListeners();
         };
-    }, [channelName, router, toast, remoteVideoTrack]);
+    }, [channelName, router, toast]);
 
 
     const handleLeave = async () => {
@@ -184,7 +177,7 @@ export function VideoCallContent() {
                 
                 {/* Local video container */}
                 <div className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10">
-                    {localVideoTrack && <LocalVideoPlayer videoTrack={localVideoTrack} />}
+                    {localVideoTrack && !isVideoMuted && <LocalVideoPlayer videoTrack={localVideoTrack} />}
                 </div>
             </main>
 
