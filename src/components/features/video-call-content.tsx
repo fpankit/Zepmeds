@@ -2,32 +2,61 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
+import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IAgoraRTCRemoteUser, ILocalVideoTrack, IRemoteVideoTrack } from 'agora-rtc-sdk-ng';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, PhoneOff, Video, VideoOff, Loader2 } from 'lucide-react';
-import { useAuth } from '@/context/auth-context';
 
 const agoraAppId = "5bbb95c735a84da6af004432f4ced817";
+
+// Dedicated component to handle playing a local video track
+const LocalVideoPlayer = ({ videoTrack }: { videoTrack: ILocalVideoTrack }) => {
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (ref.current) {
+            videoTrack.play(ref.current);
+        }
+        return () => {
+            videoTrack.stop();
+        };
+    }, [videoTrack]);
+
+    return <div ref={ref} className="h-full w-full"></div>;
+};
+
+// Dedicated component to handle playing a remote video track
+const RemoteVideoPlayer = ({ videoTrack }: { videoTrack: IRemoteVideoTrack }) => {
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (ref.current) {
+            videoTrack.play(ref.current);
+        }
+        return () => {
+            videoTrack.stop();
+        };
+    }, [videoTrack]);
+
+    return <div ref={ref} className="h-full w-full"></div>;
+};
 
 export function VideoCallContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
-    const { user } = useAuth();
     
     const client = useRef<IAgoraRTCClient | null>(null);
-    const localAudioTrack = useRef<IMicrophoneAudioTrack | null>(null);
-    const localVideoTrack = useRef<ICameraVideoTrack | null>(null);
-    const remoteUserRef = useRef<IAgoraRTCRemoteUser | null>(null);
     
     const [channelName] = useState(searchParams.get('channel') || 'default_channel');
     const [doctorName] = useState(searchParams.get('doctorName') || 'Doctor');
     
-    const [hasRemoteUser, setHasRemoteUser] = useState(false);
-    const [isJoined, setIsJoined] = useState(false);
+    const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
+    const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
+    const [remoteVideoTrack, setRemoteVideoTrack] = useState<IRemoteVideoTrack | null>(null);
+
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [isVideoMuted, setIsVideoMuted] = useState(false);
@@ -36,56 +65,36 @@ export function VideoCallContent() {
     useEffect(() => {
         isMounted.current = true;
         
-        // This is a critical cleanup function.
+        // Main cleanup function on component unmount
         return () => {
             isMounted.current = false;
-            // Stop tracks before leaving
-            localAudioTrack.current?.stop();
-            localAudioTrack.current?.close();
-            localVideoTrack.current?.stop();
-            localVideoTrack.current?.close();
-            
+            localAudioTrack?.close();
+            localVideoTrack?.close();
             client.current?.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
         };
-    }, []);
+    }, [localAudioTrack, localVideoTrack]);
 
     useEffect(() => {
-        if (!agoraAppId) {
-            toast({ variant: "destructive", title: "Configuration Error", description: "Agora App ID is missing." });
-            return;
-        }
-
         const agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
         client.current = agoraClient;
-        let tracks: [IMicrophoneAudioTrack, ICameraVideoTrack] | null = null;
         
         const initializeAgora = async () => {
-            if (!client.current) return;
             try {
                 const response = await fetch(`/api/agora/token?channelName=${channelName}`);
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to fetch Agora token');
-                }
+                if (!response.ok) throw new Error('Failed to fetch Agora token');
+                
                 const { token, uid } = await response.json();
                 
                 await agoraClient.join(agoraAppId, channelName, token, uid);
 
-                tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
-                localAudioTrack.current = tracks[0];
-                localVideoTrack.current = tracks[1];
+                const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
                 
-                const localPlayerContainer = document.getElementById('local-video');
-                if (localPlayerContainer) {
-                    localVideoTrack.current.play(localPlayerContainer);
-                }
-                
-                await agoraClient.publish(tracks);
-
                 if (isMounted.current) {
-                    setIsJoined(true);
+                    setLocalAudioTrack(audioTrack);
+                    setLocalVideoTrack(videoTrack);
                 }
 
+                await agoraClient.publish([audioTrack, videoTrack]);
             } catch (error: any) {
                 console.error('Agora initialization failed:', error);
                 if (isMounted.current) {
@@ -93,21 +102,14 @@ export function VideoCallContent() {
                     router.back();
                 }
             } finally {
-                if (isMounted.current) {
-                    setIsLoading(false);
-                }
+                if (isMounted.current) setIsLoading(false);
             }
         };
 
         const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
             await agoraClient.subscribe(user, mediaType);
-            if (mediaType === 'video') {
-                remoteUserRef.current = user;
-                if (isMounted.current) setHasRemoteUser(true);
-                const remotePlayerContainer = document.getElementById('remote-video');
-                if (remotePlayerContainer) {
-                    user.videoTrack?.play(remotePlayerContainer);
-                }
+            if (mediaType === 'video' && user.videoTrack) {
+                if (isMounted.current) setRemoteVideoTrack(user.videoTrack);
             }
             if (mediaType === 'audio') {
                 user.audioTrack?.play();
@@ -115,11 +117,8 @@ export function VideoCallContent() {
         };
 
         const handleUserLeft = (user: IAgoraRTCRemoteUser) => {
-            if (remoteUserRef.current?.uid === user.uid) {
-                remoteUserRef.current = null;
-                if (isMounted.current) {
-                   setHasRemoteUser(false);
-                }
+            if (remoteVideoTrack?.getUserId() === user.uid) {
+                if (isMounted.current) setRemoteVideoTrack(null);
             }
         };
         
@@ -128,12 +127,10 @@ export function VideoCallContent() {
         
         initializeAgora();
 
-        // The cleanup function for this effect
         return () => {
-             // We do the main cleanup in the first useEffect, but we can remove listeners here.
              agoraClient.removeAllListeners();
         };
-    }, [channelName, router, toast]);
+    }, [channelName, router, toast, remoteVideoTrack]);
 
 
     const handleLeave = async () => {
@@ -146,15 +143,15 @@ export function VideoCallContent() {
     };
 
     const toggleAudio = async () => {
-        if (localAudioTrack.current) {
-            await localAudioTrack.current.setMuted(!isAudioMuted);
+        if (localAudioTrack) {
+            await localAudioTrack.setMuted(!isAudioMuted);
             setIsAudioMuted(!isAudioMuted);
         }
     };
 
     const toggleVideo = async () => {
-        if (localVideoTrack.current) {
-            await localVideoTrack.current.setMuted(!isVideoMuted);
+        if (localVideoTrack) {
+            await localVideoTrack.setMuted(!isVideoMuted);
             setIsVideoMuted(!isVideoMuted);
         }
     };
@@ -170,16 +167,14 @@ export function VideoCallContent() {
             
             <header className="p-4 text-center">
                 <h1 className="text-xl font-bold">Call with {doctorName}</h1>
-                <p className="text-muted-foreground text-sm">Channel: {channelName}</p>
             </header>
 
             <main className="relative flex-1">
                 {/* Remote video container */}
-                <div 
-                    id="remote-video"
-                    className="absolute inset-0 h-full w-full bg-black"
-                >
-                   {!hasRemoteUser && !isLoading && (
+                <div className="absolute inset-0 h-full w-full bg-black">
+                   {remoteVideoTrack ? (
+                       <RemoteVideoPlayer videoTrack={remoteVideoTrack} />
+                   ) : (
                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
                         <Loader2 className="h-8 w-8 animate-spin" />
                         <p className="mt-4">Waiting for {doctorName} to join...</p>
@@ -188,10 +183,9 @@ export function VideoCallContent() {
                 </div>
                 
                 {/* Local video container */}
-                <div 
-                    id="local-video" 
-                    className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10"
-                />
+                <div className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10">
+                    {localVideoTrack && <LocalVideoPlayer videoTrack={localVideoTrack} />}
+                </div>
             </main>
 
             <footer className="bg-black/50 p-4">
