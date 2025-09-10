@@ -2,7 +2,6 @@
 
 'use client';
 
-// Force restart to load environment variables
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
@@ -11,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, PhoneOff, Video, VideoOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 
-const agoraAppId = process.env.NEXT_PUBLIC_AGORA_APP_ID || "";
+const agoraAppId = "5bbb95c735a84da6af004432f4ced817";
 
 export function VideoCallContent() {
     const router = useRouter();
