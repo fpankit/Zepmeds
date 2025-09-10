@@ -104,33 +104,32 @@ export default function HealthReportPage() {
     const contentWidth = pdfWidth - margin * 2;
     let yPos = margin;
   
+    // Function to add an element to the PDF, handling page breaks
     const addElementToPdf = async (element: HTMLElement) => {
-      // Temporarily remove hidden class to measure and capture
+      // Temporarily remove any "hidden" class to ensure it's rendered for canvas capture
       const wasHidden = element.classList.contains('hidden');
-      if (wasHidden) {
-        element.classList.remove('hidden');
-      }
+      if (wasHidden) element.classList.remove('hidden');
 
-      const canvas = await html2canvas(element, { 
-        scale: 4, 
+      const canvas = await html2canvas(element, {
+        scale: 3, // Increased scale for better quality
         useCORS: true,
-        backgroundColor: '#0c0a09' // Match the dark background
+        backgroundColor: '#0c0a09' // Match the app's dark background for consistency
       });
 
-      if (wasHidden) {
-        element.classList.add('hidden');
-      }
+      // Restore hidden class if it was there
+      if (wasHidden) element.classList.add('hidden');
 
       const imgData = canvas.toDataURL('image/png');
       const imgHeight = (canvas.height * contentWidth) / canvas.width;
-  
-      if (yPos + imgHeight > pdfHeight - margin) {
+      
+      // Check if the element fits on the current page, if not, add a new page
+      if (yPos > margin && yPos + imgHeight > pdfHeight - margin) {
         pdf.addPage();
-        yPos = margin;
+        yPos = margin; // Reset y position for the new page
       }
-  
+      
       pdf.addImage(imgData, 'PNG', margin, yPos, contentWidth, imgHeight);
-      yPos += imgHeight + 5; // Add some padding after each section
+      yPos += imgHeight + 5; // Add some padding after the element
     };
   
     try {
@@ -169,7 +168,8 @@ export default function HealthReportPage() {
 
   const renderContent = (content: string) => {
     const htmlContent = content.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>');
-    return <div className="text-[11px] whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    // Using a specific class for PDF text size
+    return <div className="pdf-text-sm whitespace-pre-line leading-relaxed" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
   }
 
   const chartData = user?.healthData ? [
@@ -184,6 +184,13 @@ export default function HealthReportPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
+      <style jsx global>{`
+        .pdf-header-logo { font-size: 32px !important; }
+        .pdf-header-info { font-size: 24px !important; }
+        .pdf-title { font-size: 17px !important; }
+        .pdf-section-header { font-size: 14px !important; }
+        .pdf-text-sm { font-size: 11px !important; }
+      `}</style>
        <Card className="bg-primary/10 border-primary/20">
             <CardHeader>
                 <CardTitle className="flex items-center gap-3 text-2xl">
@@ -240,10 +247,10 @@ export default function HealthReportPage() {
                 {/* PDF Header section */}
                 <div data-report-section id="pdf-header" className="bg-background text-foreground p-6">
                     <div className="flex items-center justify-between">
-                       <Logo className="h-8 w-auto" />
+                       <Logo className="h-8 w-auto pdf-header-logo" />
                        <div className="text-right text-muted-foreground">
-                            <p className="text-[24px]">{user.firstName} {user.lastName}</p>
-                            <p className="text-[24px]">{user.email}</p>
+                            <p className="pdf-header-info">{user.firstName} {user.lastName}</p>
+                            <p className="pdf-header-info">{user.email}</p>
                        </div>
                     </div>
                     <hr className="border-border my-4" />
@@ -251,24 +258,24 @@ export default function HealthReportPage() {
                 
                 {/* PDF Title Section */}
                 <div data-report-section id="pdf-title" className="text-center my-6 bg-background text-foreground p-6">
-                    <h2 className="text-[17px] font-bold tracking-wider uppercase text-muted-foreground">Your Personalized Health Report</h2>
+                    <h2 className="font-bold tracking-wider uppercase text-muted-foreground pdf-title">Your Personalized Health Report</h2>
                     <p className="text-[14px] text-muted-foreground mt-1">Generated on {new Date().toLocaleDateString()}</p>
                 </div>
 
                 {/* PDF Analysis Section */}
                 <div data-report-section id="pdf-analysis" className="p-4 rounded-lg bg-card border border-border mb-4">
-                    <h3 className="font-bold flex items-center gap-2 text-[14px] mb-3">
+                    <h3 className="font-bold flex items-center gap-2 pdf-section-header mb-3">
                         <HeartPulse className="h-5 w-5 text-primary" /> Health Risk Analysis
                     </h3>
-                    <p className="text-[11px] text-muted-foreground italic mb-4">{report.healthAnalysis.riskSummary}</p>
+                    <p className="pdf-text-sm text-muted-foreground italic mb-4">{report.healthAnalysis.riskSummary}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {report.healthAnalysis.risks.map((risk, i) => (
                             <div key={i} className="p-3 rounded-md bg-background border">
                                 <div className="flex justify-between items-center">
-                                    <h4 className="font-semibold text-[14px]">{risk.condition}</h4>
-                                    <span className={cn("font-bold text-[14px]", getRiskColor(risk.level))}>{risk.level}</span>
+                                    <h4 className="font-semibold pdf-section-header">{risk.condition}</h4>
+                                    <span className={cn("font-bold pdf-section-header", getRiskColor(risk.level))}>{risk.level}</span>
                                 </div>
-                                <p className="text-[11px] text-muted-foreground mt-1">{risk.reason}</p>
+                                <p className="pdf-text-sm text-muted-foreground mt-1">{risk.reason}</p>
                             </div>
                         ))}
                     </div>
@@ -277,11 +284,11 @@ export default function HealthReportPage() {
                 {/* PDF Main Content Sections */}
                 {sections.map(({ id, title, icon: Icon, color, content, isList }) => (
                      <div data-report-section id={`pdf-${id}`} key={id} className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
-                        <h3 className={cn("font-bold flex items-center gap-2 text-[14px] mb-3", color)}>
+                        <h3 className={cn("font-bold flex items-center gap-2 pdf-section-header mb-3", color)}>
                             <Icon className="h-5 w-5" /> {title}
                         </h3>
                         {isList && Array.isArray(content) ? (
-                            <ul className="list-disc pl-5 space-y-2 text-[11px]">
+                            <ul className="list-disc pl-5 space-y-2 pdf-text-sm">
                                 {content.map((item, i) => <li key={i}>{item}</li>)}
                             </ul>
                         ) : (
@@ -292,7 +299,7 @@ export default function HealthReportPage() {
                 
                 {/* PDF Charts Section */}
                 <div data-report-section id="pdf-charts" className="p-4 rounded-lg bg-card border border-border mb-4 break-inside-avoid">
-                    <h3 className="font-bold flex items-center gap-2 text-[14px] mb-3">
+                    <h3 className="font-bold flex items-center gap-2 pdf-section-header mb-3">
                         <FileBarChart className="h-5 w-5 text-primary" /> Health Charts
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
@@ -333,3 +340,5 @@ export default function HealthReportPage() {
     </div>
   );
 }
+
+    
