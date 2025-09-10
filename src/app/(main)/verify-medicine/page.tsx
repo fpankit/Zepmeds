@@ -69,6 +69,7 @@ export default function VerifyMedicinePage() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.error("Video play failed:", e));
       }
       setHasCameraPermission(true);
     } catch (error) {
@@ -112,14 +113,16 @@ export default function VerifyMedicinePage() {
         }
       }
     }
-    if (hasCameraPermission) {
+    if (hasCameraPermission && isScanning) {
        requestAnimationFrame(tick);
     }
   }, [isScanning, hasCameraPermission]);
 
   useEffect(() => {
-    requestAnimationFrame(tick);
-  }, [tick]);
+    if(isScanning) {
+        requestAnimationFrame(tick);
+    }
+  }, [isScanning, tick]);
 
   const handleScan = async (data: string) => {
     setIsLoading(true);
@@ -128,6 +131,16 @@ export default function VerifyMedicinePage() {
     try {
       let parsedData: ScannedData;
       try {
+        if (!data) {
+             toast({
+                variant: 'destructive',
+                title: 'Scan Failed',
+                description: 'The QR code appears to be empty.',
+            });
+            setIsLoading(false);
+            setTimeout(() => setIsScanning(true), 2000);
+            return;
+        }
         parsedData = JSON.parse(data);
       } catch (e) {
          toast({
@@ -329,5 +342,3 @@ export default function VerifyMedicinePage() {
     </div>
   );
 }
-
-    
