@@ -43,8 +43,8 @@ const textToSpeechFlow = ai.defineFlow(
             voiceConfig: {
               prebuiltVoiceConfig: { voiceName: 'Algenib' },
             },
+            speakingRate,
           },
-          speakingRate,
         },
         prompt: text,
       });
@@ -60,7 +60,7 @@ const textToSpeechFlow = ai.defineFlow(
 
     } catch (e: any) {
         // Log the detailed error on the server for debugging purposes
-        console.error(`[TextToSpeechError] Failed to convert text to speech. Input: "${text.substring(0, 30)}...". Error:`, e.message);
+        console.error(`[TextToSpeechError] Failed to convert text to speech. Input: "${text.substring(0, 30)}...". Error:`, e);
         // Re-throw the original error to be handled by the client
         throw e;
     }
