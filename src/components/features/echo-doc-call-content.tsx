@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Mic, MicOff, PhoneOff, Bot, Loader2 } from 'lucide-react';
 import { echoDocFlow } from '@/ai/flows/echo-doc-flow';
+import { detectLanguage } from '@/ai/flows/detect-language';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -132,11 +133,17 @@ export function EchoDocCallContent() {
         setIsProcessing(true);
         
         try {
-            const aiResult = await echoDocFlow({ query: text });
-            const aiResponseText = aiResult.response;
-            const detectedLanguage = aiResult.language;
+            // 1. Detect Language
+            const { language: detectedLanguage } = await detectLanguage({ text });
+            
+            // 2. Get AI Response in that language
+            const { response: aiResponseText } = await echoDocFlow({ query: text, language: detectedLanguage });
+            
             setMessages(prev => [...prev, { sender: 'ai', text: aiResponseText }]);
+
+            // 3. Convert response to speech
             await speak(aiResponseText, detectedLanguage);
+
         } catch (error) {
             console.error("AI Response Error:", error);
             const errorMsg = "I'm sorry, I encountered an error. Could you please repeat that?";
@@ -157,6 +164,8 @@ export function EchoDocCallContent() {
                 greetingText += ` I am simulating a conversation with Dr. ${doctorName}. How can I help you today?`;
             } else if (initialSymptoms) {
                  greetingText += " I see you've come from the symptom checker. Let's talk more about what you're experiencing.";
+                 handleSendTranscript(initialSymptoms);
+                 return;
             }
 
             setMessages([{ sender: 'ai', text: greetingText }]);

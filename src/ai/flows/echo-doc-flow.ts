@@ -5,7 +5,7 @@
  *
  * This flow is designed for a conversational medical AI that can handle greetings,
  * answer general health questions, and provide medical information in a conversational manner.
- * It now internally handles language detection and translation, with fallbacks.
+ * The language for the response is passed in as a parameter.
  *
  * @interface EchoDocInput - Represents the input for the EchoDoc flow.
  * @interface EchoDocOutput - Represents the output of the EchoDoc flow.
@@ -17,13 +17,13 @@ import { z } from 'zod';
 
 const EchoDocInputSchema = z.object({
   query: z.string().describe('The user\'s voice input or question.'),
+  language: z.string().describe('The language the response should be in (e.g., "Hindi", "English").'),
 });
 
 export type EchoDocInput = z.infer<typeof EchoDocInputSchema>;
 
 const EchoDocOutputSchema = z.object({
-  response: z.string().describe('A conversational and helpful response from the AI medical assistant.'),
-  language: z.string().describe('The language the response should be in.'),
+  response: z.string().describe('A conversational and helpful response from the AI medical assistant in the requested language.'),
 });
 
 export type EchoDocOutput = z.infer<typeof EchoDocOutputSchema>;
@@ -32,12 +32,11 @@ export type EchoDocOutput = z.infer<typeof EchoDocOutputSchema>;
 const prompt = ai.definePrompt({
   name: 'echoDocPrompt',
   model: 'googleai/gemini-2.5-pro',
-  input: {schema: z.object({ query: z.string() })},
-  output: {schema: z.object({ response: z.string(), language: z.string().describe('The language of the user\'s query, e.g., "Hindi", "English".') })},
+  input: {schema: EchoDocInputSchema},
+  output: {schema: EchoDocOutputSchema},
   system: `You are EchoDoc, a friendly, empathetic, and highly skilled AI medical assistant. Your primary role is to have a natural, supportive conversation with the user about their health concerns. Your tone should be caring, reassuring, and professional.
 
-  - First, detect the user's language.
-  - You MUST then generate your response in that same detected language.
+  - You MUST generate your response in the requested language: {{{language}}}.
   - Your internal reasoning should be in English, but the final response must be in the user's language.
   - If the user greets you, greet them back warmly.
   - If the user asks a medical question, provide a clear, helpful, and concise answer.
@@ -59,17 +58,16 @@ const echoDocFlowInternal = ai.defineFlow(
   },
   async (input) => {
     try {
-        const { output } = await prompt({ query: input.query });
+        const { output } = await prompt(input);
         if (!output) {
             throw new Error("AI did not return a valid response.");
         }
-        return { response: output.response, language: output.language };
+        return { response: output.response };
     } catch (e) {
         console.error("Core EchoDoc flow failed:", e);
         // Fallback response in case of critical failure
         return { 
             response: "I'm sorry, I encountered an issue and couldn't process your request. Please try again in a moment.",
-            language: 'English' 
         };
     }
   }
