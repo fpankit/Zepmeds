@@ -1,10 +1,10 @@
 
 'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Video, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function CallPageContent() {
@@ -13,13 +13,52 @@ function CallPageContent() {
     const error = searchParams.get('error');
     const meetLink = searchParams.get('meetLink');
 
-    // This effect handles the final redirect to the Google Meet link.
-    useEffect(() => {
-        // If the meetLink is in the URL, redirect to it.
-        if (meetLink) {
-            window.location.href = meetLink;
-        }
-    }, [meetLink]);
+    if (error) {
+        return (
+            <div className="flex flex-col h-screen bg-background">
+                <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background border-b">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                        <ArrowLeft className="h-6 w-6" />
+                    </Button>
+                    <h1 className="text-xl font-bold">Video Consultation</h1>
+                    <div className="w-8" />
+                </header>
+                <main className="flex flex-1 items-center justify-center text-center p-4">
+                    <Card className="border-destructive">
+                        <CardHeader>
+                            <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+                            <CardTitle>Connection Failed</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">{error}</p>
+                            <Button className="mt-4" variant="secondary" onClick={() => router.push('/doctor')}>Try Again</Button>
+                        </CardContent>
+                    </Card>
+                </main>
+            </div>
+        )
+    }
+
+    if (meetLink) {
+        return (
+            <div className="flex flex-col h-screen bg-black">
+                <header className="sticky top-0 z-10 flex items-center justify-between p-2 bg-black text-white border-b border-gray-700">
+                    <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                        <ArrowLeft className="h-6 w-6" />
+                    </Button>
+                    <h1 className="text-lg font-bold">Live Consultation</h1>
+                    <Button variant="destructive" size="sm" onClick={() => router.push('/home')}>End Call</Button>
+                </header>
+                <main className="flex-1">
+                    <iframe
+                        src={meetLink}
+                        className="w-full h-full border-0"
+                        allow="camera; microphone; fullscreen; speaker; display-capture"
+                    ></iframe>
+                </main>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-screen bg-background">
@@ -31,28 +70,15 @@ function CallPageContent() {
                  <div className="w-8" />
             </header>
             <main className="flex flex-1 items-center justify-center text-center p-4">
-                {error ? (
-                    <Card className="border-destructive">
-                        <CardHeader>
-                            <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
-                            <CardTitle>Connection Failed</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">{error}</p>
-                            <Button className="mt-4" variant="secondary" onClick={() => router.push('/doctor')}>Try Again</Button>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <Card>
-                        <CardHeader>
-                            <Loader2 className="mx-auto h-12 w-12 text-primary animate-spin" />
-                            <CardTitle>Generating Your Meeting...</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">Please complete the sign-in process. This page will redirect automatically once the meeting link is ready.</p>
-                        </CardContent>
-                    </Card>
-                )}
+                <Card>
+                    <CardHeader>
+                        <Loader2 className="mx-auto h-12 w-12 text-primary animate-spin" />
+                        <CardTitle>Generating Your Meeting...</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">Please complete the sign-in process. This page will update automatically once the meeting link is ready.</p>
+                    </CardContent>
+                </Card>
             </main>
         </div>
     )
