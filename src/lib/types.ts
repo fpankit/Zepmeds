@@ -7,7 +7,7 @@ export type CartItem = {
   name: string;
   price: number;
   quantity: number;
-  image?: string;
+  imageUrl?: string;
   dataAiHint?: string;
   description?: string;
   isRx?: boolean;
@@ -22,17 +22,15 @@ export interface PrescriptionDetails {
 export interface Product {
     id: string;
     name: string;
-    description: string;
     price: number;
-    oldPrice?: number;
-    discount?: string;
-    rating: number;
     category: string;
+    imageUrl?: string;
+    uses?: string;
+    stock?: number;
     isRx?: boolean;
-    image?: string; // Optional image field
     dataAiHint?: string;
-    // Fields for verification
+    // Fields from verification that might not be on all products
     batch_no?: string;
-    expiry_date?: string; // Stored as ISO string e.g., "2025-12-31"
+    expiry_date?: string; 
     manufacturer?: string;
 }

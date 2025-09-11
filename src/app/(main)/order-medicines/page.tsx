@@ -87,9 +87,7 @@ export default function OrderMedicinesPage() {
       setIsLoadingMore(true);
     } else {
       setIsLoading(true);
-      if (products.length === 0) { // Only set empty array if it's the very first load
-        setProducts([]);
-      }
+      setProducts([]); // Clear products on new category selection or initial load
     }
 
     try {
@@ -123,10 +121,10 @@ export default function OrderMedicinesPage() {
       setIsLoadingMore(false);
       isFetching.current = false;
     }
-  }, [toast, products.length]);
+  }, [toast]);
   
   useEffect(() => {
-    // This effect now serves as the initial trigger
+    // This effect now serves as the trigger for category changes
     fetchProducts(null, selectedCategory);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
@@ -138,7 +136,7 @@ export default function OrderMedicinesPage() {
   }, [entry, hasMore, isLoadingMore, fetchProducts, lastDoc, selectedCategory]);
 
   const handleAddToCart = (product: Product) => {
-    addToCart({ ...product, quantity: 1 });
+    addToCart({ ...product, quantity: 1, imageUrl: product.imageUrl });
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart.`,
@@ -160,7 +158,6 @@ export default function OrderMedicinesPage() {
               <button
                 key={category.name}
                 onClick={() => {
-                  setProducts([]); // Clear products before fetching new category
                   setLastDoc(null);
                   setHasMore(true);
                   setSelectedCategory(category.name);
@@ -198,9 +195,9 @@ export default function OrderMedicinesPage() {
                     <Card className="overflow-hidden group flex flex-col">
                         <CardContent className="p-0 flex-1 flex flex-col">
                             <div className="relative">
-                                {product.image ? (
+                                {product.imageUrl ? (
                                     <Image
-                                        src={product.image}
+                                        src={product.imageUrl}
                                         alt={product.name}
                                         width={200}
                                         height={200}
@@ -212,21 +209,16 @@ export default function OrderMedicinesPage() {
                                     <Pill className="h-8 w-8 text-muted-foreground" />
                                     </div>
                                 )}
-                                {product.discount && <Badge className="absolute top-2 left-2 bg-red-500 text-white">{product.discount}</Badge>}
                                 {product.isRx && <Badge variant="destructive" className="absolute top-2 right-2">Rx</Badge>}
                             </div>
                             <div className="p-3 flex-1 flex flex-col justify-between">
                                 <div>
                                     <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
-                                    <div className="flex items-center gap-1 mt-1">
-                                        <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" /> 
-                                        <span className="text-xs text-muted-foreground">{product.rating}</span>
-                                    </div>
+                                    <p className="text-xs text-muted-foreground truncate">{product.uses}</p>
                                 </div>
                                 <div className="mt-2">
                                     <div className="flex items-baseline gap-1">
                                     <p className="font-bold text-base">₹{product.price}</p>
-                                    {product.oldPrice && <p className="text-xs text-muted-foreground line-through">₹{product.oldPrice}</p>}
                                     </div>
                                     <div className="mt-2">
                                         {cartItem ? (
