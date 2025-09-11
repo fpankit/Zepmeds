@@ -2,7 +2,7 @@
 
 "use client";
 
-import { CartItem } from "@/lib/types";
+import { CartItem, Product } from "@/lib/types";
 import { GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
@@ -20,6 +20,8 @@ interface CartContextType {
   clearCart: () => void;
   prescriptionForCheckout: PrescriptionForCheckout | null;
   setPrescriptionForCheckout: (prescription: PrescriptionForCheckout | null) => void;
+  productMap: Map<string, Product>;
+  setProductMap: (map: Map<string, Product>) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -27,6 +29,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [prescriptionForCheckout, setPrescriptionForCheckout] = useState<PrescriptionForCheckout | null>(null);
+  const [productMap, setProductMap] = useState<Map<string, Product>>(new Map());
 
   const addToCart = (item: CartItem) => {
     setCart((prevCart) => {
@@ -63,7 +66,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, prescriptionForCheckout, setPrescriptionForCheckout }}
+      value={{ 
+        cart, 
+        addToCart, 
+        removeFromCart, 
+        updateQuantity, 
+        clearCart, 
+        prescriptionForCheckout, 
+        setPrescriptionForCheckout,
+        productMap,
+        setProductMap,
+      }}
     >
       {children}
     </CartContext.Provider>

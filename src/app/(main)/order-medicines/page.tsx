@@ -65,7 +65,7 @@ const ProductCardSkeleton = () => (
 
 export default function OrderMedicinesPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const { cart, addToCart, updateQuantity } = useCart();
+  const { cart, addToCart, updateQuantity, setProductMap } = useCart();
   const { toast } = useToast();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -97,7 +97,7 @@ export default function OrderMedicinesPage() {
       let categoryQuery: Query<DocumentData>;
       
       if (category !== 'All') {
-        categoryQuery = query(baseQuery, where("category", "==", category));
+        categoryQuery = query(baseQuery, where("category", "==", category), orderBy("name"));
       } else {
         categoryQuery = query(baseQuery, orderBy("name"));
       }
@@ -109,7 +109,14 @@ export default function OrderMedicinesPage() {
       const querySnapshot = await getDocs(productsQuery);
       const newProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 
-      setProducts(prev => lastVisibleDoc ? [...prev, ...newProducts] : newProducts);
+      setProducts(prev => {
+          const allProducts = lastVisibleDoc ? [...prev, ...newProducts] : newProducts;
+          // Update the global product map
+          const productMap = new Map<string, Product>();
+          allProducts.forEach(p => productMap.set(p.name, p));
+          setProductMap(productMap);
+          return allProducts;
+      });
       setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
       setHasMore(querySnapshot.docs.length === PRODUCTS_PER_PAGE);
 
@@ -121,7 +128,7 @@ export default function OrderMedicinesPage() {
       setIsLoadingMore(false);
       isFetching.current = false;
     }
-  }, [toast]);
+  }, [toast, setProductMap]);
   
   useEffect(() => {
     // This effect now serves as the trigger for category changes
