@@ -25,83 +25,99 @@ export function VideoCallContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [isVideoMuted, setIsVideoMuted] = useState(false);
-
-    const [appId, setAppId] = useState<number | null>(null);
-    const [token, setToken] = useState<string | null>(null);
+    
+    const isComponentMounted = useRef(true);
 
     const roomId = searchParams.get('channel') || 'default_room';
     const doctorName = searchParams.get('doctorName') || 'Doctor';
 
 
-    const setupZegoClient = useCallback(async () => {
+    const setupZegoClient = useCallback(async (appId: number, token: string) => {
+        if (!user || !zg.current) return;
+        
+        zg.current.on('roomStateUpdate', (roomID, state) => {
+            if (state === 'CONNECTED') {
+                if(isComponentMounted.current) setIsLoading(false);
+            } else if (state === 'DISCONNECTED') {
+                handleLeave();
+            }
+        });
+
+        zg.current.on('publisherStateUpdate', (result) => {
+            console.log('publisherStateUpdate', result);
+        });
+
+        zg.current.on('playerStateUpdate', (result) => {
+             console.log('playerStateUpdate', result);
+        });
+
+        zg.current.on('roomStreamUpdate', async (roomID, updateType, streamList) => {
+            if (updateType === 'ADD') {
+                const streamID = streamList[0].streamID;
+                const remote = await zg.current!.startPlayingStream(streamID);
+                if (remoteVideoRef.current) {
+                    remoteVideoRef.current.srcObject = remote;
+                }
+                if(isComponentMounted.current) setRemoteStream(remote);
+            } else {
+                if(isComponentMounted.current) setRemoteStream(null);
+            }
+        });
+        
+        try {
+            await zg.current.loginRoom(roomId, token, { userID: user.id, userName: `${user.firstName} ${user.lastName}` });
+            const stream = await zg.current.createStream();
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = stream;
+            }
+            if(isComponentMounted.current) setLocalStream(stream);
+            zg.current.startPublishingStream(`${user.id}_${roomId}_main`, stream);
+        } catch(error) {
+            console.error('Zego login or stream creation failed:', error);
+            if(isComponentMounted.current) {
+                toast({ variant: 'destructive', title: 'Call Failed', description: 'Could not log in to the call room.' });
+                router.back();
+            }
+        }
+            
+    }, [user, roomId, router, toast]);
+
+    useEffect(() => {
+        isComponentMounted.current = true;
+        
         if (!user || user.isGuest) {
             toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to join a call.' });
             router.push('/login');
             return;
         }
 
-        try {
-            const tokenResponse = await fetch(`/api/zego/token?userId=${user.id}&roomId=${roomId}`);
-            if (!tokenResponse.ok) {
-                const errorData = await tokenResponse.json();
-                throw new Error(errorData.error || 'Failed to fetch Zego token');
-            }
-            const { token, appId: fetchedAppId } = await tokenResponse.json();
-            
-            setToken(token);
-            setAppId(fetchedAppId);
-
-            const zegoInstance = new ZegoExpressEngine(fetchedAppId, process.env.NEXT_PUBLIC_ZEGOCLOUD_SERVER_SECRET!);
-            zg.current = zegoInstance;
-
-            zegoInstance.on('roomStateUpdate', (roomID, state) => {
-                if (state === 'CONNECTED') {
-                    setIsLoading(false);
-                } else if (state === 'DISCONNECTED') {
-                    handleLeave();
+        const initialize = async () => {
+            try {
+                const tokenResponse = await fetch(`/api/zego/token?userId=${user.id}&roomId=${roomId}`);
+                if (!tokenResponse.ok) {
+                    const errorData = await tokenResponse.json();
+                    throw new Error(errorData.error || 'Failed to fetch Zego token');
                 }
-            });
-
-            zegoInstance.on('publisherStateUpdate', (result) => {
-                console.log('publisherStateUpdate', result);
-            });
-
-            zegoInstance.on('playerStateUpdate', (result) => {
-                 console.log('playerStateUpdate', result);
-            });
-
-            zegoInstance.on('roomStreamUpdate', async (roomID, updateType, streamList) => {
-                if (updateType === 'ADD') {
-                    const streamID = streamList[0].streamID;
-                    const remote = await zegoInstance.startPlayingStream(streamID);
-                    if (remoteVideoRef.current) {
-                        remoteVideoRef.current.srcObject = remote;
-                    }
-                    setRemoteStream(remote);
-                } else {
-                    setRemoteStream(null);
+                const { token, appId } = await tokenResponse.json();
+                
+                if (isComponentMounted.current) {
+                    zg.current = new ZegoExpressEngine(appId, process.env.NEXT_PUBLIC_ZEGOCLOUD_SERVER_SECRET!);
+                    await setupZegoClient(appId, token);
                 }
-            });
 
-            await zegoInstance.loginRoom(roomId, token, { userID: user.id, userName: `${user.firstName} ${user.lastName}` });
-            const stream = await zegoInstance.createStream();
-            if (localVideoRef.current) {
-                localVideoRef.current.srcObject = stream;
+            } catch (error: any) {
+                console.error('ZegoCloud Initialization Failed:', error);
+                if (isComponentMounted.current) {
+                    toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call service.' });
+                    router.back();
+                }
             }
-            setLocalStream(stream);
-            zegoInstance.startPublishingStream(`${user.id}_${roomId}_main`, stream);
-            
-        } catch (error: any) {
-            console.error('ZegoCloud Initialization Failed:', error);
-            toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call.' });
-            router.back();
-        }
+        };
 
-    }, [user, roomId, toast, router]);
+        initialize();
 
-    useEffect(() => {
-        setupZegoClient();
         return () => {
+            isComponentMounted.current = false;
             if (zg.current) {
                 if (localStream) {
                     zg.current.destroyStream(localStream);
