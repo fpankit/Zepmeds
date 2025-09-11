@@ -80,7 +80,7 @@ export default function EmergencyPage() {
         }
       },
       (error) => {
-        console.error("Geolocation error: ", error);
+        console.error("Geolocation error: ", error.message);
         toast({
             variant: "destructive",
             title: "Geolocation Failed",
