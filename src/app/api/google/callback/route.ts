@@ -14,13 +14,17 @@ export async function GET(req: NextRequest) {
   const baseUrl = process.env.BASE_URL || `https://${req.headers.get('host')}`;
 
   if (typeof code !== 'string') {
-    return NextResponse.json({ error: 'Invalid authorization code.' }, { status: 400 });
+    const errorRedirectUrl = new URL('/call', baseUrl);
+    errorRedirectUrl.searchParams.set('error', 'Invalid authorization code.');
+    return NextResponse.redirect(errorRedirectUrl);
   }
 
   // The 'state' parameter now holds the pendingCallId
   const pendingCallId = state;
   if (!pendingCallId) {
-      return NextResponse.json({ error: 'No pending call ID found.' }, { status: 400 });
+    const errorRedirectUrl = new URL('/call', baseUrl);
+    errorRedirectUrl.searchParams.set('error', 'No pending call ID found.');
+    return NextResponse.redirect(errorRedirectUrl);
   }
 
   try {
@@ -113,15 +117,20 @@ export async function GET(req: NextRequest) {
         });
     }
 
+    const errorRedirectUrl = new URL('/call', baseUrl);
+    errorRedirectUrl.searchParams.set('error', errorMessage);
+
     // Return a script that informs the user and closes the window.
     return new NextResponse(`
         <script>
-            alert("Failed to create meeting: ${errorMessage}");
+            // Try to redirect the opener window if it exists
+            if (window.opener) {
+                window.opener.location.href = '${errorRedirectUrl.toString()}';
+            }
             window.close();
         </script>
     `, {
-        headers: { 'Content-Type': 'text/html' },
-        status: 500
+        headers: { 'Content-Type': 'text/html' }
     });
   }
 }

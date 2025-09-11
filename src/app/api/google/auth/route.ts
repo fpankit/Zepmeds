@@ -6,8 +6,6 @@ export async function GET(req: NextRequest) {
   try {
     const oauth2Client = getGoogleOAuth2Client();
 
-    // The pendingCallId is now passed in the 'state' parameter
-    // We retrieve it from the session storage on the client before making this call
     const { searchParams } = new URL(req.url);
     const state = searchParams.get('state') || '';
 

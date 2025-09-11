@@ -124,10 +124,7 @@ export default function DoctorPage() {
             createdAt: serverTimestamp(),
         });
 
-        // Store the call ID in session storage to retrieve it in the callback
-        sessionStorage.setItem('pendingCallId', callDocRef.id);
-
-        const response = await fetch('/api/google/auth');
+        const response = await fetch(`/api/google/auth?state=${callDocRef.id}`);
         const data = await response.json();
         
         if (data.url) {
