@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const OrderStatusContent = dynamic(
@@ -30,6 +30,10 @@ function OrderStatusHeader() {
                 <ChevronLeft className="h-6 w-6" />
             </Button>
             <h1 className="text-xl font-bold ml-4">Order Status</h1>
+            <div className="flex-1" />
+            <Button variant="outline" size="sm">
+                <HelpCircle className="w-4 h-4 mr-2" /> Help
+            </Button>
         </header>
     )
 }
@@ -39,7 +43,7 @@ export default function OrderStatusPage() {
         <Suspense fallback={<div>Loading...</div>}>
             <div className="flex flex-col h-screen">
                 <OrderStatusHeader />
-                <main className="flex-1 overflow-y-auto">
+                <main className="flex-1 overflow-y-auto bg-muted/20">
                     <OrderStatusContent />
                 </main>
             </div>
