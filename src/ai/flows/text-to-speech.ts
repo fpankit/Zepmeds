@@ -9,7 +9,8 @@
  */
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import wav from 'wav';
+// The wav conversion is no longer needed and was the source of the error.
+// import wav from 'wav'; 
 
 const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to be converted to speech.'),
@@ -24,34 +25,6 @@ const TextToSpeechOutputSchema = z.object({
 export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
 
-async function toWav(
-  pcmData: Buffer,
-  channels = 1,
-  rate = 24000,
-  sampleWidth = 2
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const writer = new wav.Writer({
-      channels,
-      sampleRate: rate,
-      bitDepth: sampleWidth * 8,
-    });
-
-    let bufs = [] as any[];
-    writer.on('error', reject);
-    writer.on('data', function (d) {
-      bufs.push(d);
-    });
-    writer.on('end', function () {
-      resolve(Buffer.concat(bufs).toString('base64'));
-    });
-
-    writer.write(pcmData);
-    writer.end();
-  });
-}
-
-
 const textToSpeechFlow = ai.defineFlow(
   {
     name: 'textToSpeechFlow',
@@ -59,6 +32,7 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async ({ text, voice }) => {
+    // This try/catch block ensures any error during the API call is handled gracefully.
     try {
         const { media } = await ai.generate({
             model: 'googleai/gemini-2.5-flash-preview-tts',
@@ -66,30 +40,29 @@ const textToSpeechFlow = ai.defineFlow(
                 responseModalities: ['AUDIO'],
                 speechConfig: {
                     voiceConfig: {
-                        prebuiltVoiceConfig: { voiceName: voice || 'Algenib' },
+                        // The speaking rate is increased as per the user's request.
                         speakingRate: 1.25,
+                        prebuiltVoiceConfig: { voiceName: voice || 'Algenib' },
                     },
                 },
             },
             prompt: text,
         });
 
-        if (!media) {
+        if (!media || !media.url) {
             return { error: 'No audio media returned from the model.' };
         }
         
-        const audioBuffer = Buffer.from(
-            media.url.substring(media.url.indexOf(',') + 1),
-            'base64'
-        );
-        
-        const wavBase64 = await toWav(audioBuffer);
-
+        // The model returns a playable data URI directly.
+        // The previous conversion to WAV was unnecessary and causing errors.
+        // We now return the audio data directly.
         return {
-            audioDataUri: 'data:audio/wav;base64,' + wavBase64,
+            audioDataUri: media.url,
         };
+
     } catch (e: any) {
         const errorMessage = e.message || 'An unknown error occurred.';
+        // This handles cases where API quotas are exceeded.
         if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
             console.warn('TTS quota error:', errorMessage);
             return { error: 'quota_exceeded' };
