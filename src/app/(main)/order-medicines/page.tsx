@@ -87,7 +87,9 @@ export default function OrderMedicinesPage() {
       setIsLoadingMore(true);
     } else {
       setIsLoading(true);
-      setProducts([]); 
+      if (products.length === 0) { // Only set empty array if it's the very first load
+        setProducts([]);
+      }
     }
 
     try {
@@ -115,17 +117,19 @@ export default function OrderMedicinesPage() {
 
     } catch (error) {
       console.error("Error fetching products: ", error);
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products. Please ensure the required Firestore indexes are built.' });
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products. You may be viewing offline data.' });
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
       isFetching.current = false;
     }
-  }, [toast]);
+  }, [toast, products.length]);
   
   useEffect(() => {
+    // This effect now serves as the initial trigger
     fetchProducts(null, selectedCategory);
-  }, [selectedCategory, fetchProducts]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory]);
 
   useEffect(() => {
     if (entry?.isIntersecting && hasMore && !isLoadingMore && !isFetching.current) {
@@ -155,7 +159,12 @@ export default function OrderMedicinesPage() {
             {categories.map((category) => (
               <button
                 key={category.name}
-                onClick={() => setSelectedCategory(category.name)}
+                onClick={() => {
+                  setProducts([]); // Clear products before fetching new category
+                  setLastDoc(null);
+                  setHasMore(true);
+                  setSelectedCategory(category.name);
+                }}
                 className={cn(
                   'flex flex-col items-center justify-center space-y-2 w-20 h-20 rounded-2xl text-center p-2 transition-all duration-200 transform hover:scale-105',
                    'bg-gradient-to-br text-white shadow-lg',

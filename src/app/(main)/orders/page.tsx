@@ -50,7 +50,8 @@ export default function OrdersPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.isGuest) {
-      router.push('/login');
+      // Don't redirect, just show empty state for guests
+      setIsLoading(false);
       return;
     }
 
@@ -83,6 +84,38 @@ export default function OrdersPage() {
         default: return 'bg-yellow-500';
     }
   }
+  
+  const noOrdersContent = (
+      <Card className="text-center p-10">
+        <PackageSearch className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+        <h3 className="text-xl font-semibold">No Orders Yet</h3>
+        <p className="text-muted-foreground">You haven't placed any orders with us yet.</p>
+        <Button asChild className="mt-4">
+          <Link href="/home">Start Shopping</Link>
+        </Button>
+      </Card>
+  );
+
+  if (user?.isGuest) {
+      return (
+        <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
+           <div className="flex items-center gap-3">
+              <History className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-3xl font-bold">Order History</h1>
+                <p className="text-muted-foreground">View all your past orders.</p>
+              </div>
+            </div>
+            <Card className="text-center p-10">
+                <h3 className="text-xl font-semibold">Login to View Orders</h3>
+                <p className="text-muted-foreground">Please log in to see your order history.</p>
+                <Button asChild className="mt-4">
+                    <Link href="/login">Login</Link>
+                </Button>
+            </Card>
+        </div>
+      )
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -95,17 +128,10 @@ export default function OrdersPage() {
       </div>
 
       <div className="space-y-4">
-        {isLoading ? (
+        {isLoading && orders.length === 0 ? (
           Array.from({ length: 3 }).map((_, i) => <OrderCardSkeleton key={i} />)
         ) : orders.length === 0 ? (
-          <Card className="text-center p-10">
-            <PackageSearch className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold">No Orders Yet</h3>
-            <p className="text-muted-foreground">You haven't placed any orders with us yet.</p>
-            <Button asChild className="mt-4">
-              <Link href="/home">Start Shopping</Link>
-            </Button>
-          </Card>
+            noOrdersContent
         ) : (
           orders.map(order => (
             <Card key={order.id}>
