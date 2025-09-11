@@ -50,7 +50,7 @@ const textToSpeechFlow = ai.defineFlow(
       });
 
       if (!media?.url) {
-        throw new Error('No audio content returned from the AI model.');
+        throw new Error('No audio content was returned from the AI model.');
       }
       
       // The model returns a playable audio format directly. No conversion is needed.
@@ -59,12 +59,10 @@ const textToSpeechFlow = ai.defineFlow(
       };
 
     } catch (e: any) {
-        if (e.status === 429) {
-            console.error("TTS quota exceeded:", e.message);
-            throw new Error('quota_exceeded');
-        }
-        console.error("An unexpected error occurred during text-to-speech conversion:", e.message);
-        throw new Error("An unexpected error occurred during text-to-speech conversion.");
+        // Log the detailed error on the server for debugging purposes
+        console.error(`[TextToSpeechError] Failed to convert text to speech. Input: "${text.substring(0, 30)}...". Error:`, e.message);
+        // Re-throw the original error to be handled by the client
+        throw e;
     }
   }
 );

@@ -43,23 +43,27 @@ export function EchoDocCallContent() {
             return;
         }
 
+        setStatus('speaking');
         try {
             const { audio } = await textToSpeech({ text, speakingRate: 1.25 });
             if (audioRef.current) {
                 audioRef.current.src = audio;
                 audioRef.current.play();
-                setStatus('speaking');
             }
         } catch (error: any) {
-            console.error("Speech generation failed:", error);
-            const isQuotaError = error.message.includes('429') || error.message.includes('quota_exceeded');
+            console.error("Audio generation failed:", error);
+            const errorMessage = error.message || 'An unknown error occurred.';
+            const isQuotaError = errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota');
+
             toast({
                 variant: "destructive",
                 title: isQuotaError ? "Voice Limit Reached" : "Voice Error",
-                description: isQuotaError ? "Switching to text-only mode for this session." : "Could not generate audio. Displaying text instead.",
+                description: isQuotaError 
+                    ? "Switching to text-only mode for this session." 
+                    : "Could not generate audio. Displaying text instead.",
             });
-            setUseTTS(false); // Fallback to text
-            setCurrentAiResponse(text);
+            setUseTTS(false); // Fallback to text for the rest of the session
+            setCurrentAiResponse(text); // Display the text response
             setStatus('idle');
         }
     }, [toast, useTTS]);
@@ -95,16 +99,23 @@ export function EchoDocCallContent() {
             let greetingText = "Hello! I am EchoDoc, your AI medical assistant.";
             if (doctorName) {
                 greetingText += ` I am simulating a conversation with Dr. ${doctorName}. How can I help you today?`;
+            } else {
+                 greetingText += " How can I help you today?";
             }
             
             setCurrentAiResponse(greetingText);
             await speak(greetingText);
             
             if (initialSymptoms) {
+                 await new Promise(resolve => setTimeout(resolve, 3000)); // Wait for greeting to finish
                  await handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
             }
         };
-        greetAndProcess();
+        
+        // Timeout to allow UI to settle before greeting
+        const timer = setTimeout(greetAndProcess, 500);
+        
+        return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     
@@ -238,10 +249,10 @@ export function EchoDocCallContent() {
                         className={cn(
                             "h-20 w-20 rounded-full transition-all duration-300",
                             status === 'listening' ? 'bg-green-600 hover:bg-green-700' : 'bg-primary',
-                            status === 'processing' && 'bg-gray-500'
+                            (status === 'processing' || status === 'speaking') && 'bg-gray-500 cursor-not-allowed'
                         )}
                         onClick={handleMicToggle}
-                        disabled={status === 'processing' || !SpeechRecognition}
+                        disabled={status === 'processing' || status === 'speaking' || !SpeechRecognition}
                     >
                         {status === 'listening' ? <MicOff className="h-8 w-8"/> : <Mic className="h-8 w-8"/>}
                     </Button>
