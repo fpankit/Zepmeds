@@ -138,7 +138,7 @@ export default function OrderMedicinesPage() {
   }, [entry, hasMore, isLoadingMore, fetchProducts, lastDoc, selectedCategory]);
 
   const handleAddToCart = (product: Product) => {
-    addToCart({ ...product, quantity: 1, name: product.name, price: product.price, image: product.image });
+    addToCart({ ...product, quantity: 1 });
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart.`,
