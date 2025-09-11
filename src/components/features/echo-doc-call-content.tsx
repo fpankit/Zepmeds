@@ -66,7 +66,7 @@ export function EchoDocCallContent() {
                 toast({
                     variant: "destructive",
                     title: "Voice Limit Reached",
-                    description: "You've exceeded the voice request quota. Displaying text instead.",
+                    description: "Displaying text instead.",
                 });
                 setIsTTSDisabled(true); // Disable TTS for the session
                 setIsAISpeaking(false);
@@ -91,7 +91,6 @@ export function EchoDocCallContent() {
                     toast({
                         variant: "destructive",
                         title: "Audio Playback Error",
-                        description: "Could not play the generated audio.",
                     });
                     setIsAISpeaking(false);
                 }
@@ -104,20 +103,14 @@ export function EchoDocCallContent() {
                  toast({
                     variant: "destructive",
                     title: "Voice Limit Reached",
-                    description: "You've exceeded the voice request quota. Displaying text instead.",
+                    description: "Displaying text instead.",
                 });
                  setIsTTSDisabled(true);
-            } else if (errorMessage.includes('failed to fetch')) {
-                 toast({
-                    variant: "destructive",
-                    title: "Network Error",
-                    description: "A network error occurred. Could not generate audio.",
-                });
             } else {
                  toast({
                     variant: "destructive",
                     title: "Audio Generation Failed",
-                    description: "An unexpected error occurred while generating audio.",
+                    description: "An unexpected error occurred. Displaying text instead.",
                 });
             }
             setIsAISpeaking(false);
