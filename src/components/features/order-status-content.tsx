@@ -159,29 +159,26 @@ export function OrderStatusContent() {
                      ) : (
                         <>
                            <p className="text-muted-foreground text-sm">
-                                {currentStatusKey === 'delivered' ? 'Order delivered. Thank you!' : 'Arriving in'}
+                                {currentStatusKey === 'delivered' ? 'Your order has been delivered.' : 'Arriving in'}
                             </p>
                             {getStatusDisplay()}
                         </>
                      )}
                     <p className="text-md font-semibold">
-                        {currentStatusKey === 'cancelled' ? 'Your order has been cancelled.' : currentStatusInfo.message}
+                        {currentStatusKey === 'cancelled' ? 'This order has been cancelled.' : currentStatusInfo.message}
                     </p>
+                    {currentStatusKey === 'cancelled' && (
+                        <Button className="mt-2" onClick={() => router.push('/home')}>Reorder</Button>
+                    )}
                     {currentStatusKey === 'delivered' && (
-                        <Button size="sm" className="mt-2 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full" onClick={() => router.push('/verify-medicine')}>
+                        <Button size="sm" className="mt-2 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-8 px-4" onClick={() => router.push('/verify-medicine')}>
                             <QrCode className="mr-2 h-4 w-4" /> Scan to Verify
                         </Button>
                     )}
                 </div>
                  <div className="bg-blue-50 rounded-lg p-4 flex flex-col items-center justify-center text-center dark:bg-blue-900/20">
-                     {currentStatusKey === 'cancelled' ? (
-                        <Button onClick={() => router.push('/home')}>Reorder</Button>
-                     ) : (
-                        <>
-                            <p className="font-bold text-blue-800 dark:text-blue-300">Switch to Zepmeds1 for extra discount</p>
-                            <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7">Apply Now</Button>
-                        </>
-                     )}
+                    <p className="font-bold text-blue-800 dark:text-blue-300">Switch to Zepmeds1 for extra discount</p>
+                    <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7">Apply Now</Button>
                  </div>
             </CardContent>
             {currentStatusKey !== 'delivered' && currentStatusKey !== 'cancelled' && (
@@ -343,5 +340,3 @@ export function OrderStatusContent() {
     </div>
   );
 }
-
-    
