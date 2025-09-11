@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
 
-type CallStatus = "connecting" | "idle" | "listening" | "processing" | "speaking";
+type CallStatus = "idle" | "listening" | "processing" | "speaking";
 
 const SpeechRecognition =
   (typeof window !== 'undefined' && window.SpeechRecognition) ||
@@ -27,30 +27,34 @@ export function EchoDocCallContent() {
     const initialSymptoms = searchParams.get('symptoms');
     const { toast } = useToast();
 
-    const [status, setStatus] = useState<CallStatus>("connecting");
+    const [status, setStatus] = useState<CallStatus>("speaking"); // Start in a speaking state for the greeting
     const [transcript, setTranscript] = useState('');
     const [currentAiResponse, setCurrentAiResponse] = useState('');
     const [useTTS, setUseTTS] = useState(true);
 
     const recognitionRef = useRef<any | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const hasGreeted = useRef(false);
+    const isMounted = useRef(true);
     
     const speak = useCallback(async (text: string) => {
+        if (!isMounted.current) return;
+    
+        setCurrentAiResponse(text);
+        setStatus('speaking');
+
         if (!useTTS) {
-            setCurrentAiResponse(text);
             setStatus('idle');
             return;
         }
 
-        setStatus('speaking');
         try {
             const { audio } = await textToSpeech({ text, speakingRate: 1.25 });
-            if (audioRef.current) {
+            if (audioRef.current && isMounted.current) {
                 audioRef.current.src = audio;
                 audioRef.current.play();
             }
         } catch (error: any) {
+            if (!isMounted.current) return;
             console.error("Audio generation failed:", error);
             const errorMessage = error.message || 'An unknown error occurred.';
             const isQuotaError = errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota');
@@ -63,13 +67,12 @@ export function EchoDocCallContent() {
                     : "Could not generate audio. Displaying text instead.",
             });
             setUseTTS(false); // Fallback to text for the rest of the session
-            setCurrentAiResponse(text); // Display the text response
             setStatus('idle');
         }
     }, [toast, useTTS]);
 
     const handleSendTranscript = useCallback(async (text: string) => {
-        if (!text) {
+        if (!text || !isMounted.current) {
             setStatus('idle');
             return;
         };
@@ -81,9 +84,11 @@ export function EchoDocCallContent() {
             const { language: detectedLanguage } = await detectLanguage({ text });
             const { response: aiResponseText } = await echoDocFlow({ query: text, language: detectedLanguage });
             
-            setCurrentAiResponse(aiResponseText);
-            await speak(aiResponseText);
+            if (isMounted.current) {
+               await speak(aiResponseText);
+            }
         } catch (error) {
+            if (!isMounted.current) return;
             console.error("AI Response Error:", error);
             const errorMsg = "I'm sorry, I encountered an error. Could you please repeat that?";
             setCurrentAiResponse(errorMsg);
@@ -91,10 +96,8 @@ export function EchoDocCallContent() {
         }
     }, [speak]);
 
+    // Effect for initial greeting and processing initial symptoms
     useEffect(() => {
-        if (hasGreeted.current) return;
-        hasGreeted.current = true;
-
         const greetAndProcess = async () => {
             let greetingText = "Hello! I am EchoDoc, your AI medical assistant.";
             if (doctorName) {
@@ -103,24 +106,27 @@ export function EchoDocCallContent() {
                  greetingText += " How can I help you today?";
             }
             
-            setCurrentAiResponse(greetingText);
-            
-            // Explicitly set status before speaking
-            setStatus('speaking');
             await speak(greetingText);
             
             if (initialSymptoms) {
-                 await new Promise(resolve => setTimeout(resolve, 3000)); // Wait for greeting to finish
-                 await handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
+                // Wait for greeting to finish before processing symptoms.
+                // A better approach would be to chain this after the audio 'onended' event.
+                const waitTime = greetingText.length * 60; // Estimate wait time based on text length
+                 await new Promise(resolve => setTimeout(resolve, waitTime));
+                 if(isMounted.current) {
+                    await handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
+                 }
             }
         };
         
         // Timeout to allow UI to settle before greeting
         const timer = setTimeout(greetAndProcess, 500);
         
-        return () => clearTimeout(timer);
+        return () => {
+            clearTimeout(timer);
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [initialSymptoms, doctorName]); // Only depends on initial props
     
     useEffect(() => {
         if (!SpeechRecognition) {
@@ -137,9 +143,9 @@ export function EchoDocCallContent() {
         recognition.interimResults = true;
         recognition.lang = 'en-US'; 
 
-        recognition.onstart = () => setStatus('listening');
+        recognition.onstart = () => { if(isMounted.current) setStatus('listening'); };
         recognition.onend = () => {
-             if (status === 'listening') setStatus('idle');
+             if (isMounted.current && status === 'listening') setStatus('idle');
         }
         
         recognition.onresult = (event: any) => {
@@ -162,7 +168,7 @@ export function EchoDocCallContent() {
                     description: `An error occurred with the microphone: ${event.error}`,
                 });
             }
-            setStatus('idle');
+            if(isMounted.current) setStatus('idle');
         };
 
         recognitionRef.current = recognition;
@@ -171,7 +177,6 @@ export function EchoDocCallContent() {
     const handleMicToggle = () => {
         if (status === 'listening') {
             recognitionRef.current?.stop();
-            setStatus('idle');
         } else if (status === 'idle') {
             setTranscript('');
             recognitionRef.current?.start();
@@ -179,9 +184,11 @@ export function EchoDocCallContent() {
     };
     
     const handleEndCall = () => {
-        recognitionRef.current?.stop();
+        isMounted.current = false;
+        recognitionRef.current?.abort();
         if(audioRef.current) {
             audioRef.current.pause();
+            audioRef.current.src = '';
         }
         router.push('/home');
     };
@@ -189,8 +196,11 @@ export function EchoDocCallContent() {
     useEffect(() => {
         const audio = new Audio();
         audioRef.current = audio;
-        audio.onended = () => setStatus('idle');
+        audio.onended = () => {
+            if (isMounted.current) setStatus('idle');
+        };
         return () => {
+            isMounted.current = false;
             audio.pause();
             audioRef.current = null;
         }
@@ -198,7 +208,6 @@ export function EchoDocCallContent() {
 
     const getStatusText = () => {
         switch (status) {
-            case 'connecting': return 'Connecting...';
             case 'listening': return 'Listening...';
             case 'processing': return 'Thinking...';
             case 'speaking': return 'Speaking...';
