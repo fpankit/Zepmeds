@@ -51,7 +51,8 @@ function ScanPackageContent() {
 
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isScanning, setIsScanning] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // For QR processing
+  const [isOrderLoading, setIsOrderLoading] = useState(true); // For fetching order data
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [orderData, setOrderData] = useState<any>(null);
 
@@ -61,7 +62,8 @@ function ScanPackageContent() {
       router.push('/orders');
       return;
     }
-
+    
+    setIsOrderLoading(true);
     const fetchOrder = async () => {
       const orderDocRef = doc(db, 'orders', orderId);
       const orderDocSnap = await getDoc(orderDocRef);
@@ -71,6 +73,7 @@ function ScanPackageContent() {
         toast({ variant: 'destructive', title: 'Error', description: 'Order not found.' });
         router.push('/orders');
       }
+      setIsOrderLoading(false);
     };
     fetchOrder();
   }, [orderId, router, toast]);
@@ -106,15 +109,15 @@ function ScanPackageContent() {
   }, [getCameraPermission]);
 
   const handleScan = useCallback(async (data: string) => {
+    // Prevent scan processing if order data isn't loaded yet
+    if (!orderData) {
+      toast({ variant: 'destructive', title: 'Verification Failed', description: 'Order data is not ready. Please wait a moment and try again.' });
+      setIsScanning(true); // Allow re-scanning
+      return;
+    }
+    
     setIsLoading(true);
     setResult(null);
-
-    if (!orderData) {
-        toast({ variant: 'destructive', title: 'Order data not loaded.' });
-        setIsLoading(false);
-        setIsScanning(true);
-        return;
-    }
 
     try {
       let parsedData: PackageQRData;
@@ -133,7 +136,7 @@ function ScanPackageContent() {
       }
 
       if (order_id !== orderId) {
-        setResult({ status: 'error', message: `Wrong Package. This QR is for order #${order_id.slice(-6)}, not your current order #${orderId.slice(-6)}.`, scannedItems: [], orderedItems: orderData.cart });
+        setResult({ status: 'error', message: `Wrong Package. This QR is for order #${order_id.substring(0, 8)}..., not your current order #${orderId.substring(0,8)}...`, scannedItems: [], orderedItems: orderData.cart });
         return;
       }
 
@@ -169,34 +172,39 @@ function ScanPackageContent() {
   }, [orderData, orderId, toast]);
 
   const tick = useCallback(() => {
-    if (isScanning && videoRef.current?.HAVE_ENOUGH_DATA && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
-        canvas.height = video.videoHeight;
-        canvas.width = video.videoWidth;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: 'dontInvert',
-        });
-        if (code) {
-          setIsScanning(false);
-          handleScan(code.data);
-        }
+    // Don't scan if still loading order or not in scanning state
+    if (!isScanning || isOrderLoading || !videoRef.current?.HAVE_ENOUGH_DATA || !canvasRef.current) {
+        requestAnimationFrame(tick);
+        return;
+    }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    if (context && video.videoWidth > 0 && video.videoHeight > 0) {
+      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'dontInvert',
+      });
+      if (code) {
+        setIsScanning(false);
+        handleScan(code.data);
       }
     }
+    
     if (hasCameraPermission && isScanning) {
       requestAnimationFrame(tick);
     }
-  }, [isScanning, hasCameraPermission, handleScan]);
+  }, [isScanning, hasCameraPermission, handleScan, isOrderLoading]);
 
   useEffect(() => {
-    if (isScanning) {
+    if (hasCameraPermission && !isOrderLoading) {
       requestAnimationFrame(tick);
     }
-  }, [isScanning, tick]);
+  }, [hasCameraPermission, isOrderLoading, tick]);
 
   const renderItemsList = (items: OrderItem[], title: string) => (
     <div>
@@ -258,13 +266,14 @@ function ScanPackageContent() {
           <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-4">
             <div className="w-64 h-64 border-4 border-dashed border-white/50 rounded-lg" />
             <p className="mt-4 text-white font-semibold text-center">
-              {isScanning ? 'Scan the QR code on your package' : 'QR Code detected!'}
+              {isOrderLoading ? 'Loading order data...' : (isScanning ? 'Scan the QR code on your package' : 'QR Code detected!')}
             </p>
           </div>
 
-          {isLoading && (
-            <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-              <Loader2 className="h-10 w-10 text-white animate-spin" />
+          {(isLoading || isOrderLoading) && (
+            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white">
+              <Loader2 className="h-10 w-10 animate-spin" />
+              <p className="mt-2">{isOrderLoading ? 'Loading Order...' : 'Verifying...'}</p>
             </div>
           )}
 
