@@ -171,19 +171,12 @@ export function OrderStatusContent() {
                  <div className="bg-blue-50 rounded-lg p-4 flex flex-col items-center justify-center text-center dark:bg-blue-900/20">
                      {currentStatusKey === 'cancelled' ? (
                         <Button onClick={() => router.push('/home')}>Reorder</Button>
-                     ) : currentStatusKey === 'delivered' ? (
-                        <>
-                             <p className="font-bold text-blue-800 dark:text-blue-300">Order delivered? Wanna check its authenticity?</p>
-                             <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7" onClick={() => router.push('/verify-medicine')}>
-                                <QrCode className="mr-2 h-4 w-4" /> Scan to Verify
-                            </Button>
-                        </>
-                     ) : (
+                     ) : currentStatusKey !== 'delivered' ? (
                         <>
                             <p className="font-bold text-blue-800 dark:text-blue-300">Switch to Zepmeds1 for extra discount</p>
                             <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7">Apply Now</Button>
                         </>
-                     )}
+                     ) : null}
                  </div>
             </CardContent>
             {currentStatusKey !== 'delivered' && currentStatusKey !== 'cancelled' && (
@@ -201,6 +194,15 @@ export function OrderStatusContent() {
                     </Button>
                 </div>
                 </>
+            )}
+
+            {currentStatusKey === 'delivered' && (
+                <div className="border-t border-border p-4 bg-green-900/20 text-center">
+                    <p className="font-bold text-green-300">Order delivered? Wanna check its authenticity?</p>
+                    <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full" onClick={() => router.push('/verify-medicine')}>
+                        <QrCode className="mr-2 h-4 w-4" /> Scan to Verify
+                    </Button>
+                </div>
             )}
         </Card>
 
@@ -300,6 +302,12 @@ export function OrderStatusContent() {
                     <Button variant="outline" size="sm" className="text-muted-foreground">
                         <Download className="h-4 w-4 mr-2" /> Invoice
                     </Button>
+                    <Button variant="outline" size="sm" className="text-muted-foreground">
+                        <HelpCircle className="h-4 w-4 mr-2" /> Help
+                    </Button>
+                    <Button variant="destructive" size="sm">
+                        <AlertCircle className="h-4 w-4 mr-2" /> Report
+                    </Button>
                  </div>
             </CardContent>
         </Card>
@@ -339,4 +347,3 @@ export function OrderStatusContent() {
     </div>
   );
 }
-
