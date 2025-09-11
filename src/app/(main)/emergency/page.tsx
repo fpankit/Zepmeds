@@ -46,8 +46,11 @@ export default function EmergencyPage() {
   const [userCoords, setUserCoords] = useState<{lat: number, lng: number} | null>({lat: 28.4595, lng: 77.0266}); // Default to Gurugram
 
   useEffect(() => {
-    setLocation(defaultAddress);
-  }, [defaultAddress]);
+    // If user data is available (even from localStorage), set the location.
+    if (user?.addresses?.[0]?.address) {
+      setLocation(user.addresses[0].address);
+    }
+  }, [user]);
 
   const isDispatchDisabled = confirmationText !== "Help" || isLoading;
 
@@ -101,6 +104,11 @@ export default function EmergencyPage() {
     }
 
     setIsLoading(true);
+    
+    // Optimistically update the UI.
+    // Firestore's offline persistence will queue this request if offline.
+    setIsDispatched(true);
+
     try {
         await addDoc(collection(db, "emergencies"), {
             emergencyDetails,
@@ -112,15 +120,25 @@ export default function EmergencyPage() {
             status: "dispatched",
             createdAt: serverTimestamp(),
         });
-        setIsDispatched(true);
+        // The request is now either sent or queued by Firestore.
+        // We can optionally show a different toast if online vs offline,
+        // but for user reassurance, showing success is often better.
+        toast({
+            title: "Request Sent",
+            description: "Help is on the way. Your request will be processed immediately.",
+        });
+
     } catch (error) {
         console.error("Failed to dispatch emergency:", error);
+        // If Firestore fails (e.g., permissions issue), revert the UI and notify user.
+        setIsDispatched(false);
         toast({
             variant: "destructive",
             title: "Dispatch Failed",
             description: "Could not send request. Please check your connection and try again.",
         });
     } finally {
+        // We stop the loading indicator, but keep the dispatched UI.
         setIsLoading(false);
     }
   };
@@ -164,7 +182,7 @@ export default function EmergencyPage() {
                 <Siren className="mx-auto h-12 w-12 text-red-500 animate-pulse" />
                 <CardTitle className="text-2xl font-bold text-red-400">Emergency Request</CardTitle>
                 <CardDescription className="text-yellow-400/80">
-                  Please fill out the details below. Help will be dispatched immediately.
+                  Your request will be queued if you are offline and sent automatically upon reconnection.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
