@@ -59,12 +59,6 @@ export function OrderStatusContent() {
     const unsubscribe = onSnapshot(orderDocRef, (doc) => {
         if (doc.exists()) {
             const orderData = doc.data();
-            const currentStatus = orderData.status as keyof typeof statusConfig;
-            
-            // Set initial ETA based on fetched status
-            if (statusConfig[currentStatus]) {
-                 setEtaSeconds(statusConfig[currentStatus].eta);
-            }
             setOrder({ id: doc.id, ...orderData });
 
         } else {
@@ -78,6 +72,17 @@ export function OrderStatusContent() {
   }, [orderId]);
   
    useEffect(() => {
+    // This effect sets the initial ETA when the order status changes
+    if (order && order.status) {
+      const currentStatusInfo = statusConfig[order.status as keyof typeof statusConfig];
+      if (currentStatusInfo && etaSeconds === null) { // Only set initial ETA once
+        setEtaSeconds(currentStatusInfo.eta);
+      }
+    }
+  }, [order, etaSeconds]);
+
+  useEffect(() => {
+    // This effect handles the countdown
     if (etaSeconds !== null && etaSeconds > 0) {
       const timer = setInterval(() => {
         setEtaSeconds(prev => (prev ? prev - 1 : 0));
@@ -123,8 +128,8 @@ export function OrderStatusContent() {
             </div>
         )
     }
-     if (order.status === 'Arrived at Location') {
-        return <p className="text-3xl font-bold text-primary">Arriving Soon</p>
+     if (etaSeconds !== null && etaSeconds <= 120 && order.status !== "Arrived at Location") {
+         return <p className="text-3xl font-bold text-primary">Arriving Soon</p>
     }
     return <p className="text-3xl font-bold text-primary">{formatTime(etaSeconds)}</p>;
   }
@@ -144,11 +149,7 @@ export function OrderStatusContent() {
                     <p className="text-muted-foreground text-sm">
                         {order.status === 'Delivered' ? 'Delivered on' : 'Arriving in'}
                     </p>
-                    {order.status === 'Delivered' ? (
-                         <p className="text-3xl font-bold text-green-500">
-                           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                         </p>
-                    ) : getStatusDisplay()}
+                     {getStatusDisplay()}
                     <p className="text-md font-semibold">{currentStatusInfo.message}</p>
                 </div>
                  <div className="bg-blue-50 rounded-lg p-4 flex flex-col items-center justify-center text-center dark:bg-blue-900/20">
