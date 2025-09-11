@@ -122,13 +122,6 @@ export default function HomePage() {
         />
       </div>
 
-       <Link href="/verify-medicine" className="w-full">
-            <Button variant="outline" className="w-full h-14 border-primary border-2 text-primary text-lg font-bold">
-                <QrCode className="mr-3 h-6 w-6"/>
-                Scan & Verify Medicine
-            </Button>
-       </Link>
-
        {/* Feature Cards */}
        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {featureCards.map((card) => (

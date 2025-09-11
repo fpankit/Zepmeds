@@ -8,7 +8,7 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { History, ArrowRight, PackageSearch } from 'lucide-react';
+import { History, ArrowRight, PackageSearch, QrCode } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
@@ -162,12 +162,22 @@ export default function OrdersPage() {
                     </p>
                 </div>
                 
-                 <Button asChild variant="outline" className="w-full mt-4">
-                    <Link href={`/order-status?orderId=${order.id}`}>
-                        View Details
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                     <Button asChild variant="outline" className="w-full">
+                        <Link href={`/order-status?orderId=${order.id}`}>
+                            View Details
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                    {order.status.toLowerCase() === 'delivered' && (
+                        <Button asChild variant="default" className="w-full">
+                            <Link href="/verify-medicine">
+                                <QrCode className="mr-2 h-4 w-4" />
+                                Scan & Verify
+                            </Link>
+                        </Button>
+                    )}
+                </div>
               </CardContent>
             </Card>
           ))
