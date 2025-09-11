@@ -97,7 +97,7 @@ export function EchoDocCallContent() {
 
     // This effect processes the audio queue
     useEffect(() => {
-        if (audioQueue.length > 0 && status !== 'speaking' && audioRef.current) {
+        if (audioQueue.length > 0 && status === 'idle' && audioRef.current && audioRef.current.paused) {
             const nextAudio = audioQueue[0];
             setAudioQueue(prev => prev.slice(1));
             setStatus('speaking');
@@ -137,13 +137,7 @@ export function EchoDocCallContent() {
         audioRef.current = audio;
         const handleAudioEnd = () => {
             if (isMounted.current) {
-                // If queue is empty, go to idle. If not, the queue processor will handle the next item.
-                if (audioQueue.length === 0) {
-                     setStatus('idle');
-                } else {
-                     // Briefly set to idle to allow the queue processor to pick up the next item
-                     setStatus('idle');
-                }
+                 setStatus('idle');
             }
         };
         audio.addEventListener('ended', handleAudioEnd);
@@ -219,16 +213,20 @@ export function EchoDocCallContent() {
 
         if (status === 'listening') {
             recognition.stop();
-        } else if (status === 'idle') {
+        } else if (status === 'idle' || status === 'speaking') {
+            if (audioRef.current && !audioRef.current.paused) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            }
+            setAudioQueue([]); // Clear queue if user wants to speak
+            setStatus('idle'); // Ensure status is idle before starting
             try {
-                if (audioRef.current && !audioRef.current.paused) {
-                    audioRef.current.pause();
-                    audioRef.current.currentTime = 0;
-                }
-                setAudioQueue([]); // Clear queue if user wants to speak
                 recognition.start();
             } catch(e) {
                 console.error("Mic start failed:", e);
+                // If start fails, reset state
+                if (recognitionRef.current) recognitionRef.current.abort();
+                setStatus('idle');
             }
         }
     };
@@ -292,10 +290,10 @@ export function EchoDocCallContent() {
                         className={cn(
                             "h-20 w-20 rounded-full transition-all duration-300",
                             status === 'listening' ? 'bg-green-600 hover:bg-green-700' : 'bg-primary',
-                            (status === 'processing' || status === 'speaking') && 'bg-gray-500 cursor-not-allowed'
+                            (status === 'processing') && 'bg-gray-500 cursor-not-allowed'
                         )}
                         onClick={handleMicToggle}
-                        disabled={status === 'processing' || status === 'speaking' || !SpeechRecognition}
+                        disabled={status === 'processing' || !SpeechRecognition}
                     >
                         {status === 'listening' ? <MicOff className="h-8 w-8"/> : <Mic className="h-8 w-8"/>}
                     </Button>
@@ -312,3 +310,4 @@ export function EchoDocCallContent() {
         </div>
     );
 }
+
