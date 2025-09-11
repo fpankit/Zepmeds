@@ -112,8 +112,8 @@ export default function DoctorPage() {
         const response = await fetch('/api/google/auth');
         const data = await response.json();
         if(data.url) {
-            // Redirect to Google's auth screen
-            window.location.href = data.url;
+            // Open Google's auth screen in a new tab
+            window.open(data.url, '_blank');
         } else {
             throw new Error(data.error || "Could not get authentication URL.");
         }
@@ -123,7 +123,13 @@ export default function DoctorPage() {
             title: "Failed to start call",
             description: error.message
         });
-        setIsCreatingLink(null);
+    } finally {
+      // It's better to let the user know what to do next
+      toast({
+        title: "Check the new tab",
+        description: "Please complete the Google sign-in process in the new tab that opened."
+      });
+      setIsCreatingLink(null);
     }
   }
 
@@ -192,7 +198,7 @@ export default function DoctorPage() {
                             ) : (
                                 <Video className="mr-2 h-4 w-4" /> 
                             )}
-                            {isCreatingLink === doctor.id ? 'Redirecting...' : 'Start Video Call'}
+                            {isCreatingLink === doctor.id ? 'Waiting...' : 'Start Video Call'}
                         </Button>
                     </div>
                     </CardContent>
