@@ -109,16 +109,18 @@ function ScanPackageContent() {
   }, [getCameraPermission]);
 
   const handleScan = useCallback(async (data: string) => {
-    if (isLoading || !orderData) {
-      if (!orderData) {
-          toast({ variant: 'destructive', title: 'Verification Failed', description: 'Order data is still loading. Please wait a moment and try again.' });
-      }
-      setIsScanning(true);
-      return;
-    }
+    if (isLoading) return;
     
     setIsLoading(true);
     setResult(null);
+
+    // This is the race-condition fix. Don't process scan if order isn't loaded.
+    if (!orderData) {
+      toast({ variant: 'destructive', title: 'Verification Failed', description: 'Order data is still loading. Please wait a moment and try again.' });
+      setIsLoading(false);
+      setIsScanning(true);
+      return;
+    }
 
     try {
       let parsedData: PackageQRData;
@@ -131,7 +133,8 @@ function ScanPackageContent() {
       
       const { order_id, ordered_items: scannedItemsData } = parsedData;
 
-      if (!order_id || !scannedItemsData) {
+      if (!order_id || !scannedItemsData || !Array.isArray(scannedItemsData)) {
+        console.error("Parsed data missing required fields:", parsedData);
         setResult({ status: 'error', message: 'QR code is missing required package information.', scannedItems: [], orderedItems: orderData.cart });
         return;
       }
