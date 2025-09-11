@@ -13,18 +13,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '../ui/skeleton';
-
-const LiveTrackingMap = dynamic(() => Promise.resolve(() => (
-    <div className="relative h-48 w-full rounded-md overflow-hidden bg-muted">
-       <img src="https://picsum.photos/800/400?random=20" alt="Map" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-       <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-          <Button variant="secondary">
-              <Map className="mr-2 h-4 w-4"/> View on Map
-          </Button>
-       </div>
-    </div>
-)), { ssr: false, loading: () => <Skeleton className="h-48 w-full" /> });
-
+import { LiveTrackingMap } from './live-tracking-map';
 
 const orderStatusSteps = [
   { name: 'Order Confirmed', icon: CheckCircle2, completed: false, time: null },
@@ -54,8 +43,13 @@ const riderDetails = {
     name: "Rohan Sharma",
     rating: 4.8,
     phone: "+91 1234567890",
-    image: "https://picsum.photos/200/200?random=31"
+    image: "https://picsum.photos/200/200?random=31",
+    location: { lat: 28.50, lng: 77.05 } // Simulated rider location
 }
+
+// Simulated user location for demonstration. In a real app, this would come from the order details.
+const userLocation = { lat: 28.4595, lng: 77.0266 };
+
 
 export function OrderStatusContent() {
   const searchParams = useSearchParams();
@@ -191,25 +185,28 @@ export function OrderStatusContent() {
         </CardHeader>
         <CardContent className="space-y-4">
            {isRiderAssigned ? (
-            <div className="flex items-center justify-between">
-                 <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                        <AvatarImage src={riderDetails.image} alt={riderDetails.name} data-ai-hint="person portrait" />
-                        <AvatarFallback>{riderDetails.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <p className="font-bold">{riderDetails.name}</p>
-                        <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                            <span className="text-sm font-semibold">{riderDetails.rating}</span>
+            <>
+                <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12">
+                            <AvatarImage src={riderDetails.image} alt={riderDetails.name} data-ai-hint="person portrait" />
+                            <AvatarFallback>{riderDetails.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-bold">{riderDetails.name}</p>
+                            <div className="flex items-center gap-1">
+                                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                <span className="text-sm font-semibold">{riderDetails.rating}</span>
+                            </div>
                         </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <Button size="icon" variant="outline"><MessageSquare/></Button>
+                        <Button size="icon" variant="outline"><Phone /></Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button size="icon" variant="outline"><MessageSquare/></Button>
-                    <Button size="icon" variant="outline"><Phone /></Button>
-                </div>
-            </div>
+                <LiveTrackingMap riderLocation={riderDetails.location} userLocation={userLocation} />
+            </>
            ) : (
              <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12 bg-muted">
@@ -221,7 +218,6 @@ export function OrderStatusContent() {
                 </div>
             </div>
            )}
-            <LiveTrackingMap />
         </CardContent>
       </Card>
 
