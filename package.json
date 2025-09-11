@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate-pubkey": "node -e \"const crypto = require('crypto'); const fs = require('fs'); const privateKey = fs.readFileSync('jaasauth.key'); const publicKey = crypto.createPublicKey(privateKey); const exported = publicKey.export({ type: 'spki', format: 'pem' }); fs.writeFileSync('jaasauth.key.pub', exported); console.log('Public key written to jaasauth.key.pub');\""
   },
   "dependencies": {
     "@genkit-ai/firebase": "^1.14.1",
