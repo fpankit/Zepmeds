@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,16 +12,21 @@ export default function CallPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   const [roomName, setRoomName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { id: callId } = params;
 
   useEffect(() => {
     const fetchCallDetails = async () => {
+        if (!callId) {
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             // The document ID in Firestore is the room ID for Jitsi
-            const callDocRef = doc(db, 'video_calls', params.id);
+            const callDocRef = doc(db, 'video_calls', callId);
             const callDoc = await getDoc(callDocRef);
             if (callDoc.exists()) {
-                setRoomName(`zepmeds-consult-${params.id}`);
+                setRoomName(`zepmeds-consult-${callId}`);
             } else {
                 console.error("Call room not found");
             }
@@ -32,7 +38,7 @@ export default function CallPage({ params }: { params: { id: string } }) {
     };
 
     fetchCallDetails();
-  }, [params.id]);
+  }, [callId]);
 
 
   if (isLoading || !user) {
