@@ -1,6 +1,10 @@
 
 import { getGoogleOAuth2Client } from '@/lib/google';
 import { NextResponse } from 'next/server';
+import { config } from 'dotenv';
+
+// Load environment variables from .env file
+config();
 
 export async function GET() {
   try {
