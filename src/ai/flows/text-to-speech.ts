@@ -89,7 +89,7 @@ const textToSpeechFlow = ai.defineFlow(
             audioDataUri: 'data:audio/wav;base64,' + wavBase64,
         };
     } catch (e: any) {
-        const errorMessage = e.message || '';
+        const errorMessage = e.message || 'An unknown error occurred.';
         if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
             console.warn('TTS quota error:', errorMessage);
             return { error: 'quota_exceeded' };
