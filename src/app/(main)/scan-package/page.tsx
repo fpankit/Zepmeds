@@ -105,36 +105,6 @@ function ScanPackageContent() {
     };
   }, [getCameraPermission]);
 
-  const tick = useCallback(() => {
-    if (isScanning && videoRef.current?.HAVE_ENOUGH_DATA && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
-        canvas.height = video.videoHeight;
-        canvas.width = video.videoWidth;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: 'dontInvert',
-        });
-        if (code) {
-          setIsScanning(false);
-          handleScan(code.data);
-        }
-      }
-    }
-    if (hasCameraPermission && isScanning) {
-      requestAnimationFrame(tick);
-    }
-  }, [isScanning, hasCameraPermission, handleScan]);
-
-  useEffect(() => {
-    if (isScanning) {
-      requestAnimationFrame(tick);
-    }
-  }, [isScanning, tick]);
-
   const handleScan = useCallback(async (data: string) => {
     setIsLoading(true);
     setResult(null);
@@ -197,6 +167,36 @@ function ScanPackageContent() {
       setIsLoading(false);
     }
   }, [orderData, orderId, toast]);
+
+  const tick = useCallback(() => {
+    if (isScanning && videoRef.current?.HAVE_ENOUGH_DATA && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
+        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert',
+        });
+        if (code) {
+          setIsScanning(false);
+          handleScan(code.data);
+        }
+      }
+    }
+    if (hasCameraPermission && isScanning) {
+      requestAnimationFrame(tick);
+    }
+  }, [isScanning, hasCameraPermission, handleScan]);
+
+  useEffect(() => {
+    if (isScanning) {
+      requestAnimationFrame(tick);
+    }
+  }, [isScanning, tick]);
 
   const renderItemsList = (items: OrderItem[], title: string) => (
     <div>
