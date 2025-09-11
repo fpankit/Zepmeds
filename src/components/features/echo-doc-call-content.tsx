@@ -4,28 +4,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Mic, MicOff, PhoneOff, Bot, Loader2, Send } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Bot, Loader2 } from 'lucide-react';
 import { echoDocFlow } from '@/ai/flows/echo-doc-flow';
 import { detectLanguage } from '@/ai/flows/detect-language';
+import { textToSpeech } from '@/ai-flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Textarea } from '../ui/textarea';
 
-interface Message {
-    sender: 'user' | 'ai';
-    text: string;
-}
 
-// SpeechRecognition is browser-specific, so we check for its existence.
+type CallStatus = "connecting" | "idle" | "listening" | "processing" | "speaking";
+
 const SpeechRecognition =
   (typeof window !== 'undefined' && window.SpeechRecognition) ||
   (typeof window !== 'undefined' && (window as any).webkitSpeechRecognition);
-
 
 export function EchoDocCallContent() {
     const router = useRouter();
@@ -34,74 +27,89 @@ export function EchoDocCallContent() {
     const initialSymptoms = searchParams.get('symptoms');
     const { toast } = useToast();
 
-    const [isListening, setIsListening] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [status, setStatus] = useState<CallStatus>("connecting");
     const [transcript, setTranscript] = useState('');
-    const [messages, setMessages] = useState<Message[]>([]);
-    
+    const [currentAiResponse, setCurrentAiResponse] = useState('');
+    const [useTTS, setUseTTS] = useState(true);
+
     const recognitionRef = useRef<any | null>(null);
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-
-     const handleSendTranscript = useCallback(async (text: string) => {
-        if (!text) return;
-        
-        setIsListening(false);
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    
+    const speak = useCallback(async (text: string) => {
+        if (!useTTS) {
+            setCurrentAiResponse(text);
+            setStatus('idle');
+            return;
         }
+
+        try {
+            const { audio } = await textToSpeech({ text });
+            if (audioRef.current) {
+                audioRef.current.src = audio;
+                audioRef.current.play();
+                setStatus('speaking');
+            }
+        } catch (error: any) {
+            console.error("Speech generation failed:", error);
+            const isQuotaError = error.message.includes('429') || error.message.includes('quota_exceeded');
+            toast({
+                variant: "destructive",
+                title: isQuotaError ? "Voice Limit Reached" : "Voice Error",
+                description: isQuotaError ? "Switching to text-only mode for this session." : "Could not generate audio. Displaying text instead.",
+            });
+            setUseTTS(false); // Fallback to text
+            setCurrentAiResponse(text);
+            setStatus('idle');
+        }
+    }, [toast, useTTS]);
+
+    const handleSendTranscript = useCallback(async (text: string) => {
+        if (!text) {
+            setStatus('idle');
+            return;
+        };
         
-        setMessages(prev => [...prev, { sender: 'user', text }]);
-        setIsProcessing(true);
+        setStatus('processing');
         setTranscript('');
         
         try {
-            // 1. Detect Language
             const { language: detectedLanguage } = await detectLanguage({ text });
-            
-            // 2. Get AI Response in that language
             const { response: aiResponseText } = await echoDocFlow({ query: text, language: detectedLanguage });
             
-            setMessages(prev => [...prev, { sender: 'ai', text: aiResponseText }]);
-
+            setCurrentAiResponse(aiResponseText);
+            await speak(aiResponseText);
         } catch (error) {
             console.error("AI Response Error:", error);
             const errorMsg = "I'm sorry, I encountered an error. Could you please repeat that?";
-            setMessages(prev => [...prev, { sender: 'ai', text: errorMsg }]);
-        } finally {
-            setIsProcessing(false);
+            setCurrentAiResponse(errorMsg);
+            setStatus('idle');
         }
-    }, []);
+    }, [speak]);
 
-
-    // Initial greeting
     useEffect(() => {
-        const greet = async () => {
-            setIsProcessing(true);
+        const greetAndProcess = async () => {
             let greetingText = "Hello! I am EchoDoc, your AI medical assistant.";
             if (doctorName) {
                 greetingText += ` I am simulating a conversation with Dr. ${doctorName}. How can I help you today?`;
             }
             
-            setMessages([{ sender: 'ai', text: greetingText }]);
-
+            setCurrentAiResponse(greetingText);
+            await speak(greetingText);
+            
             if (initialSymptoms) {
-                 // Automatically send the initial symptoms as the first message
                  await handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
             }
-            setIsProcessing(false);
         };
-        greet();
+        greetAndProcess();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [doctorName, initialSymptoms]);
     
-    // Setup Speech Recognition
     useEffect(() => {
         if (!SpeechRecognition) {
             toast({
                 variant: 'destructive',
                 title: 'Browser Not Supported',
-                description: 'Speech recognition is not supported in this browser. Please use the text input.',
+                description: 'Speech recognition is not supported. Please use a different browser.',
             });
             return;
         }
@@ -111,31 +119,24 @@ export function EchoDocCallContent() {
         recognition.interimResults = true;
         recognition.lang = 'en-US'; 
 
+        recognition.onstart = () => setStatus('listening');
+        recognition.onend = () => {
+             if (status === 'listening') setStatus('idle');
+        }
+        
         recognition.onresult = (event: any) => {
-            let interimTranscript = '';
             let finalTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
                  if (event.results[i].isFinal) {
                     finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
                 }
             }
-             setTranscript(interimTranscript);
             if (finalTranscript) {
                  handleSendTranscript(finalTranscript.trim());
             }
         };
-
-        recognition.onend = () => {
-            if (isListening) {
-              // If it stopped unexpectedly, try to restart it
-              recognition.start();
-            }
-        };
         
         recognition.onerror = (event: any) => {
-            console.error('Speech recognition error:', event.error);
             if (event.error !== 'no-speech' && event.error !== 'aborted') {
                 toast({
                     variant: 'destructive',
@@ -143,131 +144,111 @@ export function EchoDocCallContent() {
                     description: `An error occurred with the microphone: ${event.error}`,
                 });
             }
-            setIsListening(false);
+            setStatus('idle');
         };
 
         recognitionRef.current = recognition;
+    }, [toast, handleSendTranscript, status]);
 
-        return () => {
-            if (recognitionRef.current) {
-                recognitionRef.current.stop();
-            }
-        };
-    }, [toast, handleSendTranscript, isListening]);
-
-
-    useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth'});
-        }
-    }, [messages])
-
-    
     const handleMicToggle = () => {
-        if (isListening) {
+        if (status === 'listening') {
             recognitionRef.current?.stop();
-            setIsListening(false);
-        } else {
+            setStatus('idle');
+        } else if (status === 'idle') {
             setTranscript('');
             recognitionRef.current?.start();
-            setIsListening(true);
         }
     };
     
     const handleEndCall = () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
+        recognitionRef.current?.stop();
+        if(audioRef.current) {
+            audioRef.current.pause();
         }
         router.push('/home');
     };
 
-    const handleTextSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        handleSendTranscript(transcript);
+    useEffect(() => {
+        const audio = new Audio();
+        audioRef.current = audio;
+        audio.onended = () => setStatus('idle');
+        return () => {
+            audio.pause();
+            audioRef.current = null;
+        }
+    }, [])
+
+    const getStatusText = () => {
+        switch (status) {
+            case 'connecting': return 'Connecting...';
+            case 'listening': return 'Listening...';
+            case 'processing': return 'Thinking...';
+            case 'speaking': return 'Speaking...';
+            case 'idle': return doctorName ? `Dr. ${doctorName} (AI)` : 'EchoDoc AI';
+            default: return 'Ready';
+        }
     }
     
     return (
-        <div className="flex h-screen w-full flex-col bg-background text-white">
-            <header className="flex-shrink-0 p-4 text-center border-b border-border">
-                 <div className="flex items-center justify-between">
-                    <div className="w-16"></div>
-                    <div className="text-center">
-                        <h1 className="text-xl font-bold">
-                            {doctorName ? `AI Consultation with Dr. ${doctorName}`: 'EchoDoc AI Chat'}
-                        </h1>
-                        <p className="text-sm text-muted-foreground">This is an AI-powered simulation</p>
-                    </div>
-                    <Button onClick={handleEndCall} variant="destructive" size="sm">
-                        End
-                    </Button>
+        <div className="flex h-screen w-full flex-col bg-background text-white overflow-hidden">
+             <header className="p-4 flex-shrink-0 flex items-center justify-between">
+                <div></div>
+                <div className="text-center">
+                    <h1 className="text-xl font-bold">
+                        {doctorName ? `AI Consultation` : 'EchoDoc AI'}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">{getStatusText()}</p>
                 </div>
+                 <Button onClick={handleEndCall} variant="ghost" size="sm">
+                    End
+                </Button>
             </header>
 
-            <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-                <div className="space-y-6">
-                    {messages.map((message, index) => (
-                        <div key={index} className={cn("flex items-end gap-3", message.sender === 'user' ? 'justify-end' : 'justify-start')}>
-                             {message.sender === 'ai' && (
-                                <Avatar className="h-8 w-8">
-                                    <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
-                                </Avatar>
-                             )}
-                             <div className={cn("max-w-xs md:max-w-md rounded-2xl p-3 text-sm", message.sender === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-card text-card-foreground rounded-bl-none')}>
-                                <p className="whitespace-pre-line">{message.text}</p>
-                             </div>
-                             {message.sender === 'user' && (
-                                <Avatar className="h-8 w-8">
-                                    <AvatarFallback><User className="h-5 w-5" /></AvatarFallback>
-                                </Avatar>
-                             )}
-                        </div>
-                    ))}
-                    {isProcessing && (
-                         <div className="flex items-end gap-3 justify-start">
-                             <Avatar className="h-8 w-8">
-                                <AvatarFallback><Bot className="h-5 w-5" /></AvatarFallback>
-                            </Avatar>
-                            <div className="max-w-xs md:max-w-md rounded-2xl p-3 text-sm bg-card text-card-foreground rounded-bl-none">
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                            </div>
-                         </div>
+            <main className="flex-1 flex flex-col items-center justify-center p-4 text-center space-y-6">
+                <motion.div
+                    animate={{ scale: status === 'listening' ? 1.1 : 1 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 10 }}
+                >
+                    <Avatar className="h-48 w-48 border-4 border-primary/50">
+                        <AvatarImage src="https://picsum.photos/seed/ai-bot/200" alt="EchoDoc AI" />
+                        <AvatarFallback className="text-6xl"><Bot /></AvatarFallback>
+                    </Avatar>
+                </motion.div>
+                
+                <div className="min-h-[100px] flex items-center justify-center">
+                    {status === 'processing' ? (
+                        <Loader2 className="h-10 w-10 animate-spin" />
+                    ) : (
+                        <p className="text-2xl font-medium max-w-2xl">
+                           {currentAiResponse}
+                        </p>
                     )}
                 </div>
-            </ScrollArea>
-            
-            <footer className="flex-shrink-0 bg-card p-4 rounded-t-2xl border-t border-border">
-                <form onSubmit={handleTextSubmit} className="flex items-center gap-2">
-                    <Textarea 
-                        placeholder={isListening ? "Listening..." : "Type your message or use the mic..."} 
-                        className="flex-1 bg-background resize-none"
-                        value={transcript}
-                        onChange={(e) => setTranscript(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSendTranscript(transcript);
-                            }
-                        }}
-                        rows={1}
-                     />
+            </main>
+
+            <footer className="flex-shrink-0 p-6 flex flex-col items-center justify-center space-y-4">
+                 <div className="flex items-center justify-center gap-6">
                     <Button 
-                        type="button"
                         size="icon" 
-                        className={`h-10 w-10 rounded-full transition-colors ${isListening ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600'}`}
+                        className={cn(
+                            "h-20 w-20 rounded-full transition-all duration-300",
+                            status === 'listening' ? 'bg-green-600 hover:bg-green-700' : 'bg-primary',
+                            status === 'processing' && 'bg-gray-500'
+                        )}
                         onClick={handleMicToggle}
-                        disabled={isProcessing || !SpeechRecognition}
+                        disabled={status === 'processing' || !SpeechRecognition}
                     >
-                        {isListening ? <MicOff /> : <Mic />}
+                        {status === 'listening' ? <MicOff className="h-8 w-8"/> : <Mic className="h-8 w-8"/>}
                     </Button>
                      <Button 
-                        type="submit"
+                        onClick={handleEndCall} 
+                        variant="destructive" 
                         size="icon" 
-                        className="h-10 w-10 rounded-full"
-                        disabled={isProcessing || !transcript}
+                        className="h-16 w-16 rounded-full"
                     >
-                        <Send />
+                        <PhoneOff className="h-7 w-7"/>
                     </Button>
-                </form>
+                 </div>
             </footer>
         </div>
     );
