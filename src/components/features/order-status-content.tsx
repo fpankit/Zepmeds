@@ -10,11 +10,12 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 import { LiveTrackingMap } from './live-tracking-map';
-import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell } from 'lucide-react';
+import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
+import { Separator } from '../ui/separator';
 
 
 const riderDetails = {
@@ -176,6 +177,44 @@ export function OrderStatusContent() {
             </Collapsible>
         </Card>
         
+        <Card>
+            <CardHeader>
+                <CardTitle>Bill Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                    <p className="text-muted-foreground">Item Total</p>
+                    <p>₹{order.subtotal.toFixed(2)}</p>
+                </div>
+                <div className="flex justify-between">
+                    <p className="text-muted-foreground">Delivery Fee</p>
+                    <p>₹{order.deliveryFee.toFixed(2)}</p>
+                </div>
+                 <div className="flex justify-between text-green-500">
+                    <p>Discount</p>
+                    <p>- ₹25.00</p>
+                </div>
+                <Separator className="my-2"/>
+                <div className="flex justify-between font-bold text-base">
+                    <p>Grand Total</p>
+                    <p>₹{(order.total - 25).toFixed(2)}</p>
+                </div>
+            </CardContent>
+            <CardContent className="border-t pt-4">
+                <div className="grid grid-cols-3 gap-2">
+                    <Button variant="outline" className="text-muted-foreground">
+                        <Download className="h-4 w-4 mr-2" /> Invoice
+                    </Button>
+                    <Button variant="outline" className="text-muted-foreground">
+                        <HelpCircle className="h-4 w-4 mr-2" /> Help
+                    </Button>
+                    <Button variant="outline" className="text-muted-foreground">
+                        <AlertCircle className="h-4 w-4 mr-2" /> Report
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+
         {/* Rewards Section */}
         <div className="space-y-4">
             <Card>
