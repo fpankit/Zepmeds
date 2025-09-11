@@ -60,9 +60,22 @@ export async function GET(req: NextRequest) {
     if (!meetLink) {
       throw new Error("Failed to create a Google Meet link.");
     }
+    
+    // Instead of redirecting the server, return a script to the browser
+    // that stores the link and closes the tab.
+    const response = new NextResponse(`
+      <script>
+        sessionStorage.setItem('meetLink', '${meetLink}');
+        window.close();
+      </script>
+    `, {
+        headers: {
+            'Content-Type': 'text/html'
+        }
+    });
 
-    // Redirect the user to the Google Meet URL
-    return NextResponse.redirect(meetLink);
+    return response;
+
 
   } catch (error: any) {
     console.error('Failed to process Google callback:', error);
@@ -70,7 +83,17 @@ export async function GET(req: NextRequest) {
     if (error.response?.data?.error_description) {
         errorMessage = error.response.data.error_description;
     }
-    // Redirect to a failure page or show an error
-    return NextResponse.redirect(new URL(`/call?error=${encodeURIComponent(errorMessage)}`, req.url));
+    // Return a script that shows an error and closes
+    return new NextResponse(`
+        <script>
+            alert("Error: ${errorMessage}");
+            window.close();
+        </script>
+    `, {
+        headers: { 'Content-Type': 'text/html' },
+        status: 500
+    });
   }
 }
+
+    

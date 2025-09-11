@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Video, AlertCircle, Loader2 } from "lucide-react";
@@ -11,6 +11,16 @@ function CallPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const error = searchParams.get('error');
+
+    // This effect will run on the client, after the page loads.
+    // It checks if there is a meet link in session storage and redirects.
+    useEffect(() => {
+        const meetLink = sessionStorage.getItem('meetLink');
+        if (meetLink) {
+            sessionStorage.removeItem('meetLink'); // Clean up
+            window.location.href = meetLink;
+        }
+    }, []);
 
     return (
         <div className="flex flex-col h-screen bg-background">
@@ -37,10 +47,10 @@ function CallPageContent() {
                     <Card>
                         <CardHeader>
                             <Loader2 className="mx-auto h-12 w-12 text-primary animate-spin" />
-                            <CardTitle>Redirecting to Google Meet</CardTitle>
+                            <CardTitle>Generating Your Meeting...</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-muted-foreground">Please wait while we generate your secure meeting link...</p>
+                            <p className="text-muted-foreground">Please complete the sign-in process in the other tab. This page will redirect automatically.</p>
                         </CardContent>
                     </Card>
                 )}
@@ -57,3 +67,5 @@ export default function VideoCallPage() {
         </Suspense>
     )
 }
+
+    

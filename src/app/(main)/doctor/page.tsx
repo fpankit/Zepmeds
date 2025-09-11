@@ -114,6 +114,9 @@ export default function DoctorPage() {
         if(data.url) {
             // Open Google's auth screen in a new tab
             window.open(data.url, '_blank');
+            // Redirect the current tab to the call page to wait
+            router.push('/call');
+
         } else {
             throw new Error(data.error || "Could not get authentication URL.");
         }
@@ -123,14 +126,9 @@ export default function DoctorPage() {
             title: "Failed to start call",
             description: error.message
         });
-    } finally {
-      // It's better to let the user know what to do next
-      toast({
-        title: "Check the new tab",
-        description: "Please complete the Google sign-in process in the new tab that opened."
-      });
-      setIsCreatingLink(null);
-    }
+         setIsCreatingLink(null);
+    } 
+    // No finally block needed as the page will redirect
   }
 
   return (
@@ -213,3 +211,5 @@ export default function DoctorPage() {
     </div>
   );
 }
+
+    
