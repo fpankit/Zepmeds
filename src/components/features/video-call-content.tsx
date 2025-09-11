@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IAgoraRTCRemoteUser, IRemoteVideoTrack } from 'agora-rtc-sdk-ng';
 import { Button } from '@/components/ui/button';
@@ -62,6 +62,17 @@ export function VideoCallContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [isVideoMuted, setIsVideoMuted] = useState(false);
+    
+    const handleLeave = useCallback(async () => {
+        localAudioTrack?.close();
+        localVideoTrack?.close();
+        
+        client.current?.removeAllListeners();
+        await client.current?.leave();
+        
+        router.push('/home');
+    }, [localAudioTrack, localVideoTrack, router]);
+
 
     useEffect(() => {
         if (!channelName) return;
@@ -125,11 +136,15 @@ export function VideoCallContent() {
 
         return () => {
             isMounted = false;
-            localAudioTrack?.close();
-            localVideoTrack?.close();
-            
-            agoraClient.removeAllListeners();
-            agoraClient.leave().catch(e => console.error("Error leaving Agora channel on cleanup:", e));
+            // The handleLeave function now manages the cleanup.
+            // We call it here to ensure cleanup happens on component unmount.
+            // Using a separate function makes the cleanup logic more predictable.
+            const cleanup = async () => {
+                localAudioTrack?.close();
+                localVideoTrack?.close();
+                await client.current?.leave();
+            };
+            cleanup();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [channelName, router, toast]);
@@ -141,15 +156,6 @@ export function VideoCallContent() {
       }
     }, [remoteUser]);
 
-
-    const handleLeave = async () => {
-        try {
-            await client.current?.leave();
-            router.push('/home');
-        } catch (error) {
-            console.error('Failed to leave channel', error);
-        }
-    };
 
     const toggleAudio = async () => {
         if (localAudioTrack) {
