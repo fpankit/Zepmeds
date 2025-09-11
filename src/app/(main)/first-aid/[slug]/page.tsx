@@ -7,8 +7,7 @@ import { firstAidCategories, FirstAidTopic } from '@/lib/first-aid-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2, Volume2, Video, Languages, AlertTriangle, ShieldCheck, XCircle } from 'lucide-react';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { ArrowLeft, Loader2, Video, Languages, AlertTriangle, ShieldCheck, XCircle } from 'lucide-react';
 import { translateText } from '@/ai/flows/translate-text';
 import { generateFirstAidAdvice, GenerateFirstAidAdviceOutput } from '@/ai/flows/generate-first-aid-advice';
 import { useToast } from '@/hooks/use-toast';
@@ -32,7 +31,6 @@ export default function FirstAidDetailPage() {
   const [translatedContent, setTranslatedContent] = useState<TranslatedContent | null>(null);
   const [targetLang, setTargetLang] = useState('English');
   const [isTranslating, setIsTranslating] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
     const currentTopic = firstAidCategories.find((t) => t.slug === slug);
@@ -72,41 +70,6 @@ export default function FirstAidDetailPage() {
     }
   }, [slug, router, toast]);
 
-  const handlePlayAudio = async () => {
-    if (isSpeaking) return;
-    setIsSpeaking(true);
-    
-    let textToRead = '';
-    // Prioritize AI content if available and not in error state
-    if (aiAdvice && !aiError) {
-        const procedure = translatedContent?.procedure || aiAdvice.procedure;
-        const whatToAvoid = translatedContent?.whatToAvoid || aiAdvice.whatToAvoid;
-        textToRead = `Here is the procedure. ${procedure.join('. ')}. Now, here is what to avoid. ${whatToAvoid.join('. ')}`;
-    } else if (topic) { // Fallback to offline data
-        const procedure = translatedContent?.procedure || topic.steps;
-        textToRead = `Here is the procedure. ${procedure.join('. ')}`;
-    }
-
-    if (!textToRead) {
-        toast({ variant: 'destructive', title: 'Nothing to read.' });
-        setIsSpeaking(false);
-        return;
-    }
-
-    try {
-      const { audioDataUri, error } = await textToSpeech({ text: textToRead });
-      if (error || !audioDataUri) {
-        throw new Error(error || 'Failed to generate audio.');
-      }
-      const audio = new Audio(audioDataUri);
-      audio.play();
-      audio.onended = () => setIsSpeaking(false);
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play the instructions.' });
-      setIsSpeaking(false);
-    }
-  };
-  
   const handleTranslate = async (lang: string) => {
     setTargetLang(lang);
     if (lang === 'English') {
@@ -237,9 +200,6 @@ export default function FirstAidDetailPage() {
                             ))}
                         </SelectContent>
                     </Select>
-                    <Button variant="outline" size="icon" onClick={handlePlayAudio} disabled={isSpeaking}>
-                        {isSpeaking ? <Loader2 className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
-                    </Button>
                 </div>
             </CardHeader>
             <CardContent>
