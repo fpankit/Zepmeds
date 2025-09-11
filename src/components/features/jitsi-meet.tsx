@@ -1,3 +1,4 @@
+
 "use client";
 import { useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -73,8 +74,8 @@ export function JitsiMeet({ roomName, userName }: JitsiMeetProps) {
   }, [roomName, userName, toast]);
 
   return (
-    <div className="relative h-[calc(100vh-80px)] w-full bg-black rounded-lg overflow-hidden">
-      <div ref={containerRef} className="h-full w-full" />
+    <div className="flex flex-col h-[calc(100vh-80px)] w-full bg-black rounded-lg overflow-hidden">
+      <div ref={containerRef} className="flex-1" />
     </div>
   );
 }
