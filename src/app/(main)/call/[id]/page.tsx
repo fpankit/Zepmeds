@@ -12,10 +12,10 @@ export default function CallPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   const [roomName, setRoomName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const callId = params.id;
 
   useEffect(() => {
     const fetchCallDetails = async () => {
-        const callId = params.id;
         if (!callId) {
             setIsLoading(false);
             return;
@@ -38,7 +38,7 @@ export default function CallPage({ params }: { params: { id: string } }) {
     };
 
     fetchCallDetails();
-  }, [params.id]);
+  }, [callId]);
 
 
   if (isLoading || !user) {
