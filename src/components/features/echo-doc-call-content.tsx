@@ -48,17 +48,19 @@ export function EchoDocCallContent() {
 
         try {
             const { audio } = await textToSpeech({ text });
-            if (audioRef.current && isMounted.current) {
+            if (audioRef.current && isMounted.current && audio) {
                 audioRef.current.src = audio;
                 audioRef.current.play().catch(e => {
                     console.error("Audio playback failed:", e);
                     // If play fails, immediately fall back
                     setStatus('idle');
                 });
+            } else {
+                throw new Error("Generated audio was empty or component unmounted.");
             }
         } catch (error: any) {
             if (!isMounted.current) return;
-            console.error("Audio generation failed:", error);
+            console.error("Audio generation or playback failed:", error);
             const errorMessage = error.message || 'An unknown error occurred.';
             const isQuotaError = errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota');
 
