@@ -13,6 +13,13 @@ function CallPageContent() {
     const error = searchParams.get('error');
     const meetLink = searchParams.get('meetLink');
 
+    useEffect(() => {
+        if (meetLink) {
+            // Redirect the user to the Google Meet URL
+            window.location.href = meetLink;
+        }
+    }, [meetLink]);
+
     if (error) {
         return (
             <div className="flex flex-col h-screen bg-background">
@@ -38,28 +45,8 @@ function CallPageContent() {
             </div>
         )
     }
-
-    if (meetLink) {
-        return (
-            <div className="flex flex-col h-screen bg-black">
-                <header className="sticky top-0 z-10 flex items-center justify-between p-2 bg-black text-white border-b border-gray-700">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                        <ArrowLeft className="h-6 w-6" />
-                    </Button>
-                    <h1 className="text-lg font-bold">Live Consultation</h1>
-                    <Button variant="destructive" size="sm" onClick={() => router.push('/home')}>End Call</Button>
-                </header>
-                <main className="flex-1">
-                    <iframe
-                        src={meetLink}
-                        className="w-full h-full border-0"
-                        allow="camera; microphone; fullscreen; speaker; display-capture"
-                    ></iframe>
-                </main>
-            </div>
-        );
-    }
-
+    
+    // This is the waiting screen. It will show until the meetLink is available and the useEffect above redirects.
     return (
         <div className="flex flex-col h-screen bg-background">
             <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background border-b">
