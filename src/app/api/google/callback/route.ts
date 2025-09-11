@@ -3,16 +3,24 @@ import { getGoogleOAuth2Client } from '@/lib/google';
 import { google } from 'googleapis';
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 
 export async function GET(req: NextRequest) {
   const oauth2Client = getGoogleOAuth2Client();
 
   const code = req.nextUrl.searchParams.get('code');
+  const state = req.nextUrl.searchParams.get('state'); // The call ID is passed in the state
   const baseUrl = process.env.BASE_URL || `https://${req.headers.get('host')}`;
-
 
   if (typeof code !== 'string') {
     return NextResponse.json({ error: 'Invalid authorization code.' }, { status: 400 });
+  }
+
+  // The 'state' parameter now holds the pendingCallId
+  const pendingCallId = state;
+  if (!pendingCallId) {
+      return NextResponse.json({ error: 'No pending call ID found.' }, { status: 400 });
   }
 
   try {
@@ -63,12 +71,22 @@ export async function GET(req: NextRequest) {
       throw new Error("Failed to create a Google Meet link.");
     }
     
+    // Update the Firestore document with the Meet link and status
+    const callDocRef = doc(db, 'video_calls', pendingCallId);
+    await updateDoc(callDocRef, {
+        meetLink: meetLink,
+        status: 'ringing'
+    });
+
     // Instead of redirecting the server, return a script to the browser
     // that stores the link and redirects the user to the call page.
     const response = new NextResponse(`
       <script>
         sessionStorage.setItem('meetLink', '${meetLink}');
-        window.location.href = '${baseUrl}/call';
+        // This is the tab that the user initiated the call from.
+        // It will be redirected to the /call page.
+        // We close this popup tab now.
+        window.close();
       </script>
     `, {
         headers: {
@@ -85,12 +103,21 @@ export async function GET(req: NextRequest) {
     if (error.response?.data?.error_description) {
         errorMessage = error.response.data.error_description;
     }
-     const errorRedirectUrl = `${baseUrl}/call?error=${encodeURIComponent(errorMessage)}`;
+    
+    // Update the call document to 'failed' status
+    if (pendingCallId) {
+        const callDocRef = doc(db, 'video_calls', pendingCallId);
+        await updateDoc(callDocRef, {
+            status: 'failed',
+            error: errorMessage,
+        });
+    }
 
-    // Return a script that redirects to the call page with an error
+    // Return a script that informs the user and closes the window.
     return new NextResponse(`
         <script>
-            window.location.href = '${errorRedirectUrl}';
+            alert("Failed to create meeting: ${errorMessage}");
+            window.close();
         </script>
     `, {
         headers: { 'Content-Type': 'text/html' },

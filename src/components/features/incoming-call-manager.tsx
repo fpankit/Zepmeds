@@ -1,79 +1,84 @@
-{
-  "name": "nextn",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@genkit-ai/firebase": "^1.14.1",
-    "@genkit-ai/googleai": "^1.14.1",
-    "@genkit-ai/next": "^1.14.1",
-    "@hookform/resolvers": "^4.1.3",
-    "@radix-ui/react-accordion": "^1.2.3",
-    "@radix-ui/react-alert-dialog": "^1.1.6",
-    "@radix-ui/react-avatar": "^1.1.3",
-    "@radix-ui/react-checkbox": "^1.1.4",
-    "@radix-ui/react-collapsible": "^1.1.11",
-    "@radix-ui/react-dialog": "^1.1.6",
-    "@radix-ui/react-dropdown-menu": "^2.1.6",
-    "@radix-ui/react-label": "^2.1.2",
-    "@radix-ui/react-menubar": "^1.1.6",
-    "@radix-ui/react-popover": "^1.1.6",
-    "@radix-ui/react-progress": "^1.1.2",
-    "@radix-ui/react-radio-group": "^1.2.3",
-    "@radix-ui/react-scroll-area": "^1.2.3",
-    "@radix-ui/react-select": "^2.1.6",
-    "@radix-ui/react-separator": "^1.1.2",
-    "@radix-ui/react-slider": "^1.2.3",
-    "@radix-ui/react-slot": "^1.2.3",
-    "@radix-ui/react-switch": "^1.1.3",
-    "@radix-ui/react-tabs": "^1.1.3",
-    "@radix-ui/react-toast": "^1.2.6",
-    "@radix-ui/react-tooltip": "^1.1.8",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^3.6.0",
-    "dotenv": "^16.5.0",
-    "embla-carousel-autoplay": "^8.0.0",
-    "embla-carousel-react": "^8.6.0",
-    "firebase": "^11.9.1",
-    "framer-motion": "^11.3.19",
-    "genkit": "^1.14.1",
-    "jsqr": "^1.4.0",
-    "jspdf": "^2.5.1",
-    "leaflet": "^1.9.4",
-    "lucide-react": "^0.475.0",
-    "next": "15.3.3",
-    "patch-package": "^8.0.0",
-    "react": "^18.3.1",
-    "react-day-picker": "^8.10.1",
-    "react-dom": "^18.3.1",
-    "react-hook-form": "^7.54.2",
-    "react-phone-number-input": "^3.4.3",
-    "recharts": "^2.15.1",
-    "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7",
-    "typewriter-effect": "^2.21.0",
-    "wav": "^1.0.2",
-    "zod": "^3.24.2"
-  },
-  "devDependencies": {
-    "@types/leaflet": "^1.9.12",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "@types/uuid": "^10.0.0",
-    "@types/wav": "^1.0.3",
-    "genkit-cli": "^1.14.1",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
-  }
+
+'use client';
+
+import { useEffect, useCallback } from 'react';
+import { useAuth } from '@/context/auth-context';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '../ui/button';
+import { Phone, PhoneOff } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+interface VideoCall {
+  id: string;
+  patientName: string;
+  meetLink: string;
+}
+
+export function IncomingCallManager() {
+  const { user } = useAuth();
+  const { toast, dismiss } = useToast();
+  const router = useRouter();
+
+  const handleAccept = (call: VideoCall) => {
+    // Navigate to the Google Meet link in a new tab
+    if (call.meetLink) {
+        window.open(call.meetLink, '_blank');
+    }
+    // Update the call status to 'answered'
+    const callDocRef = doc(db, 'video_calls', call.id);
+    updateDoc(callDocRef, { status: 'answered' });
+    dismiss();
+  };
+
+  const handleDecline = (callId: string) => {
+    const callDocRef = doc(db, 'video_calls', callId);
+    updateDoc(callDocRef, { status: 'declined' });
+    dismiss();
+  };
+
+  const showCallNotification = useCallback((call: VideoCall) => {
+    toast({
+      title: `Incoming Call from ${call.patientName}`,
+      description: 'A patient is trying to reach you.',
+      duration: Infinity, // Keep the toast open until dismissed
+      action: (
+        <div className="flex gap-2 mt-2">
+          <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={() => handleDecline(call.id)}>
+             <PhoneOff className="mr-2 h-4 w-4"/> Decline
+          </Button>
+          <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleAccept(call)}>
+            <Phone className="mr-2 h-4 w-4"/> Accept
+          </Button>
+        </div>
+      ),
+    });
+  }, [toast]);
+
+  useEffect(() => {
+    // Only listen for calls if the user is a doctor and is online
+    if (!user || !user.isDoctor || !user.isOnline) {
+      return;
+    }
+
+    const q = query(
+      collection(db, 'video_calls'),
+      where('doctorId', '==', user.id),
+      where('status', '==', 'ringing')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const callData = { id: change.doc.id, ...change.doc.data() } as VideoCall;
+          showCallNotification(callData);
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, [user, showCallNotification]);
+
+  return null; // This component does not render anything itself
 }

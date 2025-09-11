@@ -106,29 +106,47 @@ export default function DoctorPage() {
     return name.substring(0,2);
   }
 
-  const handleVideoCall = async (doctorId: string) => {
-    setIsCreatingLink(doctorId);
+  const handleVideoCall = async (doctor: Doctor) => {
+    if (!user || user.isGuest) {
+        toast({ variant: "destructive", title: "Please login to start a call." });
+        router.push('/login');
+        return;
+    }
+    setIsCreatingLink(doctor.id);
     try {
+        // Create a call document in Firestore
+        const callDocRef = await addDoc(collection(db, 'video_calls'), {
+            patientId: user.id,
+            patientName: `${user.firstName} ${user.lastName}`,
+            doctorId: doctor.id,
+            doctorName: doctor.name,
+            status: 'pending', // Pending user authentication with Google
+            createdAt: serverTimestamp(),
+        });
+
+        // Store the call ID in session storage to retrieve it in the callback
+        sessionStorage.setItem('pendingCallId', callDocRef.id);
+
         const response = await fetch('/api/google/auth');
         const data = await response.json();
-        if(data.url) {
+        
+        if (data.url) {
             // Open Google's auth screen in a new tab
             window.open(data.url, '_blank');
             // Redirect the current tab to the call page to wait
             router.push('/call');
-
         } else {
             throw new Error(data.error || "Could not get authentication URL.");
         }
     } catch (error: any) {
+        console.error("Failed to start video call process:", error);
         toast({
             variant: "destructive",
             title: "Failed to start call",
-            description: error.message
+            description: error.message,
         });
-         setIsCreatingLink(null);
-    } 
-    // No finally block needed as the page will redirect
+        setIsCreatingLink(null);
+    }
   }
 
   return (
@@ -189,7 +207,7 @@ export default function DoctorPage() {
                         <Button 
                             className="w-full" 
                             disabled={!doctor.isOnline || !!isCreatingLink}
-                            onClick={() => handleVideoCall(doctor.id)}
+                            onClick={() => handleVideoCall(doctor)}
                         >
                             {isCreatingLink === doctor.id ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -211,5 +229,3 @@ export default function DoctorPage() {
     </div>
   );
 }
-
-    
