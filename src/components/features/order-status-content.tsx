@@ -13,9 +13,10 @@ import { LiveTrackingMap } from './live-tracking-map';
 import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '../ui/separator';
+import { Progress } from '../ui/progress';
 
 
 const riderDetails = {
@@ -30,6 +31,13 @@ const riderDetails = {
 // Simulated user location for demonstration. In a real app, this would come from the order details.
 const userLocation = { lat: 28.4595, lng: 77.0266 };
 
+const statusConfig = {
+    "Order Confirmed": { progress: 25, eta: 10 * 60, message: "Your order is getting packed" },
+    "Out for Delivery": { progress: 50, eta: 8 * 60, message: "Your rider is on the way" },
+    "Arrived at Location": { progress: 85, eta: 2 * 60, message: "Your rider has arrived" },
+    "Delivered": { progress: 100, eta: 0, message: "Enjoy your order!" },
+};
+
 
 export function OrderStatusContent() {
   const searchParams = useSearchParams();
@@ -39,6 +47,7 @@ export function OrderStatusContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const [isItemsOpen, setIsItemsOpen] = useState(false);
+  const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   
   useEffect(() => {
     if (!orderId) {
@@ -50,7 +59,14 @@ export function OrderStatusContent() {
     const unsubscribe = onSnapshot(orderDocRef, (doc) => {
         if (doc.exists()) {
             const orderData = doc.data();
+            const currentStatus = orderData.status as keyof typeof statusConfig;
+            
+            // Set initial ETA based on fetched status
+            if (statusConfig[currentStatus]) {
+                 setEtaSeconds(statusConfig[currentStatus].eta);
+            }
             setOrder({ id: doc.id, ...orderData });
+
         } else {
             console.error("Order not found");
             setOrder(null);
@@ -60,6 +76,16 @@ export function OrderStatusContent() {
 
     return () => unsubscribe();
   }, [orderId]);
+  
+   useEffect(() => {
+    if (etaSeconds !== null && etaSeconds > 0) {
+      const timer = setInterval(() => {
+        setEtaSeconds(prev => (prev ? prev - 1 : 0));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [etaSeconds]);
+
 
   if (isLoading) {
       return (
@@ -78,6 +104,30 @@ export function OrderStatusContent() {
   }
   
   const totalItems = order.cart.reduce((acc: number, item: any) => acc + item.quantity, 0);
+  const currentStatusKey = order.status as keyof typeof statusConfig;
+  const currentStatusInfo = statusConfig[currentStatusKey] || { progress: 0, eta: null, message: "Status unknown" };
+  
+  const formatTime = (seconds: number | null) => {
+      if (seconds === null || seconds <= 0) return '0 min';
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${minutes} min`;
+  };
+
+  const getStatusDisplay = () => {
+    if (order.status === 'Delivered') {
+        return (
+            <div className='flex items-center gap-2'>
+                <Check className="h-8 w-8 text-green-500" />
+                <p className="text-3xl font-bold text-green-500">Delivered</p>
+            </div>
+        )
+    }
+     if (order.status === 'Arrived at Location') {
+        return <p className="text-3xl font-bold text-primary">Arriving Soon</p>
+    }
+    return <p className="text-3xl font-bold text-primary">{formatTime(etaSeconds)}</p>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-4">
@@ -85,34 +135,48 @@ export function OrderStatusContent() {
         <Card className="overflow-hidden">
             <CardContent className="p-4 grid grid-cols-2 gap-4">
                 <div className='space-y-2'>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800 dark:bg-green-800/20 dark:text-green-300">
-                        <Check className="h-4 w-4" />
-                        On time
-                    </div>
-                    <p className="text-muted-foreground text-sm">Arriving in</p>
-                    <p className="text-3xl font-bold text-primary">10 mins</p>
-                    <p className="text-md font-semibold">Your order is getting packed</p>
+                     {order.status !== 'Delivered' && (
+                        <div className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800 dark:bg-green-800/20 dark:text-green-300">
+                            <Check className="h-4 w-4" />
+                            On time
+                        </div>
+                     )}
+                    <p className="text-muted-foreground text-sm">
+                        {order.status === 'Delivered' ? 'Delivered on' : 'Arriving in'}
+                    </p>
+                    {order.status === 'Delivered' ? (
+                         <p className="text-3xl font-bold text-green-500">
+                           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                         </p>
+                    ) : getStatusDisplay()}
+                    <p className="text-md font-semibold">{currentStatusInfo.message}</p>
                 </div>
                  <div className="bg-blue-50 rounded-lg p-4 flex flex-col items-center justify-center text-center dark:bg-blue-900/20">
                     <p className="font-bold text-blue-800 dark:text-blue-300">Switch to Zepmeds1 for extra discount</p>
                     <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7">Apply Now</Button>
                  </div>
             </CardContent>
-            <div className='border-t border-border p-4 flex justify-between items-center'>
-                <div className='flex items-center gap-3'>
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                        <MapPin className='h-5 w-5 text-muted-foreground' />
+            {order.status !== 'Delivered' && (
+                <>
+                <Progress value={currentStatusInfo.progress} className="h-1 bg-muted-foreground/20 rounded-none [&>*]:bg-green-500" />
+                <div className='border-t border-border p-4 flex justify-between items-center'>
+                    <div className='flex items-center gap-3'>
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                            <MapPin className='h-5 w-5 text-muted-foreground' />
+                        </div>
+                        <p className='font-semibold'>Track your order</p>
                     </div>
-                    <p className='font-semibold'>Track your order</p>
+                    <Button variant="default" className='bg-primary hover:bg-primary/90' onClick={() => setShowMap(!showMap)}>
+                    {showMap ? 'Hide Map' : 'View Map'}
+                    </Button>
                 </div>
-                <Button variant="default" className='bg-primary hover:bg-primary/90' onClick={() => setShowMap(!showMap)}>
-                   {showMap ? 'Hide Map' : 'View Map'}
-                </Button>
-            </div>
+                </>
+            )}
         </Card>
 
+        <AnimatePresence>
         {showMap && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}>
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                 <Card>
                     <CardContent className='p-4'>
                         <LiveTrackingMap riderLocation={riderDetails.location} userLocation={userLocation} />
@@ -120,6 +184,7 @@ export function OrderStatusContent() {
                 </Card>
             </motion.div>
         )}
+        </AnimatePresence>
 
         <Card>
             <CardContent className="p-4 flex items-center justify-between">
@@ -226,9 +291,7 @@ export function OrderStatusContent() {
                             <p className="text-sm text-muted-foreground">Refer your friends &amp; start saving!</p>
                         </div>
                     </div>
-                    <div className='p-4 rounded-lg bg-purple-500/20'>
-                        <Gift className="h-8 w-8 text-purple-400" />
-                    </div>
+                    <Button variant="outline" size="sm" className="shrink-0">Refer Now</Button>
                 </CardContent>
             </Card>
              <Card>
@@ -250,5 +313,3 @@ export function OrderStatusContent() {
     </div>
   );
 }
-
-    
