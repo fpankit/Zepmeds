@@ -12,9 +12,7 @@ export function getGoogleOAuth2Client() {
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   
   // This MUST match one of the authorized redirect URIs in your Google Cloud Console
-  const redirectUri = process.env.NODE_ENV === 'production' 
-    ? 'https://your-production-url.com/api/google/callback'
-    : 'http://localhost:3000/api/google/callback';
+  const redirectUri = `${process.env.BASE_URL}/api/google/callback`;
 
   if (!clientId || !clientSecret) {
     throw new Error('Google client ID or secret is missing from environment variables.');
