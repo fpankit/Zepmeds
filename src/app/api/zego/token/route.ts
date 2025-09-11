@@ -1,39 +1,79 @@
-
-import { NextResponse, NextRequest } from 'next/server';
-import { ZegoServerAssistant } from "zego-express-engine-webrtc";
-
-export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const roomId = searchParams.get('roomId');
-
-    if (!userId || !roomId) {
-        return NextResponse.json({ error: 'userId and roomId are required' }, { status: 400 });
-    }
-
-    const appId = process.env.NEXT_PUBLIC_ZEGOCLOUD_APP_ID;
-    const serverSecret = process.env.ZEGOCLOUD_SERVER_SECRET;
-
-    if (!appId || !serverSecret) {
-        console.error('ZegoCloud App ID or Server Secret is not set in environment variables.');
-        return NextResponse.json({ error: 'ZegoCloud credentials not configured on the server.' }, { status: 500 });
-    }
-
-    const effectiveTimeInSeconds = 3600; // Token validity period in seconds
-    const payload = {
-        room_id: roomId,
-        privilege: {
-            1: 1, // loginRoom
-            2: 1, // publishStream
-        },
-        stream_id_list: null
-    };
-
-    try {
-        const token = ZegoServerAssistant.generateToken04(Number(appId), userId, serverSecret, effectiveTimeInSeconds, payload);
-        return NextResponse.json({ token, appId: Number(appId) });
-    } catch (error) {
-        console.error('Error generating ZegoCloud token:', error);
-        return NextResponse.json({ error: 'Failed to generate token' }, { status: 500 });
-    }
+{
+  "name": "nextn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
+    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@genkit-ai/firebase": "^1.14.1",
+    "@genkit-ai/googleai": "^1.14.1",
+    "@genkit-ai/next": "^1.14.1",
+    "@hookform/resolvers": "^4.1.3",
+    "@radix-ui/react-accordion": "^1.2.3",
+    "@radix-ui/react-alert-dialog": "^1.1.6",
+    "@radix-ui/react-avatar": "^1.1.3",
+    "@radix-ui/react-checkbox": "^1.1.4",
+    "@radix-ui/react-collapsible": "^1.1.11",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-dropdown-menu": "^2.1.6",
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-menubar": "^1.1.6",
+    "@radix-ui/react-popover": "^1.1.6",
+    "@radix-ui/react-progress": "^1.1.2",
+    "@radix-ui/react-radio-group": "^1.2.3",
+    "@radix-ui/react-scroll-area": "^1.2.3",
+    "@radix-ui/react-select": "^2.1.6",
+    "@radix-ui/react-separator": "^1.1.2",
+    "@radix-ui/react-slider": "^1.2.3",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.1.3",
+    "@radix-ui/react-tabs": "^1.1.3",
+    "@radix-ui/react-toast": "^1.2.6",
+    "@radix-ui/react-tooltip": "^1.1.8",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.5.0",
+    "embla-carousel-autoplay": "^8.0.0",
+    "embla-carousel-react": "^8.6.0",
+    "firebase": "^11.9.1",
+    "framer-motion": "^11.3.19",
+    "genkit": "^1.14.1",
+    "jsqr": "^1.4.0",
+    "jspdf": "^2.5.1",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.475.0",
+    "next": "15.3.3",
+    "patch-package": "^8.0.0",
+    "react": "^18.3.1",
+    "react-day-picker": "^8.10.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.2",
+    "react-phone-number-input": "^3.4.3",
+    "recharts": "^2.15.1",
+    "tailwind-merge": "^3.0.1",
+    "tailwindcss-animate": "^1.0.7",
+    "typewriter-effect": "^2.21.0",
+    "wav": "^1.0.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.12",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
+    "@types/wav": "^1.0.3",
+    "genkit-cli": "^1.14.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
 }

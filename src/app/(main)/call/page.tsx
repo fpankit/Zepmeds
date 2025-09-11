@@ -1,34 +1,35 @@
 
 'use client';
 
-import { Suspense } from 'react';
-import dynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
-
-const VideoCallContent = dynamic(
-    () => import('@/components/features/video-call-content').then(mod => mod.VideoCallContent),
-    { 
-        ssr: false,
-        loading: () => (
-            <div className="p-4 space-y-4 h-screen bg-black">
-                <div className="relative w-full aspect-video bg-muted rounded-lg"></div>
-                <div className="absolute inset-0 w-32 h-48 bg-muted rounded-lg border-2 border-white"></div>
-                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-black/50">
-                    <div className="flex justify-center gap-4">
-                        <Skeleton className="h-14 w-14 rounded-full" />
-                        <Skeleton className="h-14 w-14 rounded-full" />
-                        <Skeleton className="h-14 w-14 rounded-full" />
-                    </div>
-                </div>
-            </div>
-        )
-    }
-);
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Video } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function VideoCallPage() {
+    const router = useRouter();
+
     return (
-        <Suspense fallback={<div>Loading Call...</div>}>
-            <VideoCallContent />
-        </Suspense>
+        <div className="flex flex-col h-screen bg-background">
+            <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background border-b">
+                <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                    <ArrowLeft className="h-6 w-6" />
+                </Button>
+                <h1 className="text-xl font-bold">Video Consultation</h1>
+                 <div className="w-8" />
+            </header>
+            <main className="flex flex-1 items-center justify-center text-center p-4">
+                <Card>
+                    <CardHeader>
+                        <Video className="mx-auto h-12 w-12 text-primary" />
+                        <CardTitle>Coming Soon</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">Google Meet integration is currently under development.</p>
+                         <Button className="mt-4" onClick={() => router.push('/home')}>Go to Home</Button>
+                    </CardContent>
+                </Card>
+            </main>
+        </div>
     )
 }

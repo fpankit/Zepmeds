@@ -14,7 +14,17 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Doctor } from "@/hooks/use-calls";
+
+export interface Doctor {
+  id: string;
+  name: string;
+  specialty: string;
+  experience: string;
+  image: string;
+  isOnline: boolean;
+  dataAiHint?: string;
+}
+
 
 const DoctorCardSkeleton = () => (
     <Card className="overflow-hidden">
@@ -46,45 +56,6 @@ export default function DoctorPage() {
       const newStatus = !user.isOnline;
       await updateUser({ isOnline: newStatus });
       toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
-  };
-
-  const handleStartCall = async (doctor: Doctor) => {
-    if (!user) {
-        toast({ variant: 'destructive', title: 'Please login to start a call.' });
-        router.push('/login');
-        return;
-    }
-    if (user.isDoctor) {
-        toast({ variant: 'destructive', title: 'Action not allowed', description: 'Doctors cannot initiate calls with other doctors.' });
-        return;
-    }
-
-    const channelName = `call_${user.id}_${doctor.id}`;
-    const callId = channelName; // Use the channel name as a unique call ID
-
-    try {
-        // Create a 'call' document in Firestore to notify the doctor
-        await setDoc(doc(db, "calls", callId), {
-            callerId: user.id,
-            callerName: `${user.firstName} ${user.lastName}`,
-            doctorId: doctor.id,
-            receiverName: doctor.name,
-            roomId: channelName,
-            status: 'ringing',
-            createdAt: serverTimestamp(),
-        });
-        
-        // Navigate the user to the call page
-        router.push(`/call?channel=${channelName}&doctorName=${encodeURIComponent(doctor.name)}&userName=${encodeURIComponent(user.firstName)}`);
-
-    } catch (error) {
-        console.error("Error creating call document: ", error);
-        toast({
-            variant: "destructive",
-            title: "Call Failed",
-            description: "Could not initiate the call. Please try again."
-        });
-    }
   };
 
   useEffect(() => {
@@ -191,11 +162,11 @@ export default function DoctorPage() {
                     <div className="flex gap-2 mt-4">
                         <Button 
                             className="w-full" 
-                            disabled={!doctor.isOnline}
-                            onClick={() => handleStartCall(doctor)}
+                            disabled={true}
+                            onClick={() => toast({ title: 'Coming Soon!', description: 'Google Meet integration is under development.'})}
                         >
                             <Video className="mr-2 h-4 w-4" /> 
-                          {doctor.isOnline ? 'Start Video Call' : 'Offline'}
+                          Video Call (Soon)
                         </Button>
                     </div>
                     </CardContent>
