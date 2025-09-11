@@ -32,10 +32,10 @@ const riderDetails = {
 const userLocation = { lat: 28.4595, lng: 77.0266 };
 
 const statusConfig = {
-    "Order Confirmed": { progress: 25, eta: 10 * 60, message: "Your order is getting packed" },
-    "Out for Delivery": { progress: 50, eta: 8 * 60, message: "Your rider is on the way" },
-    "Arrived at Location": { progress: 85, eta: 2 * 60, message: "Your rider has arrived" },
-    "Delivered": { progress: 100, eta: 0, message: "Enjoy your order!" },
+    "order confirmed": { progress: 25, eta: 10 * 60, message: "Your order is getting packed" },
+    "out for delivery": { progress: 50, eta: 8 * 60, message: "Your rider is on the way" },
+    "arrived at location": { progress: 85, eta: 2 * 60, message: "Your rider has arrived" },
+    "delivered": { progress: 100, eta: 0, message: "Enjoy your order!" },
 };
 
 
@@ -74,7 +74,8 @@ export function OrderStatusContent() {
    useEffect(() => {
     // This effect sets the initial ETA when the order status changes
     if (order && order.status) {
-      const currentStatusInfo = statusConfig[order.status as keyof typeof statusConfig];
+      const currentStatusKey = order.status.toLowerCase() as keyof typeof statusConfig;
+      const currentStatusInfo = statusConfig[currentStatusKey];
       if (currentStatusInfo && etaSeconds === null) { // Only set initial ETA once
         setEtaSeconds(currentStatusInfo.eta);
       }
@@ -109,18 +110,17 @@ export function OrderStatusContent() {
   }
   
   const totalItems = order.cart.reduce((acc: number, item: any) => acc + item.quantity, 0);
-  const currentStatusKey = order.status as keyof typeof statusConfig;
+  const currentStatusKey = order.status.toLowerCase() as keyof typeof statusConfig;
   const currentStatusInfo = statusConfig[currentStatusKey] || { progress: 0, eta: null, message: "Status unknown" };
   
   const formatTime = (seconds: number | null) => {
       if (seconds === null || seconds <= 0) return '0 min';
       const minutes = Math.floor(seconds / 60);
-      const secs = seconds % 60;
       return `${minutes} min`;
   };
 
   const getStatusDisplay = () => {
-    if (order.status === 'Delivered') {
+    if (currentStatusKey === 'delivered') {
         return (
             <div className='flex items-center gap-2'>
                 <Check className="h-8 w-8 text-green-500" />
@@ -128,7 +128,7 @@ export function OrderStatusContent() {
             </div>
         )
     }
-     if (etaSeconds !== null && etaSeconds <= 120 && order.status !== "Arrived at Location") {
+     if (etaSeconds !== null && etaSeconds <= 120 && currentStatusKey !== "arrived at location") {
          return <p className="text-3xl font-bold text-primary">Arriving Soon</p>
     }
     return <p className="text-3xl font-bold text-primary">{formatTime(etaSeconds)}</p>;
@@ -140,14 +140,14 @@ export function OrderStatusContent() {
         <Card className="overflow-hidden">
             <CardContent className="p-4 grid grid-cols-2 gap-4">
                 <div className='space-y-2'>
-                     {order.status !== 'Delivered' && (
+                     {currentStatusKey !== 'delivered' && (
                         <div className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800 dark:bg-green-800/20 dark:text-green-300">
                             <Check className="h-4 w-4" />
                             On time
                         </div>
                      )}
                     <p className="text-muted-foreground text-sm">
-                        {order.status === 'Delivered' ? 'Delivered on' : 'Arriving in'}
+                        {currentStatusKey === 'delivered' ? 'Delivered on' : 'Arriving in'}
                     </p>
                      {getStatusDisplay()}
                     <p className="text-md font-semibold">{currentStatusInfo.message}</p>
@@ -157,7 +157,7 @@ export function OrderStatusContent() {
                     <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7">Apply Now</Button>
                  </div>
             </CardContent>
-            {order.status !== 'Delivered' && (
+            {currentStatusKey !== 'delivered' && (
                 <>
                 <Progress value={currentStatusInfo.progress} className="h-1 bg-muted-foreground/20 rounded-none [&>*]:bg-green-500" />
                 <div className='border-t border-border p-4 flex justify-between items-center'>
