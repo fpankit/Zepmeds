@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 type TranslatedContent = {
     procedure: string[];
-    whatToAvoid: string[];
+    whatToAvoid?: string[];
 }
 
 export default function FirstAidDetailPage() {
@@ -41,8 +41,19 @@ export default function FirstAidDetailPage() {
       // Fetch AI advice when topic is set
       generateFirstAidAdvice({ topic: currentTopic.title })
         .then(advice => {
-          setAiAdvice(advice);
-          setAiError(false);
+          // The AI flow now returns an empty response on failure, so we check the content length
+          if (advice && advice.procedure.length > 0) {
+              setAiAdvice(advice);
+              setAiError(false);
+          } else {
+              setAiError(true);
+              toast({
+                variant: 'default',
+                className: 'bg-blue-500/20 border-blue-500 text-white',
+                title: 'Offline Mode',
+                description: 'Could not connect to AI. Showing offline guide.',
+              });
+          }
         })
         .catch(error => {
           console.error("AI advice generation failed:", error);
@@ -66,15 +77,18 @@ export default function FirstAidDetailPage() {
     setIsSpeaking(true);
     
     let textToRead = '';
+    // Prioritize AI content if available and not in error state
     if (aiAdvice && !aiError) {
         const procedure = translatedContent?.procedure || aiAdvice.procedure;
         const whatToAvoid = translatedContent?.whatToAvoid || aiAdvice.whatToAvoid;
         textToRead = `Here is the procedure. ${procedure.join('. ')}. Now, here is what to avoid. ${whatToAvoid.join('. ')}`;
-    } else if (topic) {
-        textToRead = (translatedContent?.procedure || topic.steps).join('. ');
+    } else if (topic) { // Fallback to offline data
+        const procedure = translatedContent?.procedure || topic.steps;
+        textToRead = `Here is the procedure. ${procedure.join('. ')}`;
     }
 
     if (!textToRead) {
+        toast({ variant: 'destructive', title: 'Nothing to read.' });
         setIsSpeaking(false);
         return;
     }
@@ -103,11 +117,13 @@ export default function FirstAidDetailPage() {
     let procedureToTranslate: string[] = [];
     let avoidToTranslate: string[] = [];
 
+    // Decide what to translate based on available data
     if (aiAdvice && !aiError) {
         procedureToTranslate = aiAdvice.procedure;
         avoidToTranslate = aiAdvice.whatToAvoid;
     } else if(topic) {
         procedureToTranslate = topic.steps;
+        // Offline data might not have 'what to avoid'
     } else {
         return; // Nothing to translate
     }
@@ -125,7 +141,7 @@ export default function FirstAidDetailPage() {
 
       setTranslatedContent({
         procedure: translatedProcedureResult.translatedText.split('\n---\n'),
-        whatToAvoid: translatedAvoidResult.translatedText.split('\n---\n'),
+        whatToAvoid: translatedAvoidResult.translatedText ? translatedAvoidResult.translatedText.split('\n---\n') : [],
       });
     } catch (e) {
       console.error("Translation Error: ", e);
@@ -159,6 +175,11 @@ export default function FirstAidDetailPage() {
   );
 
   const languageOptions = ['English', 'Hindi', 'Punjabi', 'Tamil', 'Telugu', 'Kannada'];
+
+  // Determine what content to display
+  const displayProcedure = translatedContent?.procedure || (aiAdvice && !aiError ? aiAdvice.procedure : topic.steps);
+  const displayAvoid = translatedContent?.whatToAvoid || (aiAdvice && !aiError ? aiAdvice.whatToAvoid : []);
+  const useAIGuide = !aiError && !!aiAdvice && aiAdvice.procedure.length > 0;
 
   return (
     <div className="flex flex-col h-screen">
@@ -204,7 +225,7 @@ export default function FirstAidDetailPage() {
         
         <Card>
             <CardHeader className="flex-row items-center justify-between">
-                <CardTitle>AI First Aid Guide</CardTitle>
+                <CardTitle>{useAIGuide ? 'AI First Aid Guide' : 'First Aid Guide (Offline)'}</CardTitle>
                  <div className="flex items-center gap-2">
                      <Select onValueChange={handleTranslate} defaultValue="English" disabled={isTranslating}>
                         <SelectTrigger className="w-[120px]">
@@ -223,16 +244,7 @@ export default function FirstAidDetailPage() {
             </CardHeader>
             <CardContent>
                 {isLoadingAi || isTranslating ? (
-                    <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /> <span className="ml-2"> {isTranslating ? 'Translating...' : 'AI is generating advice...'}</span></div>
-                ) : aiError || !aiAdvice ? (
-                     <div>
-                        <CardHeader>
-                            <CardTitle>Step-by-Step Guide (Offline)</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {renderStepList(translatedContent?.procedure || topic.steps)}
-                        </CardContent>
-                    </div>
+                    <div className="flex items-center justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /> <span className="ml-2"> {isTranslating ? 'Translating...' : 'Contacting AI expert...'}</span></div>
                 ) : (
                     <div className="space-y-6">
                         <div>
@@ -240,16 +252,16 @@ export default function FirstAidDetailPage() {
                                 <CardTitle className="flex items-center gap-2 text-green-400"><ShieldCheck className="h-6 w-6"/> Correct Procedure</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {renderStepList(translatedContent?.procedure || aiAdvice.procedure)}
+                                {renderStepList(displayProcedure)}
                             </CardContent>
                         </div>
-                        {aiAdvice.whatToAvoid.length > 0 && (
+                        {displayAvoid.length > 0 && (
                             <div>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-red-400"><XCircle className="h-6 w-6"/> What to Avoid</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    {renderStepList(translatedContent?.whatToAvoid || aiAdvice.whatToAvoid, true)}
+                                    {renderStepList(displayAvoid, true)}
                                 </CardContent>
                             </div>
                         )}
@@ -261,5 +273,3 @@ export default function FirstAidDetailPage() {
     </div>
   );
 }
-
-    
