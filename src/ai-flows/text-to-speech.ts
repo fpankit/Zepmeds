@@ -43,8 +43,8 @@ const textToSpeechFlow = ai.defineFlow(
             voiceConfig: {
               prebuiltVoiceConfig: { voiceName: 'Algenib' },
             },
-            speakingRate,
           },
+          speakingRate,
         },
         prompt: text,
       });
