@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '../ui/separator';
 import { Progress } from '../ui/progress';
+import { useRouter } from 'next/navigation';
 
 
 const riderDetails = {
@@ -42,6 +43,7 @@ const statusConfig = {
 export function OrderStatusContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const router = useRouter();
 
   const [order, setOrder] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -113,8 +115,8 @@ export function OrderStatusContent() {
   }
   
   const totalItems = order.cart.reduce((acc: number, item: any) => acc + item.quantity, 0);
-  const currentStatusKey = order.status.toLowerCase() as keyof typeof statusConfig;
-  const currentStatusInfo = statusConfig[currentStatusKey] || { progress: 0, eta: null, message: order.status };
+  const currentStatusKey = order.status.toLowerCase() as keyof typeof statusConfig | 'cancelled';
+  const currentStatusInfo = statusConfig[order.status.toLowerCase() as keyof typeof statusConfig] || { progress: 0, eta: null, message: order.status };
   
   const formatTime = (seconds: number | null) => {
       if (seconds === null || seconds <= 0) return '0 min';
@@ -131,7 +133,7 @@ export function OrderStatusContent() {
             </div>
         )
     }
-     if (etaSeconds !== null && etaSeconds <= 120 && currentStatusKey !== "arrived at location") {
+    if (currentStatusKey === 'arrived at location' || (etaSeconds !== null && etaSeconds <= 120)) {
          return <p className="text-3xl font-bold text-primary">Arriving Soon</p>
     }
     return <p className="text-3xl font-bold text-primary">{formatTime(etaSeconds)}</p>;
@@ -143,24 +145,41 @@ export function OrderStatusContent() {
         <Card className="overflow-hidden">
             <CardContent className="p-4 grid grid-cols-2 gap-4">
                 <div className='space-y-2'>
-                     {currentStatusKey !== 'delivered' && (
+                     {currentStatusKey !== 'delivered' && currentStatusKey !== 'cancelled' && (
                         <div className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800 dark:bg-green-800/20 dark:text-green-300">
                             <Check className="h-4 w-4" />
                             On time
                         </div>
                      )}
-                    <p className="text-muted-foreground text-sm">
-                        {currentStatusKey === 'delivered' ? 'Delivered on' : 'Arriving in'}
+                     {currentStatusKey === 'cancelled' ? (
+                        <>
+                            <div className="text-5xl">😞</div>
+                            <p className="text-2xl font-bold text-destructive">Order Cancelled</p>
+                        </>
+                     ) : (
+                        <>
+                           <p className="text-muted-foreground text-sm">
+                                {currentStatusKey === 'delivered' ? 'Delivered on' : 'Arriving in'}
+                            </p>
+                            {getStatusDisplay()}
+                        </>
+                     )}
+                    <p className="text-md font-semibold">
+                        {currentStatusKey === 'cancelled' ? 'Your order has been cancelled.' : currentStatusInfo.message}
                     </p>
-                     {getStatusDisplay()}
-                    <p className="text-md font-semibold">{currentStatusInfo.message}</p>
                 </div>
                  <div className="bg-blue-50 rounded-lg p-4 flex flex-col items-center justify-center text-center dark:bg-blue-900/20">
-                    <p className="font-bold text-blue-800 dark:text-blue-300">Switch to Zepmeds1 for extra discount</p>
-                    <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7">Apply Now</Button>
+                     {currentStatusKey === 'cancelled' ? (
+                        <Button onClick={() => router.push('/home')}>Reorder</Button>
+                     ) : (
+                        <>
+                            <p className="font-bold text-blue-800 dark:text-blue-300">Switch to Zepmeds1 for extra discount</p>
+                            <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7">Apply Now</Button>
+                        </>
+                     )}
                  </div>
             </CardContent>
-            {currentStatusKey !== 'delivered' && (
+            {currentStatusKey !== 'delivered' && currentStatusKey !== 'cancelled' && (
                 <>
                 <Progress value={currentStatusInfo.progress} className="h-1 bg-muted-foreground/20 rounded-none [&>*]:bg-green-500" />
                 <div className='border-t border-border p-4 flex justify-between items-center'>
@@ -274,9 +293,6 @@ export function OrderStatusContent() {
                     <Button variant="outline" size="sm" className="text-muted-foreground">
                         <Download className="h-4 w-4 mr-2" /> Invoice
                     </Button>
-                    <Button variant="outline" size="sm" className="text-muted-foreground">
-                        <HelpCircle className="h-4 w-4 mr-2" /> Help
-                    </Button>
                  </div>
             </CardContent>
         </Card>
@@ -316,5 +332,3 @@ export function OrderStatusContent() {
     </div>
   );
 }
-
-    
