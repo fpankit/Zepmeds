@@ -27,8 +27,7 @@ export function EchoDocCallContent() {
     const initialSymptoms = searchParams.get('symptoms');
     const { toast } = useToast();
 
-    const [status, setStatus] = useState<CallStatus>("speaking"); // Start in a speaking state for the greeting
-    const [transcript, setTranscript] = useState('');
+    const [status, setStatus] = useState<CallStatus>("idle");
     const [currentAiResponse, setCurrentAiResponse] = useState('');
     const [useTTS, setUseTTS] = useState(true);
 
@@ -51,7 +50,11 @@ export function EchoDocCallContent() {
             const { audio } = await textToSpeech({ text, speakingRate: 1.25 });
             if (audioRef.current && isMounted.current) {
                 audioRef.current.src = audio;
-                audioRef.current.play();
+                audioRef.current.play().catch(e => {
+                    console.error("Audio playback failed:", e);
+                    // If play fails, immediately fall back
+                    setStatus('idle');
+                });
             }
         } catch (error: any) {
             if (!isMounted.current) return;
@@ -78,7 +81,6 @@ export function EchoDocCallContent() {
         };
         
         setStatus('processing');
-        setTranscript('');
         
         try {
             const { language: detectedLanguage } = await detectLanguage({ text });
@@ -91,13 +93,13 @@ export function EchoDocCallContent() {
             if (!isMounted.current) return;
             console.error("AI Response Error:", error);
             const errorMsg = "I'm sorry, I encountered an error. Could you please repeat that?";
-            setCurrentAiResponse(errorMsg);
-            setStatus('idle');
+            await speak(errorMsg);
         }
     }, [speak]);
 
-    // Effect for initial greeting and processing initial symptoms
     useEffect(() => {
+        isMounted.current = true;
+
         const greetAndProcess = async () => {
             let greetingText = "Hello! I am EchoDoc, your AI medical assistant.";
             if (doctorName) {
@@ -110,31 +112,50 @@ export function EchoDocCallContent() {
             
             if (initialSymptoms) {
                 // Wait for greeting to finish before processing symptoms.
-                // A better approach would be to chain this after the audio 'onended' event.
-                const waitTime = greetingText.length * 60; // Estimate wait time based on text length
-                 await new Promise(resolve => setTimeout(resolve, waitTime));
-                 if(isMounted.current) {
-                    await handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
-                 }
+                const onGreetingEnd = () => {
+                     if(isMounted.current) {
+                        handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
+                     }
+                    audioRef.current?.removeEventListener('ended', onGreetingEnd);
+                }
+                audioRef.current?.addEventListener('ended', onGreetingEnd);
             }
         };
-        
-        // Timeout to allow UI to settle before greeting
+
         const timer = setTimeout(greetAndProcess, 500);
-        
-        return () => {
-            clearTimeout(timer);
+
+        // Initialize Audio element
+        const audio = new Audio();
+        audioRef.current = audio;
+        const handleAudioEnd = () => {
+            if (isMounted.current) setStatus('idle');
         };
+        audio.addEventListener('ended', handleAudioEnd);
+
+        return () => {
+            isMounted.current = false;
+            clearTimeout(timer);
+            if (audioRef.current) {
+                audioRef.current.removeEventListener('ended', handleAudioEnd);
+                audioRef.current.pause();
+                audioRef.current.src = '';
+            }
+            if (recognitionRef.current) {
+                recognitionRef.current.abort();
+            }
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialSymptoms, doctorName]); // Only depends on initial props
+    }, [initialSymptoms, doctorName]);
     
     useEffect(() => {
         if (!SpeechRecognition) {
-            toast({
-                variant: 'destructive',
-                title: 'Browser Not Supported',
-                description: 'Speech recognition is not supported. Please use a different browser.',
-            });
+            if(status === 'idle') { // Show toast only once
+                toast({
+                    variant: 'destructive',
+                    title: 'Browser Not Supported',
+                    description: 'Speech recognition is not supported. Please use a different browser.',
+                });
+            }
             return;
         }
 
@@ -155,13 +176,15 @@ export function EchoDocCallContent() {
                     finalTranscript += event.results[i][0].transcript;
                 }
             }
-            if (finalTranscript) {
+            if (finalTranscript && isMounted.current) {
+                 recognition.stop();
                  handleSendTranscript(finalTranscript.trim());
             }
         };
         
         recognition.onerror = (event: any) => {
             if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                console.error("Mic Error:", event.error);
                 toast({
                     variant: 'destructive',
                     title: 'Mic Error',
@@ -175,36 +198,23 @@ export function EchoDocCallContent() {
     }, [toast, handleSendTranscript, status]);
 
     const handleMicToggle = () => {
+        const recognition = recognitionRef.current;
+        if (!recognition) return;
+
         if (status === 'listening') {
-            recognitionRef.current?.stop();
+            recognition.stop();
         } else if (status === 'idle') {
-            setTranscript('');
-            recognitionRef.current?.start();
+            try {
+                recognition.start();
+            } catch(e) {
+                console.error("Mic start failed:", e);
+            }
         }
     };
     
     const handleEndCall = () => {
-        isMounted.current = false;
-        recognitionRef.current?.abort();
-        if(audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.src = '';
-        }
         router.push('/home');
     };
-
-    useEffect(() => {
-        const audio = new Audio();
-        audioRef.current = audio;
-        audio.onended = () => {
-            if (isMounted.current) setStatus('idle');
-        };
-        return () => {
-            isMounted.current = false;
-            audio.pause();
-            audioRef.current = null;
-        }
-    }, [])
 
     const getStatusText = () => {
         switch (status) {
@@ -238,7 +248,7 @@ export function EchoDocCallContent() {
                     className="flex-shrink-0"
                 >
                     <Avatar className="h-48 w-48 border-4 border-primary/50">
-                        <AvatarImage src="https://picsum.photos/seed/ai-bot/200" alt="EchoDoc AI" />
+                        <AvatarImage src="https://picsum.photos/seed/ai-bot/200" alt="EchoDoc AI" data-ai-hint="abstract tech" />
                         <AvatarFallback className="text-6xl"><Bot /></AvatarFallback>
                     </Avatar>
                 </motion.div>
