@@ -10,10 +10,11 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 import { LiveTrackingMap } from './live-tracking-map';
-import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, CreditCard } from 'lucide-react';
+import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion } from 'framer-motion';
+import { Switch } from '@/components/ui/switch';
 
 
 const riderDetails = {
@@ -37,8 +38,7 @@ export function OrderStatusContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const [isItemsOpen, setIsItemsOpen] = useState(false);
-  const [isScratched, setIsScratched] = useState(false);
-
+  
   useEffect(() => {
     if (!orderId) {
         setIsLoading(false);
@@ -77,26 +77,6 @@ export function OrderStatusContent() {
   }
   
   const totalItems = order.cart.reduce((acc: number, item: any) => acc + item.quantity, 0);
-
-  const rewardsContainerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.3,
-      }
-    }
-  };
-
-  const rewardCardVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { 
-        y: 0, 
-        opacity: 1,
-        transition: { type: 'spring', stiffness: 100 }
-    }
-  };
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-4">
@@ -197,73 +177,39 @@ export function OrderStatusContent() {
         </Card>
         
         {/* Rewards Section */}
-        <motion.div 
-            className="space-y-4"
-            variants={rewardsContainerVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            <CardHeader>
-                <CardTitle>Rewards for you!</CardTitle>
-            </CardHeader>
-            <motion.div variants={rewardCardVariants}>
-                <Card className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-                    <CardContent className="p-4 flex items-center gap-4">
-                        <CreditCard className="h-8 w-8 flex-shrink-0" />
+        <div className="space-y-4">
+            <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                    <div className='flex items-center gap-3'>
+                        <div className='p-2 rounded-lg bg-yellow-500/20'>
+                            <Gift className="h-6 w-6 text-yellow-500"/>
+                        </div>
                         <div>
-                            <h3 className="font-bold">Card Discounts</h3>
-                            <p className="text-sm opacity-90">Upto 20% OFF on next order with select cards.</p>
+                            <h3 className="font-semibold">Get 25% off on your next order</h3>
+                            <p className="text-sm text-muted-foreground">Refer your friends & start saving!</p>
                         </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
-            <motion.div variants={rewardCardVariants}>
-                 <Card className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
-                    <CardContent className="p-4 flex items-center gap-4">
-                        <Star className="h-8 w-8 flex-shrink-0" />
+                    </div>
+                    <div className='p-4 rounded-lg bg-purple-500/20'>
+                        <Gift className="h-8 w-8 text-purple-400" />
+                    </div>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                    <div className='flex items-center gap-3'>
+                        <div className='p-2 rounded-lg bg-red-500/20'>
+                            <Bell className="h-6 w-6 text-red-500"/>
+                        </div>
                         <div>
-                            <h3 className="font-bold">Zepmeds Gold</h3>
-                            <p className="text-sm opacity-90">Get free delivery and extra discounts.</p>
+                            <h3 className="font-semibold">Get real-time delivery updates</h3>
+                            <p className="text-sm text-muted-foreground">Turn on notifications to keep track</p>
                         </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
-            <motion.div variants={rewardCardVariants}>
-                <Card 
-                    className={cn(
-                        "relative bg-gradient-to-br from-gray-700 to-gray-900 text-white overflow-hidden cursor-pointer transition-all duration-300",
-                        isScratched && "transform scale-105"
-                    )}
-                    onClick={() => setIsScratched(true)}
-                >
-                    <CardContent className="p-4 flex flex-col items-center justify-center min-h-[100px] text-center">
-                        <div 
-                            className={cn(
-                                "absolute inset-0 bg-gradient-to-br from-gray-400 to-gray-500 transition-opacity duration-500 flex items-center justify-center",
-                                isScratched ? "opacity-0" : "opacity-100"
-                            )}
-                        >
-                            <div className="text-center text-gray-800">
-                                <Gift className="h-8 w-8 mx-auto"/>
-                                <h3 className="font-bold mt-1">Scratch to reveal your reward!</h3>
-                            </div>
-                        </div>
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.5 }}
-                            animate={{ opacity: isScratched ? 1 : 0, scale: isScratched ? 1 : 0.5 }}
-                            transition={{ delay: 0.3 }}
-                            className="z-10"
-                        >
-                             <h3 className="text-lg font-bold text-yellow-400">Congratulations!</h3>
-                             <p className="text-2xl font-black">You won 50 Z-Coins!</p>
-                             <p className="text-xs opacity-80 mt-1">They have been added to your wallet.</p>
-                        </motion.div>
-                    </CardContent>
-                </Card>
-            </motion.div>
-        </motion.div>
+                    </div>
+                    <Switch />
+                </CardContent>
+            </Card>
+        </div>
 
     </div>
   );
 }
-
