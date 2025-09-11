@@ -55,12 +55,9 @@ export default function DoctorPage() {
   const handleToggleOnline = async () => {
       if (!user || !user.isDoctor) return;
       
-      const doctorDocRef = doc(db, 'doctors', user.id);
       const newStatus = !user.isOnline;
-      await updateDoc(doctorDocRef, { isOnline: newStatus });
-      
-      // Also update the local user state for immediate UI feedback
-      updateUser({ isOnline: newStatus });
+      // This now updates the 'doctors' collection via the auth context
+      await updateUser({ isOnline: newStatus });
 
       toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
   };

@@ -168,14 +168,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userDocRef = doc(db, "users", user.id);
     await updateDoc(userDocRef, userData);
 
+    // If the user is a doctor, also update the doctors collection
     if (user.isDoctor) {
         const doctorDocRef = doc(db, "doctors", user.id);
-        const doctorData: Partial<User> = {};
-        if ('isOnline' in userData) doctorData.isOnline = userData.isOnline;
-        
-        if(Object.keys(doctorData).length > 0) {
-           await updateDoc(doctorDocRef, doctorData);
-        }
+        // We can pass the whole userData object, Firestore only updates fields that exist.
+        // This is useful for isOnline, but also if other profile details are edited.
+        await updateDoc(doctorDocRef, userData);
     }
   };
 
