@@ -13,21 +13,31 @@ import { doc, getDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface PackageItem {
-  name: string;
+interface ScannedItem {
+  product_name: string;
   quantity: number;
+  price_per_item: number;
+}
+
+interface OrderItem {
+    name: string;
+    quantity: number;
 }
 
 interface PackageQRData {
   order_id: string;
-  items: PackageItem[];
+  customer_name: string;
+  customer_address: string;
+  order_date: string;
+  ordered_items: ScannedItem[];
+  total: number;
 }
 
 interface VerificationResult {
   status: 'matched' | 'mismatched' | 'error';
   message: string;
-  scannedItems: PackageItem[];
-  orderedItems: PackageItem[];
+  scannedItems: OrderItem[];
+  orderedItems: OrderItem[];
 }
 
 function ScanPackageContent() {
@@ -144,7 +154,7 @@ function ScanPackageContent() {
         return;
       }
       
-      const { order_id, items: scannedItems } = parsedData;
+      const { order_id, ordered_items: scannedItems } = parsedData;
 
       if (!order_id || !scannedItems) {
         setResult({ status: 'error', message: 'QR code is missing required package information.', scannedItems: [], orderedItems: orderData.cart });
@@ -152,13 +162,13 @@ function ScanPackageContent() {
       }
 
       if (order_id !== orderId) {
-        setResult({ status: 'error', message: `This package is for a different order (ID: ...${order_id.slice(-4)}).`, scannedItems, orderedItems: orderData.cart });
+        setResult({ status: 'error', message: `This package is for a different order (ID: ...${order_id.slice(-4)}).`, scannedItems: [], orderedItems: orderData.cart });
         return;
       }
 
-      // Simple comparison logic
+      // Comparison logic
       const orderedMap = new Map(orderData.cart.map((item: any) => [item.name, item.quantity]));
-      const scannedMap = new Map(scannedItems.map(item => [item.name, item.quantity]));
+      const scannedMap = new Map(scannedItems.map(item => [item.product_name, item.quantity]));
       let isMatch = true;
 
       if (orderedMap.size !== scannedMap.size) {
@@ -172,10 +182,12 @@ function ScanPackageContent() {
         }
       }
       
+      const scannedItemsForDisplay = scannedItems.map(i => ({name: i.product_name, quantity: i.quantity}));
+
       if (isMatch) {
-        setResult({ status: 'matched', message: 'Package contents match your order.', scannedItems, orderedItems: orderData.cart });
+        setResult({ status: 'matched', message: 'Package contents match your order.', scannedItems: scannedItemsForDisplay, orderedItems: orderData.cart });
       } else {
-        setResult({ status: 'mismatched', message: 'Package contents do not match your order. Please contact support.', scannedItems, orderedItems: orderData.cart });
+        setResult({ status: 'mismatched', message: 'Package contents do not match your order. Please contact support.', scannedItems: scannedItemsForDisplay, orderedItems: orderData.cart });
       }
 
     } catch (error: any) {
@@ -185,7 +197,7 @@ function ScanPackageContent() {
     }
   };
 
-  const renderItemsList = (items: PackageItem[], title: string, isScannedList = false) => (
+  const renderItemsList = (items: OrderItem[], title: string) => (
     <div>
       <h4 className="font-semibold mb-2">{title}</h4>
       <ul className="space-y-1 text-sm list-disc pl-5">
@@ -217,7 +229,7 @@ function ScanPackageContent() {
         {result.status !== 'error' && (
           <CardContent className="text-left space-y-4">
             {renderItemsList(result.orderedItems, 'Your Order')}
-            {renderItemsList(result.scannedItems, 'Scanned Package', true)}
+            {renderItemsList(result.scannedItems, 'Scanned Package')}
           </CardContent>
         )}
         <CardFooter>
