@@ -97,7 +97,7 @@ export function EchoDocCallContent() {
 
     // This effect processes the audio queue
     useEffect(() => {
-        if (audioQueue.length > 0 && status === 'idle' && audioRef.current && audioRef.current.paused) {
+        if (audioQueue.length > 0 && status !== 'speaking' && audioRef.current?.paused) {
             const nextAudio = audioQueue[0];
             setAudioQueue(prev => prev.slice(1));
             setStatus('speaking');
@@ -137,7 +137,13 @@ export function EchoDocCallContent() {
         audioRef.current = audio;
         const handleAudioEnd = () => {
             if (isMounted.current) {
-                 setStatus('idle');
+                 if (audioQueue.length === 0) {
+                     setStatus('idle');
+                 } else {
+                     // Let the queue processing effect handle the next item
+                     // by setting status to a non-speaking state temporarily
+                     setStatus('idle');
+                 }
             }
         };
         audio.addEventListener('ended', handleAudioEnd);
@@ -310,4 +316,3 @@ export function EchoDocCallContent() {
         </div>
     );
 }
-
