@@ -3,171 +3,139 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AgoraRTC, { IAgoraRTCClient, ICameraVideoTrack, IMicrophoneAudioTrack, IAgoraRTCRemoteUser, IRemoteVideoTrack } from 'agora-rtc-sdk-ng';
+import { ZegoExpressEngine } from 'zego-express-engine-webrtc';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, PhoneOff, Video, VideoOff, Loader2 } from 'lucide-react';
-
-const agoraAppId = "5bbb95c735a84da6af004432f4ced817";
-
-// Dedicated component to handle playing a remote video track
-const RemoteVideoPlayer = ({ videoTrack }: { videoTrack: IRemoteVideoTrack | null }) => {
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const currentRef = ref.current;
-        if (currentRef && videoTrack) {
-            videoTrack.play(currentRef, { fit: 'cover' });
-        }
-        return () => {
-            videoTrack?.stop();
-        };
-    }, [videoTrack]);
-
-    return <div ref={ref} className="h-full w-full bg-black"></div>;
-};
-
-const LocalVideoPlayer = ({ videoTrack }: { videoTrack: ICameraVideoTrack | null }) => {
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const currentRef = ref.current;
-        if (currentRef && videoTrack) {
-            videoTrack.play(currentRef, { fit: 'cover' });
-        }
-        return () => {
-            videoTrack?.stop();
-        };
-    }, [videoTrack]);
-
-    return <div ref={ref} className="h-full w-full bg-black"></div>;
-}
-
+import { useAuth } from '@/context/auth-context';
 
 export function VideoCallContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { user } = useAuth();
     const { toast } = useToast();
-    
-    const client = useRef<IAgoraRTCClient | null>(null);
-    
-    const [channelName] = useState(searchParams.get('channel') || 'default_channel');
-    const [doctorName] = useState(searchParams.get('doctorName') || 'Doctor');
-    
-    const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
-    const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
-    const [remoteUser, setRemoteUser] = useState<IAgoraRTCRemoteUser | null>(null);
-    const [remoteVideoTrack, setRemoteVideoTrack] = useState<IRemoteVideoTrack | null>(null);
+
+    const zg = useRef<ZegoExpressEngine | null>(null);
+    const localVideoRef = useRef<HTMLVideoElement>(null);
+    const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [isAudioMuted, setIsAudioMuted] = useState(false);
     const [isVideoMuted, setIsVideoMuted] = useState(false);
-    
-    const handleLeave = useCallback(async () => {
-        localAudioTrack?.close();
-        localVideoTrack?.close();
-        
-        client.current?.removeAllListeners();
-        await client.current?.leave();
-        
-        router.push('/home');
-    }, [localAudioTrack, localVideoTrack, router]);
 
+    const [appId, setAppId] = useState<number | null>(null);
+    const [token, setToken] = useState<string | null>(null);
+
+    const roomId = searchParams.get('channel') || 'default_room';
+    const doctorName = searchParams.get('doctorName') || 'Doctor';
+
+
+    const setupZegoClient = useCallback(async () => {
+        if (!user || user.isGuest) {
+            toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to join a call.' });
+            router.push('/login');
+            return;
+        }
+
+        try {
+            const tokenResponse = await fetch(`/api/zego/token?userId=${user.id}&roomId=${roomId}`);
+            if (!tokenResponse.ok) {
+                const errorData = await tokenResponse.json();
+                throw new Error(errorData.error || 'Failed to fetch Zego token');
+            }
+            const { token, appId: fetchedAppId } = await tokenResponse.json();
+            
+            setToken(token);
+            setAppId(fetchedAppId);
+
+            const zegoInstance = new ZegoExpressEngine(fetchedAppId, process.env.NEXT_PUBLIC_ZEGOCLOUD_SERVER_SECRET!);
+            zg.current = zegoInstance;
+
+            zegoInstance.on('roomStateUpdate', (roomID, state) => {
+                if (state === 'CONNECTED') {
+                    setIsLoading(false);
+                } else if (state === 'DISCONNECTED') {
+                    handleLeave();
+                }
+            });
+
+            zegoInstance.on('publisherStateUpdate', (result) => {
+                console.log('publisherStateUpdate', result);
+            });
+
+            zegoInstance.on('playerStateUpdate', (result) => {
+                 console.log('playerStateUpdate', result);
+            });
+
+            zegoInstance.on('roomStreamUpdate', async (roomID, updateType, streamList) => {
+                if (updateType === 'ADD') {
+                    const streamID = streamList[0].streamID;
+                    const remote = await zegoInstance.startPlayingStream(streamID);
+                    if (remoteVideoRef.current) {
+                        remoteVideoRef.current.srcObject = remote;
+                    }
+                    setRemoteStream(remote);
+                } else {
+                    setRemoteStream(null);
+                }
+            });
+
+            await zegoInstance.loginRoom(roomId, token, { userID: user.id, userName: `${user.firstName} ${user.lastName}` });
+            const stream = await zegoInstance.createStream();
+            if (localVideoRef.current) {
+                localVideoRef.current.srcObject = stream;
+            }
+            setLocalStream(stream);
+            zegoInstance.startPublishingStream(`${user.id}_${roomId}_main`, stream);
+            
+        } catch (error: any) {
+            console.error('ZegoCloud Initialization Failed:', error);
+            toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call.' });
+            router.back();
+        }
+
+    }, [user, roomId, toast, router]);
 
     useEffect(() => {
-        if (!channelName) return;
-
-        let isMounted = true;
-        const agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-        client.current = agoraClient;
-
-        const initializeAgora = async () => {
-            try {
-                // Event Handlers
-                agoraClient.on('user-published', async (user, mediaType) => {
-                    await agoraClient.subscribe(user, mediaType);
-                    if (mediaType === 'video') {
-                       setRemoteUser(user);
-                    }
-                    if (mediaType === 'audio') {
-                        user.audioTrack?.play();
-                    }
-                });
-
-                agoraClient.on('user-left', () => {
-                    setRemoteUser(null);
-                    setRemoteVideoTrack(null);
-                });
-
-                // Fetch token
-                const response = await fetch(`/api/agora/token?channelName=${channelName}`);
-                if (!response.ok) throw new Error('Failed to fetch Agora token');
-                const { token, uid } = await response.json();
-
-                if (!isMounted) return;
-                
-                await agoraClient.join(agoraAppId, channelName, token, uid);
-                
-                // Create and publish local tracks
-                const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-                
-                if (!isMounted) {
-                    audioTrack.close();
-                    videoTrack.close();
-                    return;
+        setupZegoClient();
+        return () => {
+            if (zg.current) {
+                if (localStream) {
+                    zg.current.destroyStream(localStream);
                 }
-
-                setLocalAudioTrack(audioTrack);
-                setLocalVideoTrack(videoTrack);
-
-                await agoraClient.publish([audioTrack, videoTrack]);
-                setIsLoading(false);
-
-            } catch (error: any) {
-                console.error('Agora initialization failed:', error);
-                if (isMounted) {
-                    toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call.' });
-                    router.back();
-                }
+                zg.current.logoutRoom(roomId);
             }
         };
-        
-        initializeAgora();
-
-        return () => {
-            isMounted = false;
-            // The handleLeave function now manages the cleanup.
-            // We call it here to ensure cleanup happens on component unmount.
-            // Using a separate function makes the cleanup logic more predictable.
-            const cleanup = async () => {
-                localAudioTrack?.close();
-                localVideoTrack?.close();
-                await client.current?.leave();
-            };
-            cleanup();
-        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [channelName, router, toast]);
-
-    // This effect specifically handles setting the remote video track when the remote user changes.
-    useEffect(() => {
-      if (remoteUser) {
-        setRemoteVideoTrack(remoteUser.videoTrack || null);
-      }
-    }, [remoteUser]);
-
+    }, [user]);
+    
+    const handleLeave = async () => {
+        if (zg.current) {
+            if (localStream) {
+                 zg.current.stopPublishingStream(`${user!.id}_${roomId}_main`);
+                 zg.current.destroyStream(localStream);
+            }
+            await zg.current.logoutRoom(roomId);
+        }
+        router.push('/home');
+    };
 
     const toggleAudio = async () => {
-        if (localAudioTrack) {
-            await localAudioTrack.setMuted(!isAudioMuted);
-            setIsAudioMuted(!isAudioMuted);
+        if (localStream && zg.current) {
+            const newMutedState = !isAudioMuted;
+            zg.current.mutePublishStreamAudio(localStream, newMutedState);
+            setIsAudioMuted(newMutedState);
         }
     };
 
     const toggleVideo = async () => {
-        if (localVideoTrack) {
-            await localVideoTrack.setMuted(!isVideoMuted);
-            setIsVideoMuted(!isVideoMuted);
+        if (localStream && zg.current) {
+            const newMutedState = !isVideoMuted;
+            zg.current.mutePublishStreamVideo(localStream, newMutedState);
+            setIsVideoMuted(newMutedState);
         }
     };
 
@@ -185,11 +153,9 @@ export function VideoCallContent() {
             </header>
 
             <main className="relative flex-1">
-                {/* Remote video container */}
                 <div className="absolute inset-0 h-full w-full bg-black">
-                   {remoteVideoTrack ? (
-                       <RemoteVideoPlayer videoTrack={remoteVideoTrack} />
-                   ) : (
+                   <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
+                   {!remoteStream && !isLoading && (
                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
                         <Loader2 className="h-8 w-8 animate-spin" />
                         <p className="mt-4">Waiting for {doctorName} to join...</p>
@@ -197,12 +163,10 @@ export function VideoCallContent() {
                    )}
                 </div>
                 
-                {/* Local video container */}
                 <div className="absolute bottom-4 right-4 h-48 w-32 rounded-lg border-2 border-white bg-black overflow-hidden z-10">
-                   {localVideoTrack && !isVideoMuted ? (
-                       <LocalVideoPlayer videoTrack={localVideoTrack} />
-                   ): (
-                      <div className="h-full w-full bg-black flex items-center justify-center"><VideoOff className="h-8 w-8 text-white"/></div>
+                   <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
+                   {isVideoMuted && (
+                       <div className="absolute inset-0 bg-black flex items-center justify-center"><VideoOff className="h-8 w-8 text-white"/></div>
                    )}
                 </div>
             </main>
