@@ -235,13 +235,17 @@ export function EchoDocCallContent() {
             setAudioQueue([]); // Clear any pending speech
             setCurrentAiResponse(''); // Clear displayed text
             setStatus('idle'); // Ensure status is idle before starting mic
-            try {
-                recognition.start();
-            } catch(e) {
-                console.error("Mic start failed:", e);
-                // If it fails to start, abort and return to idle.
-                if (recognitionRef.current) recognitionRef.current.abort();
-                setStatus('idle');
+            
+            // Add a guard to prevent starting if already listening
+            if (status !== 'listening') {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error("Mic start failed:", e);
+                    // If it fails to start, abort and return to idle.
+                    if (recognitionRef.current) recognitionRef.current.abort();
+                    setStatus('idle');
+                }
             }
         }
     };
