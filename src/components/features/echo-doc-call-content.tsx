@@ -43,12 +43,14 @@ export function EchoDocCallContent() {
 
         if (!useTTS) {
             setStatus('speaking');
-            setTimeout(() => { if (isMounted.current) setStatus('idle'); }, 1000); // Simulate speaking time for text
+            // In text-only mode, simulate speaking time and then return to idle
+            setTimeout(() => { if (isMounted.current) setStatus('idle'); }, 1500);
             return;
         }
 
         try {
             const { audio } = await textToSpeech({ text });
+            // CRITICAL: Ensure we have a valid, non-empty audio URL before queueing
             if (isMounted.current && audio) {
                 setAudioQueue(prev => [...prev, audio]);
             } else {
@@ -56,7 +58,7 @@ export function EchoDocCallContent() {
             }
         } catch (error: any) {
             if (!isMounted.current) return;
-            console.error("Audio generation or playback failed:", error);
+            console.error("Audio generation failed:", error);
             const errorMessage = error.message || 'An unknown error occurred.';
             const isQuotaError = errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota');
 
@@ -68,7 +70,7 @@ export function EchoDocCallContent() {
                     : "Could not generate audio. Displaying text instead.",
             });
             setUseTTS(false); // Fallback to text for the rest of the session
-            setStatus('idle');
+            setStatus('idle'); // Revert to idle state on error
         }
     }, [toast, useTTS]);
 
@@ -97,18 +99,23 @@ export function EchoDocCallContent() {
 
     // This effect processes the audio queue
     useEffect(() => {
+        // Only proceed if we have items in the queue, we are not already speaking, and the audio element is ready and paused.
         if (audioQueue.length > 0 && status !== 'speaking' && audioRef.current?.paused) {
             const nextAudio = audioQueue[0];
+
             if (!nextAudio) {
                  console.error("Dequeued an empty audio source.");
                  setAudioQueue(prev => prev.slice(1)); // Remove invalid item
                  return;
             }
+
             setAudioQueue(prev => prev.slice(1));
             setStatus('speaking');
             audioRef.current.src = nextAudio;
+            
             audioRef.current.play().catch(e => {
                 console.error("Audio playback failed:", e);
+                // If playback fails, reset to idle to allow the user to try again.
                 if (isMounted.current) setStatus('idle');
             });
         }
@@ -138,14 +145,12 @@ export function EchoDocCallContent() {
         // Initialize Audio element
         const audio = new Audio();
         audioRef.current = audio;
+
+        // The 'ended' event is the single source of truth for when playback is finished.
         const handleAudioEnd = () => {
             if (isMounted.current) {
-                 if (audioQueue.length === 0) {
-                     setStatus('idle');
-                 } else {
-                     // Let the queue processing effect handle the next item
-                     setStatus('idle');
-                 }
+                 // Set status to idle to allow the next audio in queue to play, or to listen to the user.
+                 setStatus('idle');
             }
         };
         audio.addEventListener('ended', handleAudioEnd);
@@ -222,16 +227,19 @@ export function EchoDocCallContent() {
         if (status === 'listening') {
             recognition.stop();
         } else if (status === 'idle' || status === 'speaking') {
+            // If user wants to talk, gracefully stop any ongoing speech.
             if (audioRef.current && !audioRef.current.paused) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
             }
-            setAudioQueue([]); // Clear queue if user wants to speak
-            setStatus('idle'); // Ensure status is idle before starting
+            setAudioQueue([]); // Clear any pending speech
+            setCurrentAiResponse(''); // Clear displayed text
+            setStatus('idle'); // Ensure status is idle before starting mic
             try {
                 recognition.start();
             } catch(e) {
                 console.error("Mic start failed:", e);
+                // If it fails to start, abort and return to idle.
                 if (recognitionRef.current) recognitionRef.current.abort();
                 setStatus('idle');
             }
