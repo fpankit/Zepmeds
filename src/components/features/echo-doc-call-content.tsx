@@ -47,7 +47,7 @@ export function EchoDocCallContent() {
         }
 
         try {
-            const { audio } = await textToSpeech({ text, speakingRate: 1.25 });
+            const { audio } = await textToSpeech({ text });
             if (audioRef.current && isMounted.current) {
                 audioRef.current.src = audio;
                 audioRef.current.play().catch(e => {

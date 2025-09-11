@@ -13,7 +13,6 @@ import { googleAI } from '@genkit-ai/googleai';
 
 const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to convert to speech.'),
-  speakingRate: z.number().optional().default(1.25).describe('The speaking rate, where 1.0 is normal speed.'),
 });
 export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
@@ -33,7 +32,7 @@ const textToSpeechFlow = ai.defineFlow(
     inputSchema: TextToSpeechInputSchema,
     outputSchema: TextToSpeechOutputSchema,
   },
-  async ({ text, speakingRate }) => {
+  async ({ text }) => {
     try {
       const { media } = await ai.generate({
         model: googleAI.model('gemini-2.5-flash-preview-tts'),
@@ -43,7 +42,6 @@ const textToSpeechFlow = ai.defineFlow(
             voiceConfig: {
               prebuiltVoiceConfig: { voiceName: 'Algenib' },
             },
-            speakingRate,
           },
         },
         prompt: text,
