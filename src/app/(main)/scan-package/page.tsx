@@ -68,7 +68,7 @@ function ScanPackageContent() {
       const orderDocRef = doc(db, 'orders', orderId);
       const orderDocSnap = await getDoc(orderDocRef);
       if (orderDocSnap.exists()) {
-        setOrderData(orderDocSnap.data());
+        setOrderData({ id: orderDocSnap.id, ...orderDocSnap.data() });
       } else {
         toast({ variant: 'destructive', title: 'Error', description: 'Order not found.' });
         router.push('/orders');
@@ -109,10 +109,11 @@ function ScanPackageContent() {
   }, [getCameraPermission]);
 
   const handleScan = useCallback(async (data: string) => {
-    // Prevent scan processing if order data isn't loaded yet
-    if (!orderData) {
-      toast({ variant: 'destructive', title: 'Verification Failed', description: 'Order data is not ready. Please wait a moment and try again.' });
-      setIsScanning(true); // Allow re-scanning
+    if (isLoading || !orderData) {
+      if (!orderData) {
+          toast({ variant: 'destructive', title: 'Verification Failed', description: 'Order data is still loading. Please wait a moment and try again.' });
+      }
+      setIsScanning(true);
       return;
     }
     
@@ -141,8 +142,8 @@ function ScanPackageContent() {
       }
 
       // Comparison logic
-      const orderedMap = new Map(orderData.cart.map((item: OrderItem) => [item.name, item.quantity]));
-      const scannedMap = new Map(scannedItemsData.map(item => [item.product_name, item.quantity]));
+      const orderedMap = new Map(orderData.cart.map((item: OrderItem) => [item.name.toLowerCase().trim(), item.quantity]));
+      const scannedMap = new Map(scannedItemsData.map(item => [item.product_name.toLowerCase().trim(), item.quantity]));
       let isMatch = true;
 
       if (orderedMap.size !== scannedMap.size) {
@@ -165,15 +166,14 @@ function ScanPackageContent() {
       }
 
     } catch (error: any) {
-      setResult({ status: 'error', message: 'An unexpected error occurred while verifying the package.', scannedItems: [], orderedItems: orderData.cart });
+      setResult({ status: 'error', message: 'An unexpected error occurred while verifying the package.', scannedItems: [], orderedItems: orderData?.cart || [] });
     } finally {
       setIsLoading(false);
     }
-  }, [orderData, orderId, toast]);
+  }, [orderData, orderId, toast, isLoading]);
 
   const tick = useCallback(() => {
-    // Don't scan if still loading order or not in scanning state
-    if (!isScanning || isOrderLoading || !videoRef.current?.HAVE_ENOUGH_DATA || !canvasRef.current) {
+    if (!isScanning || isLoading || isOrderLoading || !videoRef.current?.HAVE_ENOUGH_DATA || !canvasRef.current) {
         requestAnimationFrame(tick);
         return;
     }
@@ -198,7 +198,7 @@ function ScanPackageContent() {
     if (hasCameraPermission && isScanning) {
       requestAnimationFrame(tick);
     }
-  }, [isScanning, hasCameraPermission, handleScan, isOrderLoading]);
+  }, [isScanning, hasCameraPermission, handleScan, isOrderLoading, isLoading]);
 
   useEffect(() => {
     if (hasCameraPermission && !isOrderLoading) {
@@ -235,10 +235,10 @@ function ScanPackageContent() {
           <CardTitle className="mt-4">{currentStatus.title}</CardTitle>
           <p className="text-muted-foreground text-sm">{result.message}</p>
         </CardHeader>
-        {result.status !== 'error' && (
+        {result.status !== 'error' && result.orderedItems.length > 0 && (
           <CardContent className="text-left space-y-4">
             {renderItemsList(result.orderedItems, 'Your Order')}
-            {renderItemsList(result.scannedItems, 'Scanned Package')}
+            {result.scannedItems.length > 0 && renderItemsList(result.scannedItems, 'Scanned Package')}
           </CardContent>
         )}
         <CardFooter>
