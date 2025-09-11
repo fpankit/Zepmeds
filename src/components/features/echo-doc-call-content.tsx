@@ -34,6 +34,7 @@ export function EchoDocCallContent() {
 
     const recognitionRef = useRef<any | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const hasGreeted = useRef(false);
     
     const speak = useCallback(async (text: string) => {
         if (!useTTS) {
@@ -43,7 +44,7 @@ export function EchoDocCallContent() {
         }
 
         try {
-            const { audio } = await textToSpeech({ text });
+            const { audio } = await textToSpeech({ text, speakingRate: 1.25 });
             if (audioRef.current) {
                 audioRef.current.src = audio;
                 audioRef.current.play();
@@ -87,6 +88,9 @@ export function EchoDocCallContent() {
     }, [speak]);
 
     useEffect(() => {
+        if (hasGreeted.current) return;
+        hasGreeted.current = true;
+
         const greetAndProcess = async () => {
             let greetingText = "Hello! I am EchoDoc, your AI medical assistant.";
             if (doctorName) {
@@ -102,7 +106,7 @@ export function EchoDocCallContent() {
         };
         greetAndProcess();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [doctorName, initialSymptoms]);
+    }, []);
     
     useEffect(() => {
         if (!SpeechRecognition) {
@@ -204,10 +208,11 @@ export function EchoDocCallContent() {
                 </Button>
             </header>
 
-            <main className="flex-1 flex flex-col items-center justify-center p-4 text-center space-y-6">
+            <main className="flex-1 flex flex-col items-center justify-center p-4 text-center space-y-6 overflow-y-auto">
                 <motion.div
                     animate={{ scale: status === 'listening' ? 1.1 : 1 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 10 }}
+                    className="flex-shrink-0"
                 >
                     <Avatar className="h-48 w-48 border-4 border-primary/50">
                         <AvatarImage src="https://picsum.photos/seed/ai-bot/200" alt="EchoDoc AI" />
