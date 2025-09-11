@@ -167,20 +167,20 @@ export function OrderStatusContent() {
                     <p className="text-md font-semibold">
                         {currentStatusKey === 'cancelled' ? 'Your order has been cancelled.' : currentStatusInfo.message}
                     </p>
+                    {currentStatusKey === 'delivered' && (
+                        <Button size="sm" className="mt-2 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full" onClick={() => router.push('/verify-medicine')}>
+                            <QrCode className="mr-2 h-4 w-4" /> Scan to Verify
+                        </Button>
+                    )}
                 </div>
                  <div className="bg-blue-50 rounded-lg p-4 flex flex-col items-center justify-center text-center dark:bg-blue-900/20">
                      {currentStatusKey === 'cancelled' ? (
                         <Button onClick={() => router.push('/home')}>Reorder</Button>
-                     ) : currentStatusKey !== 'delivered' ? (
+                     ) : (
                         <>
                             <p className="font-bold text-blue-800 dark:text-blue-300">Switch to Zepmeds1 for extra discount</p>
                             <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7">Apply Now</Button>
                         </>
-                     ) : (
-                        <div className="flex flex-col items-center justify-center">
-                            <Gift className="h-8 w-8 text-primary" />
-                            <p className="font-bold text-primary mt-2">Enjoy your order!</p>
-                        </div>
                      )}
                  </div>
             </CardContent>
@@ -201,17 +201,6 @@ export function OrderStatusContent() {
                 </>
             )}
         </Card>
-        
-        {currentStatusKey === 'delivered' && (
-            <Card className="bg-green-900/20 border-green-500/30">
-                <CardContent className="p-4 text-center">
-                     <p className="font-bold text-green-300">Order delivered? Wanna check its authenticity?</p>
-                    <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full" onClick={() => router.push('/verify-medicine')}>
-                        <QrCode className="mr-2 h-4 w-4" /> Scan to Verify
-                    </Button>
-                </CardContent>
-            </Card>
-        )}
 
         <AnimatePresence>
         {showMap && (
@@ -354,3 +343,5 @@ export function OrderStatusContent() {
     </div>
   );
 }
+
+    
