@@ -1,7 +1,7 @@
 
 'use server';
 import { config } from 'dotenv';
-config({ path: '.env.local' });
+config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { devLogger, startFlows } from '@genkit-ai/next/server';
@@ -65,4 +65,5 @@ import '@/ai-flows/text-to-speech.ts';
 import '@/ai/flows/generate-first-aid-advice.ts';
 import '@/ai/flows/predict-medicine-end-date.ts';
 import '@/ai/flows/generate-diet-plan.ts';
+
 
