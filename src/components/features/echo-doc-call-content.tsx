@@ -99,12 +99,16 @@ export function EchoDocCallContent() {
     useEffect(() => {
         if (audioQueue.length > 0 && status !== 'speaking' && audioRef.current?.paused) {
             const nextAudio = audioQueue[0];
+            if (!nextAudio) {
+                 console.error("Dequeued an empty audio source.");
+                 setAudioQueue(prev => prev.slice(1)); // Remove invalid item
+                 return;
+            }
             setAudioQueue(prev => prev.slice(1));
             setStatus('speaking');
             audioRef.current.src = nextAudio;
             audioRef.current.play().catch(e => {
                 console.error("Audio playback failed:", e);
-                // If play fails, immediately try to recover
                 if (isMounted.current) setStatus('idle');
             });
         }
@@ -125,7 +129,6 @@ export function EchoDocCallContent() {
             await speak(greetingText);
             
             if (initialSymptoms) {
-                // The queue will handle playing this after the greeting.
                 handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
             }
         };
@@ -141,7 +144,6 @@ export function EchoDocCallContent() {
                      setStatus('idle');
                  } else {
                      // Let the queue processing effect handle the next item
-                     // by setting status to a non-speaking state temporarily
                      setStatus('idle');
                  }
             }
@@ -230,7 +232,6 @@ export function EchoDocCallContent() {
                 recognition.start();
             } catch(e) {
                 console.error("Mic start failed:", e);
-                // If start fails, reset state
                 if (recognitionRef.current) recognitionRef.current.abort();
                 setStatus('idle');
             }
