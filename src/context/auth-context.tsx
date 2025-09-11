@@ -39,6 +39,7 @@ export interface User {
   specialty?: string;
   about?: string;
   photoURL?: string;
+  displayName?: string; // Add displayName to match doctor schema
 }
 
 interface NewUserDetails {
@@ -91,19 +92,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (identifier: string, newUserDetails?: NewUserDetails) => {
     setLoading(true);
     
-    // Use phone from signup details, or the identifier from login form
     const phone = newUserDetails?.phone || identifier;
-    const uid = sanitizeForId(phone); // Use sanitized phone as a stable ID
+    const uid = sanitizeForId(phone);
     const userDocRef = doc(db, "users", uid);
     const userDocSnap = await getDoc(userDocRef);
 
     let finalUser: User;
 
     if (userDocSnap.exists()) {
-      // User exists, log them in
       finalUser = { id: userDocSnap.id, ...userDocSnap.data() } as User;
     } else {
-      // New user, sign them up
       if (!newUserDetails) {
           setLoading(false);
           throw new Error("User not found. Please sign up.");
@@ -124,16 +122,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           addresses: [defaultAddress],
           healthData: {},
           isGuest: false,
-          isDoctor: false, // Default to not a doctor
+          isDoctor: false,
       };
       await setDoc(userDocRef, finalUser);
     }
-
+    
+    // Sync doctor status
     if (finalUser.isDoctor) {
         const doctorDocRef = doc(db, "doctors", finalUser.id);
         const doctorSnap = await getDoc(doctorDocRef);
         if (doctorSnap.exists()) {
-            finalUser = { ...finalUser, ...doctorSnap.data() };
+            // Set doctor to be online on login
+            await updateDoc(doctorDocRef, { isOnline: true });
+            finalUser = { ...finalUser, ...doctorSnap.data(), isOnline: true };
         }
     }
 
@@ -143,13 +144,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
-    if (user && user.isDoctor) {
-        // Doctor goes offline on logout
-        const doctorDocRef = doc(db, "doctors", user.id);
-        await updateDoc(doctorDocRef, { isOnline: false });
+    if (user && !user.isGuest) {
+      if (user.isDoctor) {
+          const doctorDocRef = doc(db, "doctors", user.id);
+          try {
+            await updateDoc(doctorDocRef, { isOnline: false });
+          } catch (e) {
+             console.error("Failed to set doctor offline:", e);
+          }
+      }
+      setUser(createGuestUser());
+      localStorage.removeItem('user');
     }
-    localStorage.removeItem('user');
-    setUser(createGuestUser());
   };
 
   const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
@@ -164,7 +170,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (user.isDoctor) {
         const doctorDocRef = doc(db, "doctors", user.id);
-        // Only update fields relevant to the doctors collection
         const doctorData: Partial<User> = {};
         if ('isOnline' in userData) doctorData.isOnline = userData.isOnline;
         

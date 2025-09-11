@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -53,14 +53,20 @@ export default function DoctorPage() {
 
   const handleToggleOnline = async () => {
       if (!user || !user.isDoctor) return;
+      
+      const doctorDocRef = doc(db, 'doctors', user.id);
       const newStatus = !user.isOnline;
-      await updateUser({ isOnline: newStatus });
+      await updateDoc(doctorDocRef, { isOnline: newStatus });
+      
+      // Also update the local user state for immediate UI feedback
+      updateUser({ isOnline: newStatus });
+
       toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
   };
 
   useEffect(() => {
     setIsLoading(true);
-    const doctorsQuery = query(collection(db, "doctors"), orderBy("displayName"));
+    const doctorsQuery = query(collection(db, "doctors"));
 
     const unsubscribe = onSnapshot(doctorsQuery, (querySnapshot) => {
         const fetchedDoctors = querySnapshot.docs.map(doc => {
