@@ -104,6 +104,9 @@ export function EchoDocCallContent() {
             }
             
             setCurrentAiResponse(greetingText);
+            
+            // Explicitly set status before speaking
+            setStatus('speaking');
             await speak(greetingText);
             
             if (initialSymptoms) {
