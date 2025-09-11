@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from '@/components/layout/providers';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'Zepmeds: Online Medicine Delivery',
@@ -26,6 +27,7 @@ export default function RootLayout({
           {children}
           <Toaster />
         </Providers>
+        <Script src='https://meet.jit.si/external_api.js' strategy="beforeInteractive" />
       </body>
     </html>
   );

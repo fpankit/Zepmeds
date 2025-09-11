@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -114,33 +113,25 @@ export default function DoctorPage() {
     }
     setIsCreatingLink(doctor.id);
     try {
-        // Create a call document in Firestore
+        // Create a call document in Firestore to act as the "room"
         const callDocRef = await addDoc(collection(db, 'video_calls'), {
             patientId: user.id,
             patientName: `${user.firstName} ${user.lastName}`,
             doctorId: doctor.id,
             doctorName: doctor.name,
-            status: 'pending', // Pending user authentication with Google
+            status: 'ringing', // The doctor can be notified immediately
             createdAt: serverTimestamp(),
         });
-
-        const response = await fetch(`/api/google/auth?state=${callDocRef.id}`);
-        const data = await response.json();
         
-        if (data.url) {
-            // Open Google's auth screen in a new tab
-            window.open(data.url, '_blank');
-            // Redirect the current tab to the call page to wait
-            router.push('/call');
-        } else {
-            throw new Error(data.error || "Could not get authentication URL.");
-        }
+        // The document ID becomes our unique room ID for Jitsi
+        router.push(`/call/${callDocRef.id}`);
+
     } catch (error: any) {
         console.error("Failed to start video call process:", error);
         toast({
             variant: "destructive",
             title: "Failed to start call",
-            description: error.message,
+            description: "Could not create a consultation room.",
         });
         setIsCreatingLink(null);
     }
@@ -211,7 +202,7 @@ export default function DoctorPage() {
                             ) : (
                                 <Video className="mr-2 h-4 w-4" /> 
                             )}
-                            {isCreatingLink === doctor.id ? 'Waiting...' : 'Start Video Call'}
+                            {isCreatingLink === doctor.id ? 'Starting...' : 'Start Video Call'}
                         </Button>
                     </div>
                     </CardContent>

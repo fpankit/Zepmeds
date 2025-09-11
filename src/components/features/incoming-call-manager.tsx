@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useCallback } from 'react';
@@ -13,7 +12,6 @@ import { useRouter } from 'next/navigation';
 interface VideoCall {
   id: string;
   patientName: string;
-  meetLink: string;
 }
 
 export function IncomingCallManager() {
@@ -22,10 +20,9 @@ export function IncomingCallManager() {
   const router = useRouter();
 
   const handleAccept = (call: VideoCall) => {
-    // Navigate to the Google Meet link in a new tab
-    if (call.meetLink) {
-        window.open(call.meetLink, '_blank');
-    }
+    // Navigate to the Jitsi call room
+    router.push(`/call/${call.id}`);
+    
     // Update the call status to 'answered'
     const callDocRef = doc(db, 'video_calls', call.id);
     updateDoc(callDocRef, { status: 'answered' });
@@ -41,8 +38,8 @@ export function IncomingCallManager() {
   const showCallNotification = useCallback((call: VideoCall) => {
     toast({
       title: `Incoming Call from ${call.patientName}`,
-      description: 'A patient is trying to reach you.',
-      duration: Infinity, // Keep the toast open until dismissed
+      description: 'A patient is trying to reach you for a video consultation.',
+      duration: 60000, // Keep the toast open for 60 seconds
       action: (
         <div className="flex gap-2 mt-2">
           <Button size="sm" className="bg-red-600 hover:bg-red-700" onClick={() => handleDecline(call.id)}>
@@ -54,7 +51,7 @@ export function IncomingCallManager() {
         </div>
       ),
     });
-  }, [toast]);
+  }, [toast, router]);
 
   useEffect(() => {
     // Only listen for calls if the user is a doctor and is online
