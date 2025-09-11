@@ -91,8 +91,7 @@ export function OrderStatusContent() {
                     <p className="text-md font-semibold">Your order is getting packed</p>
                 </div>
                  <div className="bg-blue-50 rounded-lg p-4 flex flex-col items-center justify-center text-center dark:bg-blue-900/20">
-                    <p className="font-bold text-blue-800 dark:text-blue-300">Switch to 10% Savings</p>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">with HDFC Bank NeuCard</p>
+                    <p className="font-bold text-blue-800 dark:text-blue-300">Switch to Zepmeds1 for extra discount</p>
                     <Button size="sm" className="mt-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-white rounded-full text-xs h-7">Apply Now</Button>
                  </div>
             </CardContent>
