@@ -127,7 +127,7 @@ function ScanPackageContent() {
     if (hasCameraPermission && isScanning) {
       requestAnimationFrame(tick);
     }
-  }, [isScanning, hasCameraPermission]);
+  }, [isScanning, hasCameraPermission, handleScan]);
 
   useEffect(() => {
     if (isScanning) {
@@ -135,13 +135,14 @@ function ScanPackageContent() {
     }
   }, [isScanning, tick]);
 
-  const handleScan = async (data: string) => {
+  const handleScan = useCallback(async (data: string) => {
     setIsLoading(true);
     setResult(null);
 
     if (!orderData) {
         toast({ variant: 'destructive', title: 'Order data not loaded.' });
         setIsLoading(false);
+        setIsScanning(true);
         return;
     }
 
@@ -150,25 +151,25 @@ function ScanPackageContent() {
       try {
         parsedData = JSON.parse(data);
       } catch (e) {
-        setResult({ status: 'error', message: 'Invalid QR code format.', scannedItems: [], orderedItems: orderData.cart });
+        setResult({ status: 'error', message: 'Invalid QR code format. This does not seem to be a package QR code.', scannedItems: [], orderedItems: orderData.cart });
         return;
       }
       
-      const { order_id, ordered_items: scannedItems } = parsedData;
+      const { order_id, ordered_items: scannedItemsData } = parsedData;
 
-      if (!order_id || !scannedItems) {
+      if (!order_id || !scannedItemsData) {
         setResult({ status: 'error', message: 'QR code is missing required package information.', scannedItems: [], orderedItems: orderData.cart });
         return;
       }
 
       if (order_id !== orderId) {
-        setResult({ status: 'error', message: `This package is for a different order (ID: ...${order_id.slice(-4)}).`, scannedItems: [], orderedItems: orderData.cart });
+        setResult({ status: 'error', message: `Wrong Package. This QR is for order #${order_id.slice(-6)}, not your current order #${orderId.slice(-6)}.`, scannedItems: [], orderedItems: orderData.cart });
         return;
       }
 
       // Comparison logic
-      const orderedMap = new Map(orderData.cart.map((item: any) => [item.name, item.quantity]));
-      const scannedMap = new Map(scannedItems.map(item => [item.product_name, item.quantity]));
+      const orderedMap = new Map(orderData.cart.map((item: OrderItem) => [item.name, item.quantity]));
+      const scannedMap = new Map(scannedItemsData.map(item => [item.product_name, item.quantity]));
       let isMatch = true;
 
       if (orderedMap.size !== scannedMap.size) {
@@ -182,12 +183,12 @@ function ScanPackageContent() {
         }
       }
       
-      const scannedItemsForDisplay = scannedItems.map(i => ({name: i.product_name, quantity: i.quantity}));
+      const scannedItemsForDisplay = scannedItemsData.map(i => ({name: i.product_name, quantity: i.quantity}));
 
       if (isMatch) {
-        setResult({ status: 'matched', message: 'Package contents match your order.', scannedItems: scannedItemsForDisplay, orderedItems: orderData.cart });
+        setResult({ status: 'matched', message: 'Success! Package contents match your order perfectly.', scannedItems: scannedItemsForDisplay, orderedItems: orderData.cart });
       } else {
-        setResult({ status: 'mismatched', message: 'Package contents do not match your order. Please contact support.', scannedItems: scannedItemsForDisplay, orderedItems: orderData.cart });
+        setResult({ status: 'mismatched', message: 'Warning! Package contents do not match your order. Please contact support.', scannedItems: scannedItemsForDisplay, orderedItems: orderData.cart });
       }
 
     } catch (error: any) {
@@ -195,7 +196,7 @@ function ScanPackageContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [orderData, orderId, toast]);
 
   const renderItemsList = (items: OrderItem[], title: string) => (
     <div>
@@ -224,7 +225,7 @@ function ScanPackageContent() {
         <CardHeader>
           <div className="mx-auto">{currentStatus.icon}</div>
           <CardTitle className="mt-4">{currentStatus.title}</CardTitle>
-          <p className="text-muted-foreground">{result.message}</p>
+          <p className="text-muted-foreground text-sm">{result.message}</p>
         </CardHeader>
         {result.status !== 'error' && (
           <CardContent className="text-left space-y-4">
