@@ -60,7 +60,6 @@ export function OrderStatusContent() {
         if (doc.exists()) {
             const orderData = doc.data();
             setOrder({ id: doc.id, ...orderData });
-
         } else {
             console.error("Order not found");
             setOrder(null);
@@ -72,18 +71,18 @@ export function OrderStatusContent() {
   }, [orderId]);
   
    useEffect(() => {
-    // This effect sets the initial ETA when the order status changes
     if (order && order.status) {
       const currentStatusKey = order.status.toLowerCase() as keyof typeof statusConfig;
       const currentStatusInfo = statusConfig[currentStatusKey];
-      if (currentStatusInfo && etaSeconds === null) { // Only set initial ETA once
+      if (currentStatusInfo) {
         setEtaSeconds(currentStatusInfo.eta);
+      } else {
+        setEtaSeconds(null); // No ETA for unknown statuses
       }
     }
-  }, [order, etaSeconds]);
+  }, [order]);
 
   useEffect(() => {
-    // This effect handles the countdown
     if (etaSeconds !== null && etaSeconds > 0) {
       const timer = setInterval(() => {
         setEtaSeconds(prev => (prev ? prev - 1 : 0));
@@ -104,14 +103,18 @@ export function OrderStatusContent() {
   if (!order) {
       return (
            <div className="flex h-screen w-full items-center justify-center text-center p-4">
-              <p>Order not found. Please check the order ID and try again.</p>
+              <div>
+                <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+                <h2 className="mt-4 text-xl font-bold">Order Not Found</h2>
+                <p className="mt-2 text-muted-foreground">Please check the order ID and try again.</p>
+              </div>
           </div>
       )
   }
   
   const totalItems = order.cart.reduce((acc: number, item: any) => acc + item.quantity, 0);
   const currentStatusKey = order.status.toLowerCase() as keyof typeof statusConfig;
-  const currentStatusInfo = statusConfig[currentStatusKey] || { progress: 0, eta: null, message: "Status unknown" };
+  const currentStatusInfo = statusConfig[currentStatusKey] || { progress: 0, eta: null, message: order.status };
   
   const formatTime = (seconds: number | null) => {
       if (seconds === null || seconds <= 0) return '0 min';
@@ -220,7 +223,6 @@ export function OrderStatusContent() {
                                 🛍️
                             </div>
                             <p className='font-semibold'>{totalItems} items</p>
-                            <span className='text-sm text-green-500 font-bold'>· ₹{order.deliveryFee > 0 ? '75' : '25'} saved</span>
                         </div>
                         {isItemsOpen ? <ChevronUp className='h-5 w-5 text-muted-foreground'/> : <ChevronDown className='h-5 w-5 text-muted-foreground'/>}
                     </div>
@@ -314,3 +316,5 @@ export function OrderStatusContent() {
     </div>
   );
 }
+
+    
