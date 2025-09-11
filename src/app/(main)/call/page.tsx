@@ -1,13 +1,16 @@
 
 'use client';
 
+import { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Video } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowLeft, Video, AlertCircle, Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function VideoCallPage() {
+function CallPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const error = searchParams.get('error');
 
     return (
         <div className="flex flex-col h-screen bg-background">
@@ -19,17 +22,38 @@ export default function VideoCallPage() {
                  <div className="w-8" />
             </header>
             <main className="flex flex-1 items-center justify-center text-center p-4">
-                <Card>
-                    <CardHeader>
-                        <Video className="mx-auto h-12 w-12 text-primary" />
-                        <CardTitle>Coming Soon</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">Google Meet integration is currently under development.</p>
-                         <Button className="mt-4" onClick={() => router.push('/home')}>Go to Home</Button>
-                    </CardContent>
-                </Card>
+                {error ? (
+                    <Card className="border-destructive">
+                        <CardHeader>
+                            <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+                            <CardTitle>Connection Failed</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">{error}</p>
+                            <Button className="mt-4" variant="secondary" onClick={() => router.push('/doctor')}>Try Again</Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <Card>
+                        <CardHeader>
+                            <Loader2 className="mx-auto h-12 w-12 text-primary animate-spin" />
+                            <CardTitle>Redirecting to Google Meet</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">Please wait while we generate your secure meeting link...</p>
+                        </CardContent>
+                    </Card>
+                )}
             </main>
         </div>
+    )
+}
+
+
+export default function VideoCallPage() {
+    return (
+        <Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <CallPageContent />
+        </Suspense>
     )
 }

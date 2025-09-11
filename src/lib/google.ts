@@ -11,7 +11,7 @@ export function getGoogleOAuth2Client() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   
-  // Ensure this matches one of the authorized redirect URIs in your Google Cloud Console
+  // This MUST match one of the authorized redirect URIs in your Google Cloud Console
   const redirectUri = process.env.NODE_ENV === 'production' 
     ? 'https://your-production-url.com/api/google/callback'
     : 'http://localhost:3000/api/google/callback';
