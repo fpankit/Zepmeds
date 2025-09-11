@@ -35,8 +35,10 @@ const userLocation = { lat: 28.4595, lng: 77.0266 };
 const statusConfig = {
     "order confirmed": { progress: 25, eta: 10 * 60, message: "Your order is getting packed" },
     "out for delivery": { progress: 50, eta: 8 * 60, message: "Your rider is on the way" },
+    "rider assigned": { progress: 50, eta: 8 * 60, message: "Rider Assigned" }, // Added this status
     "arrived at location": { progress: 85, eta: 2 * 60, message: "Your rider has arrived" },
     "delivered": { progress: 100, eta: 0, message: "Enjoy your order!" },
+    "cancelled": { progress: 0, eta: 0, message: "This order has been cancelled." }
 };
 
 
@@ -76,6 +78,7 @@ export function OrderStatusContent() {
     if (order && order.status) {
       const currentStatusKey = order.status.toLowerCase() as keyof typeof statusConfig;
       const currentStatusInfo = statusConfig[currentStatusKey];
+      
       if (currentStatusInfo) {
         setEtaSeconds(currentStatusInfo.eta);
       } else {
@@ -87,7 +90,7 @@ export function OrderStatusContent() {
   useEffect(() => {
     if (etaSeconds !== null && etaSeconds > 0) {
       const timer = setInterval(() => {
-        setEtaSeconds(prev => (prev ? prev - 1 : 0));
+        setEtaSeconds(prev => (prev && prev > 0 ? prev - 1 : 0));
       }, 1000);
       return () => clearInterval(timer);
     }
@@ -115,11 +118,11 @@ export function OrderStatusContent() {
   }
   
   const totalItems = order.cart.reduce((acc: number, item: any) => acc + item.quantity, 0);
-  const currentStatusKey = order.status.toLowerCase() as keyof typeof statusConfig | 'cancelled';
-  const currentStatusInfo = statusConfig[order.status.toLowerCase() as keyof typeof statusConfig] || { progress: 0, eta: null, message: order.status };
+  const currentStatusKey = order.status.toLowerCase() as keyof typeof statusConfig;
+  const currentStatusInfo = statusConfig[currentStatusKey] || { progress: 0, eta: null, message: order.status };
   
   const formatTime = (seconds: number | null) => {
-      if (seconds === null || seconds <= 0) return '0 min';
+      if (seconds === null || seconds < 0) return '0 min';
       const minutes = Math.floor(seconds / 60);
       return `${minutes} min`;
   };
@@ -133,7 +136,7 @@ export function OrderStatusContent() {
             </div>
         )
     }
-    if (currentStatusKey === 'arrived at location' || (etaSeconds !== null && etaSeconds <= 120)) {
+    if (currentStatusKey === 'arrived at location' || (etaSeconds !== null && etaSeconds > 0 && etaSeconds <= 120)) {
          return <p className="text-3xl font-bold text-primary">Arriving Soon</p>
     }
     return <p className="text-3xl font-bold text-primary">{formatTime(etaSeconds)}</p>;
@@ -165,13 +168,13 @@ export function OrderStatusContent() {
                         </>
                      )}
                     <p className="text-md font-semibold">
-                        {currentStatusKey === 'cancelled' ? 'This order has been cancelled.' : currentStatusInfo.message}
+                        {currentStatusInfo.message}
                     </p>
                     {currentStatusKey === 'cancelled' && (
                         <Button className="mt-2" onClick={() => router.push('/home')}>Reorder</Button>
                     )}
                     {currentStatusKey === 'delivered' && (
-                        <Button size="sm" className="mt-2 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-8 px-4" onClick={() => router.push('/verify-medicine')}>
+                         <Button size="sm" className="mt-2 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-8 px-4" onClick={() => router.push('/verify-medicine')}>
                             <QrCode className="mr-2 h-4 w-4" /> Scan to Verify
                         </Button>
                     )}
