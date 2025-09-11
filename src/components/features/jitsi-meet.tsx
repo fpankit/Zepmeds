@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 declare global {
@@ -37,7 +36,7 @@ export function JitsiMeet({ roomName, userName }: JitsiMeetProps) {
             configOverwrite: {
                 startWithAudioMuted: false,
                 startWithVideoMuted: false,
-                prejoinPageEnabled: false, // Skip the pre-join screen for a faster experience
+                prejoinPageEnabled: false,
             },
             interfaceConfigOverwrite: {
                 TOOLBAR_BUTTONS: [
@@ -76,11 +75,6 @@ export function JitsiMeet({ roomName, userName }: JitsiMeetProps) {
   return (
     <div className="relative h-[calc(100vh-80px)] w-full bg-black rounded-lg overflow-hidden">
       <div ref={containerRef} className="h-full w-full" />
-      {!jitsiApiRef.current && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background">
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading Video Call...
-        </div>
-      )}
     </div>
   );
 }
