@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     const appId = process.env.NEXT_PUBLIC_ZEGOCLOUD_APP_ID;
-    const serverSecret = process.env.ZEGOCLOUD_SERVER_ SECRET;
+    const serverSecret = process.env.ZEGOCLOUD_SERVER_SECRET;
 
     if (!appId || !serverSecret) {
         console.error('ZegoCloud App ID or Server Secret is not set in environment variables.');
