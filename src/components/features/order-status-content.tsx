@@ -200,18 +200,16 @@ export function OrderStatusContent() {
                     <p>₹{(order.total - 25).toFixed(2)}</p>
                 </div>
             </CardContent>
-            <CardContent className="border-t pt-4">
-                <div className="grid grid-cols-3 gap-2">
-                    <Button variant="outline" className="text-muted-foreground">
+            <CardContent className="border-t p-4 flex justify-between items-center">
+                 <p className="text-sm text-muted-foreground">Paid using {order.paymentMethod}</p>
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" className="text-muted-foreground">
                         <Download className="h-4 w-4 mr-2" /> Invoice
                     </Button>
-                    <Button variant="outline" className="text-muted-foreground">
+                    <Button variant="outline" size="sm" className="text-muted-foreground">
                         <HelpCircle className="h-4 w-4 mr-2" /> Help
                     </Button>
-                    <Button variant="outline" className="text-muted-foreground">
-                        <AlertCircle className="h-4 w-4 mr-2" /> Report
-                    </Button>
-                </div>
+                 </div>
             </CardContent>
         </Card>
 
@@ -225,7 +223,7 @@ export function OrderStatusContent() {
                         </div>
                         <div>
                             <h3 className="font-semibold">Get 25% off on your next order</h3>
-                            <p className="text-sm text-muted-foreground">Refer your friends & start saving!</p>
+                            <p className="text-sm text-muted-foreground">Refer your friends &amp; start saving!</p>
                         </div>
                     </div>
                     <div className='p-4 rounded-lg bg-purple-500/20'>
@@ -252,3 +250,5 @@ export function OrderStatusContent() {
     </div>
   );
 }
+
+    
