@@ -1,18 +1,20 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { JitsiMeet } from "@/components/features/jitsi-meet";
 import { Loader2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from 'firebase/firestore';
 
-export default function CallPage({ params }: { params: { id: string } }) {
+export default function CallPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = React.use(params);
+  const callId = resolvedParams.id;
+  
   const { user } = useAuth();
   const [roomName, setRoomName] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const callId = params.id;
 
   useEffect(() => {
     const fetchCallDetails = async () => {
