@@ -47,6 +47,7 @@ const DoctorCardSkeleton = () => (
 export default function DoctorPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingLink, setIsCreatingLink] = useState<string | null>(null);
   const { user, updateUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -103,6 +104,27 @@ export default function DoctorPage() {
         return `${parts[0][0]}${parts[parts.length - 1][0]}`;
     }
     return name.substring(0,2);
+  }
+
+  const handleVideoCall = async (doctorId: string) => {
+    setIsCreatingLink(doctorId);
+    try {
+        const response = await fetch('/api/google/auth');
+        const data = await response.json();
+        if(data.url) {
+            // Redirect to Google's auth screen
+            window.location.href = data.url;
+        } else {
+            throw new Error(data.error || "Could not get authentication URL.");
+        }
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Failed to start call",
+            description: error.message
+        });
+        setIsCreatingLink(null);
+    }
   }
 
   return (
@@ -162,11 +184,15 @@ export default function DoctorPage() {
                     <div className="flex gap-2 mt-4">
                         <Button 
                             className="w-full" 
-                            disabled={true}
-                            onClick={() => toast({ title: 'Coming Soon!', description: 'Google Meet integration is under development.'})}
+                            disabled={!doctor.isOnline || !!isCreatingLink}
+                            onClick={() => handleVideoCall(doctor.id)}
                         >
-                            <Video className="mr-2 h-4 w-4" /> 
-                          Video Call (Soon)
+                            {isCreatingLink === doctor.id ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Video className="mr-2 h-4 w-4" /> 
+                            )}
+                            {isCreatingLink === doctor.id ? 'Redirecting...' : 'Start Video Call'}
                         </Button>
                     </div>
                     </CardContent>
