@@ -10,8 +10,9 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 import { LiveTrackingMap } from './live-tracking-map';
-import { Bike, Check, ChevronRight, Loader2, MapPin, Star } from 'lucide-react';
+import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 
 const riderDetails = {
@@ -34,6 +35,7 @@ export function OrderStatusContent() {
   const [order, setOrder] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
+  const [isItemsOpen, setIsItemsOpen] = useState(false);
   
   useEffect(() => {
     if (!orderId) {
@@ -127,26 +129,48 @@ export function OrderStatusContent() {
                         <p className="text-sm text-muted-foreground">Delivery Partner</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-1 text-yellow-500">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="text-sm font-semibold">{riderDetails.rating}</span>
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon"><Phone className="h-5 w-5"/></Button>
+                    <Button variant="outline" size="icon"><MessageSquare className="h-5 w-5"/></Button>
+                    <div className="flex items-center gap-1 text-yellow-500">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="text-sm font-semibold">{riderDetails.rating}</span>
+                    </div>
                 </div>
             </CardContent>
         </Card>
 
         <Card>
+            <Collapsible open={isItemsOpen} onOpenChange={setIsItemsOpen}>
             <CardContent className='p-4'>
-                <button className='w-full flex items-center justify-between'>
-                    <div className='flex items-center gap-3'>
-                        <div className='h-8 w-8 flex items-center justify-center rounded-full bg-muted'>
-                            🛍️
+                <CollapsibleTrigger className='w-full'>
+                    <div className='w-full flex items-center justify-between'>
+                        <div className='flex items-center gap-3'>
+                            <div className='h-8 w-8 flex items-center justify-center rounded-full bg-muted'>
+                                🛍️
+                            </div>
+                            <p className='font-semibold'>{totalItems} items</p>
+                            <span className='text-sm text-green-500 font-bold'>· ₹{order.deliveryFee > 0 ? '75' : '25'} saved</span>
                         </div>
-                        <p className='font-semibold'>{totalItems} items</p>
-                        <span className='text-sm text-green-500 font-bold'>· ₹75 saved</span>
+                        {isItemsOpen ? <ChevronUp className='h-5 w-5 text-muted-foreground'/> : <ChevronDown className='h-5 w-5 text-muted-foreground'/>}
                     </div>
-                    <ChevronRight className='h-5 w-5 text-muted-foreground'/>
-                </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                    <div className="mt-4 pt-4 border-t border-border space-y-3">
+                         {order.cart.map((item: any, index: number) => (
+                            <div key={index} className="flex justify-between items-center text-sm">
+                                <p>{item.name} <span className="text-muted-foreground">x{item.quantity}</span></p>
+                                <p>₹{(item.price * item.quantity).toFixed(2)}</p>
+                            </div>
+                        ))}
+                        <div className="flex justify-between items-center font-bold border-t border-dashed pt-2 mt-2">
+                            <p>Total</p>
+                            <p>₹{order.total.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </CollapsibleContent>
             </CardContent>
+            </Collapsible>
         </Card>
 
     </div>
