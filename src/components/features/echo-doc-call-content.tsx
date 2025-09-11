@@ -9,7 +9,7 @@ import { echoDocFlow } from '@/ai/flows/echo-doc-flow';
 import { detectLanguage } from '@/ai/flows/detect-language';
 import { textToSpeech } from '@/ai-flows/text-to-speech';
 import { useToast } from '@/hooks/use-toast';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
@@ -227,22 +227,20 @@ export function EchoDocCallContent() {
         if (status === 'listening') {
             recognition.stop();
         } else if (status === 'idle' || status === 'speaking') {
-            // If user wants to talk, gracefully stop any ongoing speech.
             if (audioRef.current && !audioRef.current.paused) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
             }
-            setAudioQueue([]); // Clear any pending speech
-            setCurrentAiResponse(''); // Clear displayed text
-            setStatus('idle'); // Ensure status is idle before starting mic
+            setAudioQueue([]);
+            setCurrentAiResponse('');
             
-            // Add a guard to prevent starting if already listening
-            if (status !== 'listening') {
-                try {
+            // Fix: setStatus('idle') might not have been processed yet.
+            // Using a guard to prevent immediate re-start is safer.
+            if (recognitionRef.current.state !== 'recognizing') {
+                 try {
                     recognition.start();
                 } catch(e) {
                     console.error("Mic start failed:", e);
-                    // If it fails to start, abort and return to idle.
                     if (recognitionRef.current) recognitionRef.current.abort();
                     setStatus('idle');
                 }
@@ -265,8 +263,30 @@ export function EchoDocCallContent() {
     }
     
     return (
-        <div className="flex h-screen w-full flex-col bg-background text-white overflow-hidden">
-             <header className="p-4 flex-shrink-0 flex items-center justify-between">
+        <div className="flex h-screen w-full flex-col bg-background text-white overflow-hidden relative">
+            {/* Background Gradient & Visualizer */}
+            <div className="absolute inset-0 z-0 bg-gradient-to-b from-black via-background to-black" />
+             <AnimatePresence>
+                {(status === 'speaking' || status === 'listening') && (
+                    <motion.div
+                        className="absolute inset-0 z-0"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <div
+                            className={cn(
+                                "absolute -bottom-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full",
+                                status === 'speaking' && "bg-primary/20 animate-pulse",
+                                status === 'listening' && "bg-green-500/20 animate-pulse"
+                            )}
+                            style={{ animationDuration: '3s' }}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            
+             <header className="absolute top-0 left-0 right-0 z-10 p-4 flex-shrink-0 flex items-center justify-between bg-transparent">
                 <div></div>
                 <div className="text-center">
                     <h1 className="text-xl font-bold">
@@ -279,11 +299,11 @@ export function EchoDocCallContent() {
                 </Button>
             </header>
 
-            <main className="flex-1 flex flex-col items-center justify-center p-4 text-center space-y-6 overflow-y-auto">
+            <main className="z-10 flex-1 flex flex-col items-center justify-center p-4 text-center space-y-6 overflow-y-auto">
                 <motion.div
                     animate={{ scale: status === 'listening' ? 1.1 : 1 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 10 }}
-                    className="flex-shrink-0"
+                    className="relative flex-shrink-0"
                 >
                     <Avatar className="h-48 w-48 border-4 border-primary/50">
                         <AvatarImage src="https://picsum.photos/seed/ai-bot/200" alt="EchoDoc AI" data-ai-hint="abstract tech" />
@@ -293,22 +313,31 @@ export function EchoDocCallContent() {
                 
                 <div className="min-h-[100px] flex items-center justify-center">
                     {status === 'processing' ? (
-                        <Loader2 className="h-10 w-10 animate-spin" />
+                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
                     ) : (
-                        <p className="text-2xl font-medium max-w-2xl">
-                           {currentAiResponse}
-                        </p>
+                        <AnimatePresence mode="wait">
+                            <motion.p
+                                key={currentAiResponse}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className="text-2xl font-medium max-w-2xl text-foreground/90"
+                            >
+                               {currentAiResponse}
+                            </motion.p>
+                        </AnimatePresence>
                     )}
                 </div>
             </main>
 
-            <footer className="flex-shrink-0 p-6 flex flex-col items-center justify-center space-y-4">
+            <footer className="absolute bottom-0 left-0 right-0 z-10 flex-shrink-0 p-6 flex flex-col items-center justify-center space-y-4">
                  <div className="flex items-center justify-center gap-6">
                     <Button 
                         size="icon" 
                         className={cn(
-                            "h-20 w-20 rounded-full transition-all duration-300",
-                            status === 'listening' ? 'bg-green-600 hover:bg-green-700' : 'bg-primary',
+                            "h-20 w-20 rounded-full transition-all duration-300 shadow-lg",
+                            status === 'listening' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary/90',
                             (status === 'processing') && 'bg-gray-500 cursor-not-allowed'
                         )}
                         onClick={handleMicToggle}
@@ -320,9 +349,9 @@ export function EchoDocCallContent() {
                         onClick={handleEndCall} 
                         variant="destructive" 
                         size="icon" 
-                        className="h-16 w-16 rounded-full"
+                        className="absolute right-8 bottom-8 h-12 w-12 rounded-full"
                     >
-                        <PhoneOff className="h-7 w-7"/>
+                        <PhoneOff className="h-6 w-6"/>
                     </Button>
                  </div>
             </footer>
