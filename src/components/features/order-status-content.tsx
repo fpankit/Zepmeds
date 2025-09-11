@@ -10,7 +10,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 import { LiveTrackingMap } from './live-tracking-map';
-import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle, QrCode } from 'lucide-react';
+import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle, QrCode, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -174,8 +174,8 @@ export function OrderStatusContent() {
                         <Button className="mt-2" onClick={() => router.push('/home')}>Reorder</Button>
                     )}
                     {currentStatusKey === 'delivered' && (
-                         <Button size="sm" className="mt-2 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-8 px-4" onClick={() => router.push('/verify-medicine')}>
-                            <QrCode className="mr-2 h-4 w-4" /> Scan to Verify
+                         <Button size="sm" className="mt-2 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-8 px-4" onClick={() => router.push(`/scan-package?orderId=${order.id}`)}>
+                            <Box className="mr-2 h-4 w-4" /> Verify Package
                         </Button>
                     )}
                 </div>
