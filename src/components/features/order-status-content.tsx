@@ -10,7 +10,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
 import { LiveTrackingMap } from './live-tracking-map';
-import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle } from 'lucide-react';
+import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle, QrCode } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -159,7 +159,7 @@ export function OrderStatusContent() {
                      ) : (
                         <>
                            <p className="text-muted-foreground text-sm">
-                                {currentStatusKey === 'delivered' ? 'Delivered on' : 'Arriving in'}
+                                {currentStatusKey === 'delivered' ? 'Order delivered. Thank you!' : 'Arriving in'}
                             </p>
                             {getStatusDisplay()}
                         </>
@@ -171,6 +171,13 @@ export function OrderStatusContent() {
                  <div className="bg-blue-50 rounded-lg p-4 flex flex-col items-center justify-center text-center dark:bg-blue-900/20">
                      {currentStatusKey === 'cancelled' ? (
                         <Button onClick={() => router.push('/home')}>Reorder</Button>
+                     ) : currentStatusKey === 'delivered' ? (
+                        <>
+                             <p className="font-bold text-blue-800 dark:text-blue-300">Order delivered? Wanna check its authenticity?</p>
+                             <Button size="sm" className="mt-3 bg-gradient-to-r from-primary to-yellow-400 text-primary-foreground rounded-full text-xs h-7" onClick={() => router.push('/verify-medicine')}>
+                                <QrCode className="mr-2 h-4 w-4" /> Scan to Verify
+                            </Button>
+                        </>
                      ) : (
                         <>
                             <p className="font-bold text-blue-800 dark:text-blue-300">Switch to Zepmeds1 for extra discount</p>
@@ -332,3 +339,4 @@ export function OrderStatusContent() {
     </div>
   );
 }
+
