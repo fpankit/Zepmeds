@@ -82,23 +82,13 @@ export async function GET(req: NextRequest) {
         status: 'ringing'
     });
 
-    // Instead of redirecting the server, return a script to the browser
-    // that stores the link and redirects the user to the call page.
-    const response = new NextResponse(`
-      <script>
-        sessionStorage.setItem('meetLink', '${meetLink}');
-        // This is the tab that the user initiated the call from.
-        // It will be redirected to the /call page.
-        // We close this popup tab now.
-        window.close();
-      </script>
-    `, {
-        headers: {
-            'Content-Type': 'text/html'
-        }
-    });
-
-    return response;
+    // Instead of returning a script, redirect the auth popup window to the call page with the meetLink
+    const successRedirectUrl = new URL('/call', baseUrl);
+    successRedirectUrl.searchParams.set('meetLink', meetLink);
+    
+    // This will cause the popup window itself to navigate to the call page,
+    // which will then handle the final redirect.
+    return NextResponse.redirect(successRedirectUrl);
 
 
   } catch (error: any) {
@@ -120,17 +110,7 @@ export async function GET(req: NextRequest) {
     const errorRedirectUrl = new URL('/call', baseUrl);
     errorRedirectUrl.searchParams.set('error', errorMessage);
 
-    // Return a script that informs the user and closes the window.
-    return new NextResponse(`
-        <script>
-            // Try to redirect the opener window if it exists
-            if (window.opener) {
-                window.opener.location.href = '${errorRedirectUrl.toString()}';
-            }
-            window.close();
-        </script>
-    `, {
-        headers: { 'Content-Type': 'text/html' }
-    });
+    // If an error occurs, redirect the popup to the error page.
+    return NextResponse.redirect(errorRedirectUrl);
   }
 }

@@ -11,16 +11,15 @@ function CallPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const error = searchParams.get('error');
+    const meetLink = searchParams.get('meetLink');
 
-    // This effect will run on the client, after the page loads.
-    // It checks if there is a meet link in session storage and redirects.
+    // This effect handles the final redirect to the Google Meet link.
     useEffect(() => {
-        const meetLink = sessionStorage.getItem('meetLink');
+        // If the meetLink is in the URL, redirect to it.
         if (meetLink) {
-            sessionStorage.removeItem('meetLink'); // Clean up
             window.location.href = meetLink;
         }
-    }, []);
+    }, [meetLink]);
 
     return (
         <div className="flex flex-col h-screen bg-background">
@@ -50,7 +49,7 @@ function CallPageContent() {
                             <CardTitle>Generating Your Meeting...</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-muted-foreground">Please complete the sign-in process in the other tab. This page will redirect automatically.</p>
+                            <p className="text-muted-foreground">Please complete the sign-in process. This page will redirect automatically once the meeting link is ready.</p>
                         </CardContent>
                     </Card>
                 )}
