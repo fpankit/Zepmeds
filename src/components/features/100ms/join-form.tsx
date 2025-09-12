@@ -19,12 +19,6 @@ export function JoinForm({ user, roomId: callId }: { user: User, roomId: string 
   const joinRoom = async () => {
     setIsLoading(true);
     setError('');
-
-    if (HMS_ROOM_ID === "YOUR_REAL_ROOM_ID_HERE") {
-        setError("Please replace 'YOUR_REAL_ROOM_ID_HERE' in src/components/features/100ms/join-form.tsx with an actual room ID from your 100ms dashboard.");
-        setIsLoading(false);
-        return;
-    }
     
     try {
         const response = await fetch('/api/100ms/get-token', {
