@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
-const ACCESS_KEY = process.env.HMS_ACCESS_KEY;
-const SECRET = process.env.HMS_SECRET;
-
 export async function POST(req: NextRequest) {
+  const ACCESS_KEY = process.env.HMS_ACCESS_KEY;
+  const SECRET = process.env.HMS_SECRET;
+
   if (!ACCESS_KEY || !SECRET) {
     return NextResponse.json(
       { error: '100ms access key or secret is not configured.' },
