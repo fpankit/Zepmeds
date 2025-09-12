@@ -26,8 +26,8 @@ export function JoinForm({ user }: { user: User }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
-                room_id: HMS_ROOM_ID, // Always use the correct, hardcoded Room ID
-                role: user.isDoctor ? 'doctor' : 'patient',
+                room_id: HMS_ROOM_ID, 
+                role: 'viewer', // Using a generic role name to fix 'invalid role' error
             }),
         });
 
