@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
   const expirationTime = creationTime + effectiveTimeInSeconds;
   
   const payload = {
-      app_id: appId, // Ensure app_id is a number
+      app_id: appId,
       room_id: roomId,
       user_id: userId,
       privilege: {
