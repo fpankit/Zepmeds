@@ -15,7 +15,7 @@ import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
-export function VideoCallContent() {
+export function VideoCallContent({ roomId }: { roomId: string }) {
   const isConnected = useHMSStore(selectIsConnectedToRoom);
   const hmsActions = useHMSActions();
   const peers = useHMSStore(selectPeers);
@@ -41,14 +41,14 @@ export function VideoCallContent() {
     );
   }
 
-  if (!user || user.isGuest) {
-      toast({
-        variant: "destructive",
-        title: "Please log in",
-        description: "You need to be logged in to join a video call."
-      });
-      router.push('/login');
-      return null;
+  if (!user) {
+    // This case should ideally not be hit if a guest user is created
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="ml-2">Initializing...</p>
+        </div>
+    );
   }
 
   return (
@@ -56,7 +56,7 @@ export function VideoCallContent() {
       {isConnected ? (
         <Conference peers={peers} />
       ) : (
-        <JoinForm user={user} />
+        <JoinForm user={user} roomId={roomId} />
       )}
     </div>
   );

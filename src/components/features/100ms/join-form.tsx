@@ -4,45 +4,44 @@
 import { useState } from 'react';
 import { useHMSActions } from '@100mslive/react-sdk';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
-import { useParams } from 'next/navigation';
 
-export function JoinForm({ user }: { user: User }) {
+export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
   const hmsActions = useHMSActions();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const params = useParams();
-  const callId = params.id as string; // This is the room ID from the URL
+
+  const guestAuthToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2ZXJzaW9uIjoyLCJ0eXBlIjoiYXBwIiwiYXBwX2RhdGEiOm51bGwsImFjY2Vzc19rZXkiOiI2OGJiZDQ4ODE0NWNiNGU4NDQ5YjBkZDciLCJyb2xlIjoiZ3Vlc3QiLCJyb29tX2lkIjoiNjhjM2FkYmRhNWJhODMyNmU2ZWI4MmRmIiwidXNlcl9pZCI6IjM4NWE3OTEzLThkMjAtNDA1Ny05MmQ5LWJjZjk3NmM1ODQ5ZCIsImV4cCI6MTc1Nzc0MTE3MiwianRpIjoiMTlmMjU0M2ItZjQwNS00ZDAyLWIwOTUtYmJiZjg3ZjY1NTBmIiwiaWF0IjoxNzU3NjU0NzcyLCJpc3MiOiI2OGJiZDQ4ODE0NWNiNGU4NDQ5YjBkZDUiLCJuYmYiOjE3NTc2NTQ3NzIsInN1YiI6ImFwaSJ9.SNSDMxQ2ffP1zqT12a-ZoneM3CYIoRYsmaWx0s6LGbI";
 
   const joinRoom = async () => {
     setIsLoading(true);
     setError('');
     
     try {
-      const response = await fetch('/api/100ms/get-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          // The 'id' from the URL (/call/[id]) serves as the room identifier.
-          // We must ensure a room with this ID exists in your 100ms template.
-          // For now, we use a placeholder room ID from env vars, but using `callId` is better.
-          room_id: process.env.NEXT_PUBLIC_100MS_ROOM_ID, 
-          role: user.isDoctor ? 'doctor' : 'patient', // Role can determine permissions
-        }),
-      });
+        let token = '';
+        if (user.isGuest) {
+            token = guestAuthToken;
+        } else {
+            const response = await fetch('/api/100ms/get-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    room_id: roomId, 
+                    role: user.isDoctor ? 'doctor' : 'patient',
+                }),
+            });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Failed to get token');
-      }
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Failed to get token');
+            }
+            const tokenData = await response.json();
+            token = tokenData.token;
+        }
 
-      const { token } = await response.json();
 
       await hmsActions.join({
         userName: `${user.firstName} ${user.lastName}`,

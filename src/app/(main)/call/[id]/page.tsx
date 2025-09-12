@@ -18,7 +18,7 @@ const VideoCallContent = dynamic(() => import('@/components/features/video-call-
 
 
 export default function CallPage({ params }: { params: { id: string } }) {
-  // The room 'id' from the URL is now used by the JoinForm inside VideoCallContent
-  // to fetch a token for the specific room.
-  return <VideoCallContent />;
+  const roomId = params.id;
+  
+  return <VideoCallContent roomId={roomId} />;
 }
