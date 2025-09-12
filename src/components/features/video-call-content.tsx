@@ -128,30 +128,31 @@ export function VideoCallContent() {
     );
     
     // Function to generate token client-side
-    const generateClientToken = (appId: number, serverSecret: string, userId: string, userName: string) => {
+    const generateClientToken = (appId: number, serverSecret: string, userId: string) => {
         const effectiveTimeInSeconds = 3600; // Token expiration time, in seconds.
+        const createTime = Math.floor(new Date().getTime() / 1000);
+        const expireTime = createTime + effectiveTimeInSeconds;
+        
         const payloadObject = {
             room_id: roomId,
             privilege: {
                 1: 1, // loginRoom
                 2: 1  // publishStream
             },
-            stream_id_list: null,
+            stream_id_list: null
         };
-        
-        const createTime = Math.floor(new Date().getTime() / 1000);
-        const tokenInfo = {
+        const payload = JSON.stringify(payloadObject);
+
+        // The token is a string in the format: "04" + Base64.encode(JSON.stringify(tokenInfo))
+        const token = `04${Buffer.from(JSON.stringify({
             app_id: appId,
             user_id: userId,
-            user_name: userName,
             nonce: uuidv4(),
             ctime: createTime,
-            expire: createTime + effectiveTimeInSeconds,
-            payload: JSON.stringify(payloadObject),
-        };
-        
-        // The token is a string in the format: "04" + Base64.encode(JSON.stringify(tokenInfo))
-        const token = `04${Buffer.from(JSON.stringify(tokenInfo)).toString('base64')}`;
+            expire: expireTime,
+            payload: payload
+        })).toString('base64')}`;
+
         return token;
     }
 
@@ -193,7 +194,7 @@ export function VideoCallContent() {
 
             try {
                  // Generate token on the client-side for simplicity
-                const token = generateClientToken(appId, serverSecret, user.id, `${user.firstName} ${user.lastName}`);
+                const token = generateClientToken(appId, serverSecret, user.id);
 
                 if (isComponentMounted.current) {
                     zg.current = new ZegoExpressEngine(appId, "wss://webliveroom" + appId + "-api.coolzcloud.com/ws");
