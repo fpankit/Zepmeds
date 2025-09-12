@@ -8,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
 
-// This is the actual room ID from your 100ms dashboard.
-const HMS_ROOM_ID = "66a0d45f3c50937554988e43";
+// IMPORTANT: Replace this with a REAL room_id from your 100ms dashboard.
+// This ID should come from the "Rooms" section, not the "Templates" section.
+const HMS_ROOM_ID = "YOUR_REAL_ROOM_ID_HERE";
 
-export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
+export function JoinForm({ user, roomId: callId }: { user: User, roomId: string }) {
   const hmsActions = useHMSActions();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,6 +20,12 @@ export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
   const joinRoom = async () => {
     setIsLoading(true);
     setError('');
+
+    if (HMS_ROOM_ID === "YOUR_REAL_ROOM_ID_HERE") {
+        setError("Please replace 'YOUR_REAL_ROOM_ID_HERE' in src/components/features/100ms/join-form.tsx with an actual room ID from your 100ms dashboard.");
+        setIsLoading(false);
+        return;
+    }
     
     try {
         const response = await fetch('/api/100ms/get-token', {
@@ -26,7 +33,7 @@ export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
-                room_id: HMS_ROOM_ID, // Always use the correct room ID
+                room_id: HMS_ROOM_ID, // Always use the correct, hardcoded room ID
                 role: user.isDoctor ? 'doctor' : (user.isGuest ? 'guest' : 'patient'),
             }),
         });
