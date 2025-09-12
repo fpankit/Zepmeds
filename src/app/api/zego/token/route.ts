@@ -1,6 +1,6 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Generates a ZegoCloud v2 JWT token.
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       '1': 1, // loginRoom: 1 = allow
       '2': 1, // publishStream: 1 = allow
     },
-    nonce: `nonce-${uuidv4()}`,
+    nonce: `nonce-${Math.random()}`,
     ctime: creationTime,
     expire: expirationTime,
   };
