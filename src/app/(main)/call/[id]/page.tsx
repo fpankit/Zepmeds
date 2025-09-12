@@ -18,8 +18,7 @@ const VideoCallContent = dynamic(() => import('@/components/features/video-call-
 
 
 export default function CallPage({ params }: { params: { id: string } }) {
-  // ZegoCloud implementation doesn't need to read from Firestore here,
-  // the room 'id' is passed directly via URL to the component.
-  // The VideoCallContent component will handle the connection logic.
+  // The room 'id' from the URL is now used by the JoinForm inside VideoCallContent
+  // to fetch a token for the specific room.
   return <VideoCallContent />;
 }
