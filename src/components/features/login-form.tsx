@@ -36,7 +36,9 @@ const SignUpSchema = z.object({
 
 // Schema for the Login form
 const LoginSchema = z.object({
-  identifier: z.string().min(1, "Please enter your phone number"),
+  phone: z.string().refine(phone => isPossiblePhoneNumber(phone || ''), {
+      message: 'Invalid phone number format'
+    }),
 });
 
 // Schema for OTP verification
@@ -64,7 +66,7 @@ export function LoginForm() {
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(LoginSchema),
-    defaultValues: { identifier: "" },
+    defaultValues: { phone: "" },
   });
 
   const verifyForm = useForm<VerifyFormValues>({
@@ -85,7 +87,7 @@ export function LoginForm() {
   const onLoginSubmit: SubmitHandler<LoginFormValues> = async (data) => {
     setIsLoading(true);
     setNewUserData(null); // Ensure we are in login mode
-    setLoginIdentifier(data.identifier);
+    setLoginIdentifier(data.phone);
     // Mock API call for sending OTP
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setStep("verify");
@@ -177,12 +179,12 @@ export function LoginForm() {
             <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                 <FormField
                 control={loginForm.control}
-                name="identifier"
+                name="phone"
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                        <Input placeholder="+91 1234567890" {...field} />
+                        <Input placeholder="+91 12345 67890" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -252,7 +254,7 @@ export function LoginForm() {
                         <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <FormControl>
-                            <Input placeholder="+91 1234567890" {...field} />
+                            <Input placeholder="+91 12345 67890" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
