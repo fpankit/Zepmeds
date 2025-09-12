@@ -130,7 +130,7 @@ export function VideoCallContent() {
     // Function to generate token client-side
     const generateClientToken = (appId: number, serverSecret: string, userId: string) => {
         const effectiveTimeInSeconds = 3600; // Token expiration time, in seconds.
-        const payload = {
+        const payloadObject = {
             room_id: roomId,
             privilege: {
                 1: 1, // loginRoom
@@ -146,9 +146,10 @@ export function VideoCallContent() {
             nonce: uuidv4(),
             ctime: createTime,
             expire: createTime + effectiveTimeInSeconds,
-            payload: JSON.stringify(payload),
+            payload: JSON.stringify(payloadObject),
         };
         
+        // The token is a string in the format: "04" + Base64.encode(JSON.stringify(tokenInfo))
         const token = `04${Buffer.from(JSON.stringify(tokenInfo)).toString('base64')}`;
         return token;
     }
@@ -176,9 +177,9 @@ export function VideoCallContent() {
             );
             const serverSecret = process.env.NEXT_PUBLIC_ZEGOCLOUD_SERVER_SECRET || '';
 
-            if (!appId || isNaN(appId)) {
+            if (!appId || isNaN(appId) || !serverSecret) {
                 console.error(
-                    'ZegoCloud App ID is not configured in .env file.'
+                    'ZegoCloud App ID or Server Secret is not configured in .env file.'
                 );
                 toast({
                     variant: 'destructive',
@@ -324,3 +325,5 @@ export function VideoCallContent() {
         </div>
     );
 }
+
+    
