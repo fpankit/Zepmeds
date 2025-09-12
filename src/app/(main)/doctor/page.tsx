@@ -70,7 +70,7 @@ export default function DoctorPage() {
         const fetchedDoctors = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return { 
-                id: doc.id,
+                id: data.uid || doc.id, // Use UID from data, fallback to doc.id
                 name: data.displayName || "Unnamed Doctor",
                 specialty: data.qualification || "No Specialty",
                 experience: data.about || "No experience listed.",
