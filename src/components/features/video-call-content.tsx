@@ -15,7 +15,6 @@ export function VideoCallContent() {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    const zg = useRef<ZegoExpressEngine | null>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -46,7 +45,7 @@ export function VideoCallContent() {
                  }
             }
             await client.logoutRoom(roomId);
-            zegoClientRef.current = null;
+            // The client instance will be destroyed in the useEffect cleanup
         }
         if (localStream) {
             localStream.getTracks().forEach(track => track.stop());
@@ -82,7 +81,12 @@ export function VideoCallContent() {
                  if (state === 'CONNECTED') {
                     setIsLoading(false);
                  } else if (state === 'DISCONNECTED') {
-                     handleLeave();
+                    // This can be triggered by various events, including kicking out, network issues, etc.
+                    // Let's make sure we are not already unmounted.
+                    if(isComponentMounted.current) {
+                        toast({ title: 'Disconnected', description: 'You have been disconnected from the call.' });
+                        router.push('/home');
+                    }
                  }
             });
 
@@ -138,7 +142,7 @@ export function VideoCallContent() {
                 console.error('ZegoCloud Initialization Failed:', error);
                 if (isComponentMounted.current) {
                     toast({ variant: 'destructive', title: 'Call Failed', description: error.message || 'Could not connect to the video call service.' });
-                    handleLeave();
+                    router.push('/home'); // Redirect on failure
                 }
             }
         };
@@ -147,7 +151,18 @@ export function VideoCallContent() {
 
         return () => {
             isComponentMounted.current = false;
-            handleLeave();
+            const client = zegoClientRef.current;
+            if(client) {
+                // Remove all listeners to prevent memory leaks
+                client.off('roomStateUpdate');
+                client.off('roomStreamUpdate');
+
+                // Logout and destroy client instance
+                client.logoutRoom(roomId);
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
