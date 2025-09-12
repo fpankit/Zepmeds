@@ -112,52 +112,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const phone = newUserDetails?.phone || identifier;
     const uid = sanitizeForId(phone);
     const userDocRef = doc(db, "users", uid);
-    const userDocSnap = await getDoc(userDocRef);
-
-    let finalUser: User;
-
-    if (userDocSnap.exists()) {
-      finalUser = { id: userDocSnap.id, ...userDocSnap.data() } as User;
-    } else {
-      if (!newUserDetails) {
-          setLoading(false);
-          throw new Error("User not found. Please sign up.");
-      }
-      const defaultAddress: Address = {
-          id: 'home-123',
-          type: 'Home',
-          name: 'Home',
-          flat: 'A-123',
-          street: 'Main Street',
-          pincode: '122001',
-          state: 'Haryana',
-          address: 'A-123, Main Street, Gurugram, Haryana, 122001'
-      };
-      finalUser = {
-          id: uid,
-          ...newUserDetails,
-          addresses: [defaultAddress],
-          healthData: {},
-          isGuest: false,
-          isDoctor: false,
-      };
-      await setDoc(userDocRef, finalUser);
-    }
     
-    // Sync doctor status
-    if (finalUser.isDoctor) {
-        const doctorDocRef = doc(db, "doctors", finalUser.id);
-        const doctorSnap = await getDoc(doctorDocRef);
-        if (doctorSnap.exists()) {
-            // Set doctor to be online on login
-            await updateDoc(doctorDocRef, { isOnline: true });
-            finalUser = { ...finalUser, ...doctorSnap.data(), isOnline: true };
-        }
-    }
+    try {
+        const userDocSnap = await getDoc(userDocRef);
+        let finalUser: User;
 
-    setUser(finalUser);
-    localStorage.setItem('user', JSON.stringify(finalUser));
-    setLoading(false);
+        if (userDocSnap.exists()) {
+            finalUser = { id: userDocSnap.id, ...userDocSnap.data() } as User;
+        } else {
+            if (!newUserDetails) {
+                throw new Error("User not found. Please sign up.");
+            }
+            const defaultAddress: Address = {
+                id: 'home-123',
+                type: 'Home',
+                name: 'Home',
+                flat: 'A-123',
+                street: 'Main Street',
+                pincode: '122001',
+                state: 'Haryana',
+                address: 'A-123, Main Street, Gurugram, Haryana, 122001'
+            };
+            finalUser = {
+                id: uid,
+                ...newUserDetails,
+                addresses: [defaultAddress],
+                healthData: {},
+                isGuest: false,
+                isDoctor: false,
+            };
+            await setDoc(userDocRef, finalUser);
+        }
+        
+        // Sync doctor status if the user is a doctor
+        if (finalUser.isDoctor) {
+            const doctorDocRef = doc(db, "doctors", finalUser.id);
+            try {
+                const doctorSnap = await getDoc(doctorDocRef);
+                if (doctorSnap.exists()) {
+                    // Set doctor to be online on login and merge data
+                    await updateDoc(doctorDocRef, { isOnline: true });
+                    finalUser = { ...finalUser, ...doctorSnap.data(), isOnline: true };
+                }
+            } catch (e) {
+                console.error("Could not sync doctor status on login:", e);
+                // Non-fatal, proceed with login
+            }
+        }
+
+        setUser(finalUser);
+        localStorage.setItem('user', JSON.stringify(finalUser));
+
+    } catch (error) {
+        console.error("Login/Signup Error:", error);
+        // Re-throw the error so the UI can catch it and display a message
+        throw error;
+    } finally {
+        setLoading(false);
+    }
   };
 
   const logout = async () => {
