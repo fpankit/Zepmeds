@@ -1,6 +1,9 @@
+
+'use client';
+
 import { VideoCallContent } from "@/components/features/video-call-content";
 
-// This is now a Server Component. It can directly access params.
+// This is now a Client Component to better manage state and interactions.
 export default function CallPage({ params }: { params: { id: string } }) {
   const roomId = params.id;
 

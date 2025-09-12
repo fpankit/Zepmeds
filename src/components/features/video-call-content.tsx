@@ -20,19 +20,20 @@ export function VideoCallContent({ roomId }: { roomId: string }) {
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    // This effect handles leaving the room when the component unmounts.
     return () => {
-      // Ensure cleanup happens on unmount
-      if (hmsActions.leave) {
+      // Check if we are connected before trying to leave.
+      if (hmsActions.leave && isConnected) {
         hmsActions.leave();
       }
     };
-  }, [hmsActions]);
+  }, [hmsActions, isConnected]);
 
   if (authLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="ml-2">Initializing...</p>
+        <p className="ml-2">Initializing User...</p>
       </div>
     );
   }
@@ -42,7 +43,7 @@ export function VideoCallContent({ roomId }: { roomId: string }) {
       {isConnected ? (
         <Conference peers={peers} />
       ) : (
-        <JoinForm user={user} />
+        <JoinForm user={user} roomId={roomId} />
       )}
     </div>
   );
