@@ -64,7 +64,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const sanitizeForId = (identifier: string) => identifier.replace(/[^a-zA-Z0-9]/g, "");
 
 const createGuestUser = (): User => ({
-    id: `guest_${Date.now()}`,
+    id: `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
     firstName: "Guest",
     lastName: "User",
     email: "",
@@ -82,7 +82,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        try {
+            const parsedUser = JSON.parse(storedUser);
+            // Ensure guest users get a unique ID on each session load if they don't have one
+            if (parsedUser.isGuest && !parsedUser.id) {
+                parsedUser.id = createGuestUser().id;
+            }
+            setUser(parsedUser);
+        } catch (e) {
+            setUser(createGuestUser());
+        }
     } else {
         setUser(createGuestUser());
     }
@@ -153,9 +162,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
              console.error("Failed to set doctor offline:", e);
           }
       }
-      setUser(createGuestUser());
-      localStorage.removeItem('user');
     }
+    setUser(createGuestUser());
+    localStorage.removeItem('user');
   };
 
   const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
