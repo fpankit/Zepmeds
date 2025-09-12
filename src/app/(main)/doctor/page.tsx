@@ -11,19 +11,9 @@ import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp } from 
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/auth-context";
+import { useAuth, User as DoctorUser } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-
-export interface Doctor {
-  id: string;
-  name: string;
-  specialty: string;
-  experience: string;
-  image: string;
-  isOnline: boolean;
-  dataAiHint?: string;
-}
 
 
 const DoctorCardSkeleton = () => (
@@ -45,7 +35,7 @@ const DoctorCardSkeleton = () => (
 );
 
 export default function DoctorPage() {
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [doctors, setDoctors] = useState<DoctorUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingLink, setIsCreatingLink] = useState<string | null>(null);
   const { user, updateUser } = useAuth();
@@ -71,19 +61,29 @@ export default function DoctorPage() {
             const data = doc.data();
             return { 
                 id: data.uid || doc.id, // Use UID from data, fallback to doc.id
-                name: data.displayName || "Unnamed Doctor",
-                specialty: data.qualification || "No Specialty",
+                // Use displayName from doctor doc, fallback to constructing from user doc fields
+                displayName: data.displayName || `${data.firstName} ${data.lastName}`, 
+                name: data.displayName || `${data.firstName} ${data.lastName}`,
+                specialty: data.qualification || data.specialty || "No Specialty",
                 experience: data.about || "No experience listed.",
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
                 isOnline: data.isOnline || false,
-             } as Doctor
+                // Make sure all required fields for DoctorUser are here
+                firstName: data.firstName || '',
+                lastName: data.lastName || '',
+                email: data.email || '',
+                phone: data.phone || '',
+                age: data.age || 0,
+                addresses: data.addresses || [],
+                isDoctor: true,
+             } as DoctorUser
         });
         
         fetchedDoctors.sort((a, b) => {
             if (a.isOnline && !b.isOnline) return -1;
             if (!a.isOnline && b.isOnline) return 1;
-            return a.name.localeCompare(b.name);
+            return (a.displayName || '').localeCompare(b.displayName || '');
         });
 
         setDoctors(fetchedDoctors);
@@ -109,7 +109,7 @@ export default function DoctorPage() {
     return name.substring(0,2);
   }
 
-  const handleVideoCall = async (doctor: Doctor) => {
+  const handleVideoCall = async (doctor: DoctorUser) => {
     if (!user || user.isGuest) {
         toast({ variant: "destructive", title: "Please login to start a call." });
         router.push('/login');
@@ -122,7 +122,7 @@ export default function DoctorPage() {
             patientId: user.id,
             patientName: `${user.firstName} ${user.lastName}`,
             doctorId: doctor.id,
-            doctorName: doctor.name,
+            doctorName: doctor.displayName,
             status: 'ringing', // The doctor can be notified immediately
             createdAt: serverTimestamp(),
         });
@@ -177,14 +177,14 @@ export default function DoctorPage() {
                     <CardContent className="p-4">
                     <div className="flex items-center gap-4">
                         <Avatar className="h-20 w-20 border-4" style={{ borderColor: doctor.isOnline ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }}>
-                            <AvatarImage src={doctor.image} alt={doctor.name} data-ai-hint={doctor.dataAiHint} />
-                            <AvatarFallback>{getInitials(doctor.name)}</AvatarFallback>
+                            <AvatarImage src={doctor.photoURL} alt={doctor.displayName} data-ai-hint={doctor.dataAiHint} />
+                            <AvatarFallback>{getInitials(doctor.displayName || '')}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                        <h3 className="font-bold text-lg">{doctor.name}</h3>
+                        <h3 className="font-bold text-lg">{doctor.displayName}</h3>
                         <p className="text-primary font-medium">{doctor.specialty}</p>
                         <p className="text-sm text-muted-foreground">
-                            {doctor.experience}
+                            {doctor.about}
                         </p>
                         <div className={cn(
                             "flex items-center gap-1 text-xs font-semibold",
