@@ -72,7 +72,7 @@ export default function DoctorPage() {
             return { 
                 id: doc.id,
                 name: data.displayName || "Unnamed Doctor",
-                specialty: data.specialty || "No Specialty",
+                specialty: data.qualification || "No Specialty",
                 experience: data.about || "No experience listed.",
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
