@@ -20,7 +20,7 @@ export function JoinForm({ user }: { user: User }) {
   const joinRoom = async () => {
     setIsLoading(true);
     
-    // Determine the role based on the user type
+    // Determine the role based on the user type, matching the 100ms dashboard roles.
     const userRole = user.isDoctor ? 'host' : 'guest';
 
     try {
