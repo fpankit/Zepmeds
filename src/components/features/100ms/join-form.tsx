@@ -20,6 +20,9 @@ export function JoinForm({ user }: { user: User }) {
   const joinRoom = async () => {
     setIsLoading(true);
     
+    // Determine the role based on the user type
+    const userRole = user.isDoctor ? 'host' : 'guest';
+
     try {
         const response = await fetch('/api/100ms/get-token', {
             method: 'POST',
@@ -27,7 +30,7 @@ export function JoinForm({ user }: { user: User }) {
             body: JSON.stringify({
                 user_id: user.id,
                 room_id: HMS_ROOM_ID, 
-                role: 'viewer', // Using a generic role name to fix 'invalid role' error
+                role: userRole,
             }),
         });
 
