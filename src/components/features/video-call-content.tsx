@@ -137,14 +137,13 @@ export function VideoCallContent() {
                 2: 1  // publishStream
             },
             stream_id_list: null,
-            user_id: userId,
-            user_name: userName,
         };
         
         const createTime = Math.floor(new Date().getTime() / 1000);
         const tokenInfo = {
             app_id: appId,
             user_id: userId,
+            user_name: userName,
             nonce: uuidv4(),
             ctime: createTime,
             expire: createTime + effectiveTimeInSeconds,
