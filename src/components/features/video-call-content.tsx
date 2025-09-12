@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { ZegoExpressEngine } from 'zego-express-engine-webrtc';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -11,7 +11,7 @@ import { useAuth } from '@/context/auth-context';
 
 export function VideoCallContent() {
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const params = useParams();
     const { user } = useAuth();
     const { toast } = useToast();
 
@@ -28,8 +28,8 @@ export function VideoCallContent() {
     
     const isComponentMounted = useRef(true);
 
-    const roomId = searchParams.get('channel') || 'default_room';
-    const doctorName = searchParams.get('doctorName') || 'Doctor';
+    const roomId = params.id as string;
+    const doctorName = 'Doctor'; // This can be fetched if needed
 
 
     const setupZegoClient = useCallback(async (appId: number, token: string) => {
@@ -61,12 +61,15 @@ export function VideoCallContent() {
                 if(isComponentMounted.current) setRemoteStream(remote);
             } else {
                 if(isComponentMounted.current) setRemoteStream(null);
+                 if (remoteVideoRef.current) {
+                    remoteVideoRef.current.srcObject = null;
+                }
             }
         });
         
         try {
             await zg.current.loginRoom(roomId, token, { userID: user.id, userName: `${user.firstName} ${user.lastName}` });
-            const stream = await zg.current.createStream();
+            const stream = await zg.current.createStream({camera: { video: true, audio: true }});
             if (localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
             }
@@ -92,13 +95,21 @@ export function VideoCallContent() {
         }
 
         const initialize = async () => {
+            const appId = parseInt(process.env.NEXT_PUBLIC_ZEGOCLOUD_APP_ID!, 10);
+            if(!appId || isNaN(appId)) {
+                console.error('ZegoCloud App ID is not configured in .env file.');
+                toast({ variant: 'destructive', title: 'Configuration Error', description: 'Video call service is not configured.' });
+                router.back();
+                return;
+            }
+
             try {
                 const tokenResponse = await fetch(`/api/zego/token?userId=${user.id}&roomId=${roomId}`);
                 if (!tokenResponse.ok) {
                     const errorData = await tokenResponse.json();
                     throw new Error(errorData.error || 'Failed to fetch Zego token');
                 }
-                const { token, appId } = await tokenResponse.json();
+                const { token } = await tokenResponse.json();
                 
                 if (isComponentMounted.current) {
                     zg.current = new ZegoExpressEngine(appId, process.env.NEXT_PUBLIC_ZEGOCLOUD_SERVER_SECRET!);
@@ -122,7 +133,9 @@ export function VideoCallContent() {
                 if (localStream) {
                     zg.current.destroyStream(localStream);
                 }
+                zg.current.stopPublishingStream(`${user!.id}_${roomId}_main`);
                 zg.current.logoutRoom(roomId);
+                zg.current = null;
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,6 +148,7 @@ export function VideoCallContent() {
                  zg.current.destroyStream(localStream);
             }
             await zg.current.logoutRoom(roomId);
+            zg.current = null;
         }
         router.push('/home');
     };
@@ -174,7 +188,7 @@ export function VideoCallContent() {
                    {!remoteStream && !isLoading && (
                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
                         <Loader2 className="h-8 w-8 animate-spin" />
-                        <p className="mt-4">Waiting for {doctorName} to join...</p>
+                        <p className="mt-4">Waiting for the other person to join...</p>
                     </div>
                    )}
                 </div>

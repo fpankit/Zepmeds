@@ -45,15 +45,6 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  webpack: (config, { isServer }) => {
-    // Add a rule to handle native modules
-    config.module.rules.push({
-      test: /\.node$/,
-      use: 'node-loader',
-    });
-
-    return config;
-  },
 };
 
 export default nextConfig;
