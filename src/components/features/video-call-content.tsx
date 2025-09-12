@@ -91,7 +91,7 @@ export function VideoCallContent() {
 
             try {
                 const loggedIn = await zg.current.loginRoom(roomId, token, {
-                    userID: user.id,
+                    userID: String(user.id),
                     userName: `${user.firstName} ${user.lastName}`,
                 });
 
@@ -154,6 +154,8 @@ export function VideoCallContent() {
             payload: payload
         };
         
+        // The token format is: 04 + Base64-encoded(tokenInfo)
+        // Note: The payload field within tokenInfo is already a stringified JSON. The entire tokenInfo object is then stringified and Base64 encoded.
         const token = `04${Buffer.from(JSON.stringify(tokenInfo)).toString('base64')}`;
         
         return token;
@@ -330,3 +332,5 @@ export function VideoCallContent() {
         </div>
     );
 }
+
+    
