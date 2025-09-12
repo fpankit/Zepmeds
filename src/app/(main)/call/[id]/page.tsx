@@ -1,23 +1,9 @@
-"use client";
+import { VideoCallContent } from "@/components/features/video-call-content";
 
-import React from "react";
-import dynamic from 'next/dynamic';
-import { Loader2 } from "lucide-react";
-
-// Dynamically import the call content to ensure it's client-side only
-const VideoCallContent = dynamic(() => import('@/components/features/video-call-content').then(mod => mod.VideoCallContent), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-screen w-full items-center justify-center bg-background">
-      <Loader2 className="h-8 w-8 animate-spin" />
-      <p className="ml-2">Loading Call...</p>
-    </div>
-  )
-});
-
-
+// This is now a Server Component. It can directly access params.
 export default function CallPage({ params }: { params: { id: string } }) {
   const roomId = params.id;
-  
+
+  // VideoCallContent is a Client Component that receives the roomId as a prop.
   return <VideoCallContent roomId={roomId} />;
 }
