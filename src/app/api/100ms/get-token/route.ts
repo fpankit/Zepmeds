@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: NextRequest) {
+  // Read environment variables inside the function to ensure they are loaded.
   const ACCESS_KEY = process.env.HMS_ACCESS_KEY;
   const SECRET = process.env.HMS_SECRET;
 
