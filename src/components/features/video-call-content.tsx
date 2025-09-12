@@ -188,7 +188,7 @@ export function VideoCallContent() {
                 const token = generateClientToken(appId, serverSecret, user.id);
 
                 if (isComponentMounted.current) {
-                    zg.current = new ZegoExpressEngine(appId, { server: "wss://webliveroom" + appId + "-api.coolzcloud.com/ws" });
+                    zg.current = new ZegoExpressEngine(appId, "wss://webliveroom" + appId + "-api.coolzcloud.com/ws");
                     await setupZegoClient(appId, token);
                 }
             } catch (error: any) {
