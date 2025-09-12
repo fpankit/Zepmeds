@@ -8,6 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
 
+// This is the actual room ID from your 100ms dashboard.
+const HMS_ROOM_ID = "66a0d45f3c50937554988e43";
+
 export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
   const hmsActions = useHMSActions();
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +26,7 @@ export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
-                room_id: roomId, 
+                room_id: HMS_ROOM_ID, // Always use the correct room ID
                 role: user.isDoctor ? 'doctor' : (user.isGuest ? 'guest' : 'patient'),
             }),
         });
