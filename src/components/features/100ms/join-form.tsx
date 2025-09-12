@@ -9,7 +9,10 @@ import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
-export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
+// The correct, static Room ID from the 100ms dashboard.
+const HMS_ROOM_ID = '68c3adbda5ba8326e6eb82df';
+
+export function JoinForm({ user, roomId: internalCallId }: { user: User, roomId: string }) {
   const hmsActions = useHMSActions();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -23,7 +26,7 @@ export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
-                room_id: roomId, // Use the roomId passed from the page URL
+                room_id: HMS_ROOM_ID, // Always use the correct, hardcoded Room ID
                 role: user.isDoctor ? 'doctor' : 'patient',
             }),
         });
