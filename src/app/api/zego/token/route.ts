@@ -49,12 +49,12 @@ export async function GET(req: NextRequest) {
   const expirationTime = creationTime + effectiveTimeInSeconds;
   
   const payload = {
-      app_id: appId,
+      app_id: appId, // Ensure app_id is a number
       room_id: roomId,
       user_id: userId,
       privilege: {
-          "1": 1, // loginRoom
-          "2": 1, // publishStream
+          "1": 1, // loginRoom: 1 = allow
+          "2": 1, // publishStream: 1 = allow
       },
       nonce: `nonce-${uuidv4()}`,
       ctime: creationTime,
