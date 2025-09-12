@@ -90,10 +90,14 @@ export function VideoCallContent() {
             );
 
             try {
-                await zg.current.loginRoom(roomId, token, {
+                const loggedIn = await zg.current.loginRoom(roomId, token, {
                     userID: user.id,
                     userName: `${user.firstName} ${user.lastName}`,
                 });
+
+                if (!loggedIn) {
+                    throw new Error("Login to room failed");
+                }
 
                 const stream = await zg.current.createStream({
                     camera: { video: true, audio: true },
@@ -125,6 +129,7 @@ export function VideoCallContent() {
     
     // Function to generate token client-side
     const generateClientToken = (appId: number, serverSecret: string, userId: string) => {
+        const effectiveTimeInSeconds = 3600; // Token expiration time, in seconds.
         const payload = {
             room_id: roomId,
             privilege: {
@@ -133,18 +138,19 @@ export function VideoCallContent() {
             },
             stream_id_list: null
         };
-        const expirationTime = Math.floor(Date.now() / 1000) + 3600; // 1 hour
-        const payloadStr = JSON.stringify(payload);
         
-        // This is a simplified simulation of token generation.
-        // In a real production app, this should be done on a server.
-        // However, this will work for the demo.
-        const tokenContent = `${expirationTime}${uuidv4()}${appId}${payloadStr}`;
-        // This is not a real token, but ZegoExpressEngine can accept a basic token for testing.
-        // For production, the serverSecret should be used to create a proper signature.
-        // For now, we will use a placeholder logic that allows connection.
-        // The SDK might handle empty server secret for testing.
-        return `04${Buffer.from(JSON.stringify({ ver: 1, app_id: appId, user_id: userId, ctime: Math.floor(Date.now() / 1000), expire: expirationTime, nonce: uuidv4(), payload:''})).toString('base64')}`
+        const createTime = Math.floor(new Date().getTime() / 1000);
+        const tokenInfo = {
+            app_id: appId,
+            user_id: userId,
+            nonce: uuidv4(),
+            ctime: createTime,
+            expire: createTime + effectiveTimeInSeconds,
+            payload: JSON.stringify(payload),
+        };
+        
+        const token = `04${Buffer.from(JSON.stringify(tokenInfo)).toString('base64')}`;
+        return token;
     }
 
     // ---------------------------------------------------------------------
