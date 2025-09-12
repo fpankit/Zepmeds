@@ -51,7 +51,7 @@ export function IncomingCallManager() {
         </div>
       ),
     });
-  }, [toast, router]);
+  }, [toast, router, dismiss]);
 
   useEffect(() => {
     // Only listen for calls if the user is a doctor and is online

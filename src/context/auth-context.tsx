@@ -189,9 +189,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // If the user is a doctor, also update the doctors collection
     if (user.isDoctor) {
         const doctorDocRef = doc(db, "doctors", user.id);
-        // We can pass the whole userData object, Firestore only updates fields that exist.
-        // This is useful for isOnline, but also if other profile details are edited.
-        await updateDoc(doctorDocRef, userData);
+        try {
+            await updateDoc(doctorDocRef, userData);
+        } catch (error) {
+            console.error("Could not find or update doctor document:", error);
+            // This might happen if the doctor doc doesn't exist yet, which is a state to handle.
+            // For now, we just log it.
+        }
     }
   };
 
