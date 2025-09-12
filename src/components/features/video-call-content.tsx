@@ -32,19 +32,55 @@ export function VideoCallContent() {
     const doctorName = 'Doctor'; // This can be fetched if needed
 
 
+    const handleLeave = useCallback(async () => {
+        if (zg.current) {
+            if (localStream) {
+                 zg.current.stopPublishingStream(`${user!.id}_${roomId}_main`);
+                 zg.current.destroyStream(localStream);
+            }
+            await zg.current.logoutRoom(roomId);
+            zg.current = null;
+        }
+        router.push('/home');
+    }, [localStream, roomId, router, user]);
+
     const setupZegoClient = useCallback(async (appId: number, token: string) => {
         if (!user || !zg.current) return;
         
-        zg.current.on('roomStateUpdate', (roomID, state) => {
+        zg.current.on('roomStateUpdate', async (roomID, state, errorCode, extendedData) => {
             if (state === 'CONNECTED') {
                 if(isComponentMounted.current) setIsLoading(false);
+                
+                // Create and publish stream only after successful connection
+                try {
+                    const stream = await zg.current!.createStream({camera: { video: true, audio: true }});
+                    if (localVideoRef.current) {
+                        localVideoRef.current.srcObject = stream;
+                    }
+                    if(isComponentMounted.current) setLocalStream(stream);
+                    zg.current!.startPublishingStream(`${user.id}_${roomId}_main`, stream);
+                } catch (streamError) {
+                     console.error('Zego stream creation failed after connect:', streamError);
+                     if(isComponentMounted.current) {
+                        toast({ variant: 'destructive', title: 'Camera/Mic Error', description: 'Could not access your camera or microphone.' });
+                        handleLeave();
+                    }
+                }
+
             } else if (state === 'DISCONNECTED') {
-                handleLeave();
+                if(isComponentMounted.current) {
+                    handleLeave();
+                }
+            } else if (state === 'CONNECTING') {
+                if(isComponentMounted.current) setIsLoading(true);
             }
         });
 
         zg.current.on('publisherStateUpdate', (result) => {
             console.log('publisherStateUpdate', result);
+            if (result.state === 'NO_PUBLISH') {
+                // Handle cases where publishing fails
+            }
         });
 
         zg.current.on('playerStateUpdate', (result) => {
@@ -54,11 +90,15 @@ export function VideoCallContent() {
         zg.current.on('roomStreamUpdate', async (roomID, updateType, streamList) => {
             if (updateType === 'ADD') {
                 const streamID = streamList[0].streamID;
-                const remote = await zg.current!.startPlayingStream(streamID);
-                if (remoteVideoRef.current) {
-                    remoteVideoRef.current.srcObject = remote;
+                try {
+                    const remote = await zg.current!.startPlayingStream(streamID);
+                    if (remoteVideoRef.current) {
+                        remoteVideoRef.current.srcObject = remote;
+                    }
+                    if(isComponentMounted.current) setRemoteStream(remote);
+                } catch (playError) {
+                    console.error("Failed to play remote stream:", playError);
                 }
-                if(isComponentMounted.current) setRemoteStream(remote);
             } else {
                 if(isComponentMounted.current) setRemoteStream(null);
                  if (remoteVideoRef.current) {
@@ -68,22 +108,17 @@ export function VideoCallContent() {
         });
         
         try {
+            // Login to the room
             await zg.current.loginRoom(roomId, token, { userID: user.id, userName: `${user.firstName} ${user.lastName}` });
-            const stream = await zg.current.createStream({camera: { video: true, audio: true }});
-            if (localVideoRef.current) {
-                localVideoRef.current.srcObject = stream;
-            }
-            if(isComponentMounted.current) setLocalStream(stream);
-            zg.current.startPublishingStream(`${user.id}_${roomId}_main`, stream);
         } catch(error) {
-            console.error('Zego login or stream creation failed:', error);
+            console.error('Zego login failed:', error);
             if(isComponentMounted.current) {
                 toast({ variant: 'destructive', title: 'Call Failed', description: 'Could not log in to the call room.' });
-                router.back();
+                handleLeave();
             }
         }
             
-    }, [user, roomId, router, toast]);
+    }, [user, roomId, toast, handleLeave]);
 
     useEffect(() => {
         isComponentMounted.current = true;
@@ -129,29 +164,11 @@ export function VideoCallContent() {
 
         return () => {
             isComponentMounted.current = false;
-            if (zg.current) {
-                if (localStream) {
-                    zg.current.destroyStream(localStream);
-                }
-                zg.current.stopPublishingStream(`${user!.id}_${roomId}_main`);
-                zg.current.logoutRoom(roomId);
-                zg.current = null;
-            }
+            handleLeave();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [user, roomId]);
     
-    const handleLeave = async () => {
-        if (zg.current) {
-            if (localStream) {
-                 zg.current.stopPublishingStream(`${user!.id}_${roomId}_main`);
-                 zg.current.destroyStream(localStream);
-            }
-            await zg.current.logoutRoom(roomId);
-            zg.current = null;
-        }
-        router.push('/home');
-    };
 
     const toggleAudio = async () => {
         if (localStream && zg.current) {
