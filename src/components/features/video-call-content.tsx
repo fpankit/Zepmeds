@@ -128,7 +128,7 @@ export function VideoCallContent() {
     );
     
     // Function to generate token client-side
-    const generateClientToken = (appId: number, serverSecret: string, userId: string) => {
+    const generateClientToken = (appId: number, serverSecret: string, userId: string, userName: string) => {
         const effectiveTimeInSeconds = 3600; // Token expiration time, in seconds.
         const createTime = Math.floor(new Date().getTime() / 1000);
         const expireTime = createTime + effectiveTimeInSeconds;
@@ -139,20 +139,23 @@ export function VideoCallContent() {
                 1: 1, // loginRoom
                 2: 1  // publishStream
             },
-            stream_id_list: null
+            stream_id_list: null,
+            user_name: userName,
         };
+        
         const payload = JSON.stringify(payloadObject);
 
-        // The token is a string in the format: "04" + Base64.encode(JSON.stringify(tokenInfo))
-        const token = `04${Buffer.from(JSON.stringify({
+        const tokenInfo = {
             app_id: appId,
             user_id: userId,
             nonce: uuidv4(),
             ctime: createTime,
             expire: expireTime,
             payload: payload
-        })).toString('base64')}`;
-
+        };
+        
+        const token = `04${Buffer.from(JSON.stringify(tokenInfo)).toString('base64')}`;
+        
         return token;
     }
 
@@ -194,7 +197,7 @@ export function VideoCallContent() {
 
             try {
                  // Generate token on the client-side for simplicity
-                const token = generateClientToken(appId, serverSecret, user.id);
+                const token = generateClientToken(appId, serverSecret, user.id, user.firstName + ' ' + user.lastName);
 
                 if (isComponentMounted.current) {
                     zg.current = new ZegoExpressEngine(appId, "wss://webliveroom" + appId + "-api.coolzcloud.com/ws");
