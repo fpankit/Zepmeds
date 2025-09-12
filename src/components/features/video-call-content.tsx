@@ -43,7 +43,7 @@ export function VideoCallContent({ roomId }: { roomId: string }) {
       {isConnected ? (
         <Conference peers={peers} />
       ) : (
-        <JoinForm user={user} roomId={roomId} />
+        <JoinForm user={user} />
       )}
     </div>
   );

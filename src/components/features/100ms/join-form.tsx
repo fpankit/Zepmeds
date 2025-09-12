@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 // The correct, static Room ID from the 100ms dashboard.
 const HMS_ROOM_ID = '68c3adbda5ba8326e6eb82df';
 
-export function JoinForm({ user, roomId: internalCallId }: { user: User, roomId: string }) {
+export function JoinForm({ user }: { user: User }) {
   const hmsActions = useHMSActions();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
