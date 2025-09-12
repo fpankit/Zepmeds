@@ -83,19 +83,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
+    let userToSet: User | null = null;
     if (storedUser) {
         try {
             const parsedUser = JSON.parse(storedUser);
-            // Ensure guest users get a unique ID on each session load if they don't have one
+            // Ensure guest users get a unique, valid ID on each session load
             if (parsedUser.isGuest) {
-                parsedUser.id = createGuestUser().id;
+                userToSet = createGuestUser();
+            } else {
+                userToSet = parsedUser;
             }
-            setUser(parsedUser);
         } catch (e) {
-            setUser(createGuestUser());
+            userToSet = createGuestUser();
         }
     } else {
-        setUser(createGuestUser());
+        userToSet = createGuestUser();
+    }
+    setUser(userToSet);
+    if(userToSet) {
+       localStorage.setItem('user', JSON.stringify(userToSet));
     }
     setLoading(false);
   }, []);
@@ -165,8 +171,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
       }
     }
-    setUser(createGuestUser());
-    localStorage.removeItem('user');
+    const guest = createGuestUser();
+    setUser(guest);
+    localStorage.setItem('user', JSON.stringify(guest));
   };
 
   const updateUser = async (userData: Partial<Omit<User, 'id'>>) => {
