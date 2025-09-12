@@ -1,5 +1,6 @@
 
 import {NextRequest, NextResponse} from 'next/server';
+import crypto from 'crypto';
 
 function generateZegoToken(
   appId: number,
@@ -8,7 +9,9 @@ function generateZegoToken(
   userId: string,
   expireInSeconds: number
 ): string {
-  const effectiveTimeInSeconds = expireInSeconds;
+  const now = Math.floor(new Date().getTime() / 1000);
+  const expire = now + expireInSeconds;
+
   const payloadObject = {
     room_id: roomId,
     privilege: {
@@ -21,21 +24,40 @@ function generateZegoToken(
   const tokenInfo = {
     app_id: appId,
     user_id: userId,
-    nonce: String(new Date().getTime()),
-    ctime: Math.floor(new Date().getTime() / 1000),
-    expire: Math.floor(new Date().getTime() / 1000) + effectiveTimeInSeconds,
+    nonce: String(crypto.randomBytes(8).readBigInt64BE()),
+    ctime: now,
+    expire: expire,
     payload: JSON.stringify(payloadObject),
   };
 
   const tokenJson = JSON.stringify(tokenInfo);
   
-  const iv = require('crypto').randomBytes(16);
-  const cipher = require('crypto').createCipheriv('aes-256-cbc', serverSecret, iv);
+  // Encrypt the token JSON
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', serverSecret, iv);
+  const encrypted = Buffer.concat([cipher.update(tokenJson), cipher.final()]);
 
-  let encrypted = cipher.update(tokenJson, 'utf8', 'base64');
-  encrypted += cipher.final('base64');
+  // Construct the final token buffer
+  // Format: expiration_time (4 bytes) + iv_length (2 bytes) + iv + ciphertext_length (2 bytes) + ciphertext
+  const tokenBuffer = Buffer.alloc(4 + 2 + 16 + 2 + encrypted.length);
+  let offset = 0;
+  
+  tokenBuffer.writeUInt32BE(expire, offset);
+  offset += 4;
+  
+  tokenBuffer.writeUInt16BE(iv.length, offset);
+  offset += 2;
+  
+  iv.copy(tokenBuffer, offset);
+  offset += iv.length;
 
-  const token = '04' + Buffer.from(iv.toString('hex') + encrypted, 'hex').toString('base64');
+  tokenBuffer.writeUInt16BE(encrypted.length, offset);
+  offset += 2;
+
+  encrypted.copy(tokenBuffer, offset);
+
+  // The final token is base64 encoded and prefixed with '04'
+  const token = '04' + tokenBuffer.toString('base64');
   
   return token;
 }
