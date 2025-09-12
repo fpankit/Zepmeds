@@ -42,10 +42,9 @@ export function VideoCallContent() {
                     console.error("Error destroying stream on leave:", e);
                  }
             }
-            // Only logout if the room is connected
-            if (zg.current.getRoomState(roomId) === 'CONNECTED') {
-                 await zg.current.logoutRoom(roomId);
-            }
+            // The SDK handles state internally; it's safe to call logoutRoom
+            // without checking the connection state first.
+            await zg.current.logoutRoom(roomId);
             zg.current = null;
         }
         if (localStream) {
