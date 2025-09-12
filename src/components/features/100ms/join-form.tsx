@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
 
 // Use the correct Room ID from your 100ms dashboard.
-const HMS_ROOM_ID = "1cd106a3-ea6f-41a8-926f-ca714adecb5c";
+const HMS_ROOM_ID = "68c3adbda5ba8326e6eb82df";
 
 export function JoinForm({ user, roomId: callId }: { user: User, roomId: string }) {
   const hmsActions = useHMSActions();
