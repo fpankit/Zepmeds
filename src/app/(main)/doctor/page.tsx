@@ -114,16 +114,17 @@ export default function DoctorPage() {
     }
     setIsCreatingLink(doctor.id);
     try {
-        // Create a call document in Firestore to act as the "room"
+        // Create a call document in Firestore to signal the doctor app
         const callDocRef = await addDoc(collection(db, 'video_calls'), {
             patientId: user.id,
             patientName: `${user.firstName} ${user.lastName}`,
             doctorId: doctor.id,
             doctorName: doctor.displayName,
-            status: 'ringing', // The doctor can be notified immediately
+            status: 'ringing', // This is the crucial status the doctor app listens for
             createdAt: serverTimestamp(),
         });
         
+        // Navigate the patient to our self-hosted call page
         router.push(`/call/${callDocRef.id}`);
 
     } catch (error: any) {
@@ -217,3 +218,5 @@ export default function DoctorPage() {
     </div>
   );
 }
+
+    
