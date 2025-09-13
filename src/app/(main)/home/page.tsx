@@ -21,8 +21,6 @@ import { Badge } from "@/components/ui/badge";
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
-    { title: "AI Symptom Checker", description: "Get instant health insights", icon: Bot, href: "/symptom-checker", color: "bg-sky-500" },
-    { title: "Echo Doc AI", description: "Talk to a medical AI", icon: MessageSquare, href: "/echo-doc", color: "bg-orange-500" },
     { title: "Consult a Doctor", description: "Online consultation", icon: Stethoscope, href: "/doctor", color: "bg-green-500" },
     { title: "First Aid Help", description: "Emergency tutorials", icon: HeartPulse, href: "/first-aid", color: "bg-yellow-500" },
     { title: "Emergency Services", description: "24/7 critical support", icon: Siren, href: "/emergency", color: "bg-red-500" },

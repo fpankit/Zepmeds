@@ -40,7 +40,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { CalendarIcon, PlusCircle, Bell, Loader2, Package, Clock, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, add, parse } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
@@ -52,7 +52,6 @@ import {
   where,
   onSnapshot,
 } from 'firebase/firestore';
-import { predictMedicineEndDate } from '@/ai/flows/predict-medicine-end-date';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const scheduleSchema = z
@@ -103,6 +102,24 @@ const MedicineCardSkeleton = () => (
     </CardContent>
   </Card>
 );
+
+// This function is now deterministic and does not call an AI flow.
+const predictEndDateLocal = (
+    { startDate, totalTablets, tabletsPerDose, timesPerDay }: {
+        startDate: Date,
+        totalTablets: number,
+        tabletsPerDose: number,
+        timesPerDay: number
+    }
+): Date => {
+    const dailyConsumption = tabletsPerDose * timesPerDay;
+    if (dailyConsumption <= 0) {
+        return add(new Date(), { years: 10 });
+    }
+    const durationInDays = Math.floor(totalTablets / dailyConsumption);
+    const endDate = add(startDate, { days: durationInDays > 0 ? durationInDays - 1 : 0 });
+    return endDate;
+};
 
 export default function ScheduleMedicinesPage() {
   const { user } = useAuth();
@@ -163,10 +180,9 @@ export default function ScheduleMedicinesPage() {
 
     setIsSubmitting(true);
     try {
-      // AI Prediction
       const tabletsPerDose = parseInt(data.dosage.split(' ')[0]) || 1;
-      const { predictedDate } = await predictMedicineEndDate({
-        startDate: data.startDate.toISOString(),
+      const predictedDate = predictEndDateLocal({
+        startDate: data.startDate,
         tabletsPerDose,
         timesPerDay: parseInt(data.frequency) || 1,
         totalTablets: data.quantity,
@@ -180,7 +196,7 @@ export default function ScheduleMedicinesPage() {
         frequency: data.frequency,
         start_date: data.startDate,
         end_date: data.endDate || null,
-        predicted_end_date: predictedDate ? new Date(predictedDate) : null,
+        predicted_end_date: predictedDate,
         auto_order_status: data.autoOrder ? 'Pending' : 'Off',
         last_updated: serverTimestamp(),
       });
@@ -228,23 +244,6 @@ export default function ScheduleMedicinesPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="my-medicines" className="mt-6">
-           <Card className="bg-primary/10 border-primary/20 mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-6 w-6 text-primary" />
-                  AI Scheduling Suggestion
-                </CardTitle>
-                <CardDescription>
-                  Let our AI analyze your past orders to suggest a medicine schedule for you. This is helpful if you frequently buy the same medicines.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={() => toast({ title: "Coming Soon!", description: "This feature is under development." })}>
-                  Analyze My Orders
-                </Button>
-              </CardContent>
-            </Card>
-
 
           {!showForm && (
             <Button className="w-full" onClick={() => setShowForm(true)}>
