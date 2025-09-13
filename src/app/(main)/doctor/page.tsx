@@ -7,11 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, query, onSnapshot } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
-import { useAuth, User as DoctorUser } from "@/context/auth-context";
+import { useAuth, User as AuthUser } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { deleteAllCalls } from "@/ai/flows/delete-all-calls";
@@ -36,7 +36,7 @@ const DoctorCardSkeleton = () => (
 );
 
 export default function DoctorPage() {
-  const [doctors, setDoctors] = useState<DoctorUser[]>([]);
+  const [doctors, setDoctors] = useState<AuthUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingLink, setIsCreatingLink] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -76,7 +76,7 @@ export default function DoctorPage() {
                 age: data.age || 0,
                 addresses: data.addresses || [],
                 isDoctor: true,
-             } as DoctorUser
+             } as AuthUser
         });
         
         fetchedDoctors.sort((a, b) => {
@@ -108,7 +108,7 @@ export default function DoctorPage() {
     return name.substring(0,2);
   }
 
-  const handleVideoCall = async (doctor: DoctorUser) => {
+  const handleVideoCall = async (doctor: AuthUser) => {
     if (!user || user.isGuest) {
         toast({ variant: "destructive", title: "Please login to start a call." });
         router.push('/login');
@@ -116,14 +116,17 @@ export default function DoctorPage() {
     }
     setIsCreatingLink(doctor.id);
     
-    // The Room ID must be a static, known ID from your 100ms dashboard.
-    // The `callDocRef.id` is for our internal tracking only.
-    const staticRoomId = '68c3adbda5ba8326e6eb82df';
-    
     try {
-        // We will create a unique call document for signaling.
-        // This is separate from the 100ms room.
         const callDocRef = doc(collection(db, 'video_calls'));
+        
+        await setDoc(callDocRef, {
+            patientId: user.id,
+            patientName: `${user.firstName} ${user.lastName}`,
+            doctorId: doctor.id,
+            doctorName: doctor.displayName,
+            status: 'ringing', // This is what the doctor app listens for
+            createdAt: new Date().toISOString(),
+        });
         
         // Navigate to a unique call page using our document ID
         router.push(`/call/${callDocRef.id}`);
@@ -204,7 +207,7 @@ export default function DoctorPage() {
                     <CardContent className="p-4">
                     <div className="flex items-center gap-4">
                         <Avatar className="h-20 w-20 border-4" style={{ borderColor: doctor.isOnline ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }}>
-                            <AvatarImage src={doctor.image} alt={doctor.displayName} data-ai-hint={doctor.dataAiHint} />
+                            <AvatarImage src={doctor.photoURL} alt={doctor.displayName} data-ai-hint={doctor.dataAiHint} />
                             <AvatarFallback>{getInitials(doctor.displayName || '')}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
