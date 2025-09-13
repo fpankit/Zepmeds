@@ -12,3 +12,5 @@ export default function CallPage() {
   // VideoCallContent is a Client Component that receives the roomId as a prop.
   return <VideoCallContent roomId={roomId} />;
 }
+
+    

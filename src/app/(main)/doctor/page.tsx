@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -122,6 +122,7 @@ export default function DoctorPage() {
             doctorName: doctor.displayName,
             status: 'ringing', // This is the crucial status the doctor app listens for
             createdAt: serverTimestamp(),
+            // The room ID is now the document ID itself
         });
         
         // Navigate the patient to our self-hosted call page
@@ -174,7 +175,7 @@ export default function DoctorPage() {
                     <CardContent className="p-4">
                     <div className="flex items-center gap-4">
                         <Avatar className="h-20 w-20 border-4" style={{ borderColor: doctor.isOnline ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }}>
-                            <AvatarImage src={doctor.photoURL} alt={doctor.displayName} data-ai-hint={doctor.dataAiHint} />
+                            <AvatarImage src={doctor.image} alt={doctor.displayName} data-ai-hint={doctor.dataAiHint} />
                             <AvatarFallback>{getInitials(doctor.displayName || '')}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
