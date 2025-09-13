@@ -4,7 +4,7 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { devLogger } from '@genkit-ai/next/plugin';
+import { devLogger } from '@genkit-ai/next/dev';
 import { firebase } from '@genkit-ai/firebase';
 
 // Load all available API keys from environment variables
@@ -68,3 +68,4 @@ import '@/ai/flows/generate-first-aid-advice.ts';
 import '@/ai/flows/predict-medicine-end-date.ts';
 import '@/ai/flows/generate-diet-plan.ts';
 import '@/ai/flows/delete-all-calls.ts';
+
