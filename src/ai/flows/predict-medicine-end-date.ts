@@ -8,7 +8,7 @@
  * @function predictMedicineEndDate - The main function to initiate the prediction flow.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai } from '@/ai/dev';
 import { z } from 'zod';
 import { add, format } from 'date-fns';
 

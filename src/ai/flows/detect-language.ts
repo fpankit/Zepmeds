@@ -8,7 +8,7 @@
  * @function detectLanguage - The main function to initiate the language detection flow.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai } from '@/ai/dev';
 import { z } from 'zod';
 
 const DetectLanguageInputSchema = z.object({

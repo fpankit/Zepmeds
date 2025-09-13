@@ -8,7 +8,7 @@
  * @function translateText - The main function to initiate the translation flow.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai } from '@/ai/dev';
 import { z } from 'zod';
 
 const TranslateTextInputSchema = z.object({

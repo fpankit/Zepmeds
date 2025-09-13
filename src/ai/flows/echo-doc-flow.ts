@@ -12,7 +12,7 @@
  * @function echoDocFlow - The main function to initiate the conversational flow.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai } from '@/ai/dev';
 import { z } from 'zod';
 
 const EchoDocInputSchema = z.object({

@@ -12,7 +12,7 @@
  * @function generateDietPlan - The main function to initiate the flow.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai } from '@/ai/dev';
 import { z } from 'zod';
 import { translateText } from './translate-text';
 

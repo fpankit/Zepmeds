@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -8,7 +9,7 @@
  * - GeneratePrescriptionSummaryOutput - The return type for the generatePrescriptionSummary function.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai } from '@/ai/dev';
 import { z } from 'zod';
 
 const GeneratePrescriptionSummaryInputSchema = z.object({
