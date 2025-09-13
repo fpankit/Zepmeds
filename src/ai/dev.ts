@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 
 // ✅ Correct Genkit + plugins imports
-import { genkit } from '@genkit-ai/core';
+import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { firebase } from '@genkit-ai/firebase';   // <- Corrected path
 
