@@ -12,8 +12,12 @@ export const ai = genkit({
     firebase,   // ✅ no parentheses
   ],
   model: 'googleai/gemini-2.5-flash',
-  flowRetryPolicy: {
-    maxAttempts: 3,
-    backoff: { initialDelay: 1000, maxDelay: 10000, factor: 2 },
-  },
+  telemetry: {
+    instrumentation: {
+      flowRetryPolicy: {
+        maxAttempts: 3,
+        backoff: { initialDelay: 1000, maxDelay: 10000, factor: 2 },
+      },
+    }
+  }
 });
