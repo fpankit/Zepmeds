@@ -109,21 +109,20 @@ export function EchoDocCallContent() {
                  setAudioQueue(prev => prev.slice(1));
                  return;
             }
-
-            setAudioQueue(prev => prev.slice(1));
             
-            // Set the text at the same time the audio starts playing
-            setCurrentAiResponse(text);
-            setStatus('speaking');
+            // Start playing audio first
             audioRef.current.src = nextAudio;
-            
             audioRef.current.play().catch(e => {
                 console.error("Audio playback failed:", e);
                 if (isMounted.current) {
                     setStatus('idle');
-                    setCurrentAiResponse(''); // Clear text if audio fails
                 }
             });
+
+            // Then update the UI
+            setAudioQueue(prev => prev.slice(1));
+            setCurrentAiResponse(text);
+            setStatus('speaking');
         }
     }, [audioQueue, status]);
 
@@ -332,7 +331,7 @@ export function EchoDocCallContent() {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="text-xl sm:text-2xl font-medium max-w-2xl text-foreground/90"
+                                className="text-[11px] font-medium max-w-2xl text-foreground/90"
                             >
                                {currentAiResponse}
                             </motion.p>
