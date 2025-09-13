@@ -7,7 +7,7 @@
  * @interface TextToSpeechOutput - Represents the output of the TTS flow.
  * @function textToSpeech - The main function to initiate the TTS flow.
  */
-import { ai } from '@/ai/genkit';
+import { ai } from '@/ai/dev'; // Use the server-side multi-key instance
 import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
 import wav from 'wav';
@@ -50,42 +50,38 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async ({ text }) => {
-    try {
-      const { media } = await ai.generate({
-        model: googleAI.model('gemini-2.5-flash-preview-tts'),
-        config: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Algenib' },
-            },
+    // No need for a try-catch here; the AI instance in dev.ts has a retry policy.
+    // Let errors propagate to the client to be handled there.
+    const { media } = await ai.generate({
+      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      config: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Algenib' },
           },
         },
-        prompt: text,
-      });
+      },
+      prompt: text,
+    });
 
-      if (!media?.url) {
-        throw new Error('No audio content was returned from the AI model.');
-      }
-      
-      const pcmBuffer = Buffer.from(
-        media.url.substring(media.url.indexOf(',') + 1),
-        'base64'
-      );
-
-      // --- Create WAV ---
-      const wavStream = new wav.Writer({ sampleRate: SAMPLE_RATE, channels: CHANNELS });
-      const wavPromise = streamToDataURI(wavStream, 'audio/wav');
-      wavStream.end(pcmBuffer);
-      
-      const audio = await wavPromise;
-
-      return { audio };
-
-    } catch (e: any) {
-        console.error(`[TextToSpeechError] Failed to convert text to speech. Input: "${text.substring(0, 30)}...". Error:`, e);
-        throw e;
+    if (!media?.url) {
+      throw new Error('No audio content was returned from the AI model.');
     }
+    
+    const pcmBuffer = Buffer.from(
+      media.url.substring(media.url.indexOf(',') + 1),
+      'base64'
+    );
+
+    // --- Create WAV ---
+    const wavStream = new wav.Writer({ sampleRate: SAMPLE_RATE, channels: CHANNELS });
+    const wavPromise = streamToDataURI(wavStream, 'audio/wav');
+    wavStream.end(pcmBuffer);
+    
+    const audio = await wavPromise;
+
+    return { audio };
   }
 );
 

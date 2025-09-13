@@ -110,7 +110,11 @@ export function EchoDocCallContent() {
                  return;
             }
             
-            // Start playing audio first
+            // Update the UI first
+            setCurrentAiResponse(text);
+            setStatus('speaking');
+
+            // Then start playing audio
             audioRef.current.src = nextAudio;
             audioRef.current.play().catch(e => {
                 console.error("Audio playback failed:", e);
@@ -119,10 +123,7 @@ export function EchoDocCallContent() {
                 }
             });
 
-            // Then update the UI
             setAudioQueue(prev => prev.slice(1));
-            setCurrentAiResponse(text);
-            setStatus('speaking');
         }
     }, [audioQueue, status]);
 
@@ -368,4 +369,3 @@ export function EchoDocCallContent() {
     );
 }
 
-    
