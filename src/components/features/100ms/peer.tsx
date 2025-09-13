@@ -2,16 +2,19 @@
 'use client';
 
 import { useVideo } from '@100mslive/react-sdk';
-import { useAudio } from '@100mslive/hms-video-store';
+import React from 'react';
 
 export function Peer({ peer }: { peer: any }) {
   const { videoRef } = useVideo({
     trackId: peer.videoTrack,
   });
+  const audioRef = React.useRef(null);
 
-  const { audioRef } = useAudio({
-    trackId: peer.audioTrack
-  });
+  React.useEffect(() => {
+    if (audioRef.current && peer.audioTrack) {
+        (audioRef.current as HTMLAudioElement).srcObject = peer.audioTrack;
+    }
+  }, [peer.audioTrack]);
 
   return (
     <div className="relative bg-black rounded-lg overflow-hidden">
