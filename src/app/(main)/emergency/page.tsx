@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import { Siren, MapPin, AlertTriangle, ShieldCheck, Phone, MessageSquare, Loader2, LocateFixed, Edit } from "lucide-react";
+import { Siren, MapPin, AlertTriangle, ShieldCheck, Phone, MessageSquare, Loader2, LocateFixed, Edit, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 import { db } from "@/lib/firebase";
@@ -36,6 +36,7 @@ export default function EmergencyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -51,6 +52,24 @@ export default function EmergencyPage() {
       setLocation(user.addresses[0].address);
     }
   }, [user]);
+  
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Set initial status
+    if (typeof navigator.onLine !== 'undefined') {
+        setIsOffline(!navigator.onLine);
+    }
+
+    return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const isDispatchDisabled = confirmationText !== "Help" || isLoading;
 
@@ -105,8 +124,6 @@ export default function EmergencyPage() {
 
     setIsLoading(true);
     
-    // Optimistically update the UI.
-    // Firestore's offline persistence will queue this request if offline.
     setIsDispatched(true);
 
     try {
@@ -120,17 +137,16 @@ export default function EmergencyPage() {
             status: "dispatched",
             createdAt: serverTimestamp(),
         });
-        // The request is now either sent or queued by Firestore.
-        // We can optionally show a different toast if online vs offline,
-        // but for user reassurance, showing success is often better.
+       
         toast({
-            title: "Request Sent",
-            description: "Help is on the way. Your request will be processed immediately.",
+            title: isOffline ? "Request Queued" : "Request Sent",
+            description: isOffline 
+                ? "You are offline. Your emergency request will be sent automatically when you reconnect."
+                : "Help is on the way. Your request will be processed immediately.",
         });
 
     } catch (error) {
         console.error("Failed to dispatch emergency:", error);
-        // If Firestore fails (e.g., permissions issue), revert the UI and notify user.
         setIsDispatched(false);
         toast({
             variant: "destructive",
@@ -138,7 +154,6 @@ export default function EmergencyPage() {
             description: "Could not send request. Please check your connection and try again.",
         });
     } finally {
-        // We stop the loading indicator, but keep the dispatched UI.
         setIsLoading(false);
     }
   };
@@ -182,10 +197,18 @@ export default function EmergencyPage() {
                 <Siren className="mx-auto h-12 w-12 text-red-500 animate-pulse" />
                 <CardTitle className="text-2xl font-bold text-red-400">Emergency Request</CardTitle>
                 <CardDescription className="text-yellow-400/80">
-                  Your request will be queued if you are offline and sent automatically upon reconnection.
+                  This service works offline. Your request will be sent automatically upon reconnection.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
+                
+                {isOffline && (
+                    <div className="flex items-center gap-3 p-3 rounded-md bg-yellow-500/10 border border-yellow-500/50 text-yellow-300">
+                        <WifiOff className="h-5 w-5"/>
+                        <p className="text-sm font-semibold">You are currently offline. Your request will be queued.</p>
+                    </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="emergency-details" className="text-red-400">Describe the Emergency</Label>
                   <Textarea id="emergency-details" placeholder="e.g., 'Chest pain and difficulty breathing'" rows={3} className="bg-card/50 focus:ring-red-500" value={emergencyDetails} onChange={(e) => setEmergencyDetails(e.target.value)} />
@@ -201,9 +224,9 @@ export default function EmergencyPage() {
                                 <Edit className="h-4 w-4" />
                             </Button>
                         </div>
-                        <Button variant="link" className="p-0 h-auto text-yellow-500 self-start" onClick={handleFetchLocation} disabled={isFetchingLocation}>
+                        <Button variant="link" className="p-0 h-auto text-yellow-500 self-start" onClick={handleFetchLocation} disabled={isFetchingLocation || isOffline}>
                              {isFetchingLocation ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixed className="h-4 w-4 mr-2" />}
-                            Use Current Location
+                            {isOffline ? "Cannot fetch location while offline" : "Use Current Location"}
                         </Button>
                         <EditAddressDialog
                             isOpen={isEditAddressOpen}

@@ -5,6 +5,7 @@
  *
  * The flow takes a user's health metrics and a target language as input, then generates
  * a culturally relevant health risk analysis, diet plan, exercise tips, home remedies, and do's/don'ts.
+ * It includes a fallback mechanism to generate a basic report if AI services are unavailable.
  *
  * @interface GenerateDietPlanInput - Represents the input for the flow.
  * @interface GenerateDietPlanOutput - Represents the output of the flow.
@@ -85,6 +86,48 @@ const englishPrompt = ai.definePrompt({
   `,
 });
 
+// Basic offline report generator
+const generateOfflineReport = (healthMetrics: z.infer<typeof HealthMetricsSchema>): GenerateDietPlanOutput => {
+    return {
+        healthAnalysis: {
+            riskSummary: "This is a basic offline analysis. For a detailed AI-powered report, please connect to the internet.",
+            risks: [
+                { condition: 'General Health', level: 'Review Needed', reason: 'Basic health metrics suggest a review of diet and exercise. Connect online for a full analysis.'}
+            ]
+        },
+        dietPlan: {
+            morning: "Start your day with a balanced breakfast like Poha, Upma, or Oatmeal.",
+            lunch: "Have a wholesome lunch with roti, dal, a vegetable curry, and a side of salad.",
+            dinner: "Keep dinner light. Options include Khichdi, soup, or grilled vegetables."
+        },
+        exerciseTips: [
+            "Aim for at least 30 minutes of brisk walking daily.",
+            "Incorporate stretching exercises to improve flexibility.",
+            "Stay hydrated throughout the day.",
+            "Take short breaks to walk and stretch if you have a sedentary job."
+        ],
+        homeRemedies: [
+            "Drink warm water with lemon and honey in the morning.",
+            "Include turmeric in your diet for its anti-inflammatory properties.",
+            "Chew on ginger or drink ginger tea to aid digestion."
+        ],
+        doAndDont: {
+            dos: [
+                "Eat a balanced diet with plenty of fruits and vegetables.",
+                "Get at least 7-8 hours of sleep per night.",
+                "Practice portion control during meals.",
+                "Monitor your health metrics regularly."
+            ],
+            donts: [
+                "Avoid processed and sugary foods.",
+                "Limit your intake of caffeine and alcohol.",
+                "Avoid a sedentary lifestyle.",
+                "Don't skip meals, especially breakfast."
+            ]
+        }
+    }
+}
+
 
 const generateDietPlanFlow = ai.defineFlow(
   {
@@ -103,9 +146,9 @@ const generateDietPlanFlow = ai.defineFlow(
           throw new Error("Failed to generate diet plan in English.");
       }
     } catch (e: any) {
-        console.error("AI report generation failed:", e);
-        // This makes the error more user-friendly if it bubbles up to the UI
-        throw new Error("The AI service is currently busy. Please wait a moment and try generating the report again.");
+        console.warn("AI report generation failed. Falling back to offline report.", e.message);
+        // Fallback to a basic, non-AI report if the AI call fails (e.g., offline)
+        englishResult = generateOfflineReport(healthMetrics);
     }
     
     // 2. If target language is English, return directly
@@ -128,49 +171,55 @@ const generateDietPlanFlow = ai.defineFlow(
     };
 
     // 3. Translate all parts of the result to the target language
-    const [
-        translatedAnalysisSummary,
-        translatedRisks,
-        translatedMorning,
-        translatedLunch,
-        translatedDinner,
-        translatedExercise,
-        translatedRemedies,
-        translatedDos,
-        translatedDonts
-    ] = await Promise.all([
-        translate(englishResult.healthAnalysis.riskSummary),
-        Promise.all(englishResult.healthAnalysis.risks.map(async (risk) => ({
-            condition: await translate(risk.condition),
-            level: await translate(risk.level),
-            reason: await translate(risk.reason),
-        }))),
-        translate(englishResult.dietPlan.morning),
-        translate(englishResult.dietPlan.lunch),
-        translate(englishResult.dietPlan.dinner),
-        translateArray(englishResult.exerciseTips),
-        translateArray(englishResult.homeRemedies),
-        translateArray(englishResult.doAndDont.dos),
-        translateArray(englishResult.doAndDont.donts),
-    ]);
+    try {
+        const [
+            translatedAnalysisSummary,
+            translatedRisks,
+            translatedMorning,
+            translatedLunch,
+            translatedDinner,
+            translatedExercise,
+            translatedRemedies,
+            translatedDos,
+            translatedDonts
+        ] = await Promise.all([
+            translate(englishResult.healthAnalysis.riskSummary),
+            Promise.all(englishResult.healthAnalysis.risks.map(async (risk) => ({
+                condition: await translate(risk.condition),
+                level: await translate(risk.level),
+                reason: await translate(risk.reason),
+            }))),
+            translate(englishResult.dietPlan.morning),
+            translate(englishResult.dietPlan.lunch),
+            translate(englishResult.dietPlan.dinner),
+            translateArray(englishResult.exerciseTips),
+            translateArray(englishResult.homeRemedies),
+            translateArray(englishResult.doAndDont.dos),
+            translateArray(englishResult.doAndDont.donts),
+        ]);
 
-    return {
-      healthAnalysis: {
-        riskSummary: translatedAnalysisSummary,
-        risks: translatedRisks,
-      },
-      dietPlan: {
-        morning: translatedMorning,
-        lunch: translatedLunch,
-        dinner: translatedDinner,
-      },
-      exerciseTips: translatedExercise,
-      homeRemedies: translatedRemedies,
-      doAndDont: {
-        dos: translatedDos,
-        donts: translatedDonts,
-      }
-    };
+        return {
+        healthAnalysis: {
+            riskSummary: translatedAnalysisSummary,
+            risks: translatedRisks,
+        },
+        dietPlan: {
+            morning: translatedMorning,
+            lunch: translatedLunch,
+            dinner: translatedDinner,
+        },
+        exerciseTips: translatedExercise,
+        homeRemedies: translatedRemedies,
+        doAndDont: {
+            dos: translatedDos,
+            donts: translatedDonts,
+        }
+        };
+    } catch (translationError) {
+        console.warn("Translation failed. Returning English version as fallback.");
+        // If translation fails (e.g., offline after generating English report), return the English version.
+        return englishResult;
+    }
   }
 );
 
