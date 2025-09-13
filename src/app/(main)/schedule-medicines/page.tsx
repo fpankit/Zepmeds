@@ -232,6 +232,12 @@ export default function ScheduleMedicinesPage() {
             Manage your medicine schedules and auto-orders.
           </CardDescription>
         </CardHeader>
+         <CardContent>
+            <Button variant="outline">
+                <Bot className="mr-2 h-4 w-4" />
+                AI Scheduling Suggestion
+            </Button>
+        </CardContent>
       </Card>
 
       <Tabs defaultValue="my-medicines">
