@@ -4,5 +4,5 @@
 export const HMS_CONFIG = {
   ACCESS_KEY: process.env.HMS_ACCESS_KEY,
   SECRET: process.env.HMS_SECRET,
-  ROOM_ID: process.env.HMS_ROOM_ID,
+  ROOM_ID: process.env.NEXT_PUBLIC_HMS_ROOM_ID,
 };
