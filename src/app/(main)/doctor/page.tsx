@@ -5,9 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, query, onSnapshot, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, onSnapshot, addDoc, serverTimestamp, getDocs, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
@@ -38,6 +38,7 @@ export default function DoctorPage() {
   const [doctors, setDoctors] = useState<DoctorUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingLink, setIsCreatingLink] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { user, updateUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -139,6 +140,35 @@ export default function DoctorPage() {
     }
   }
 
+  const handleClearCallHistory = async () => {
+    if (!confirm("Are you sure you want to delete all call records? This cannot be undone.")) {
+        return;
+    }
+    setIsDeleting(true);
+    try {
+        const callsQuery = query(collection(db, 'video_calls'));
+        const querySnapshot = await getDocs(callsQuery);
+        
+        if (querySnapshot.empty) {
+            toast({ title: "Already Clean", description: "There are no call records to delete." });
+            return;
+        }
+
+        const batch = writeBatch(db);
+        querySnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        toast({ title: "Success", description: `${querySnapshot.size} call records have been deleted.` });
+    } catch (error) {
+        console.error("Failed to clear call history:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete call records.' });
+    } finally {
+        setIsDeleting(false);
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
       <div className="flex flex-col items-center text-center space-y-2">
@@ -165,6 +195,19 @@ export default function DoctorPage() {
           </Button>
         </Card>
       )}
+
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-bold">Developer Utilities</h3>
+            <p className="text-sm text-muted-foreground">Clean up test data from the database.</p>
+          </div>
+          <Button onClick={handleClearCallHistory} variant="destructive" disabled={isDeleting}>
+            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Trash2 className="mr-2 h-4 w-4"/>}
+            {isDeleting ? 'Deleting...' : 'Clear Call History'}
+          </Button>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading && doctors.length === 0 ? (
@@ -219,5 +262,3 @@ export default function DoctorPage() {
     </div>
   );
 }
-
-    
