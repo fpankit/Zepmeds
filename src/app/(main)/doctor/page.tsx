@@ -124,7 +124,6 @@ export default function DoctorPage() {
             createdAt: serverTimestamp(),
         });
         
-        // The document ID becomes our unique room ID for Jitsi
         router.push(`/call/${callDocRef.id}`);
 
     } catch (error: any) {

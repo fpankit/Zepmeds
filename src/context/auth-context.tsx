@@ -145,19 +145,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // Sync doctor status if the user is a doctor
-        if (finalUser.isDoctor) {
-            const doctorDocRef = doc(db, "doctors", finalUser.id);
-            try {
-                const doctorSnap = await getDoc(doctorDocRef);
-                if (doctorSnap.exists()) {
-                    // Set doctor to be online on login and merge data
-                    await updateDoc(doctorDocRef, { isOnline: true });
-                    finalUser = { ...finalUser, ...doctorSnap.data(), isOnline: true };
-                }
-            } catch (e) {
-                console.error("Could not sync doctor status on login:", e);
-                // Non-fatal, proceed with login
+        const doctorDocRef = doc(db, "doctors", finalUser.id);
+        try {
+            const doctorSnap = await getDoc(doctorDocRef);
+            if (doctorSnap.exists()) {
+                // Set doctor to be online on login and merge data
+                await updateDoc(doctorDocRef, { isOnline: true });
+                finalUser = { ...finalUser, ...doctorSnap.data(), isDoctor: true, isOnline: true };
             }
+        } catch (e) {
+            console.error("Could not sync doctor status on login:", e);
+            // Non-fatal, proceed with login
         }
 
         setUser(finalUser);
