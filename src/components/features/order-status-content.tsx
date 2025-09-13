@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
-import { LiveTrackingMap } from './live-tracking-map';
 import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle, QrCode, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -18,6 +17,12 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '../ui/separator';
 import { Progress } from '../ui/progress';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+const LiveTrackingMap = dynamic(() => import('./live-tracking-map').then(mod => mod.LiveTrackingMap), {
+    ssr: false,
+    loading: () => <Skeleton className="h-48 w-full rounded-md" />
+});
 
 
 const riderDetails = {

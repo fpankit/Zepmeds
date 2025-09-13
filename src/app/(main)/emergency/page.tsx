@@ -16,8 +16,11 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from "next/dynamic";
-import { EditAddressDialog } from "@/components/features/edit-address-dialog";
 import { useRouter } from "next/navigation";
+
+const EditAddressDialog = dynamic(() => import('@/components/features/edit-address-dialog').then(mod => mod.EditAddressDialog), { 
+    ssr: false,
+});
 
 const RIDER_ARRIVAL_TIME = 10 * 60; // 10 minutes in seconds
 
