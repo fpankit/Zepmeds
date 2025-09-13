@@ -111,15 +111,18 @@ export function EchoDocCallContent() {
             }
 
             setAudioQueue(prev => prev.slice(1));
-            setStatus('speaking');
             
             // Set the text at the same time the audio starts playing
             setCurrentAiResponse(text);
+            setStatus('speaking');
             audioRef.current.src = nextAudio;
             
             audioRef.current.play().catch(e => {
                 console.error("Audio playback failed:", e);
-                if (isMounted.current) setStatus('idle');
+                if (isMounted.current) {
+                    setStatus('idle');
+                    setCurrentAiResponse(''); // Clear text if audio fails
+                }
             });
         }
     }, [audioQueue, status]);
@@ -141,7 +144,10 @@ export function EchoDocCallContent() {
             
             // If there are initial symptoms, process them after the greeting is queued.
             if (initialSymptoms) {
-                handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
+                // Add a slight delay to let the greeting start before processing symptoms
+                setTimeout(() => {
+                    handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
+                }, 500);
             }
         };
 
@@ -152,7 +158,11 @@ export function EchoDocCallContent() {
 
         const handleAudioEnd = () => {
             if (isMounted.current) {
-                 setStatus('idle');
+                 // If there's more in the queue, the other effect will handle it.
+                 // Otherwise, we go back to idle.
+                 if(audioQueue.length === 0) {
+                    setStatus('idle');
+                 }
             }
         };
         audio.addEventListener('ended', handleAudioEnd);
@@ -299,19 +309,19 @@ export function EchoDocCallContent() {
                 </Button>
             </header>
 
-            <main className="z-10 flex-1 flex flex-col items-center justify-center p-4 text-center space-y-6 overflow-y-auto">
+            <main className="z-10 flex-1 flex flex-col items-center justify-center p-4 text-center space-y-4 sm:space-y-6 overflow-y-auto pb-32 sm:pb-36">
                 <motion.div
                     animate={{ scale: status === 'listening' ? 1.1 : 1 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 10 }}
                     className="relative flex-shrink-0"
                 >
-                    <Avatar className="h-48 w-48 border-4 border-primary/50">
+                    <Avatar className="h-32 w-32 sm:h-48 sm:w-48 border-4 border-primary/50">
                         <AvatarImage src="https://picsum.photos/seed/ai-bot/200" alt="EchoDoc AI" data-ai-hint="abstract tech" />
                         <AvatarFallback className="text-6xl"><Bot /></AvatarFallback>
                     </Avatar>
                 </motion.div>
                 
-                <div className="min-h-[100px] flex items-center justify-center">
+                <div className="min-h-[100px] flex items-center justify-center w-full">
                     {status === 'processing' ? (
                         <Loader2 className="h-10 w-10 animate-spin text-primary" />
                     ) : (
@@ -322,7 +332,7 @@ export function EchoDocCallContent() {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="text-2xl font-medium max-w-2xl text-foreground/90"
+                                className="text-xl sm:text-2xl font-medium max-w-2xl text-foreground/90"
                             >
                                {currentAiResponse}
                             </motion.p>
@@ -331,25 +341,25 @@ export function EchoDocCallContent() {
                 </div>
             </main>
 
-            <footer className="absolute bottom-0 left-0 right-0 z-10 flex-shrink-0 p-6 flex flex-col items-center justify-center space-y-4">
-                 <div className="flex items-center justify-center gap-6">
+            <footer className="absolute bottom-0 left-0 right-0 z-10 flex-shrink-0 p-4 sm:p-6 flex flex-col items-center justify-center">
+                 <div className="flex items-center justify-center">
                     <Button 
                         size="icon" 
                         className={cn(
-                            "h-20 w-20 rounded-full transition-all duration-300 shadow-lg",
+                            "h-16 w-16 sm:h-20 sm:w-20 rounded-full transition-all duration-300 shadow-lg",
                             status === 'listening' ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary/90',
                             (status === 'processing') && 'bg-gray-500 cursor-not-allowed'
                         )}
                         onClick={handleMicToggle}
                         disabled={status === 'processing' || !SpeechRecognition}
                     >
-                        {status === 'listening' ? <MicOff className="h-8 w-8"/> : <Mic className="h-8 w-8"/>}
+                        {status === 'listening' ? <MicOff className="h-7 w-7 sm:h-8 sm:w-8"/> : <Mic className="h-7 w-7 sm:h-8 sm:w-8"/>}
                     </Button>
                      <Button 
                         onClick={handleEndCall} 
                         variant="destructive" 
                         size="icon" 
-                        className="absolute right-8 bottom-8 h-12 w-12 rounded-full"
+                        className="absolute right-4 bottom-6 sm:right-8 sm:bottom-8 h-12 w-12 rounded-full"
                     >
                         <PhoneOff className="h-6 w-6"/>
                     </Button>
@@ -357,4 +367,4 @@ export function EchoDocCallContent() {
             </footer>
         </div>
     );
- 
+}
