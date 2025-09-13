@@ -30,9 +30,7 @@ export const ai = genkit({
   plugins: [
     // Correctly initialize the googleAI plugin with the array of API keys.
     googleAI({ apiKey: apiKeys }),
-    firebase({
-      enableTracing: true,
-    }),
+    firebase,
   ],
   // The model name remains the same, Genkit will round-robin through the keys
   model: 'googleai/gemini-2.5-flash', 
