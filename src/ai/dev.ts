@@ -5,6 +5,7 @@ config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { devLogger, startFlows } from '@genkit-ai/next/server';
+import { firebase } from '@genkit-ai/firebase';
 
 // Load all available API keys from environment variables
 const apiKeys = [
@@ -36,6 +37,7 @@ const googleAIPlugins = apiKeys.map((apiKey, index) =>
 export const ai = genkit({
   plugins: [
     ...googleAIPlugins,
+    firebase(),
   ],
   // The model name remains the same, Genkit will round-robin through the plugins
   model: 'googleai/gemini-2.5-flash', 
@@ -65,5 +67,7 @@ import '@/ai-flows/text-to-speech.ts';
 import '@/ai/flows/generate-first-aid-advice.ts';
 import '@/ai/flows/predict-medicine-end-date.ts';
 import '@/ai/flows/generate-diet-plan.ts';
+import '@/ai/flows/delete-all-calls.ts';
+
 
 

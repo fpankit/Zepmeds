@@ -7,13 +7,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, query, onSnapshot, addDoc, serverTimestamp, getDocs, writeBatch } from "firebase/firestore";
+import { collection, query, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useAuth, User as DoctorUser } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { deleteAllCalls } from "@/ai/flows/delete-all-calls";
 
 
 const DoctorCardSkeleton = () => (
@@ -114,19 +115,17 @@ export default function DoctorPage() {
         return;
     }
     setIsCreatingLink(doctor.id);
+    
+    // The Room ID must be a static, known ID from your 100ms dashboard.
+    // The `callDocRef.id` is for our internal tracking only.
+    const staticRoomId = '68c3adbda5ba8326e6eb82df';
+    
     try {
-        // Create a call document in Firestore to signal the doctor app
-        const callDocRef = await addDoc(collection(db, 'video_calls'), {
-            patientId: user.id,
-            patientName: `${user.firstName} ${user.lastName}`,
-            doctorId: doctor.id,
-            doctorName: doctor.displayName,
-            status: 'ringing', // This is the crucial status the doctor app listens for
-            createdAt: serverTimestamp(),
-            // The room ID is now the document ID itself
-        });
+        // We will create a unique call document for signaling.
+        // This is separate from the 100ms room.
+        const callDocRef = doc(collection(db, 'video_calls'));
         
-        // Navigate the patient to our self-hosted call page
+        // Navigate to a unique call page using our document ID
         router.push(`/call/${callDocRef.id}`);
 
     } catch (error: any) {
@@ -146,24 +145,11 @@ export default function DoctorPage() {
     }
     setIsDeleting(true);
     try {
-        const callsQuery = query(collection(db, 'video_calls'));
-        const querySnapshot = await getDocs(callsQuery);
-        
-        if (querySnapshot.empty) {
-            toast({ title: "Already Clean", description: "There are no call records to delete." });
-            return;
-        }
-
-        const batch = writeBatch(db);
-        querySnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-
-        await batch.commit();
-        toast({ title: "Success", description: `${querySnapshot.size} call records have been deleted.` });
-    } catch (error) {
+        const result = await deleteAllCalls();
+        toast({ title: "Success", description: result.message });
+    } catch (error: any) {
         console.error("Failed to clear call history:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete call records.' });
+        toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not delete call records.' });
     } finally {
         setIsDeleting(false);
     }
