@@ -4,7 +4,7 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { firebase as googleFirebase } from '@genkit-ai/firebase';
+import { firebase } from '@genkit-ai/firebase';
 
 // Load all available API keys from environment variables
 const apiKeys = [
@@ -36,12 +36,13 @@ const googleAIPlugins = apiKeys.map((apiKey, index) =>
 export const ai = genkit({
   plugins: [
     ...googleAIPlugins,
-    googleFirebase(),
+    firebase({
+      flowStateStore: true,
+      traceStore: true,
+    }),
   ],
   // The model name remains the same, Genkit will round-robin through the plugins
   model: 'googleai/gemini-2.5-flash', 
-  flowStateStore: 'firebase',
-  traceStore: 'firebase',
   enableTracing: true,
   // Add a retry policy. If a request fails (e.g., due to quota on one key),
   // this policy will retry the flow. Genkit's load balancing will then
