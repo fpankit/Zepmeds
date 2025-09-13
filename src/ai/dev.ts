@@ -9,7 +9,7 @@ import { firebase } from '@genkit-ai/firebase';
 export const ai = genkit({
   plugins: [
     googleAI(),     // Reads GOOGLE_GENAI_API_KEY
-    firebase,     // Firebase plugin
+    firebase(),     // Firebase plugin
   ],
   model: 'googleai/gemini-2.5-flash',
   telemetry: {
