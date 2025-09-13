@@ -31,9 +31,7 @@ export const ai = genkit({
     // The googleAI plugin is a function that needs to be called.
     googleAI({ apiKey: apiKeys }),
     // The firebase plugin is a default export and must be called to be registered.
-    firebase({
-      enableTracing: true,
-    }),
+    firebase,
   ],
   // The model name remains the same, Genkit will round-robin through the keys
   model: 'googleai/gemini-2.5-flash', 
