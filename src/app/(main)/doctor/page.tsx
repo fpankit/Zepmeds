@@ -46,7 +46,6 @@ export default function DoctorPage() {
       if (!user || !user.isDoctor) return;
       
       const newStatus = !user.isOnline;
-      // This now updates the 'doctors' collection via the auth context
       await updateUser({ isOnline: newStatus });
 
       toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
@@ -60,8 +59,7 @@ export default function DoctorPage() {
         const fetchedDoctors = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return { 
-                id: data.uid || doc.id, // Use UID from data, fallback to doc.id
-                // Use displayName from doctor doc, fallback to constructing from user doc fields
+                id: data.uid || doc.id,
                 displayName: data.displayName || `${data.firstName} ${data.lastName}`, 
                 name: data.displayName || `${data.firstName} ${data.lastName}`,
                 specialty: data.qualification || data.specialty || "No Specialty",
@@ -69,7 +67,6 @@ export default function DoctorPage() {
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
                 isOnline: data.isOnline || false,
-                // Make sure all required fields for DoctorUser are here
                 firstName: data.firstName || '',
                 lastName: data.lastName || '',
                 email: data.email || '',
