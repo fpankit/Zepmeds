@@ -6,42 +6,21 @@ import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { firebase } from '@genkit-ai/firebase';   // ✅ named import
 
-// Collect keys
-const apiKeys = [
-  process.env.GEMINI_API_KEY,
-  process.env.GEMINI_API_KEY_1,
-  process.env.GEMINI_API_KEY_2,
-  process.env.GEMINI_API_KEY_3,
-  process.env.GEMINI_API_KEY_4,
-  process.env.GEMINI_API_KEY_5,
-  process.env.GEMINI_API_KEY_6,
-  process.env.GEMINI_API_KEY_7,
-  process.env.GEMINI_API_KEY_8,
-  process.env.GEMINI_API_KEY_9,
-  process.env.GEMINI_API_KEY_10,
-].filter((key): key is string => !!key);
+// Use the primary API key.
+const apiKey = process.env.GEMINI_API_KEY;
 
-if (apiKeys.length === 0) {
-  // Try the single env var if the array is empty
-  const singleKey = process.env.GEMINI_API_KEY;
-  if (singleKey) {
-    apiKeys.push(singleKey);
-  } else {
-    throw new Error('No Gemini API keys found. Please set GEMINI_API_KEY in your environment.');
-  }
+if (!apiKey) {
+  throw new Error('No Gemini API key found. Please set GEMINI_API_KEY in your .env file.');
 }
-
-// Simple round-robin: pick one key for each server start/request
-const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
 
 export const ai = genkit({
   plugins: [
-    googleAI({ apiKey: selectedKey }), // ✅ single key
-    firebase,                           // ✅ plugin object, not a function
+    googleAI({ apiKey }), // ✅ single key
+    firebase,             // ✅ plugin object, not a function
   ],
   model: 'googleai/gemini-2.5-flash',
-  flowRetryPolicy: {
-    maxAttempts: apiKeys.length + 1,
+  flowRetryPolicy: { // Keep retry policy in case of intermittent network errors
+    maxAttempts: 3,
     backoff: { initialDelay: 1000, maxDelay: 10000, factor: 2 },
   },
 });
