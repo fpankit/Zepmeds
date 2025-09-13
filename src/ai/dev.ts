@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { firebase } from '@genkit-ai/firebase';
+import firebase from '@genkit-ai/firebase';
 
 // Load all available API keys from environment variables
 const apiKeys = [
@@ -30,7 +30,7 @@ export const ai = genkit({
   plugins: [
     // The googleAI plugin is a function that needs to be called.
     googleAI({ apiKey: apiKeys }),
-    // The firebase plugin is a named export and must be called to be registered.
+    // The firebase plugin is a default export and must be called to be registered.
     firebase({
       enableTracing: true,
     }),
