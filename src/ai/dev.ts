@@ -1,4 +1,3 @@
-
 'use server';
 import { config } from 'dotenv';
 config({ path: '.env' });
@@ -39,9 +38,7 @@ const googleAIPlugins = apiKeys.map((apiKey, index) =>
 export const ai = genkit({
   plugins: [
     ...googleAIPlugins,
-    firebase({
-      enableTracing: true,
-    }),
+    firebase, // Pass the imported object directly
   ],
   // The model name remains the same, Genkit will round-robin through the plugins
   model: 'googleai/gemini-2.5-flash', 
