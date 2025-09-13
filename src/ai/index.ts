@@ -2,8 +2,6 @@
 // By centralizing imports here, we avoid circular dependencies between the
 // main AI configuration and the individual flow files.
 
-// Removed the import of dev.js to prevent re-initialization.
-
 import './flows/generate-prescription-summary.js';
 import './flows/translate-text.js';
 import './flows/ai-symptom-checker.js';
