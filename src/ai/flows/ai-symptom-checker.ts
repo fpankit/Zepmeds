@@ -8,8 +8,8 @@
  * - AiSymptomCheckerOutput - The return type for the aiSymptomChecker function.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { ai } from '@/ai/dev';
+import { z } from 'zod';
 
 const AiSymptomCheckerInputSchema = z.object({
   symptoms: z.string().describe('A description of the user\'s symptoms.'),
