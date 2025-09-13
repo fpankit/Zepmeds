@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Providers } from '@/components/layout/providers';
 import Script from 'next/script';
 import { Inter, Space_Grotesk } from 'next/font/google';
+import { IncomingCallManager } from '@/components/features/incoming-call-manager';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' });
@@ -25,6 +26,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <Providers>
+          <IncomingCallManager />
           {children}
           <Toaster />
         </Providers>

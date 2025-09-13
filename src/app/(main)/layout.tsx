@@ -1,10 +1,8 @@
-
 "use client";
 
 import { Header } from "@/components/layout/header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { usePathname } from "next/navigation";
-import { IncomingCallManager } from "@/components/features/incoming-call-manager";
 
 export default function MainLayout({
   children,
@@ -29,7 +27,6 @@ export default function MainLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <IncomingCallManager />
       {!isHeaderHidden && <Header />}
       <main className="flex-1 pb-20">
         {children}
