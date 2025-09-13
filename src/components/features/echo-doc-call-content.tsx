@@ -331,7 +331,7 @@ export function EchoDocCallContent() {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
                                 transition={{ duration: 0.3 }}
-                                className="text-[11px] font-medium max-w-2xl text-foreground/90"
+                                className="text-[14px] font-medium max-w-2xl text-foreground/90"
                             >
                                {currentAiResponse}
                             </motion.p>
@@ -367,3 +367,5 @@ export function EchoDocCallContent() {
         </div>
     );
 }
+
+    
