@@ -14,7 +14,7 @@ export function Peer({ peer }: { peer: any }) {
     if (audioRef.current && peer.audioTrack) {
         // The peer.audioTrack object is a MediaStream that can be directly assigned to srcObject.
         // The previous error was wrapping this in "new MediaStream([peer.audioTrack])", which is incorrect.
-        (audioRef.current as HTMLAudioElement).srcObject = peer.audioTrack;
+        audioRef.current.srcObject = peer.audioTrack;
     }
   }, [peer.audioTrack]);
 
