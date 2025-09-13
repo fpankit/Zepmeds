@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useVideo, useAudio } from '@100mslive/react-sdk';
+import { useVideo } from '@100mslive/react-sdk';
+import { useAudio } from '@100mslive/hms-video-store';
 
 export function Peer({ peer }: { peer: any }) {
   const { videoRef } = useVideo({
@@ -17,7 +18,7 @@ export function Peer({ peer }: { peer: any }) {
       <video
         ref={videoRef}
         autoPlay
-        muted={peer.isLocal} // Mute local peer to prevent echo, but not remote peers
+        muted={true} // Mute all video elements to prevent echo, audio is handled separately
         playsInline
         className={`h-full w-full object-cover ${peer.isLocal ? 'transform -scale-x-100' : ''}`}
       />
