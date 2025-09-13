@@ -3,7 +3,7 @@
 // By centralizing imports here, we avoid circular dependencies between the
 // main AI configuration and the individual flow files.
 
-import './dev.js'; // Ensures the AI configuration is loaded first
+// Removed the import of dev.js to prevent re-initialization.
 
 import './flows/generate-prescription-summary.js';
 import './flows/translate-text.js';
