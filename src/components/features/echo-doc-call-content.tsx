@@ -30,7 +30,7 @@ export function EchoDocCallContent() {
     const [status, setStatus] = useState<CallStatus>("idle");
     const [currentAiResponse, setCurrentAiResponse] = useState('');
     const [useTTS, setUseTTS] = useState(true);
-    const [audioQueue, setAudioQueue] = useState<string[]>([]);
+    const [audioQueue, setAudioQueue] = useState<{text: string; audio: string}[]>([]);
 
     const recognitionRef = useRef<any | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -39,9 +39,8 @@ export function EchoDocCallContent() {
      const speak = useCallback(async (text: string) => {
         if (!isMounted.current) return;
     
-        setCurrentAiResponse(text);
-
         if (!useTTS) {
+            setCurrentAiResponse(text);
             setStatus('speaking');
             // In text-only mode, simulate speaking time and then return to idle
             setTimeout(() => { if (isMounted.current) setStatus('idle'); }, 1500);
@@ -50,9 +49,9 @@ export function EchoDocCallContent() {
 
         try {
             const { audio } = await textToSpeech({ text });
-            // CRITICAL: Ensure we have a valid, non-empty audio URL before queueing
             if (isMounted.current && audio) {
-                setAudioQueue(prev => [...prev, audio]);
+                // Queue both the audio and the text to be displayed
+                setAudioQueue(prev => [...prev, { text, audio }]);
             } else {
                  throw new Error("Generated audio was empty or component unmounted.");
             }
@@ -69,8 +68,11 @@ export function EchoDocCallContent() {
                     ? "Switching to text-only mode for this session." 
                     : "Could not generate audio. Displaying text instead.",
             });
-            setUseTTS(false); // Fallback to text for the rest of the session
-            setStatus('idle'); // Revert to idle state on error
+            
+            // Fallback to text-only mode for this and subsequent messages
+            setUseTTS(false); 
+            setCurrentAiResponse(text); // Display the text since TTS failed
+            setStatus('idle');
         }
     }, [toast, useTTS]);
 
@@ -99,23 +101,24 @@ export function EchoDocCallContent() {
 
     // This effect processes the audio queue
     useEffect(() => {
-        // Only proceed if we have items in the queue, we are not already speaking, and the audio element is ready and paused.
         if (audioQueue.length > 0 && status !== 'speaking' && audioRef.current?.paused) {
-            const nextAudio = audioQueue[0];
+            const { text, audio: nextAudio } = audioQueue[0];
 
             if (!nextAudio) {
                  console.error("Dequeued an empty audio source.");
-                 setAudioQueue(prev => prev.slice(1)); // Remove invalid item
+                 setAudioQueue(prev => prev.slice(1));
                  return;
             }
 
             setAudioQueue(prev => prev.slice(1));
             setStatus('speaking');
+            
+            // Set the text at the same time the audio starts playing
+            setCurrentAiResponse(text);
             audioRef.current.src = nextAudio;
             
             audioRef.current.play().catch(e => {
                 console.error("Audio playback failed:", e);
-                // If playback fails, reset to idle to allow the user to try again.
                 if (isMounted.current) setStatus('idle');
             });
         }
@@ -133,8 +136,10 @@ export function EchoDocCallContent() {
                  greetingText += " How can I help you today?";
             }
             
+            // The speak function now handles queueing.
             await speak(greetingText);
             
+            // If there are initial symptoms, process them after the greeting is queued.
             if (initialSymptoms) {
                 handleSendTranscript(`I'm experiencing the following symptoms: ${initialSymptoms}`);
             }
@@ -142,14 +147,11 @@ export function EchoDocCallContent() {
 
         const timer = setTimeout(greetAndProcess, 500);
 
-        // Initialize Audio element
         const audio = new Audio();
         audioRef.current = audio;
 
-        // The 'ended' event is the single source of truth for when playback is finished.
         const handleAudioEnd = () => {
             if (isMounted.current) {
-                 // Set status to idle to allow the next audio in queue to play, or to listen to the user.
                  setStatus('idle');
             }
         };
@@ -234,8 +236,6 @@ export function EchoDocCallContent() {
             setAudioQueue([]);
             setCurrentAiResponse('');
             
-            // Fix: setStatus('idle') might not have been processed yet.
-            // Using a guard to prevent immediate re-start is safer.
             if (recognitionRef.current.state !== 'recognizing') {
                  try {
                     recognition.start();
@@ -357,4 +357,4 @@ export function EchoDocCallContent() {
             </footer>
         </div>
     );
-}
+ 
