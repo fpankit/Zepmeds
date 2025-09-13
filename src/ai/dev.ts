@@ -4,7 +4,7 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { devLogger, startFlows } from '@genkit-ai/next/server';
+import { devLogger } from '@genkit-ai/next/plugin';
 import { firebase } from '@genkit-ai/firebase';
 
 // Load all available API keys from environment variables
