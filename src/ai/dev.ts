@@ -2,7 +2,7 @@
 'use server';
 import { config } from 'dotenv';
 config({ path: '.env' });
-import { genkit } from 'genkit';
+import { genkit } from '@genkit-ai/core';
 import { googleAI } from '@genkit-ai/googleai';
 import { firebase } from '@genkit-ai/firebase';
 
