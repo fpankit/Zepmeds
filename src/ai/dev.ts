@@ -28,9 +28,12 @@ if (apiKeys.length === 0) {
 
 export const ai = genkit({
   plugins: [
-    // Correctly initialize the googleAI plugin with the array of API keys.
+    // The googleAI plugin is a function that needs to be called.
     googleAI({ apiKey: apiKeys }),
-    firebase,
+    // The firebase plugin is also a function and must be called to be registered.
+    firebase({
+      enableTracing: true,
+    }),
   ],
   // The model name remains the same, Genkit will round-robin through the keys
   model: 'googleai/gemini-2.5-flash', 
