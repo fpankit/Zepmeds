@@ -36,10 +36,7 @@ const googleAIPlugins = apiKeys.map((apiKey, index) =>
 export const ai = genkit({
   plugins: [
     ...googleAIPlugins,
-    firebase({
-      flowStateStore: true,
-      traceStore: true,
-    }),
+    firebase,
   ],
   // The model name remains the same, Genkit will round-robin through the plugins
   model: 'googleai/gemini-2.5-flash', 
