@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useVideo } from '@100mslive/react-sdk';
@@ -14,10 +13,9 @@ export function Peer({ peer }: { peer: any }) {
   // useEffect to handle the audio track
   useEffect(() => {
     if (peer.audioTrack && audioRef.current) {
-      // Create a new MediaStream and add the audio track to it.
-      const mediaStream = new MediaStream([peer.audioTrack]);
-      audioRef.current.srcObject = mediaStream;
-      audioRef.current.play().catch(e => console.error("Audio play failed", e));
+      // The peer.audioTrack object is a MediaStream that can be directly assigned to srcObject.
+      // The previous error was wrapping this in "new MediaStream([peer.audioTrack])", which is incorrect.
+      audioRef.current.srcObject = peer.audioTrack;
     }
   }, [peer.audioTrack]);
 
@@ -51,4 +49,3 @@ export function Peer({ peer }: { peer: any }) {
     </div>
   );
 }
-
