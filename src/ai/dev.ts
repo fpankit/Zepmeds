@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import firebase from '@genkit-ai/firebase';
+import { firebase } from '@genkit-ai/firebase';   // ✅ named import
 
 // Collect keys
 const apiKeys = [
@@ -32,7 +32,7 @@ const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
 export const ai = genkit({
   plugins: [
     googleAI({ apiKey: selectedKey }), // ✅ single key
-    firebase(),                        // ✅ function call
+    firebase,                           // ✅ plugin object, not a function
   ],
   model: 'googleai/gemini-2.5-flash',
   flowRetryPolicy: {
