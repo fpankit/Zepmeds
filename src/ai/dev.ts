@@ -1,15 +1,14 @@
-
 'use server';
 import { config } from 'dotenv';
 config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import firebase from '@genkit-ai/firebase';
+import { firebase } from '@genkit-ai/firebase';
 
 export const ai = genkit({
   plugins: [
     googleAI,   // Reads from GOOGLE_GENAI_API_KEY in .env
-    firebase(), // Correctly call the default export as a function
+    firebase,   // The firebase plugin object
   ],
   model: 'googleai/gemini-2.5-flash',
   telemetry: {
