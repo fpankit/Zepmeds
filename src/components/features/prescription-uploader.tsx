@@ -1,20 +1,18 @@
 
-
 "use client";
 
 import { useState, useRef, ChangeEvent } from "react";
-import Image from "next/image";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { generatePrescriptionSummary, GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, UploadCloud, FileText, X, ShoppingCart } from "lucide-react";
+import { Loader2, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/context/auth-context";
 import { CartItem } from "@/lib/types";
+import type { GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
+
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -32,7 +30,7 @@ const formSchema = z.object({
 
 export interface PrescriptionUploadDetails {
     prescriptionId: string;
-    summary: GeneratePrescriptionSummaryOutput;
+    summary: GeneratePrescriptionSummaryOutput; // Keep type for compatibility, but pass empty data
     dataUri: string;
 }
 
@@ -81,15 +79,13 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
 
     try {
       const dataUri = await toBase64(file);
-      const summary = await generatePrescriptionSummary({ prescriptionImageUri: dataUri });
       
-      // Save to the new 'prescriptions' collection for admin review
+      // Save to the 'prescriptions' collection for admin review without AI summary
       const prescriptionDocRef = await addDoc(collection(db, "prescriptions"), {
           userId: user.id,
           userName: `${user.firstName} ${user.lastName}`,
           userPhone: user.phone,
           prescriptionImageUri: dataUri,
-          aiSummary: summary,
           requestedMedicines: cart.map(item => ({ name: item.name, quantity: item.quantity })),
           status: 'pending', // 'pending', 'approved', 'rejected'
           createdAt: serverTimestamp(),
@@ -100,15 +96,19 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
           description: "Our team will now verify your prescription. You will be notified once it's approved.",
       });
 
-      // Pass the new document ID and other details back to the cart page
-      onUploadSuccess({ prescriptionId: prescriptionDocRef.id, summary, dataUri });
+      // Pass the new document ID back, with an empty summary to satisfy the type
+      onUploadSuccess({ 
+        prescriptionId: prescriptionDocRef.id, 
+        summary: { medicines: [] }, // Provide empty summary
+        dataUri 
+      });
 
     } catch (err) {
       console.error(err);
       toast({
         variant: "destructive",
         title: "Upload Failed",
-        description: "Failed to upload or analyze prescription. Please try again.",
+        description: "Failed to upload prescription. Please try again.",
       });
       resetState();
     } finally {
@@ -129,7 +129,7 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
         {isLoading && (
               <div className="flex items-center justify-center gap-2 text-muted-foreground p-8">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <p>AI is analyzing your prescription...</p>
+                <p>Uploading prescription...</p>
               </div>
         )}
         {!preview && !isLoading && (
