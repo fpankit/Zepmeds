@@ -13,9 +13,9 @@ export function Peer({ peer }: { peer: any }) {
   // useEffect to handle the audio track
   useEffect(() => {
     if (peer.audioTrack && audioRef.current) {
-      // The peer.audioTrack object is a MediaStream that can be directly assigned to srcObject.
-      // The previous error was wrapping this in "new MediaStream([peer.audioTrack])", which is incorrect.
-      audioRef.current.srcObject = peer.audioTrack;
+      // Create a new MediaStream and add the audio track to it, as per the fix.
+      const mediaStream = new MediaStream([peer.audioTrack]);
+      audioRef.current.srcObject = mediaStream;
     }
   }, [peer.audioTrack]);
 
@@ -26,7 +26,7 @@ export function Peer({ peer }: { peer: any }) {
           ref={videoRef}
           autoPlay
           playsInline
-          muted={true} // Video should always be muted to prevent echo
+          muted={true} // Video is always muted to prevent echo
           className={`h-full w-full object-cover ${peer.isLocal ? 'transform -scale-x-100' : ''}`}
         />
       ) : (
