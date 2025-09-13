@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import firebase from '@genkit-ai/firebase';
+import { firebase } from '@genkit-ai/firebase';
 
 // Load all available API keys from environment variables
 const apiKeys = [
@@ -23,14 +23,14 @@ const apiKeys = [
 ].filter((key): key is string => !!key); // Filter out any undefined keys
 
 if (apiKeys.length === 0) {
-    throw new Error("No Gemini API keys found in environment variables. Please set GEMINI_API_KEY_1, etc.");
+  throw new Error("No Gemini API keys found in environment variables. Please set GEMINI_API_KEY_1, etc.");
 }
 
 export const ai = genkit({
   plugins: [
     // The googleAI plugin is a function that needs to be called.
     googleAI({ apiKey: apiKeys }),
-    // The firebase plugin is also a function and must be called to be registered.
+    // The firebase plugin is a named export and must be called to be registered.
     firebase({
       enableTracing: true,
     }),
