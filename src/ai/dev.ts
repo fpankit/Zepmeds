@@ -28,15 +28,22 @@ if (apiKeys.length === 0) {
 
 export const ai = genkit({
   plugins: [
+    // Correctly initialize the googleAI plugin with the array of API keys.
     googleAI({ apiKey: apiKeys }),
-    firebase,
+    firebase({
+      enableTracing: true,
+    }),
   ],
+  // The model name remains the same, Genkit will round-robin through the keys
   model: 'googleai/gemini-2.5-flash', 
+  // Add a retry policy. If a request fails (e.g., due to quota on one key),
+  // this policy will retry the flow. Genkit's load balancing will then
+  // use the next available key.
   flowRetryPolicy: {
-    maxAttempts: apiKeys.length + 1,
+    maxAttempts: apiKeys.length + 1, // Allow enough attempts to cycle through keys
     backoff: {
-      initialDelay: 1000,
-      maxDelay: 10000,
+      initialDelay: 1000, // 1 second
+      maxDelay: 10000,    // 10 seconds
       factor: 2,
     },
   },
