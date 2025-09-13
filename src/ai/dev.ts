@@ -26,30 +26,17 @@ if (apiKeys.length === 0) {
     throw new Error("No Gemini API keys found in environment variables. Please set GEMINI_API_KEY_1, etc.");
 }
 
-// Create a Google AI plugin for each key
-const googleAIPlugins = apiKeys.map((apiKey, index) => 
-    googleAI({ 
-        apiKey,
-        // Optional: you can give each client a name for better tracing
-        // clientName: `google-ai-key-${index + 1}`
-    })
-);
-
 export const ai = genkit({
   plugins: [
-    ...googleAIPlugins,
-    firebase, // Pass the imported object directly
+    googleAI({ apiKey: apiKeys }),
+    firebase,
   ],
-  // The model name remains the same, Genkit will round-robin through the plugins
   model: 'googleai/gemini-2.5-flash', 
-  // Add a retry policy. If a request fails (e.g., due to quota on one key),
-  // this policy will retry the flow. Genkit's load balancing will then
-  // likely use the next available plugin/key.
   flowRetryPolicy: {
-    maxAttempts: apiKeys.length + 1, // Allow enough attempts to cycle through keys
+    maxAttempts: apiKeys.length + 1,
     backoff: {
-      initialDelay: 1000, // 1 second
-      maxDelay: 10000,    // 10 seconds
+      initialDelay: 1000,
+      maxDelay: 10000,
       factor: 2,
     },
   },
