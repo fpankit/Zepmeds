@@ -8,6 +8,7 @@ import { firebase } from '@genkit-ai/firebase';   // ✅ named import
 
 // Collect keys
 const apiKeys = [
+  process.env.GEMINI_API_KEY,
   process.env.GEMINI_API_KEY_1,
   process.env.GEMINI_API_KEY_2,
   process.env.GEMINI_API_KEY_3,
@@ -21,7 +22,13 @@ const apiKeys = [
 ].filter((key): key is string => !!key);
 
 if (apiKeys.length === 0) {
-  throw new Error('No Gemini API keys found.');
+  // Try the single env var if the array is empty
+  const singleKey = process.env.GEMINI_API_KEY;
+  if (singleKey) {
+    apiKeys.push(singleKey);
+  } else {
+    throw new Error('No Gemini API keys found. Please set GEMINI_API_KEY in your environment.');
+  }
 }
 
 // Simple round-robin: pick one key for each server start/request
