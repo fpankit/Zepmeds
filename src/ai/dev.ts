@@ -5,7 +5,7 @@ import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import firebase from '@genkit-ai/firebase';
 
-// Load all available API keys from environment variables
+// Collect keys
 const apiKeys = [
   process.env.GEMINI_API_KEY_1,
   process.env.GEMINI_API_KEY_2,
@@ -20,30 +20,23 @@ const apiKeys = [
   process.env.GEMINI_API_KEY_8,
   process.env.GEMINI_API_KEY_9,
   process.env.GEMINI_API_KEY_10,
-].filter((key): key is string => !!key); // Filter out any undefined keys
+].filter((key): key is string => !!key);
 
 if (apiKeys.length === 0) {
-  throw new Error("No Gemini API keys found in environment variables. Please set GEMINI_API_KEY_1, etc.");
+  throw new Error('No Gemini API keys found.');
 }
+
+// Simple round-robin: pick one key for each server start/request
+const selectedKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
 
 export const ai = genkit({
   plugins: [
-    // The googleAI plugin is a function that needs to be called.
-    googleAI({ apiKey: apiKeys }),
-    // The firebase plugin is a default export and must be called to be registered.
-    firebase,
+    googleAI({ apiKey: selectedKey }), // ✅ single key
+    firebase(),                        // ✅ function call
   ],
-  // The model name remains the same, Genkit will round-robin through the keys
-  model: 'googleai/gemini-2.5-flash', 
-  // Add a retry policy. If a request fails (e.g., due to quota on one key),
-  // this policy will retry the flow. Genkit's load balancing will then
-  // use the next available key.
+  model: 'googleai/gemini-2.5-flash',
   flowRetryPolicy: {
-    maxAttempts: apiKeys.length + 1, // Allow enough attempts to cycle through keys
-    backoff: {
-      initialDelay: 1000, // 1 second
-      maxDelay: 10000,    // 10 seconds
-      factor: 2,
-    },
+    maxAttempts: apiKeys.length + 1,
+    backoff: { initialDelay: 1000, maxDelay: 10000, factor: 2 },
   },
 });
