@@ -36,11 +36,12 @@ const googleAIPlugins = apiKeys.map((apiKey, index) =>
 export const ai = genkit({
   plugins: [
     ...googleAIPlugins,
-    firebase,
+    firebase({
+      enableTracing: true,
+    }),
   ],
   // The model name remains the same, Genkit will round-robin through the plugins
   model: 'googleai/gemini-2.5-flash', 
-  enableTracing: true,
   // Add a retry policy. If a request fails (e.g., due to quota on one key),
   // this policy will retry the flow. Genkit's load balancing will then
   // likely use the next available plugin/key.
