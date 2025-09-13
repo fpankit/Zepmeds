@@ -68,7 +68,3 @@ import '@/ai/flows/generate-first-aid-advice.ts';
 import '@/ai/flows/predict-medicine-end-date.ts';
 import '@/ai/flows/generate-diet-plan.ts';
 import '@/ai/flows/delete-all-calls.ts';
-
-
-
-
