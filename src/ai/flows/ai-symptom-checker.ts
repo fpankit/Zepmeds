@@ -25,10 +25,6 @@ const AiSymptomCheckerOutputSchema = z.object({
 });
 export type AiSymptomCheckerOutput = z.infer<typeof AiSymptomCheckerOutputSchema>;
 
-export async function aiSymptomChecker(input: AiSymptomCheckerInput): Promise<AiSymptomCheckerOutput> {
-  return aiSymptomCheckerFlow(input);
-}
-
 const prompt = ai.definePrompt({
   name: 'aiSymptomCheckerPrompt',
   input: { schema: AiSymptomCheckerInputSchema },
@@ -51,7 +47,7 @@ const prompt = ai.definePrompt({
   `,
 });
 
-const aiSymptomCheckerFlow = ai.defineFlow(
+export const aiSymptomChecker = ai.defineFlow(
   {
     name: 'aiSymptomCheckerFlow',
     inputSchema: AiSymptomCheckerInputSchema,
