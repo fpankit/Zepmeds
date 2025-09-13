@@ -17,8 +17,7 @@ export function Peer({ peer }: { peer: any }) {
       // Create a new MediaStream and add the audio track to it
       const mediaStream = new MediaStream([peer.audioTrack]);
       audioRef.current.srcObject = mediaStream;
-      // It's good practice to call play() in case autoplay is blocked
-      audioRef.current.play().catch(e => console.error("Audio playback failed", e));
+      audioRef.current.play().catch(e => console.error("Audio play failed", e));
     }
   }, [peer.audioTrack]);
 
@@ -29,7 +28,7 @@ export function Peer({ peer }: { peer: any }) {
           ref={videoRef}
           autoPlay
           playsInline
-          muted // The video should always be muted to prevent echo
+          muted={peer.isLocal} // Fix: Use peer.isLocal to only mute local user
           className={`h-full w-full object-cover ${peer.isLocal ? 'transform -scale-x-100' : ''}`}
         />
       ) : (
