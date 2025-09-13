@@ -4,7 +4,6 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { devLogger } from '@genkit-ai/next';
 import { firebase } from '@genkit-ai/firebase';
 
 // Load all available API keys from environment variables
@@ -43,7 +42,6 @@ export const ai = genkit({
   model: 'googleai/gemini-2.5-flash', 
   flowStateStore: 'firebase',
   traceStore: 'firebase',
-  logger: devLogger,
   enableTracing: true,
   // Add a retry policy. If a request fails (e.g., due to quota on one key),
   // this policy will retry the flow. Genkit's load balancing will then
@@ -68,4 +66,3 @@ import '@/ai/flows/generate-first-aid-advice.ts';
 import '@/ai/flows/predict-medicine-end-date.ts';
 import '@/ai/flows/generate-diet-plan.ts';
 import '@/ai/flows/delete-all-calls.ts';
-
