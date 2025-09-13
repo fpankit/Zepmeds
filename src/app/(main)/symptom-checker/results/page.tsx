@@ -40,6 +40,12 @@ function SymptomResults() {
   const [suggestedDoctors, setSuggestedDoctors] = useState<AuthUser[]>([]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+        setIsOffline(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!symptoms) {
       setError('No symptoms provided.');
       setIsLoading(false);
@@ -49,18 +55,22 @@ function SymptomResults() {
     const getAnalysis = async () => {
       setIsLoading(true);
       setError(null);
+      
+      if (isOffline) {
+          setResult(offlineGuide);
+          setIsLoading(false);
+          return;
+      }
+
       try {
         const analysis = await aiSymptomChecker({ symptoms });
         setResult(analysis);
-        setIsOffline(false); // If it succeeds, we're online
         if(analysis.suggestedSpecialty) {
             fetchDoctors(analysis.suggestedSpecialty);
         }
       } catch (e) {
         console.error(e);
-        // Assume failure is due to being offline
-        setResult(offlineGuide);
-        setIsOffline(true);
+        setError("The AI symptom checker failed to generate a response. This could be due to a temporary issue with the service. Please try again later.");
       } finally {
         setIsLoading(false);
       }
@@ -78,7 +88,7 @@ function SymptomResults() {
     }
 
     getAnalysis();
-  }, [symptoms]);
+  }, [symptoms, isOffline]);
 
 
   const analysisSections = useMemo(() => [
