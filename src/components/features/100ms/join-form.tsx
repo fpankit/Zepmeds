@@ -9,6 +9,9 @@ import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
+// The correct, static Room ID from the 100ms dashboard.
+const HMS_ROOM_ID = '68c3adbda5ba8326e6eb82df';
+
 export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
   const hmsActions = useHMSActions();
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +29,7 @@ export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
-                room_id: roomId, 
+                room_id: HMS_ROOM_ID, // ALWAYS use the static Room ID for token generation
                 role: userRole,
             }),
         });
