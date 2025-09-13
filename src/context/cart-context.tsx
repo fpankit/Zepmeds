@@ -3,12 +3,11 @@
 "use client";
 
 import { CartItem, Product } from "@/lib/types";
-import { GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
 export interface PrescriptionForCheckout {
     id: string;
-    summary: GeneratePrescriptionSummaryOutput;
+    summary: any;
     dataUri: string;
 }
 

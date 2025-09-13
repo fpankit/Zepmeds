@@ -11,7 +11,6 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/context/auth-context";
 import { CartItem } from "@/lib/types";
-import type { GeneratePrescriptionSummaryOutput } from "@/ai/flows/generate-prescription-summary";
 
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -30,7 +29,7 @@ const formSchema = z.object({
 
 export interface PrescriptionUploadDetails {
     prescriptionId: string;
-    summary: GeneratePrescriptionSummaryOutput; // Keep type for compatibility, but pass empty data
+    summary: any; // Allow any for now to avoid breaking changes
     dataUri: string;
 }
 

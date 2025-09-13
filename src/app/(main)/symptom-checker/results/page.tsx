@@ -4,7 +4,6 @@
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { aiSymptomChecker, AISymptomCheckerOutput } from '@/ai/flows/ai-symptom-checker';
-import { translateText } from '@/ai/flows/translate-text';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Pill, Apple, ShieldAlert, Dumbbell, Stethoscope, Bot, MessageSquare, AlertTriangle } from 'lucide-react';
@@ -13,16 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DoctorSuggestionCard } from '@/components/features/doctor-suggestion-card';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Doctor } from '@/hooks/use-calls';
+import { User as AuthUser } from '@/context/auth-context';
 
-type TranslatedContent = {
-    response?: string;
-    medicines?: string;
-    diet?: string;
-    precautions?: string;
-    workouts?: string;
-    advice?: string;
-}
 
 const offlineGuide: AISymptomCheckerOutput = {
     response: "You appear to be offline. The following is a general first aid guide. For personalized advice, please connect to the internet.",
@@ -46,8 +37,7 @@ function SymptomResults() {
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [targetLang, setTargetLang] = useState('English');
-  const [translatedResult, setTranslatedResult] = useState<TranslatedContent | null>(null);
-  const [suggestedDoctors, setSuggestedDoctors] = useState<Doctor[]>([]);
+  const [suggestedDoctors, setSuggestedDoctors] = useState<AuthUser[]>([]);
 
   useEffect(() => {
     if (!symptoms) {
@@ -80,7 +70,7 @@ function SymptomResults() {
         try {
             const q = query(collection(db, "doctors"), where("specialty", "==", specialty), limit(3));
             const querySnapshot = await getDocs(q);
-            const doctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Doctor));
+            const doctors = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AuthUser));
             setSuggestedDoctors(doctors);
         } catch(e) {
             console.error("Error fetching suggested doctors:", e);
@@ -90,53 +80,14 @@ function SymptomResults() {
     getAnalysis();
   }, [symptoms]);
 
-  const handleTranslate = async (lang: string) => {
-    if (!result || lang === 'English' || isOffline) {
-        setTargetLang('English');
-        setTranslatedResult(null);
-        return;
-    }
-    
-    if (lang === targetLang && translatedResult) return;
-
-    setTargetLang(lang);
-    setIsTranslating(true);
-    
-    try {
-      const [response, medicines, diet, precautions, workouts, advice] = await Promise.all([
-          translateText({ text: result.response, targetLanguage: lang }),
-          translateText({ text: result.medicines, targetLanguage: lang }),
-          translateText({ text: result.diet, targetLanguage: lang }),
-          translateText({ text: result.precautions, targetLanguage: lang }),
-          translateText({ text: result.workouts, targetLanguage: lang }),
-          translateText({ text: result.advice, targetLanguage: lang }),
-      ]);
-      setTranslatedResult({
-          response: response.translatedText,
-          medicines: medicines.translatedText,
-          diet: diet.translatedText,
-          precautions: precautions.translatedText,
-          workouts: workouts.translatedText,
-          advice: advice.translatedText,
-      });
-    } catch (e) {
-      console.error('Translation error', e);
-      setError(`Failed to translate to ${lang}. You may be offline.`);
-      // Fallback to English content if translation fails
-      setTargetLang('English');
-      setTranslatedResult(null);
-    } finally {
-      setIsTranslating(false);
-    }
-  }
 
   const analysisSections = useMemo(() => [
-    { title: 'Medicines', icon: Pill, content: translatedResult?.medicines || result?.medicines, color: 'text-blue-400' },
-    { title: 'Diet', icon: Apple, content: translatedResult?.diet || result?.diet, color: 'text-green-400' },
-    { title: 'Precautions', icon: ShieldAlert, content: translatedResult?.precautions || result?.precautions, color: 'text-yellow-400' },
-    { title: 'Workouts', icon: Dumbbell, content: translatedResult?.workouts || result?.workouts, color: 'text-orange-400' },
-    { title: 'Advice', icon: Stethoscope, content: translatedResult?.advice || result?.advice, color: 'text-red-400' },
-  ], [result, translatedResult]);
+    { title: 'Medicines', icon: Pill, content: result?.medicines, color: 'text-blue-400' },
+    { title: 'Diet', icon: Apple, content: result?.diet, color: 'text-green-400' },
+    { title: 'Precautions', icon: ShieldAlert, content: result?.precautions, color: 'text-yellow-400' },
+    { title: 'Workouts', icon: Dumbbell, content: result?.workouts, color: 'text-orange-400' },
+    { title: 'Advice', icon: Stethoscope, content: result?.advice, color: 'text-red-400' },
+  ], [result]);
 
   const renderSkeleton = () => (
     <div className="space-y-4">
@@ -169,21 +120,8 @@ function SymptomResults() {
             </CardHeader>
             <CardContent>
                 <p className='text-muted-foreground'>
-                   {translatedResult?.response || result?.response || "Based on the symptoms you provided, here is a potential course of action. Please remember, this is not a substitute for professional medical advice."}
+                   {result?.response || "Based on the symptoms you provided, here is a potential course of action. Please remember, this is not a substitute for professional medical advice."}
                 </p>
-                 <div className="mt-4">
-                    <Select onValueChange={handleTranslate} defaultValue="English" disabled={isTranslating || isOffline}>
-                        <SelectTrigger className="w-[180px]">
-                             <SelectValue placeholder="Select Language" />
-                        </SelectTrigger>
-                        <SelectContent>
-                             {languageOptions.map(lang => (
-                                <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    {isOffline && <p className="text-xs text-yellow-500 mt-2">Translation is unavailable in offline mode.</p>}
-                 </div>
             </CardContent>
         </Card>
 
@@ -196,7 +134,7 @@ function SymptomResults() {
             <CardContent><p className="text-destructive">{error}</p></CardContent>
           </Card>
         ) : (
-          (result || translatedResult) && (
+          (result) && (
             <div className="space-y-4">
                 {isTranslating && <div className="flex items-center justify-center gap-2 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /> <p>Translating to {targetLang}...</p></div>}
                 
@@ -224,7 +162,7 @@ function SymptomResults() {
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {suggestedDoctors.map(doctor => (
-                                <DoctorSuggestionCard key={doctor.id} doctor={doctor} />
+                                <DoctorSuggestionCard key={doctor.id} doctor={doctor as any} />
                             ))}
                         </CardContent>
                     </Card>

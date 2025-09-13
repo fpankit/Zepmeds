@@ -1,22 +1,23 @@
-
 'use server';
 /**
- * @fileOverview A Genkit flow to delete all documents in the 'video_calls' collection.
- * This uses the Firebase Admin SDK for privileged access.
+ * @fileOverview This file defines a Genkit flow for deleting all video call records from Firestore.
  */
 
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
 import { getFirestore } from 'firebase-admin/firestore';
+import { firebase } from '@genkit-ai/firebase';
 
 const DeleteAllCallsOutputSchema = z.object({
-  message: z.string().describe('A confirmation message indicating the result.'),
-  deletedCount: z.number().describe('The number of documents deleted.'),
+  message: z.string().describe('A confirmation message indicating the result of the operation.'),
 });
+type DeleteAllCallsOutput = z.infer<typeof DeleteAllCallsOutputSchema>;
 
-export type DeleteAllCallsOutput = z.infer<typeof DeleteAllCallsOutputSchema>;
+// This is the main function that will be called from the UI.
+export async function deleteAllCalls(): Promise<DeleteAllCallsOutput> {
+  return deleteAllCallsFlow();
+}
 
-// No input is needed for this flow
 const deleteAllCallsFlow = ai.defineFlow(
   {
     name: 'deleteAllCallsFlow',
@@ -24,29 +25,24 @@ const deleteAllCallsFlow = ai.defineFlow(
     outputSchema: DeleteAllCallsOutputSchema,
   },
   async () => {
+    // This flow needs elevated privileges to delete data, so we run it with a service account.
+    await firebase.withServiceAccount();
+    
     const db = getFirestore();
-    const collectionRef = db.collection('video_calls');
-    const snapshot = await collectionRef.get();
+    const callsCollection = db.collection('video_calls');
+    const snapshot = await callsCollection.get();
 
     if (snapshot.empty) {
-      return { message: 'No call records found to delete.', deletedCount: 0 };
+      return { message: 'No call records found to delete.' };
     }
 
-    // Use a batch write to delete all documents
     const batch = db.batch();
-    snapshot.docs.forEach((doc) => {
+    snapshot.docs.forEach(doc => {
       batch.delete(doc.ref);
     });
 
     await batch.commit();
 
-    return {
-      message: `Successfully deleted ${snapshot.size} call records.`,
-      deletedCount: snapshot.size,
-    };
+    return { message: `Successfully deleted ${snapshot.size} call records.` };
   }
 );
-
-export async function deleteAllCalls(): Promise<DeleteAllCallsOutput> {
-  return deleteAllCallsFlow();
-}

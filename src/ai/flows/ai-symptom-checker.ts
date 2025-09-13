@@ -11,15 +11,14 @@
  * @function aiSymptomChecker - The main function to initiate the symptom checker flow.
  */
 
-import { ai } from '@/ai/dev';
-import { z } from 'zod';
+import {ai} from '@/ai/dev';
+import {z} from 'zod';
 
 const AISymptomCheckerInputSchema = z.object({
   symptoms: z
     .string()
     .describe('A description of the symptoms experienced by the user.'),
 });
-
 export type AISymptomCheckerInput = z.infer<typeof AISymptomCheckerInputSchema>;
 
 const AISymptomCheckerOutputSchema = z.object({
@@ -45,7 +44,6 @@ const AISymptomCheckerOutputSchema = z.object({
     ),
   suggestedSpecialty: z.string().describe('The suggested doctor specialty to consult for the given symptoms (e.g., "Cardiologist", "Dermatologist").'),
 });
-
 export type AISymptomCheckerOutput = z.infer<typeof AISymptomCheckerOutputSchema>;
 
 export async function aiSymptomChecker(input: AISymptomCheckerInput): Promise<AISymptomCheckerOutput> {
@@ -81,6 +79,9 @@ const aiSymptomCheckerFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("The AI failed to provide a valid response.");
+    }
+    return output;
   }
 );
