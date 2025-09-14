@@ -4,6 +4,9 @@
 import { VideoCallContent } from "@/components/features/video-call-content";
 import { useParams } from "next/navigation";
 
+// This tells Next.js to render this page dynamically, skipping static generation.
+export const dynamic = 'force-dynamic';
+
 // This is now a Client Component to better manage state and interactions.
 export default function CallPage() {
   const params = useParams();
