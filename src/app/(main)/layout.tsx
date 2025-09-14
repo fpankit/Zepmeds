@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Header } from "@/components/layout/header";
@@ -16,14 +17,20 @@ export default function MainLayout({
   
   const isLayoutVisible = !noLayoutRoutes.some(route => {
     if (route.endsWith('/')) {
+        // This handles routes like /profile/ and /call/
         return pathname.startsWith(route);
     }
-    return pathname === route || pathname.startsWith(route + '/');
+    // This handles exact matches like /checkout
+    return pathname === route;
   });
 
   const isHeaderHidden = noHeaderRoutes.includes(pathname);
 
   if (!isLayoutVisible) {
+    // A special check for profile sub-pages which should not have the main layout
+    if (pathname.startsWith('/profile/')) {
+        return <main>{children}</main>;
+    }
     return <main>{children}</main>;
   }
 
