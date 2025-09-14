@@ -33,28 +33,24 @@ const offerCards = [
     description: "Use code ZEPMEDS for 20% off",
     icon: Gift,
     buttonText: "Shop Now",
-    buttonColor: "bg-blue-600 hover:bg-blue-700",
   },
   {
     title: "Cashback on Card Payments",
     description: "Get 5% cashback with any card",
     icon: CreditCard,
     buttonText: "Shop Now",
-    buttonColor: "bg-green-600 hover:bg-green-700",
   },
   {
     title: "Buy Now, Pay Later",
     description: "Zero interest EMI available",
     icon: Clock,
     buttonText: "Shop Now",
-    buttonColor: "bg-orange-500 hover:bg-orange-600",
   },
   {
     title: "Free Express Delivery",
     description: "On orders above ₹500",
     icon: Truck,
     buttonText: "Shop Now",
-    buttonColor: "bg-indigo-500 hover:bg-indigo-600",
   },
 ];
 
@@ -199,18 +195,17 @@ export default function HomePage() {
           <h3 className="font-headline text-2xl font-bold mb-4">Special Offers</h3>
           <div className="grid grid-cols-1 gap-4">
             {offerCards.map((offer) => (
-              <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80">
+              <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80 transition-all hover:bg-card/90 hover:scale-[1.02]">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-gray-700/50 rounded-lg">
-                    <offer.icon className="h-6 w-6 text-white" />
+                    <offer.icon className="h-6 w-6 text-white [filter:drop-shadow(0_0_8px_hsl(var(--primary)))]" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm text-white">{offer.title}</h3>
                     <p className="text-xs text-muted-foreground">{offer.description}</p>
                   </div>
                 </div>
-                <Button className={`${offer.buttonColor} text-white`} size="sm">
-                    <offer.icon className="mr-2 h-4 w-4" />
+                <Button className="bg-primary/20 text-primary-foreground text-xs h-8 px-3" size="sm">
                     {offer.buttonText}
                 </Button>
               </Card>
