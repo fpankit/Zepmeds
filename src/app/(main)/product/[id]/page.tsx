@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -168,7 +167,7 @@ export default function ProductDetailPage() {
                 <div className="p-4 pt-0 space-y-6">
                     <div>
                          {product.isRx && <Badge variant="destructive" className="mb-2">Rx Prescription Required</Badge>}
-                        <h2 className="text-2xl font-bold">{product.name}</h2>
+                        <h2 className="text-xl font-bold">{product.name}</h2>
                         <p className="text-muted-foreground mt-1">{packageInfo}</p>
                     </div>
 
