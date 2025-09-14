@@ -34,6 +34,7 @@ import { collection, query, getDocs, limit, startAfter, orderBy, where, Query, D
 import { db } from '@/lib/firebase';
 import { useIntersectionObserver } from '@/hooks/use-intersection-observer';
 import { DelayedSkeleton } from '@/components/features/delayed-skeleton';
+import Link from 'next/link';
 
 const categories = [
   { name: 'All', icon: Pill, gradient: 'from-blue-500 to-cyan-400' },
@@ -201,51 +202,51 @@ export default function OrderMedicinesPage() {
                 <DelayedSkeleton key={product.id} isLoading={false} skeleton={<ProductCardSkeleton />}>
                     <Card className="overflow-hidden group flex flex-col">
                         <CardContent className="p-0 flex-1 flex flex-col">
-                            <div className="relative">
-                                {product.imageUrl ? (
-                                    <Image
-                                        src={product.imageUrl}
-                                        alt={product.name}
-                                        width={200}
-                                        height={200}
-                                        className="w-full h-32 object-cover"
-                                        data-ai-hint={product.dataAiHint}
-                                    />
-                                ) : (
-                                    <div className="w-full h-32 bg-muted flex items-center justify-center">
-                                    <Pill className="h-8 w-8 text-muted-foreground" />
-                                    </div>
-                                )}
-                                {product.isRx && <Badge variant="destructive" className="absolute top-2 right-2">Rx</Badge>}
-                            </div>
-                            <div className="p-3 flex-1 flex flex-col justify-between">
-                                <div>
+                           <Link href={`/product/${product.id}`} className="block">
+                                <div className="relative">
+                                    {product.imageUrl ? (
+                                        <Image
+                                            src={product.imageUrl}
+                                            alt={product.name}
+                                            width={200}
+                                            height={200}
+                                            className="w-full h-32 object-cover"
+                                            data-ai-hint={product.dataAiHint}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-32 bg-muted flex items-center justify-center">
+                                        <Pill className="h-8 w-8 text-muted-foreground" />
+                                        </div>
+                                    )}
+                                    {product.isRx && <Badge variant="destructive" className="absolute top-2 right-2">Rx</Badge>}
+                                </div>
+                                <div className="p-3">
                                     <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
                                     <p className="text-xs text-muted-foreground truncate">{product.uses}</p>
-                                </div>
-                                <div className="mt-2">
-                                    <div className="flex items-baseline gap-1">
-                                    <p className="font-bold text-base">₹{product.price}</p>
-                                    </div>
                                     <div className="mt-2">
-                                        {cartItem ? (
-                                            <div className="flex items-center justify-between gap-1">
-                                                <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
-                                                    <Minus className="h-4 w-4" />
-                                                </Button>
-                                                <span className="w-6 text-center font-bold text-sm">{cartItem.quantity}</span>
-                                                <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
-                                                    <Plus className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)}>
-                                                <ShoppingCart className="mr-2 h-4 w-4"/>
-                                                Add
-                                            </Button>
-                                        )}
+                                        <div className="flex items-baseline gap-1">
+                                            <p className="font-bold text-base">₹{product.price}</p>
+                                        </div>
                                     </div>
                                 </div>
+                            </Link>
+                            <div className="p-3 pt-0 mt-auto">
+                                {cartItem ? (
+                                    <div className="flex items-center justify-between gap-1">
+                                        <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <span className="w-6 text-center font-bold text-sm">{cartItem.quantity}</span>
+                                        <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)}>
+                                        <ShoppingCart className="mr-2 h-4 w-4"/>
+                                        Add
+                                    </Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

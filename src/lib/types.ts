@@ -27,8 +27,11 @@ export interface Product {
     stock?: number;
     isRx?: boolean;
     dataAiHint?: string;
+    manufacturer?: string;
+    saltComposition?: string;
+    keyInfo?: string;
+    directions?: string;
     // Fields from verification that might not be on all products
     batch_no?: string;
     expiry_date?: string; 
-    manufacturer?: string;
 }
