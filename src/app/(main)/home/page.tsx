@@ -205,11 +205,11 @@ export default function HomePage() {
                     <offer.icon className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{offer.title}</h3>
-                    <p className="text-sm text-muted-foreground">{offer.description}</p>
+                    <h3 className="font-semibold text-sm text-white">{offer.title}</h3>
+                    <p className="text-xs text-muted-foreground">{offer.description}</p>
                   </div>
                 </div>
-                <Button className={`${offer.buttonColor} text-white`}>
+                <Button className={`${offer.buttonColor} text-white`} size="sm">
                     <offer.icon className="mr-2 h-4 w-4" />
                     {offer.buttonText}
                 </Button>
@@ -221,5 +221,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
