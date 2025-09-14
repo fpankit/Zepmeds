@@ -149,20 +149,10 @@ export default function HomePage() {
               <Card key={product.id} className="overflow-hidden">
                 <CardContent className="p-0 flex flex-col justify-between h-full">
                   <div>
-                    <div className="relative">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        width={200}
-                        height={200}
-                        className="w-full h-32 object-cover"
-                        data-ai-hint={product.dataAiHint}
-                      />
-                      {product.isRx && (
-                          <Badge variant="destructive" className="absolute top-2 left-2">Rx</Badge>
-                      )}
-                    </div>
                     <div className="p-3">
+                      {product.isRx && (
+                          <Badge variant="destructive" className="mb-2">Rx</Badge>
+                      )}
                       <h4 className="font-bold text-sm truncate">{product.name}</h4>
                       <p className="text-xs text-muted-foreground mt-0.5">1 unit</p>
                       <span className="font-bold text-md mt-2 block">₹{product.price.toFixed(2)}</span>
