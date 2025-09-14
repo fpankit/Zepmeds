@@ -110,14 +110,13 @@ export default function OrderMedicinesPage() {
       const querySnapshot = await getDocs(productsQuery);
       const newProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 
-      setProducts(prev => {
-          const allProducts = lastVisibleDoc ? [...prev, ...newProducts] : newProducts;
-          // Update the global product map
-          const productMap = new Map<string, Product>();
-          allProducts.forEach(p => productMap.set(p.name, p));
-          setProductMap(productMap);
-          return allProducts;
-      });
+      const currentProducts = lastVisibleDoc ? [...products, ...newProducts] : newProducts;
+      setProducts(currentProducts);
+      
+      const newProductMap = new Map<string, Product>();
+      currentProducts.forEach(p => newProductMap.set(p.name, p));
+      setProductMap(newProductMap);
+
       setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
       setHasMore(querySnapshot.docs.length === PRODUCTS_PER_PAGE);
 
@@ -129,7 +128,7 @@ export default function OrderMedicinesPage() {
       setIsLoadingMore(false);
       isFetching.current = false;
     }
-  }, [toast, setProductMap]);
+  }, [toast, setProductMap, products]);
   
   useEffect(() => {
     // This effect now serves as the trigger for category changes
