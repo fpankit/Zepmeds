@@ -66,12 +66,12 @@ const sponsorCards = [
 ]
 
 const trendingProducts = [
-  { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=1', dataAiHint: 'medicine pills', isRx: false },
-  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=2', dataAiHint: 'antiseptic bottle', isRx: false },
-  { id: 'prod3', name: 'Amoxicillin 250mg', price: 150.00, category: ['Popular', 'Antibiotics'], image: 'https://picsum.photos/200/200?random=3', dataAiHint: 'antibiotic pills', isRx: true },
-  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care', image: 'https://picsum.photos/200/200?random=4', dataAiHint: 'skincare product', isRx: false },
-  { id: 'prod5', name: 'Atorvastatin 10mg', price: 220.00, category: 'Heart', image: 'https://picsum.photos/200/200?random=5', dataAiHint: 'heart medicine', isRx: true },
-  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular', image: 'https://picsum.photos/200/200?random=6', dataAiHint: 'bandages', isRx: false },
+  { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular', image: 'https://picsum.photos/seed/pills/200/200', dataAiHint: 'medicine pills', isRx: false },
+  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular', image: 'https://picsum.photos/seed/antiseptic/200/200', dataAiHint: 'antiseptic bottle', isRx: false },
+  { id: 'prod3', name: 'Amoxicillin 250mg', price: 150.00, category: ['Popular', 'Antibiotics'], image: 'https://picsum.photos/seed/antibiotic/200/200', dataAiHint: 'antibiotic capsules', isRx: true },
+  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care', image: 'https://picsum.photos/seed/skincare/200/200', dataAiHint: 'skincare product', isRx: false },
+  { id: 'prod5', name: 'Atorvastatin 10mg', price: 220.00, category: 'Heart', image: 'https://picsum.photos/seed/heart/200/200', dataAiHint: 'heart medicine', isRx: true },
+  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular', image: 'https://picsum.photos/seed/bandages/200/200', dataAiHint: 'adhesive bandages', isRx: false },
 ];
 
 export default function HomePage() {
