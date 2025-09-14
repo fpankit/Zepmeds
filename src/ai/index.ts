@@ -5,3 +5,4 @@
 
 import './flows/ai-symptom-checker';
 import './flows/health-report-flow';
+import './flows/ai-sentry-checker';

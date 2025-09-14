@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
+import { aiSentryChecker } from './ai-sentry-checker';
 
 const AiSymptomCheckerInputSchema = z.object({
   symptoms: z.string().describe("A description of the user's symptoms."),
@@ -85,10 +86,18 @@ export const aiSymptomChecker = ai.defineFlow(
       }
       return output;
     } catch (error: any) {
-      console.error('Error in aiSymptomCheckerFlow:', error);
+      console.error('Error in primary aiSymptomCheckerFlow, attempting fallback:', error);
       const errorMessage = error.message || 'An unknown error occurred.';
-      if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
-        throw new Error('The AI model is currently busy. Please try again in a few moments.');
+       if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+        try {
+          // Fallback to the sentry checker
+          console.log('Primary model overloaded, calling sentry checker as fallback.');
+          const fallbackOutput = await aiSentryChecker(input);
+          return fallbackOutput;
+        } catch (fallbackError: any) {
+           console.error('Error in fallback aiSentryCheckerFlow:', fallbackError);
+           throw new Error('The AI model and its backup are currently busy. Please try again in a few moments.');
+        }
       }
       throw new Error('An error occurred while analyzing symptoms. Please try again.');
     }

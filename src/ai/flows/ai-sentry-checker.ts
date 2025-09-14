@@ -71,9 +71,9 @@ const prompt = ai.definePrompt({
   `,
 });
 
-export const aiSymptomChecker = ai.defineFlow(
+export const aiSentryChecker = ai.defineFlow(
   {
-    name: 'aiSymptomCheckerFlow',
+    name: 'aiSentryCheckerFlow',
     inputSchema: AiSymptomCheckerInputSchema,
     outputSchema: AiSymptomCheckerOutputSchema,
   },
