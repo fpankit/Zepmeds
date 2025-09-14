@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { collection, query, onSnapshot, doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +34,7 @@ const DoctorCardSkeleton = () => (
     </Card>
 );
 
-export default function DoctorPage() {
+function DoctorPageContent() {
   const [doctors, setDoctors] = useState<AuthUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingLink, setIsCreatingLink] = useState<string | null>(null);
@@ -241,4 +241,12 @@ export default function DoctorPage() {
       </div>
     </div>
   );
+}
+
+export default function DoctorPage() {
+    return (
+        <Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <DoctorPageContent />
+        </Suspense>
+    )
 }
