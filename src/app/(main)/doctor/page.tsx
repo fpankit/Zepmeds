@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { collection, query, onSnapshot, doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, User as AuthUser } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -38,9 +38,19 @@ export default function DoctorPage() {
   const [doctors, setDoctors] = useState<AuthUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingLink, setIsCreatingLink] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
   const { user, updateUser } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const specialtyFilter = searchParams.get('specialty');
   const { toast } = useToast();
+
+  useEffect(() => {
+    if(specialtyFilter) {
+      setSearchQuery(specialtyFilter);
+    }
+  }, [specialtyFilter]);
 
   const handleToggleOnline = async () => {
       if (!user || !user.isDoctor) return;
@@ -95,6 +105,13 @@ export default function DoctorPage() {
         unsubscribe();
     };
   }, [toast]);
+  
+  const filteredDoctors = useMemo(() => {
+      return doctors.filter(doctor => 
+        (doctor.displayName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (doctor.specialty || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+  }, [doctors, searchQuery]);
 
 
   const getInitials = (name: string) => {
@@ -152,7 +169,12 @@ export default function DoctorPage() {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search by doctor or specialty" className="pl-10" />
+        <Input 
+          placeholder="Search by doctor or specialty" 
+          className="pl-10"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       {user?.isDoctor && (
@@ -168,10 +190,10 @@ export default function DoctorPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading && doctors.length === 0 ? (
+        {isLoading ? (
             Array.from({ length: 6 }).map((_, index) => <DoctorCardSkeleton key={index} />)
-        ) : doctors.length > 0 ? (
-            doctors.map((doctor) => (
+        ) : filteredDoctors.length > 0 ? (
+            filteredDoctors.map((doctor) => (
                 <Card key={doctor.id} className="overflow-hidden">
                     <CardContent className="p-4">
                     <div className="flex items-center gap-4">
@@ -213,7 +235,7 @@ export default function DoctorPage() {
             ))
         ) : (
             !isLoading && <div className="col-span-full text-center py-10">
-                <p className="text-muted-foreground">No doctors available at the moment. Please check back later.</p>
+                <p className="text-muted-foreground">No doctors found for "{searchQuery}". Please check back later or broaden your search.</p>
             </div>
         )}
       </div>

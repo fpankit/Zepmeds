@@ -3,15 +3,16 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { aiSymptomChecker, AiSymptomCheckerOutput } from '@/ai/flows/ai-symptom-checker';
+import { aiSymptomChecker, AiSymptomCheckerOutput, AiSymptomCheckerInput } from '@/ai/flows/ai-symptom-checker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 function ResultsLoadingSkeleton() {
   return (
@@ -30,8 +31,7 @@ function ResultsLoadingSkeleton() {
 
 function SymptomCheckerResultsContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const symptoms = searchParams.get('symptoms');
+  const [inputData, setInputData] = useState<AiSymptomCheckerInput | null>(null);
   const [result, setResult] = useState<AiSymptomCheckerOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,11 +58,14 @@ function SymptomCheckerResultsContent() {
   }, []);
 
   useEffect(() => {
-    if (!symptoms) {
-      setError('No symptoms were provided.');
+    const storedData = sessionStorage.getItem('symptomCheckerData');
+    if (!storedData) {
+      setError('No symptom data found. Please go back and describe your symptoms.');
       setIsLoading(false);
       return;
     }
+    const parsedData: AiSymptomCheckerInput = JSON.parse(storedData);
+    setInputData(parsedData);
 
     if (!user || user.isGuest) {
       toast({ variant: 'destructive', title: 'Login Required' });
@@ -77,7 +80,7 @@ function SymptomCheckerResultsContent() {
     }
 
     setIsLoading(true);
-    aiSymptomChecker({ symptoms: decodeURIComponent(symptoms) })
+    aiSymptomChecker(parsedData)
       .then((res) => {
         setResult(res);
         setError(null);
@@ -92,8 +95,9 @@ function SymptomCheckerResultsContent() {
       })
       .finally(() => {
         setIsLoading(false);
+        sessionStorage.removeItem('symptomCheckerData');
       });
-  }, [symptoms, user, router, toast, isOffline]);
+  }, [user, router, toast, isOffline]);
 
   const ResultCard = ({ title, icon, items }: { title: string, icon: React.ReactNode, items: string[] }) => (
     <Card>
@@ -132,12 +136,19 @@ function SymptomCheckerResultsContent() {
           </Alert>
         )}
 
-        {result && (
+        {result && inputData && (
           <div className="space-y-6">
-            <div>
-              <p className="text-muted-foreground">Your symptoms:</p>
-              <p className="font-semibold italic">"{decodeURIComponent(symptoms || '')}"</p>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Symptoms</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="font-semibold italic">"{inputData.symptoms}"</p>
+                {inputData.photoDataUri && (
+                    <Image src={inputData.photoDataUri} alt="Symptom image" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
+                )}
+              </CardContent>
+            </Card>
             
             <Alert>
               <Stethoscope className="h-4 w-4" />
@@ -145,6 +156,21 @@ function SymptomCheckerResultsContent() {
               <AlertDescription>{result.doctorAdvisory}</AlertDescription>
             </Alert>
             
+            {result.recommendedSpecialist && (
+              <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold">Consult a Specialist</h3>
+                    <p className="text-muted-foreground">The AI recommends seeing a <span className="font-semibold text-primary">{result.recommendedSpecialist}</span>.</p>
+                  </div>
+                  <Button onClick={() => router.push(`/doctor?specialty=${result.recommendedSpecialist}`)}>
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Find a Doctor
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <ResultCard title="Medicine Suggestions" icon={<Pill className="text-blue-500"/>} items={result.potentialMedicines} />
               <ResultCard title="Precautions" icon={<Shield className="text-yellow-500"/>} items={result.precautions} />
