@@ -3,7 +3,7 @@ import { User, MapPin, History, HeartPulse, FileText, Stethoscope, Siren, LifeBu
 
 export const profileLinks = [
     { icon: User, text: "Patient Details", href: "/profile/edit", color: "text-red-400" },
-    { icon: MapPin, text: "Manage Addresses", href: "#", color: "text-red-400" },
+    { icon: MapPin, text: "Manage Addresses", href: "/profile/addresses", color: "text-red-400" },
     { icon: History, text: "Order History", href: "/orders", color: "text-orange-400" },
     { icon: Pill, text: "Past Medicines", href: "#", color: "text-green-400" },
     { icon: FileText, text: "Medical Reports", href: "/health-report", color: "text-green-400" },
@@ -16,4 +16,3 @@ export const profileLinks = [
       // This can be merged or kept separate if needed elsewhere.
       // For the new profile page, these are not directly used.
   ];
-

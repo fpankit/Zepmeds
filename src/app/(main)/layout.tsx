@@ -14,13 +14,14 @@ export default function MainLayout({
   const noHeaderRoutes: string[] = [];
   const noLayoutRoutes = ["/checkout", "/symptom-checker/results", "/echo-doc/call", "/first-aid/", "/verify-medicine", "/scan-package", "/activity", "/call/", "/health-report", "/profile"];
   
-  const isLayoutVisible = !noLayoutRoutes.some(route => pathname.startsWith(route) || pathname === '/order-status');
+  const isLayoutVisible = !noLayoutRoutes.some(route => {
+    if (route.endsWith('/')) {
+        return pathname.startsWith(route);
+    }
+    return pathname === route || pathname.startsWith(route + '/');
+  });
+
   const isHeaderHidden = noHeaderRoutes.includes(pathname);
-
-
-  if (!isLayoutVisible && pathname.startsWith('/order-status')) {
-      return <main>{children}</main>;
-  }
 
   if (!isLayoutVisible) {
     return <main>{children}</main>;
