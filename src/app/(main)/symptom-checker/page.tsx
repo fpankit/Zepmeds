@@ -110,13 +110,15 @@ export default function SymptomCheckerPage() {
               </SelectContent>
             </Select>
           </div>
-
-          <Textarea
-            placeholder="e.g., 'I have a headache, a sore throat, and a slight fever for the last 2 days...'"
-            className="min-h-[150px] text-base"
-            value={symptoms}
-            onChange={(e) => setSymptoms(e.target.value)}
-          />
+          
+          <div className="space-y-2">
+            <Textarea
+              placeholder="e.g., 'I have a headache, a sore throat, and a slight fever for the last 2 days...'"
+              className="min-h-[150px] text-base"
+              value={symptoms}
+              onChange={(e) => setSymptoms(e.target.value)}
+            />
+          </div>
           
           <div className="space-y-2">
             {imagePreview ? (
