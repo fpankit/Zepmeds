@@ -18,10 +18,11 @@ import {
   Minus,
   Plus,
   Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/cart-context';
@@ -72,13 +73,14 @@ export default function OrderMedicinesPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const isFetching = useRef(false);
 
   const { ref: loadMoreRef, entry } = useIntersectionObserver({
     threshold: 0.5,
   });
 
-  const fetchProducts = useCallback(async (lastVisibleDoc: QueryDocumentSnapshot<DocumentData> | null = null, category: string = 'All') => {
+  const fetchProducts = useCallback(async (lastVisibleDoc: QueryDocumentSnapshot<DocumentData> | null = null, category: string = 'All', search: string = '') => {
     if (isFetching.current) return;
     isFetching.current = true;
 
@@ -86,24 +88,31 @@ export default function OrderMedicinesPage() {
       setIsLoadingMore(true);
     } else {
       setIsLoading(true);
-      setProducts([]); // Clear products on new category selection or initial load
+      setProducts([]); 
     }
 
     try {
       let productsQuery: Query<DocumentData>;
       const baseQuery = collection(db, "products");
-
-      let categoryQuery: Query<DocumentData>;
+      
+      let queries = [];
       
       if (category !== 'All') {
-        categoryQuery = query(baseQuery, where("category", "==", category), orderBy("name"));
-      } else {
-        categoryQuery = query(baseQuery, orderBy("name"));
+        queries.push(where("category", "==", category));
       }
+      
+      if (search) {
+         queries.push(where("name", ">=", search));
+         queries.push(where("name", "<=", search + '\uf8ff'));
+      }
+      
+      productsQuery = query(baseQuery, ...queries, orderBy("name"));
 
-      productsQuery = lastVisibleDoc
-        ? query(categoryQuery, startAfter(lastVisibleDoc), limit(PRODUCTS_PER_PAGE))
-        : query(categoryQuery, limit(PRODUCTS_PER_PAGE));
+      if (lastVisibleDoc) {
+        productsQuery = query(productsQuery, startAfter(lastVisibleDoc));
+      }
+      
+      productsQuery = query(productsQuery, limit(PRODUCTS_PER_PAGE));
       
       const querySnapshot = await getDocs(productsQuery);
       const newProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
@@ -129,19 +138,25 @@ export default function OrderMedicinesPage() {
     }
   }, [toast, setProductMap, products]);
   
-  useEffect(() => {
-    // This effect now serves as the trigger for category changes
-    setLastDoc(null); // Reset pagination
-    setHasMore(true); // Assume there is more data for the new category
-    fetchProducts(null, selectedCategory);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory]);
+   useEffect(() => {
+    const handler = setTimeout(() => {
+        setLastDoc(null);
+        setHasMore(true);
+        fetchProducts(null, selectedCategory, searchQuery);
+    }, 300); // Debounce search by 300ms
+
+    return () => {
+        clearTimeout(handler);
+    };
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, searchQuery]);
+
 
   useEffect(() => {
     if (entry?.isIntersecting && hasMore && !isLoadingMore && !isFetching.current) {
-      fetchProducts(lastDoc, selectedCategory);
+      fetchProducts(lastDoc, selectedCategory, searchQuery);
     }
-  }, [entry, hasMore, isLoadingMore, fetchProducts, lastDoc, selectedCategory]);
+  }, [entry, hasMore, isLoadingMore, fetchProducts, lastDoc, selectedCategory, searchQuery]);
 
   const handleAddToCart = (product: Product) => {
     addToCart({ ...product, quantity: 1, imageUrl: product.imageUrl });
@@ -155,7 +170,12 @@ export default function OrderMedicinesPage() {
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search for medicines..." className="pl-10" />
+        <Input 
+            placeholder="Search for medicines..." 
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       <div className="space-y-4">
@@ -186,7 +206,7 @@ export default function OrderMedicinesPage() {
 
       <div>
         <h2 className="text-xl font-bold mb-4">
-            {selectedCategory === 'All' ? 'All Products' : selectedCategory}
+            {selectedCategory === 'All' && !searchQuery ? 'All Products' : (searchQuery || selectedCategory)}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {isLoading && products.length === 0 ? (
@@ -243,10 +263,32 @@ export default function OrderMedicinesPage() {
         </div>
          {!isLoading && products.length === 0 && (
             <div className="col-span-full text-center py-10">
-                <p className="text-muted-foreground">No products found in this category.</p>
+                {searchQuery ? (
+                     <Card className="max-w-md mx-auto">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <AlertTriangle className="text-yellow-500" />
+                                Medicine Not Found
+                            </CardTitle>
+                        </CardHeader>
+                         <CardContent>
+                             <p className="text-muted-foreground">We couldn't find "{searchQuery}". But don't worry!</p>
+                             <p className="text-muted-foreground mt-1">Need it urgently? We can arrange it for you within 1 hour.</p>
+                            <Button asChild className="mt-4">
+                                <Link href={`/urgent-medicine?name=${searchQuery}`}>
+                                    Notify Us
+                                </Link>
+                            </Button>
+                         </CardContent>
+                     </Card>
+                ) : (
+                    <p className="text-muted-foreground">No products found in this category.</p>
+                )}
             </div>
          )}
       </div>
     </div>
   );
 }
+
+    
