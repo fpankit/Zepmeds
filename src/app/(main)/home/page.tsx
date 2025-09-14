@@ -33,24 +33,36 @@ const offerCards = [
     description: "Use code ZEPMEDS for 20% off",
     icon: Gift,
     buttonText: "Shop Now",
+    buttonClass: "bg-indigo-600 hover:bg-indigo-700",
+    iconContainerClass: "bg-indigo-500/20",
+    iconClass: "text-indigo-400"
   },
   {
     title: "Cashback on Card Payments",
     description: "Get 5% cashback with any card",
     icon: CreditCard,
     buttonText: "Shop Now",
+    buttonClass: "bg-green-600 hover:bg-green-700",
+    iconContainerClass: "bg-green-500/20",
+    iconClass: "text-green-400"
   },
   {
     title: "Buy Now, Pay Later",
     description: "Zero interest EMI available",
     icon: Clock,
     buttonText: "Shop Now",
+    buttonClass: "bg-amber-600 hover:bg-amber-700",
+    iconContainerClass: "bg-amber-500/20",
+    iconClass: "text-amber-400"
   },
   {
     title: "Free Express Delivery",
     description: "On orders above ₹500",
     icon: Truck,
     buttonText: "Shop Now",
+    buttonClass: "bg-blue-600 hover:bg-blue-700",
+    iconContainerClass: "bg-blue-500/20",
+    iconClass: "text-blue-400"
   },
 ];
 
@@ -76,12 +88,12 @@ const sponsorCards = [
 ]
 
 const trendingProducts = [
-  { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular', image: 'https://picsum.photos/seed/paracetamol-pills/200/200', dataAiHint: 'medicine tablets', isRx: false },
-  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular', image: 'https://picsum.photos/seed/antiseptic-bottle/200/200', dataAiHint: 'antiseptic liquid', isRx: false },
-  { id: 'prod3', name: 'Amoxicillin 250mg', price: 150.00, category: ['Popular', 'Antibiotics'], image: 'https://picsum.photos/seed/amoxicillin-capsules/200/200', dataAiHint: 'antibiotic medicine', isRx: true },
-  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care', image: 'https://picsum.photos/seed/skincare-cream/200/200', dataAiHint: 'skincare cream', isRx: false },
-  { id: 'prod5', name: 'Amlodipine 5mg', price: 220.00, category: 'Heart', image: 'https://picsum.photos/seed/amlodipine-blister/200/200', dataAiHint: 'hypertension medicine', isRx: true },
-  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular', image: 'https://picsum.photos/seed/adhesive-bandages/200/200', dataAiHint: 'bandages pack', isRx: false },
+  { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular', image: 'https://picsum.photos/seed/paracetamol-tablets/200/200', dataAiHint: 'medicine tablets', isRx: false },
+  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular', image: 'https://picsum.photos/seed/antiseptic-bottle-clean/200/200', dataAiHint: 'antiseptic liquid', isRx: false },
+  { id: 'prod3', name: 'Amoxicillin 250mg', price: 150.00, category: ['Popular', 'Antibiotics'], image: 'https://picsum.photos/seed/antibiotic-capsule-pack/200/200', dataAiHint: 'antibiotic medicine', isRx: true },
+  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care', image: 'https://picsum.photos/seed/cosmetic-skincare-cream/200/200', dataAiHint: 'skincare cream', isRx: false },
+  { id: 'prod5', name: 'Amlodipine 5mg', price: 220.00, category: 'Heart', image: 'https://picsum.photos/seed/heart-medicine-pills/200/200', dataAiHint: 'hypertension medicine', isRx: true },
+  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular', image: 'https://picsum.photos/seed/adhesive-bandage-box/200/200', dataAiHint: 'bandages pack', isRx: false },
 ];
 
 export default function HomePage() {
@@ -197,16 +209,16 @@ export default function HomePage() {
             {offerCards.map((offer) => (
               <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80 transition-all hover:bg-card/90 hover:scale-[1.02]">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gray-700/50 rounded-lg">
-                    <offer.icon className="h-6 w-6 text-white [filter:drop-shadow(0_0_8px_hsl(var(--primary)))]" />
+                  <div className={cn("p-3 rounded-lg", offer.iconContainerClass)}>
+                    <offer.icon className={cn("h-6 w-6", offer.iconClass)} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm text-white">{offer.title}</h3>
                     <p className="text-xs text-muted-foreground">{offer.description}</p>
                   </div>
                 </div>
-                <Button className="bg-primary/20 text-primary-foreground text-xs h-8 px-3" size="sm">
-                    {offer.buttonText}
+                <Button className={cn("text-white text-xs h-8 px-3", offer.buttonClass)} size="sm">
+                     <offer.icon className="h-4 w-4 mr-2" /> {offer.buttonText}
                 </Button>
               </Card>
             ))}
