@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI health report generation agent.
@@ -10,7 +11,7 @@
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
 
-export const HealthReportInputSchema = z.object({
+const HealthReportInputSchema = z.object({
   dailySteps: z.string().describe("User's daily steps count."),
   waterIntake: z.string().describe("User's daily water intake."),
   caloriesBurned: z.string().describe("User's daily calories burned."),
