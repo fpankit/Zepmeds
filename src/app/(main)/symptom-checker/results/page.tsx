@@ -95,11 +95,7 @@ function SymptomCheckerResultsContent() {
       })
       .catch((err) => {
         console.error(err);
-        if (!navigator.onLine) {
-            setError('You seem to be offline. Please check your internet connection.');
-        } else {
-            setError('An error occurred while analyzing your symptoms. The AI model may be busy. Please try again later.');
-        }
+        setError(err.message || 'An error occurred while analyzing your symptoms. Please try again later.');
       })
       .finally(() => {
         setIsLoading(false);
