@@ -113,36 +113,46 @@ const echoDocFlow = ai.defineFlow(
       throw new Error('Failed to generate text response.');
     }
     const textResponse = output.responseText;
-
-    // 2. Generate the audio response using the text
-    const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Algenib' }, // A calm, neutral voice
-          },
-        },
-      },
-      prompt: textResponse,
-    });
-
-    if (!media?.url) {
-      throw new Error('Failed to generate audio response.');
-    }
-
-    // The TTS model returns raw PCM data in a data URI. We need to convert it to a proper WAV file.
-    const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
-      'base64'
-    );
     
-    const wavDataUri = await toWav(audioBuffer);
+    try {
+        // 2. Generate the audio response using the text
+        const { media } = await ai.generate({
+          model: googleAI.model('gemini-2.5-flash-preview-tts'),
+          config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: 'Algenib' }, // A calm, neutral voice
+              },
+            },
+          },
+          prompt: textResponse,
+        });
 
-    return {
-      responseText: textResponse,
-      responseAudio: wavDataUri,
-    };
+        if (!media?.url) {
+          throw new Error('Failed to generate audio response.');
+        }
+
+        // The TTS model returns raw PCM data in a data URI. We need to convert it to a proper WAV file.
+        const audioBuffer = Buffer.from(
+          media.url.substring(media.url.indexOf(',') + 1),
+          'base64'
+        );
+        
+        const wavDataUri = await toWav(audioBuffer);
+
+        return {
+          responseText: textResponse,
+          responseAudio: wavDataUri,
+        };
+    } catch(error) {
+        console.error("TTS Generation failed:", error);
+        // If TTS fails (e.g., model overloaded), return the text response with an empty audio URI.
+        // The UI can then inform the user that audio is unavailable.
+        return {
+          responseText: textResponse,
+          responseAudio: '', // Send empty audio URI on failure
+        };
+    }
   }
 );
