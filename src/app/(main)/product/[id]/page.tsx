@@ -10,11 +10,13 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { ArrowLeft, Loader2, Share2, ShoppingCart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, limit, getDocs } from 'firebase/firestore';
 import { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { useCart } from '@/context/cart-context';
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 const ProductDetailSkeleton = () => (
     <div className="p-4 space-y-6">
@@ -46,8 +48,9 @@ export default function ProductDetailPage() {
     const { id } = params;
 
     const [product, setProduct] = useState<Product | null>(null);
+    const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const { addToCart } = useCart();
+    const { addToCart, cart, updateQuantity } = useCart();
     
     useEffect(() => {
         if (!id) return;
@@ -59,7 +62,22 @@ export default function ProductDetailPage() {
                 const productDocSnap = await getDoc(productDocRef);
 
                 if (productDocSnap.exists()) {
-                    setProduct({ id: productDocSnap.id, ...productDocSnap.data() } as Product);
+                    const productData = { id: productDocSnap.id, ...productDocSnap.data() } as Product;
+                    setProduct(productData);
+
+                    // Fetch related products
+                    if (productData.category) {
+                        const relatedQuery = query(
+                            collection(db, 'products'),
+                            where('category', '==', productData.category),
+                            where('id', '!=', productData.id),
+                            limit(4)
+                        );
+                        const relatedSnapshot = await getDocs(relatedQuery);
+                        const related = relatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+                        setRelatedProducts(related);
+                    }
+
                 } else {
                     toast({ variant: 'destructive', title: 'Product not found' });
                     router.push('/order-medicines');
@@ -91,6 +109,8 @@ export default function ProductDetailPage() {
         }
     };
     
+    const cartItem = product ? cart.find(item => item.id === product.id) : null;
+    
     if (isLoading) {
         return (
              <div className="flex flex-col h-screen bg-background">
@@ -115,6 +135,10 @@ export default function ProductDetailPage() {
             <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background border-b">
                 <Button variant="ghost" size="icon" onClick={() => router.back()}>
                     <ArrowLeft className="h-6 w-6" />
+                </Button>
+                 <h1 className="text-lg font-semibold truncate">{product.name}</h1>
+                <Button variant="ghost" size="icon">
+                    <Share2 className="h-5 w-5" />
                 </Button>
             </header>
 
@@ -142,43 +166,78 @@ export default function ProductDetailPage() {
                 </Card>
                 
                 <div className="p-4 space-y-6">
-                    <div className="flex justify-between items-start gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold">{product.name}</h1>
-                            <p className="text-muted-foreground mt-1">1 Tube of 100 Gm</p>
-                        </div>
-                        <Button variant="outline" size="icon">
-                            <Share2 className="h-5 w-5" />
-                        </Button>
+                    <div>
+                        <p className="text-muted-foreground mt-1">1 Tube of 100 Gm</p>
                     </div>
 
                     <Card>
-                        <CardContent className="p-4 grid grid-cols-2 gap-4">
+                        <CardContent className="p-4 grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <p className="text-sm text-muted-foreground">Manufacturer</p>
+                                <p className="text-muted-foreground">Manufacturer</p>
                                 <p className="font-semibold">{product.manufacturer || 'N/A'}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground">Salt Composition</p>
+                                <p className="text-muted-foreground">Salt Composition</p>
                                 <p className="font-semibold">{product.saltComposition || 'None'}</p>
                             </div>
                         </CardContent>
                     </Card>
 
                     <Accordion type="single" collapsible className="w-full space-y-3">
-                        <AccordionItem value="item-1" className="rounded-lg border bg-card/50">
-                            <AccordionTrigger className="p-4 font-semibold text-base">Key Information</AccordionTrigger>
-                            <AccordionContent className="p-4 pt-0">
+                        <AccordionItem value="item-1">
+                            <AccordionTrigger>Key Information</AccordionTrigger>
+                            <AccordionContent>
                                 {product.keyInfo || 'No key information available for this product.'}
                             </AccordionContent>
                         </AccordionItem>
-                        <AccordionItem value="item-2" className="rounded-lg border bg-card/50">
-                            <AccordionTrigger className="p-4 font-semibold text-base">Directions of use</AccordionTrigger>
-                            <AccordionContent className="p-4 pt-0">
+                        <AccordionItem value="item-2">
+                            <AccordionTrigger>Directions of use</AccordionTrigger>
+                            <AccordionContent>
                                  {product.directions || 'No directions for use available. Please consult your doctor.'}
                             </AccordionContent>
                         </AccordionItem>
+                        <AccordionItem value="item-3">
+                            <AccordionTrigger>How it works</AccordionTrigger>
+                            <AccordionContent>
+                                {product.howItWorks || 'Information on how this product works is not available.'}
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-4">
+                            <AccordionTrigger>Quick tips</AccordionTrigger>
+                            <AccordionContent>
+                                {product.quickTips || 'No quick tips available for this product.'}
+                            </AccordionContent>
+                        </AccordionItem>
                     </Accordion>
+                    
+                    {relatedProducts.length > 0 && (
+                        <div>
+                            <h2 className="text-lg font-bold mb-4">Related Products</h2>
+                            <div className="grid grid-cols-2 gap-4">
+                                {relatedProducts.map(related => (
+                                    <Link href={`/product/${related.id}`} key={related.id}>
+                                         <Card className="overflow-hidden h-full flex flex-col">
+                                            <CardContent className="p-0 flex-1 flex flex-col">
+                                                <Image 
+                                                    src={related.imageUrl || `https://picsum.photos/seed/${related.id}/200/200`}
+                                                    alt={related.name}
+                                                    width={200}
+                                                    height={200}
+                                                    className="w-full h-24 object-cover"
+                                                />
+                                                <div className="p-3 flex-1 flex flex-col">
+                                                    <h4 className="font-semibold text-sm truncate">{related.name}</h4>
+                                                    <p className="text-xs text-muted-foreground">1 Strip of 15</p>
+                                                    <p className="font-bold text-base mt-auto pt-2">₹{related.price.toFixed(2)}</p>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             </main>
 
@@ -188,13 +247,20 @@ export default function ProductDetailPage() {
                         <p className="text-sm text-muted-foreground">1 Tube of 100 Gm</p>
                         <p className="text-2xl font-bold">₹{product.price.toFixed(2)}</p>
                     </div>
-                    <Button size="lg" className="w-1/2" onClick={handleAddToCart}>
-                        <ShoppingCart className="mr-2 h-5 w-5" />
-                        Add to cart
-                    </Button>
+                    {cartItem ? (
+                         <div className="flex items-center justify-center gap-2">
+                             <Button size="lg" variant="outline" className="px-4" onClick={() => updateQuantity(product.id, cartItem.quantity - 1)}>-</Button>
+                             <span className="w-10 text-center font-bold text-lg">{cartItem.quantity}</span>
+                             <Button size="lg" variant="outline" className="px-4" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>+</Button>
+                         </div>
+                    ) : (
+                        <Button size="lg" className="w-1/2" onClick={handleAddToCart}>
+                            <ShoppingCart className="mr-2 h-5 w-5" />
+                            Add to cart
+                        </Button>
+                    )}
                 </div>
             </footer>
         </div>
     );
 }
-
