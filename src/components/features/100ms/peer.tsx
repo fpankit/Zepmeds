@@ -15,7 +15,7 @@ export function Peer({ peer }: { peer: any }) {
           ref={videoRef}
           autoPlay
           playsInline
-          muted={peer.isLocal} // Fix: Mute only the local user to prevent echo. Remote users' audio will play.
+          muted={true} // Always mute video elements to prevent browser policy issues. Audio is handled separately.
           className={`h-full w-full object-cover ${peer.isLocal ? 'transform -scale-x-100' : ''}`}
         />
       ) : (
