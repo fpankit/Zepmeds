@@ -267,9 +267,9 @@ export default function SymptomCheckerPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="font-medium text-sm flex items-center gap-2">
+            <div className="font-medium text-sm flex items-center gap-2">
               <Languages className="h-4 w-4"/> Select Language
-            </label>
+            </div>
             <Select value={targetLanguage} onValueChange={setTargetLanguage}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a language" />
