@@ -78,12 +78,19 @@ export const aiSymptomChecker = ai.defineFlow(
     outputSchema: AiSymptomCheckerOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('The AI model did not return a valid response.');
+    try {
+      const { output } = await prompt(input);
+      if (!output) {
+        throw new Error('The AI model did not return a valid response.');
+      }
+      return output;
+    } catch (error: any) {
+      console.error('Error in aiSymptomCheckerFlow:', error);
+      const errorMessage = error.message || 'An unknown error occurred.';
+      if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+        throw new Error('The AI model is currently busy. Please try again in a few moments.');
+      }
+      throw new Error('An error occurred while analyzing symptoms. Please try again.');
     }
-    return output;
   }
 );
-
-    
