@@ -9,13 +9,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { generateHealthReport, HealthReportOutput } from '@/ai/flows/health-report-flow';
 import { healthMetrics } from '@/lib/health-data';
-import { Loader2, FileText, Download, Shield, Heart, Utensils, Dumbbell, ListChecks, History, Eye, List } from 'lucide-react';
+import { Loader2, FileText, Download, Shield, Heart, Utensils, Dumbbell, ListChecks, History, Eye, List, Activity, Calendar } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, Timestamp } from "firebase/firestore";
 import { format } from 'date-fns';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 interface PastReport {
@@ -127,16 +128,6 @@ export default function HealthReportPage() {
 
     const doc = new jsPDF();
     
-    // Add charts as images
-    const chartContainer = document.getElementById('pdf-charts');
-    if (chartContainer) {
-        const canvases = chartContainer.getElementsByTagName('canvas');
-        if (canvases.length > 0) {
-            // Logic to convert canvas to image and add to PDF will go here
-            // For simplicity in this step, we're setting up the structure.
-        }
-    }
-
     // Header
     doc.setFontSize(32);
     doc.setFont('helvetica', 'bold');
@@ -180,40 +171,46 @@ export default function HealthReportPage() {
     doc.setFontSize(18);
     doc.text('Personalized Recommendations', 15, 20);
     doc.setFontSize(14);
-    doc.text('Diet Plan (Indian Cuisine)', 15, 30);
+    doc.text('7-Day Diet Plan (Indian Cuisine)', 15, 30);
     (doc as any).autoTable({
         startY: 35,
         theme: 'grid',
-        head: [['Meal', 'Recommendation']],
-        body: [
-            ['Breakfast', reportToDownload.dietPlan.breakfast],
-            ['Lunch', reportToDownload.dietPlan.lunch],
-            ['Dinner', reportToDownload.dietPlan.dinner],
-        ],
+        head: [['Day', 'Breakfast', 'Lunch', 'Dinner']],
+        body: reportToDownload.dietPlan.weeklyPlan.map(day => [day.day, day.breakfast, day.lunch, day.dinner]),
     });
 
-    // Exercise, Remedies, Do's/Don'ts
+    // Exercise Plan
     lastY = (doc as any).lastAutoTable.finalY;
-    const addSection = (title: string, items: string[]) => {
-      if (lastY > 250) { doc.addPage(); lastY = 20; }
+     if (lastY > 220) { doc.addPage(); lastY = 15; }
+    doc.setFontSize(14);
+    doc.text('7-Day Exercise Plan', 15, lastY + 15);
+    (doc as any).autoTable({
+        startY: lastY + 20,
+        theme: 'grid',
+        head: [['Day', 'Activity', 'Duration']],
+        body: reportToDownload.exercisePlan.weeklyPlan.map(day => [day.day, day.activity, day.duration]),
+    });
+
+    lastY = (doc as any).lastAutoTable.finalY;
+
+    // Home Remedies, Do's/Don'ts
+    const addSection = (title: string, items: string[], y: number) => {
+      if (y > 250) { doc.addPage(); y = 20; }
       doc.setFontSize(14);
-      doc.text(title, 15, lastY + 15);
+      doc.text(title, 15, y + 15);
       doc.setFontSize(10);
-      items.forEach((item, index) => {
-        doc.text(`• ${item}`, 20, lastY + 22 + (index * 6));
-      });
-      lastY += 22 + (items.length * 6);
+      const listItems = doc.splitTextToSize(items.map(i => `• ${i}`).join('\n'), 180)
+      doc.text(listItems, 15, y + 22);
+      return y + 22 + (listItems.length * 5);
     }
     
-    addSection('Exercise Plan', reportToDownload.exercisePlan);
-    addSection('Home Remedies', reportToDownload.homeRemedies);
+    lastY = addSection('Home Remedies', reportToDownload.homeRemedies, lastY);
     
     doc.addPage();
     doc.setFontSize(18);
     doc.text("Do's and Don'ts", 15, 20);
-    lastY= 25;
-    addSection("Do's", reportToDownload.dosAndDonts.dos);
-    addSection("Don'ts", reportToDownload.dosAndDonts.donts);
+    lastY = addSection("Do's", reportToDownload.dosAndDonts.dos, 25);
+    addSection("Don'ts", reportToDownload.dosAndDonts.donts, lastY);
     
     doc.save(`Health_Report_${user.firstName}_${new Date().toISOString().split('T')[0]}.pdf`);
   };
@@ -249,8 +246,15 @@ export default function HealthReportPage() {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="name" />
                                 <YAxis domain={[0, 3]} ticks={[1, 2, 3]} tickFormatter={(val) => ['Low', 'Mod', 'High'][val-1]} />
-                                <Legend />
-                                <Bar dataKey="risk" fill="hsl(var(--primary))" />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'hsl(var(--background))',
+                                        borderColor: 'hsl(var(--border))',
+                                    }}
+                                    formatter={(value) => ['Low', 'Moderate', 'High'][Number(value)-1]}
+                                />
+                                <Legend formatter={(value) => 'Risk Level'} />
+                                <Bar dataKey="risk" name="Risk Level" fill="hsl(var(--primary))" />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -269,20 +273,55 @@ export default function HealthReportPage() {
                     </div>
                 </div>
 
-                 <div>
-                    <h3 className="font-bold text-xl mb-4 flex items-center gap-2"><Utensils /> Diet Plan (Indian Cuisine)</h3>
-                    <div className="space-y-3">
-                        <p><strong>Breakfast:</strong> {reportToDisplay.dietPlan.breakfast}</p>
-                        <p><strong>Lunch:</strong> {reportToDisplay.dietPlan.lunch}</p>
-                        <p><strong>Dinner:</strong> {reportToDisplay.dietPlan.dinner}</p>
-                    </div>
-                </div>
+                <Accordion type="single" collapsible className="w-full space-y-3">
+                    <AccordionItem value="diet-plan">
+                        <AccordionTrigger className="text-xl font-bold p-0 hover:no-underline">
+                             <div className="flex items-center gap-2"><Utensils /> 7-Day Diet Plan</div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-4">
+                            <div className="space-y-3">
+                                {reportToDisplay.dietPlan.weeklyPlan.map((day, i) => (
+                                    <div key={i} className="p-4 border rounded-lg bg-card/50">
+                                        <h4 className="font-bold mb-2">{day.day}</h4>
+                                        <div className="text-sm text-muted-foreground grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <p><strong className="text-foreground">Breakfast:</strong> {day.breakfast}</p>
+                                            <p><strong className="text-foreground">Lunch:</strong> {day.lunch}</p>
+                                            <p><strong className="text-foreground">Dinner:</strong> {day.dinner}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="exercise-plan">
+                         <AccordionTrigger className="text-xl font-bold p-0 hover:no-underline">
+                            <div className="flex items-center gap-2"><Activity /> 7-Day Exercise Plan</div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-4">
+                           <div className="space-y-3">
+                                {reportToDisplay.exercisePlan.weeklyPlan.map((day, i) => (
+                                    <div key={i} className="p-4 border rounded-lg bg-card/50 flex justify-between items-center">
+                                        <div className="flex items-center gap-4">
+                                            <Calendar className="h-5 w-5 text-primary"/>
+                                            <div>
+                                                <h4 className="font-bold">{day.day}</h4>
+                                                <p className="text-sm text-muted-foreground">{day.activity}</p>
+                                            </div>
+                                        </div>
+                                        <p className="font-semibold">{day.duration}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
                 
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <h3 className="font-bold text-xl mb-4 flex items-center gap-2"><Dumbbell /> Exercise Plan</h3>
+                        <h3 className="font-bold text-xl mb-4 flex items-center gap-2"><Dumbbell /> Home Remedies</h3>
                         <ul className="list-disc list-inside space-y-1">
-                            {reportToDisplay.exercisePlan.map((ex, i) => <li key={i}>{ex}</li>)}
+                            {reportToDisplay.homeRemedies.map((remedy, i) => <li key={i}>{remedy}</li>)}
                         </ul>
                     </div>
                     <div>
@@ -303,13 +342,6 @@ export default function HealthReportPage() {
                         </div>
                     </div>
                  </div>
-
-                 <div>
-                    <h3 className="font-bold text-xl mb-4">Home Remedies</h3>
-                    <ul className="list-disc list-inside space-y-1">
-                        {reportToDisplay.homeRemedies.map((remedy, i) => <li key={i}>{remedy}</li>)}
-                    </ul>
-                </div>
             </CardContent>
         </Card>
     );
@@ -342,23 +374,6 @@ export default function HealthReportPage() {
       )}
 
       {report && <ReportDisplay reportToDisplay={report} />}
-      
-       {/* Hidden container for PDF rendering */}
-      <div id="pdf-charts" className="hidden">
-        {report && (
-            <div style={{ width: 800, height: 400 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={report.riskAnalysis.map(r => ({ name: r.condition, risk: r.riskLevel === 'High' ? 3 : r.riskLevel === 'Moderate' ? 2 : 1 }))}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis domain={[0, 3]} />
-                        <Bar dataKey="risk" fill="#8884d8" />
-                    </BarChart>
-                </ResponsiveContainer>
-            </div>
-        )}
-      </div>
-
 
       <Card className="mt-6">
         <CardHeader>

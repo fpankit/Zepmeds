@@ -67,8 +67,8 @@ const prompt = ai.definePrompt({
 
   Your analysis should cover the following points:
   1.  **Risk Analysis**: Assess the risk (Low, Moderate, High) for High Diabetes, High BP, Obesity, and overall Stamina. Also, identify any other potential risks based on the data (e.g., high cardio leading to joint stress). Provide a brief explanation for each risk assessment.
-  2.  **Diet Plan**: Create a comprehensive, varied 7-day diet plan based on common, healthy Indian cuisine. Provide different options for breakfast, lunch, and dinner for each day of the week.
-  3.  **Exercise Plan**: Suggest a 7-day exercise plan, including a mix of activities like brisk walking, yoga, light strength training, and rest days. Specify the activity and recommended duration for each day.
+  2.  **Diet Plan**: Create a comprehensive, varied 7-day diet plan based on common, healthy Indian cuisine. Provide different options for breakfast, lunch, and dinner for each day of the week within the \`weeklyPlan\` array.
+  3.  **Exercise Plan**: Suggest a 7-day exercise plan, including a mix of activities like brisk walking, yoga, light strength training, and rest days. Specify the activity and recommended duration for each day within the \`weeklyPlan\` array.
   4.  **Home Remedies**: Provide 2-3 simple home remedies for general wellness.
   5.  **Do's and Don'ts**: List a few key do's and don'ts for a healthier lifestyle.
   6.  **Disclaimer**: ALWAYS start the disclaimer field with "This is an AI-generated report and not a substitute for professional medical advice. Please consult a doctor for any health concerns."
@@ -77,10 +77,22 @@ const prompt = ai.definePrompt({
   `,
 });
 
-export async function generateHealthReport(input: HealthReportInput): Promise<HealthReportOutput> {
-  const { output } = await prompt(input);
-  if (!output) {
-    throw new Error('The AI model did not return a valid response for the health report.');
+export const generateHealthReportFlow = ai.defineFlow(
+  {
+    name: 'generateHealthReportFlow',
+    inputSchema: HealthReportInputSchema,
+    outputSchema: HealthReportOutputSchema,
+  },
+  async (input) => {
+    const { output } = await prompt(input);
+    if (!output) {
+      throw new Error('The AI model did not return a valid response for the health report.');
+    }
+    return output;
   }
-  return output;
+);
+
+
+export async function generateHealthReport(input: HealthReportInput): Promise<HealthReportOutput> {
+  return await generateHealthReportFlow(input);
 }
