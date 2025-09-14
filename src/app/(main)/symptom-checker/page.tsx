@@ -1,16 +1,18 @@
 
 'use client';
 
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, Loader2, Upload, X,Languages } from 'lucide-react';
+import { BrainCircuit, Loader2, Upload, X, Languages, Camera, Video, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const languages = [
     { value: 'English', label: 'English' },
@@ -31,11 +33,42 @@ export default function SymptomCheckerPage() {
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
   const [targetLanguage, setTargetLanguage] = useState('English');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
   
+  const getCameraPermission = async () => {
+    if (hasCameraPermission === true) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setHasCameraPermission(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setHasCameraPermission(false);
+    }
+  };
+  
+  const handleTabChange = (value: string) => {
+      if (value === 'live' && hasCameraPermission !== true) {
+          getCameraPermission();
+      } else {
+          // Stop camera when switching away
+          if (videoRef.current && videoRef.current.srcObject) {
+              const stream = videoRef.current.srcObject as MediaStream;
+              stream.getTracks().forEach(track => track.stop());
+              videoRef.current.srcObject = null;
+          }
+      }
+  }
+
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -76,6 +109,20 @@ export default function SymptomCheckerPage() {
       targetLanguage: targetLanguage
     }));
     router.push(`/symptom-checker/results`);
+  };
+
+  const takePicture = () => {
+    if (videoRef.current && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        const dataUri = canvas.toDataURL('image/png');
+        setImagePreview(dataUri);
+        setImageDataUri(dataUri);
+    }
   };
   
   const removeImage = () => {
@@ -120,28 +167,72 @@ export default function SymptomCheckerPage() {
             />
           </div>
           
-          <div className="space-y-2">
-            {imagePreview ? (
-              <div className="relative group">
-                <Image src={imagePreview} alt="Symptom preview" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
-                <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={removeImage}>
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
-            ) : (
-              <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload a Photo (Optional)
-              </Button>
-            )}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept="image/png, image/jpeg"
-            />
-          </div>
+           <Tabs defaultValue="upload" className="w-full" onValueChange={handleTabChange}>
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="upload"><Upload className="mr-2 h-4 w-4"/>Upload</TabsTrigger>
+                    <TabsTrigger value="live"><Camera className="mr-2 h-4 w-4"/>Live Check</TabsTrigger>
+                </TabsList>
+                <TabsContent value="upload" className="mt-4">
+                     <div className="space-y-2">
+                        {imagePreview ? (
+                        <div className="relative group">
+                            <Image src={imagePreview} alt="Symptom preview" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
+                            <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={removeImage}>
+                            <X className="h-5 w-5" />
+                            </Button>
+                        </div>
+                        ) : (
+                        <Button variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload a Photo (Optional)
+                        </Button>
+                        )}
+                        <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                        accept="image/png, image/jpeg"
+                        />
+                    </div>
+                </TabsContent>
+                <TabsContent value="live" className="mt-4">
+                     <div className="space-y-4">
+                        {hasCameraPermission === false && (
+                             <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>Camera Access Required</AlertTitle>
+                                <AlertDescription>
+                                    Please allow camera access in your browser to use this feature. You might need to refresh the page after granting permission.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        
+                        <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
+                            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                             <canvas ref={canvasRef} className="hidden" />
+                             {imagePreview && (
+                                 <div className="absolute inset-0">
+                                     <Image src={imagePreview} alt="Symptom capture" layout="fill" className="object-cover" />
+                                 </div>
+                             )}
+                        </div>
+
+                        <div className="flex gap-2">
+                            {imagePreview ? (
+                                <Button variant="outline" className="w-full" onClick={removeImage}>
+                                    Retake Picture
+                                </Button>
+                            ) : (
+                                <Button className="w-full" onClick={takePicture} disabled={hasCameraPermission !== true}>
+                                    <Camera className="mr-2 h-4 w-4" />
+                                    Take Picture
+                                </Button>
+                            )}
+                        </div>
+                     </div>
+                </TabsContent>
+            </Tabs>
 
         </CardContent>
         <CardFooter>
