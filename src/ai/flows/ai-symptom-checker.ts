@@ -21,6 +21,11 @@ const AiSymptomCheckerInputSchema = z.object({
 export type AiSymptomCheckerInput = z.infer<typeof AiSymptomCheckerInputSchema>;
 
 const AiSymptomCheckerOutputSchema = z.object({
+  differentialDiagnosis: z.array(z.object({
+    condition: z.string().describe("The name of the possible medical condition."),
+    confidence: z.enum(["High", "Medium", "Low"]).describe("The confidence level (High, Medium, or Low) for this diagnosis."),
+    reasoning: z.string().describe("A brief explanation for why this condition is suspected based on the provided symptoms."),
+  })).describe("A list of possible diseases with confidence scores and reasoning."),
   potentialMedicines: z.array(z.string()).describe('A list of suggested over-the-counter medicines.'),
   precautions: z.array(z.string()).describe('A list of precautions to take.'),
   diet: z.array(z.string()).describe('A list of dietary recommendations.'),
@@ -34,7 +39,7 @@ const prompt = ai.definePrompt({
   name: 'aiSymptomCheckerPrompt',
   input: { schema: AiSymptomCheckerInputSchema },
   output: { schema: AiSymptomCheckerOutputSchema },
-  prompt: `You are an expert medical AI assistant. Based on the user's symptoms, and optional photo, provide a helpful and safe analysis.
+  prompt: `You are an expert medical AI assistant. Your primary function is to perform a differential diagnosis based on user-provided symptoms and provide safe, helpful guidance.
 
   IMPORTANT: The user has requested the response in '{{{targetLanguage}}}'. You MUST provide your entire response, including all fields in the output schema, in this language.
 
@@ -45,17 +50,24 @@ const prompt = ai.definePrompt({
   {{media url=photoDataUri}}
   {{/if}}
 
-  Provide the following information based on the symptoms:
-  - Suggest 2-3 common, safe, over-the-counter medicines.
-  - List 3-4 important precautions.
-  - Recommend a simple diet to follow.
-  - Suggest whether to rest or do light exercise.
-  - Provide a clear advisory on whether a doctor visit is recommended, and if so, which specialist (e.g., General Physician, ENT Specialist).
-  - Set the 'recommendedSpecialist' field to the type of specialist to see. If no specific specialist is needed, suggest 'General Physician'.
+  Based on the symptoms, perform the following actions:
+  1.  **Differential Diagnosis**: Identify 2-3 potential medical conditions. For each condition, provide:
+      -   `condition`: The name of the condition.
+      -   `confidence`: A confidence score ('High', 'Medium', or 'Low').
+      -   `reasoning`: Explain *why* you suspect this condition based on the specific symptoms provided. This is crucial for explainability.
 
-  IMPORTANT: Start your advisory with a translated version of "This is not a substitute for professional medical advice. Please consult a doctor for a proper diagnosis."
+  2.  **General Guidance**: Provide general recommendations that are safe for the identified potential conditions.
+      -   Suggest 2-3 common, safe, over-the-counter medicines.
+      -   List 3-4 important precautions.
+      -   Recommend a simple diet to follow.
+      -   Suggest whether to rest or do light exercise.
+
+  3.  **Doctor Advisory**:
+      -   Provide a clear advisory on whether a doctor visit is recommended.
+      -   Set the 'recommendedSpecialist' field to the most appropriate specialist (e.g., 'General Physician', 'Dermatologist'). If no specific specialist is needed but a doctor visit is advised, suggest 'General Physician'.
+      -   IMPORTANT: Start your advisory with a translated version of "This is not a substitute for professional medical advice. Please consult a doctor for a proper diagnosis."
   
-  Do not provide any information outside of the requested output format.
+  Provide the output in the specified JSON format. Do not provide any information outside of this structure.
   `,
 });
 

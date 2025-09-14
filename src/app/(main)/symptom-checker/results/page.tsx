@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase, BrainCircuit, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -103,7 +103,6 @@ function SymptomCheckerResultsContent() {
       })
       .finally(() => {
         setIsLoading(false);
-        // Do not remove item from session storage to allow for re-analysis or debugging
       });
   }, [user, router, toast, isOffline]);
 
@@ -120,6 +119,15 @@ function SymptomCheckerResultsContent() {
       </CardContent>
     </Card>
   );
+
+  const getConfidenceColor = (confidence: "High" | "Medium" | "Low") => {
+    switch (confidence) {
+        case "High": return "bg-red-500/80";
+        case "Medium": return "bg-yellow-500/80";
+        case "Low": return "bg-green-500/80";
+        default: return "bg-gray-500/80";
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -164,6 +172,35 @@ function SymptomCheckerResultsContent() {
               <AlertDescription>{result.doctorAdvisory}</AlertDescription>
             </Alert>
             
+            {result.differentialDiagnosis && result.differentialDiagnosis.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                           <BrainCircuit className="text-primary"/> Differential Diagnosis
+                        </CardTitle>
+                        <CardDescription>
+                            Here are the potential conditions based on your symptoms.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {result.differentialDiagnosis.map((diag, index) => (
+                            <div key={index} className="p-4 border rounded-lg bg-card/50">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="font-bold text-lg">{diag.condition}</h3>
+                                    <span className={`px-2.5 py-1 text-xs font-bold rounded-full text-white ${getConfidenceColor(diag.confidence)}`}>
+                                        {diag.confidence} Confidence
+                                    </span>
+                                </div>
+                                <div className="flex items-start gap-2 text-muted-foreground">
+                                    <Sparkles className="h-4 w-4 mt-1 text-yellow-400 flex-shrink-0" />
+                                    <p className="text-sm"><span className="font-semibold text-foreground/90">AI Reasoning:</span> {diag.reasoning}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            )}
+
             {result.recommendedSpecialist && (
               <Card>
                 <CardContent className="p-4 flex items-center justify-between">
