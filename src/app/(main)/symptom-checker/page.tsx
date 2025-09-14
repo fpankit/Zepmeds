@@ -6,16 +6,30 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, Loader2, Upload, Image as ImageIcon, X } from 'lucide-react';
+import { BrainCircuit, Loader2, Upload, X,Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import Image from 'next/image';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const languages = [
+    { value: 'English', label: 'English' },
+    { value: 'Hindi', label: 'Hindi (हिन्दी)' },
+    { value: 'Punjabi', label: 'Punjabi (ਪੰਜਾਬੀ)' },
+    { value: 'Kannada', label: 'Kannada (ಕನ್ನಡ)' },
+    { value: 'Tamil', label: 'Tamil (தமிழ்)' },
+    { value: 'Telugu', label: 'Telugu (తెలుగు)' },
+    { value: 'German', label: 'German (Deutsch)' },
+    { value: 'Chinese', label: 'Chinese (中文)' },
+];
+
 
 export default function SymptomCheckerPage() {
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageDataUri, setImageDataUri] = useState<string | null>(null);
+  const [targetLanguage, setTargetLanguage] = useState('English');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const router = useRouter();
@@ -58,7 +72,8 @@ export default function SymptomCheckerPage() {
     // Store data in session storage to pass to the results page
     sessionStorage.setItem('symptomCheckerData', JSON.stringify({
       symptoms,
-      photoDataUri: imageDataUri
+      photoDataUri: imageDataUri,
+      targetLanguage: targetLanguage
     }));
     router.push(`/symptom-checker/results`);
   };
@@ -80,6 +95,22 @@ export default function SymptomCheckerPage() {
           <CardDescription>Describe your symptoms, and our AI will provide initial guidance. This is not a substitute for professional medical advice.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="font-medium text-sm flex items-center gap-2">
+              <Languages className="h-4 w-4"/> Select Language
+            </label>
+            <Select value={targetLanguage} onValueChange={setTargetLanguage}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a language" />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map(lang => (
+                   <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Textarea
             placeholder="e.g., 'I have a headache, a sore throat, and a slight fever for the last 2 days...'"
             className="min-h-[150px] text-base"

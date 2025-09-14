@@ -2,13 +2,12 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { aiSymptomChecker, AiSymptomCheckerOutput, AiSymptomCheckerInput } from '@/ai/flows/ai-symptom-checker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -46,7 +45,6 @@ function SymptomCheckerResultsContent() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Set initial status
     if (typeof navigator.onLine !== 'undefined') {
       setIsOffline(!navigator.onLine);
     }
@@ -64,7 +62,7 @@ function SymptomCheckerResultsContent() {
       setIsLoading(false);
       return;
     }
-    const parsedData: {symptoms: string; photoDataUri: string | null} = JSON.parse(storedData);
+    const parsedData: {symptoms: string; photoDataUri: string | null; targetLanguage: string;} = JSON.parse(storedData);
 
     if (!user || user.isGuest) {
       toast({ variant: 'destructive', title: 'Login Required' });
@@ -80,6 +78,7 @@ function SymptomCheckerResultsContent() {
     
     const requestPayload: AiSymptomCheckerInput = {
         symptoms: parsedData.symptoms,
+        targetLanguage: parsedData.targetLanguage || 'English',
     };
 
     if (parsedData.photoDataUri) {
@@ -104,7 +103,7 @@ function SymptomCheckerResultsContent() {
       })
       .finally(() => {
         setIsLoading(false);
-        sessionStorage.removeItem('symptomCheckerData');
+        // Do not remove item from session storage to allow for re-analysis or debugging
       });
   }, [user, router, toast, isOffline]);
 

@@ -12,10 +12,11 @@ import { ai } from '@/ai/dev';
 import { z } from 'zod';
 
 const AiSymptomCheckerInputSchema = z.object({
-  symptoms: z.string().describe('A description of the user\'s symptoms.'),
+  symptoms: z.string().describe("A description of the user's symptoms."),
   photoDataUri: z.string().optional().describe(
       "An optional photo of a visible symptom, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
+  targetLanguage: z.string().describe("The language in which the AI's response should be translated (e.g., 'Hindi', 'English', 'Punjabi')."),
 });
 export type AiSymptomCheckerInput = z.infer<typeof AiSymptomCheckerInputSchema>;
 
@@ -35,6 +36,8 @@ const prompt = ai.definePrompt({
   output: { schema: AiSymptomCheckerOutputSchema },
   prompt: `You are an expert medical AI assistant. Based on the user's symptoms, and optional photo, provide a helpful and safe analysis.
 
+  IMPORTANT: The user has requested the response in '{{{targetLanguage}}}'. You MUST provide your entire response, including all fields in the output schema, in this language.
+
   User Symptoms:
   {{{symptoms}}}
   {{#if photoDataUri}}
@@ -50,7 +53,7 @@ const prompt = ai.definePrompt({
   - Provide a clear advisory on whether a doctor visit is recommended, and if so, which specialist (e.g., General Physician, ENT Specialist).
   - Set the 'recommendedSpecialist' field to the type of specialist to see. If no specific specialist is needed, suggest 'General Physician'.
 
-  IMPORTANT: Start your advisory with "This is not a substitute for professional medical advice. Please consult a doctor for a proper diagnosis."
+  IMPORTANT: Start your advisory with a translated version of "This is not a substitute for professional medical advice. Please consult a doctor for a proper diagnosis."
   
   Do not provide any information outside of the requested output format.
   `,
