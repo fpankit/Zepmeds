@@ -8,25 +8,52 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase, BrainCircuit, Sparkles } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase, BrainCircuit, Sparkles, BookOpenCheck, Zap } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 
-function ResultsLoadingSkeleton() {
-  return (
-    <div className="space-y-6">
-      <Skeleton className="h-8 w-3/4" />
-      <Skeleton className="h-24 w-full" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-48 w-full" />
-      </div>
-    </div>
-  );
+
+const loadingMessages = [
+    { text: "AI is thinking...", icon: BrainCircuit },
+    { text: "Wait, AI can't think... that would be dangerous!", icon: AlertTriangle },
+    { text: "Just cross-referencing symptoms with medical data...", icon: BookOpenCheck },
+    { text: "Finalizing your preliminary analysis...", icon: Sparkles },
+];
+
+function EngagingLoader() {
+    const [index, setIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setIndex((prev) => (prev + 1) % loadingMessages.length);
+        }, 2500); // Change message every 2.5 seconds
+
+        return () => clearInterval(interval);
+    }, []);
+    
+    const { text, icon: Icon } = loadingMessages[index];
+
+    return (
+        <div className="flex flex-col items-center justify-center text-center p-8 space-y-6 bg-card/50 rounded-xl">
+             <AnimatePresence mode="wait">
+                <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.5 }}
+                    className="flex flex-col items-center justify-center gap-4"
+                >
+                    <Icon className="h-12 w-12 text-primary animate-pulse" />
+                    <p className="text-lg font-semibold text-muted-foreground">{text}</p>
+                </motion.div>
+            </AnimatePresence>
+        </div>
+    )
 }
+
 
 function SymptomCheckerResultsContent() {
   const router = useRouter();
@@ -79,11 +106,9 @@ function SymptomCheckerResultsContent() {
     const requestPayload: AiSymptomCheckerInput = {
         symptoms: parsedData.symptoms,
         targetLanguage: parsedData.targetLanguage || 'English',
+        photoDataUri: parsedData.photoDataUri || undefined
     };
 
-    if (parsedData.photoDataUri) {
-        requestPayload.photoDataUri = parsedData.photoDataUri;
-    }
 
     setInputData(requestPayload);
     setIsLoading(true);
@@ -95,7 +120,8 @@ function SymptomCheckerResultsContent() {
       })
       .catch((err) => {
         console.error(err);
-        setError(err.message || 'An error occurred while analyzing your symptoms. Please try again later.');
+        const errorMessage = err.message || 'An error occurred while analyzing your symptoms. Please try again later.';
+        setError(errorMessage);
       })
       .finally(() => {
         setIsLoading(false);
@@ -135,7 +161,7 @@ function SymptomCheckerResultsContent() {
       </header>
 
       <main className="flex-1 p-4 md:p-6 space-y-6">
-        {isLoading && <ResultsLoadingSkeleton />}
+        {isLoading && <EngagingLoader />}
 
         {error && (
           <Alert variant="destructive">
@@ -233,3 +259,5 @@ export default function SymptomCheckerResultsPage() {
         </Suspense>
     )
 }
+
+    
