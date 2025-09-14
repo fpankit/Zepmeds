@@ -47,7 +47,7 @@ const prompt = ai.definePrompt({
   User Symptoms:
   {{{symptoms}}}
   {{#if photoDataUri}}
-  Symptom Photo/Video Frame:
+  Symptom Photo/Video Frame (as Base64 data URI):
   {{media url=photoDataUri}}
   {{/if}}
 
@@ -93,7 +93,7 @@ export const aiSymptomChecker = ai.defineFlow(
           // Fallback to the sentry checker
           console.log('Primary model overloaded, calling sentry checker as fallback.');
           const fallbackOutput = await aiSentryChecker(input);
-          return fallbackOutput; // <-- Correctly return the successful fallback output
+          return fallbackOutput;
         } catch (fallbackError: any) {
            console.error('Error in fallback aiSentryCheckerFlow:', fallbackError);
            // This error is thrown only if the fallback also fails
