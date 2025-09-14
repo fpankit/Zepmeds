@@ -1,22 +1,28 @@
 
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Mic, MicOff, PhoneOff, Volume2, Bot, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Mic, MicOff, PhoneOff, Volume2, Bot } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { echoDoc, EchoDocInput } from '@/ai/flows/echo-doc-flow';
 import Typewriter from 'typewriter-effect';
 import { useCalls } from '@/hooks/use-calls';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface ConversationTurn {
     role: 'user' | 'model';
     text: string;
 }
+
+// Check for SpeechRecognition API
+const SpeechRecognition =
+  (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition));
+
 
 function EchoDocCallContent() {
     const router = useRouter();
@@ -27,9 +33,10 @@ function EchoDocCallContent() {
     // Component State
     const [conversation, setConversation] = useState<ConversationTurn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isMuted, setIsMuted] = useState(true); // Start as muted
-    const [isSpeaker, setIsSpeaker] = useState(true);
+    const [isMuted, setIsMuted] = useState(true);
+    const [isListening, setIsListening] = useState(false);
     const [callStatus, setCallStatus] = useState("Connecting...");
+    const [hasMicPermission, setHasMicPermission] = useState<boolean | null>(null);
     
     // Extracted URL Params
     const initialSymptoms = searchParams.get('symptoms');
@@ -37,12 +44,28 @@ function EchoDocCallContent() {
     const doctorId = searchParams.get('doctorId');
 
     const audioRef = useRef<HTMLAudioElement>(null);
+    const recognitionRef = useRef<any>(null);
     const doctor = doctors.find(doc => doc.id === doctorId);
+    
+    // Request microphone permission on component mount
+    useEffect(() => {
+        const getMicPermission = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                setHasMicPermission(true);
+                stream.getTracks().forEach(track => track.stop()); // Stop stream, we only need permission
+            } catch (error) {
+                console.error("Mic permission denied:", error);
+                setHasMicPermission(false);
+            }
+        };
+        getMicPermission();
+    }, []);
 
     // Initial message effect
     useEffect(() => {
         if (initialSymptoms && language) {
-            handleNewMessage(initialSymptoms, true);
+            handleNewMessage(initialSymptoms);
         } else {
             toast({ variant: 'destructive', title: 'Missing required information.' });
             router.push('/echo-doc');
@@ -51,17 +74,17 @@ function EchoDocCallContent() {
     }, [initialSymptoms, language]);
     
 
-    const handleNewMessage = async (text: string, isInitialMessage = false) => {
+    const handleNewMessage = async (text: string) => {
         setIsLoading(true);
         setCallStatus("AI is responding...");
         
-        const updatedConversation = [...conversation, { role: 'user', text }];
-        setConversation(updatedConversation);
+        const updatedConversation: ConversationTurn[] = text ? [...conversation, { role: 'user', text }] : conversation;
+        if(text) setConversation(updatedConversation);
 
 
         try {
             const input: EchoDocInput = {
-                symptoms: text,
+                symptoms: text || initialSymptoms || '',
                 language: language || 'English',
                 conversationHistory: updatedConversation,
             };
@@ -85,11 +108,73 @@ function EchoDocCallContent() {
         }
     };
     
+    // --- Speech Recognition Logic ---
+    const setupRecognition = useCallback(() => {
+        if (!SpeechRecognition) {
+            toast({ variant: 'destructive', title: 'Browser Not Supported', description: 'Voice recognition is not supported by your browser.' });
+            return;
+        }
+        
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = language || 'en-US'; // Set language for recognition
+
+        recognition.onstart = () => {
+            setIsListening(true);
+            setCallStatus("Listening...");
+        };
+
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript) {
+                handleNewMessage(transcript);
+            }
+        };
+
+        recognition.onerror = (event: any) => {
+            console.error("Speech recognition error:", event.error);
+             toast({ variant: 'destructive', title: 'Recognition Error', description: `Could not understand audio. Reason: ${event.error}` });
+        };
+        
+        recognition.onend = () => {
+            setIsListening(false);
+            if (!isLoading) setCallStatus("Connected");
+        };
+
+        recognitionRef.current = recognition;
+
+    }, [language, toast, isLoading]);
+
+    const toggleMute = () => {
+        if (!hasMicPermission) {
+            toast({ variant: 'destructive', title: 'Microphone permission is required.' });
+            return;
+        }
+        
+        if (!recognitionRef.current) {
+            setupRecognition();
+        }
+
+        const nextMutedState = !isMuted;
+        setIsMuted(nextMutedState);
+
+        if (!nextMutedState) { // If unmuting
+            recognitionRef.current?.start();
+        } else { // If muting
+            recognitionRef.current?.stop();
+        }
+    };
+
+
     const latestAiResponse = conversation.filter(turn => turn.role === 'model').pop()?.text;
     
     const handleEndCall = () => {
         if (audioRef.current) {
             audioRef.current.pause();
+        }
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
         }
         router.push('/home');
     }
@@ -105,6 +190,12 @@ function EchoDocCallContent() {
 
             {/* Main Call UI */}
             <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                {hasMicPermission === false && (
+                    <Alert variant="destructive" className="mb-4 max-w-lg">
+                        <AlertTitle>Microphone Access Required</AlertTitle>
+                        <AlertDescription>Please enable microphone permissions in your browser to talk to the AI.</AlertDescription>
+                    </Alert>
+                )}
                  <div className="flex flex-col items-center">
                     <Avatar className="h-32 w-32 border-4 border-primary/50 shadow-lg">
                         <AvatarImage src={doctor?.image} />
@@ -135,7 +226,7 @@ function EchoDocCallContent() {
                                         loop: false,
                                         delay: 40,
                                         cursor: '',
-                                        deleteSpeed: Infinity, // Prevents deletion
+                                        deleteSpeed: Infinity,
                                     }}
                                 />
                              ) : (
@@ -151,16 +242,10 @@ function EchoDocCallContent() {
             <footer className="p-6">
                 <div className="flex items-center justify-center gap-6">
                      <div className="flex flex-col items-center gap-2">
-                        <Button onClick={() => setIsMuted(!isMuted)} size="icon" className={cn("h-16 w-16 rounded-full", isMuted ? "bg-white text-black" : "bg-white/20 text-white")}>
+                        <Button onClick={toggleMute} size="icon" className={cn("h-16 w-16 rounded-full transition-colors", isMuted ? "bg-white text-black" : (isListening ? "bg-red-500 text-white animate-pulse" : "bg-white/20 text-white"))}>
                             {isMuted ? <MicOff /> : <Mic />}
                         </Button>
-                        <span className="text-xs text-white">{isMuted ? "Muted" : "Listening..."}</span>
-                    </div>
-                     <div className="flex flex-col items-center gap-2">
-                        <Button onClick={() => setIsSpeaker(!isSpeaker)} size="icon" className="h-16 w-16 rounded-full bg-white/20 text-white">
-                            <Volume2 />
-                        </Button>
-                        <span className="text-xs text-white">Speaker</span>
+                        <span className="text-xs text-white">{isMuted ? "Muted" : (isListening ? "Listening..." : "Unmuted")}</span>
                     </div>
                      <div className="flex flex-col items-center gap-2">
                          <Button onClick={handleEndCall} variant="destructive" size="icon" className="h-16 w-16 rounded-full">
@@ -171,7 +256,9 @@ function EchoDocCallContent() {
                 </div>
             </footer>
             
-            <audio ref={audioRef} className="hidden" />
+            <audio ref={audioRef} className="hidden" onEnded={() => {
+                 if (!isMuted) recognitionRef.current?.start();
+            }}/>
         </div>
     );
 }
