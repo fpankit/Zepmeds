@@ -51,6 +51,7 @@ const PRODUCTS_PER_PAGE = 8;
 const ProductCardSkeleton = () => (
     <Card className="overflow-hidden">
         <CardContent className="p-3 space-y-2">
+          <Skeleton className="h-24 w-full" />
           <Skeleton className="h-5 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
           <div className="flex justify-between items-center pt-2">
@@ -108,6 +109,7 @@ export default function OrderMedicinesPage() {
       const newProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 
       const currentProducts = lastVisibleDoc ? [...products, ...newProducts] : newProducts;
+      
       setProducts(currentProducts);
       
       const newProductMap = new Map<string, Product>();
@@ -129,6 +131,8 @@ export default function OrderMedicinesPage() {
   
   useEffect(() => {
     // This effect now serves as the trigger for category changes
+    setLastDoc(null); // Reset pagination
+    setHasMore(true); // Assume there is more data for the new category
     fetchProducts(null, selectedCategory);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
@@ -161,11 +165,7 @@ export default function OrderMedicinesPage() {
             {categories.map((category) => (
               <button
                 key={category.name}
-                onClick={() => {
-                  setLastDoc(null);
-                  setHasMore(true);
-                  setSelectedCategory(category.name);
-                }}
+                onClick={() => setSelectedCategory(category.name)}
                 className={cn(
                   'flex flex-col items-center justify-center space-y-2 w-20 h-20 rounded-2xl text-center p-2 transition-all duration-200 transform hover:scale-105',
                    'bg-gradient-to-br text-white shadow-lg',
@@ -198,13 +198,16 @@ export default function OrderMedicinesPage() {
                 <DelayedSkeleton key={product.id} isLoading={false} skeleton={<ProductCardSkeleton />}>
                     <Card className="overflow-hidden group flex flex-col">
                         <CardContent className="p-0 flex-1 flex flex-col">
-                           <Link href={`/product/${product.id}`} className="block p-3">
-                                {product.isRx && <Badge variant="destructive" className="mb-2">Rx</Badge>}
-                                <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
-                                <p className="text-xs text-muted-foreground truncate">{product.uses}</p>
-                                <div className="mt-2">
-                                    <div className="flex items-baseline gap-1">
-                                        <p className="font-bold text-base">₹{product.price}</p>
+                           <Link href={`/product/${product.id}`} className="block">
+                                <Skeleton className="w-full h-32" />
+                                <div className="p-3">
+                                    {product.isRx && <Badge variant="destructive" className="mb-2">Rx</Badge>}
+                                    <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
+                                    <p className="text-xs text-muted-foreground truncate">{product.uses}</p>
+                                    <div className="mt-2">
+                                        <div className="flex items-baseline gap-1">
+                                            <p className="font-bold text-base">₹{product.price}</p>
+                                        </div>
                                     </div>
                                 </div>
                             </Link>
