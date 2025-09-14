@@ -50,15 +50,12 @@ const PRODUCTS_PER_PAGE = 8;
 
 const ProductCardSkeleton = () => (
     <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          <Skeleton className="w-full h-32" />
-          <div className="p-3 space-y-2">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <div className="flex justify-between items-center mt-2">
-              <Skeleton className="h-6 w-1/4" />
-              <Skeleton className="h-10 w-24" />
-            </div>
+        <CardContent className="p-3 space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+          <div className="flex justify-between items-center pt-2">
+            <Skeleton className="h-6 w-1/4" />
+            <Skeleton className="h-10 w-24" />
           </div>
         </CardContent>
     </Card>
@@ -201,31 +198,13 @@ export default function OrderMedicinesPage() {
                 <DelayedSkeleton key={product.id} isLoading={false} skeleton={<ProductCardSkeleton />}>
                     <Card className="overflow-hidden group flex flex-col">
                         <CardContent className="p-0 flex-1 flex flex-col">
-                           <Link href={`/product/${product.id}`} className="block">
-                                <div className="relative">
-                                    {product.imageUrl ? (
-                                        <Image
-                                            src={product.imageUrl}
-                                            alt={product.name}
-                                            width={200}
-                                            height={200}
-                                            className="w-full h-32 object-cover"
-                                            data-ai-hint={product.dataAiHint}
-                                        />
-                                    ) : (
-                                        <div className="w-full h-32 bg-muted flex items-center justify-center">
-                                        <Pill className="h-8 w-8 text-muted-foreground" />
-                                        </div>
-                                    )}
-                                    {product.isRx && <Badge variant="destructive" className="absolute top-2 right-2">Rx</Badge>}
-                                </div>
-                                <div className="p-3">
-                                    <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
-                                    <p className="text-xs text-muted-foreground truncate">{product.uses}</p>
-                                    <div className="mt-2">
-                                        <div className="flex items-baseline gap-1">
-                                            <p className="font-bold text-base">₹{product.price}</p>
-                                        </div>
+                           <Link href={`/product/${product.id}`} className="block p-3">
+                                {product.isRx && <Badge variant="destructive" className="mb-2">Rx</Badge>}
+                                <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
+                                <p className="text-xs text-muted-foreground truncate">{product.uses}</p>
+                                <div className="mt-2">
+                                    <div className="flex items-baseline gap-1">
+                                        <p className="font-bold text-base">₹{product.price}</p>
                                     </div>
                                 </div>
                             </Link>
