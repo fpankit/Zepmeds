@@ -5,20 +5,17 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Loader2, Send, Mic, Volume2 } from "lucide-react";
+import { ArrowLeft, Loader2, Mic, MicOff, PhoneOff, Volume2, Bot } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
-import { echoDoc, EchoDocInput, EchoDocOutput } from '@/ai/flows/echo-doc-flow';
+import { echoDoc, EchoDocInput } from '@/ai/flows/echo-doc-flow';
 import Typewriter from 'typewriter-effect';
-import { DoctorSuggestionCard } from '@/components/features/doctor-suggestion-card';
 import { useCalls } from '@/hooks/use-calls';
+import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface ConversationTurn {
     role: 'user' | 'model';
     text: string;
-    audio?: string;
 }
 
 function EchoDocCallContent() {
@@ -29,47 +26,37 @@ function EchoDocCallContent() {
 
     // Component State
     const [conversation, setConversation] = useState<ConversationTurn[]>([]);
-    const [userInput, setUserInput] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isMuted, setIsMuted] = useState(false);
+    const [isSpeaker, setIsSpeaker] = useState(true);
+    const [callStatus, setCallStatus] = useState("Connecting...");
     
     // Extracted URL Params
     const initialSymptoms = searchParams.get('symptoms');
     const language = searchParams.get('language');
     const doctorId = searchParams.get('doctorId');
-    const doctorName = searchParams.get('doctorName');
 
     const audioRef = useRef<HTMLAudioElement>(null);
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
-    
     const doctor = doctors.find(doc => doc.id === doctorId);
 
     // Initial message effect
     useEffect(() => {
         if (initialSymptoms && language) {
-            handleNewMessage(initialSymptoms, 'user-initial');
+            handleNewMessage(initialSymptoms);
         } else {
             toast({ variant: 'destructive', title: 'Missing required information.' });
             router.push('/echo-doc');
         }
     }, [initialSymptoms, language]);
+    
 
-    // Scroll to bottom effect
-    useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
-        }
-    }, [conversation]);
-
-    const handleNewMessage = async (text: string, source: 'user-input' | 'user-initial') => {
-        if (source === 'user-input') {
-            setUserInput('');
-        }
+    const handleNewMessage = async (text: string) => {
+        setIsLoading(true);
+        setCallStatus("AI is responding...");
         
-        // Add user message to conversation
         const newUserTurn: ConversationTurn = { role: 'user', text };
         const updatedConversation = [...conversation, newUserTurn];
         setConversation(updatedConversation);
-        setIsLoading(true);
 
         try {
             const input: EchoDocInput = {
@@ -80,103 +67,113 @@ function EchoDocCallContent() {
 
             const result = await echoDoc(input);
             
-            // Add AI response to conversation
-            const newModelTurn: ConversationTurn = { role: 'model', text: result.responseText, audio: result.responseAudio };
+            const newModelTurn: ConversationTurn = { role: 'model', text: result.responseText };
             setConversation(prev => [...prev, newModelTurn]);
             
-            // Play audio response
             if (audioRef.current && result.responseAudio) {
                 audioRef.current.src = result.responseAudio;
                 audioRef.current.play().catch(e => console.error("Audio playback failed", e));
             }
+             setCallStatus("Connected");
 
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'AI Error', description: error.message });
-            // Optionally remove the user's message if the AI fails
-            setConversation(conversation);
+            setCallStatus("Call Failed");
+            setConversation(conversation); // Revert conversation on error
         } finally {
             setIsLoading(false);
         }
     };
     
+    const latestAiResponse = conversation.filter(turn => turn.role === 'model').pop()?.text;
+    
+    const handleEndCall = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+        router.push('/home');
+    }
+
     return (
-         <div className="flex flex-col h-screen bg-background">
-            <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background border-b">
-                <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <div className="flex flex-col h-screen bg-gradient-to-br from-background to-card">
+            {/* Header */}
+            <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
+                <Button variant="ghost" size="icon" onClick={() => router.back()} className="bg-black/20 text-white hover:bg-black/40">
                     <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <div className="flex items-center gap-3">
-                    <Avatar>
-                        <AvatarImage src={doctor?.image} />
-                        <AvatarFallback>{doctor?.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <h1 className="text-xl font-bold">{doctor?.name}</h1>
-                </div>
-                <div className="w-8"></div>
             </header>
 
-            <ScrollArea className="flex-1" ref={scrollAreaRef}>
-                 <div className="p-4 space-y-4">
-                    {conversation.map((turn, index) => (
-                        <div key={index} className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <Card className={`max-w-sm ${turn.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
-                                <CardContent className="p-3">
-                                    {turn.role === 'model' && index === conversation.length - 1 && !isLoading ? (
-                                        <Typewriter
-                                            options={{
-                                                strings: [turn.text],
-                                                autoStart: true,
-                                                loop: false,
-                                                delay: 40,
-                                                cursor: '',
-                                            }}
-                                        />
-                                    ) : (
-                                        <p>{turn.text}</p>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
-                    ))}
-                    {isLoading && conversation.length > 0 && (
-                        <div className="flex justify-start">
-                            <Card className="max-w-sm bg-card">
-                                <CardContent className="p-3">
-                                     <Loader2 className="h-5 w-5 animate-spin" />
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
-                 </div>
-            </ScrollArea>
-             
-            <DoctorSuggestionCard doctor={doctors[1]} />
+            {/* Main Call UI */}
+            <main className="flex-1 flex flex-col items-center justify-center text-center p-4">
+                 <div className="flex flex-col items-center">
+                    <Avatar className="h-32 w-32 border-4 border-primary/50 shadow-lg">
+                        <AvatarImage src={doctor?.image} />
+                        <AvatarFallback className="text-4xl bg-primary/20">{doctor?.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <h1 className="text-3xl font-bold mt-4">{doctor?.name}</h1>
+                    <p className="text-lg text-primary">{doctor?.specialty}</p>
+                    <p className="text-muted-foreground mt-2">{callStatus}</p>
+                </div>
+                
+                <div className="mt-8 p-6 rounded-xl bg-black/20 backdrop-blur-md w-full max-w-lg min-h-[100px] flex items-center justify-center">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={latestAiResponse || 'loading'}
+                             initial={{ opacity: 0, y: 20 }}
+                             animate={{ opacity: 1, y: 0 }}
+                             exit={{ opacity: 0, y: -20 }}
+                             transition={{ duration: 0.3 }}
+                             className="text-lg text-white"
+                        >
+                             {isLoading && conversation.length > 0 ? (
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                             ) : latestAiResponse ? (
+                                <Typewriter
+                                    options={{
+                                        strings: [latestAiResponse],
+                                        autoStart: true,
+                                        loop: false,
+                                        delay: 40,
+                                        cursor: '',
+                                    }}
+                                />
+                             ) : (
+                                <p>Starting conversation...</p>
+                             )}
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
 
-            <footer className="p-4 border-t bg-background">
-                <div className="flex items-center gap-2">
-                    <Textarea 
-                        placeholder="Type your message..." 
-                        className="flex-1" 
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey && userInput.trim()) {
-                                e.preventDefault();
-                                handleNewMessage(userInput, 'user-input');
-                            }
-                        }}
-                    />
-                    <Button size="icon" variant="ghost"><Mic className="h-5 w-5" /></Button>
-                    <Button size="icon" onClick={() => handleNewMessage(userInput, 'user-input')} disabled={!userInput.trim() || isLoading}>
-                        <Send className="h-5 w-5" />
-                    </Button>
+            </main>
+            
+            {/* Footer with Call Controls */}
+            <footer className="p-6">
+                <div className="flex items-center justify-center gap-6">
+                     <div className="flex flex-col items-center gap-2">
+                        <Button onClick={() => setIsMuted(!isMuted)} size="icon" className={cn("h-16 w-16 rounded-full", isMuted ? "bg-white text-black" : "bg-white/20 text-white")}>
+                            {isMuted ? <MicOff /> : <Mic />}
+                        </Button>
+                        <span className="text-xs text-white">Mute</span>
+                    </div>
+                     <div className="flex flex-col items-center gap-2">
+                        <Button onClick={() => setIsSpeaker(!isSpeaker)} size="icon" className="h-16 w-16 rounded-full bg-white/20 text-white">
+                            <Volume2 />
+                        </Button>
+                        <span className="text-xs text-white">Speaker</span>
+                    </div>
+                     <div className="flex flex-col items-center gap-2">
+                         <Button onClick={handleEndCall} variant="destructive" size="icon" className="h-16 w-16 rounded-full">
+                            <PhoneOff />
+                        </Button>
+                         <span className="text-xs text-white">End</span>
+                    </div>
                 </div>
             </footer>
-             <audio ref={audioRef} className="hidden" />
+            
+            <audio ref={audioRef} className="hidden" />
         </div>
     );
 }
-
 
 export default function EchoDocCallPage() {
     return (

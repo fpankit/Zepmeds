@@ -78,14 +78,9 @@ const prompt = ai.definePrompt({
   Current Language: {{{language}}}
   IMPORTANT: You MUST respond *only* in the language specified above. Do not switch languages.
 
-  Conversation History:
+  Conversation History (for context):
   {{#each conversationHistory}}
-    {{#if (eq role 'user')}}
-      User: {{{text}}}
-    {{/if}}
-    {{#if (eq role 'model')}}
-      You: {{{text}}}
-    {{/if}}
+    {{role}}: {{{text}}}
   {{/each}}
 
   User's latest message:
@@ -96,7 +91,7 @@ const prompt = ai.definePrompt({
   2. Ask one or two clarifying questions if necessary (e.g., "How long have you had this headache?").
   3. Provide very general, safe advice (e.g., "It's important to rest and drink plenty of fluids.").
   4. Gently but firmly remind the user to see a doctor. Example: "While I can offer some general advice, it's very important that you speak with a real doctor for a proper diagnosis."
-  5. Keep your response concise and easy to understand.
+  5. Keep your response concise, clear, and easy to understand.
   `,
 });
 
