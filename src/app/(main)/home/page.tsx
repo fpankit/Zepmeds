@@ -171,6 +171,14 @@ export default function HomePage() {
               <Card key={product.id} className="overflow-hidden">
                 <CardContent className="p-0 flex flex-col justify-between h-full">
                   <div>
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      width={200}
+                      height={200}
+                      className="w-full h-32 object-cover"
+                      data-ai-hint={product.dataAiHint}
+                    />
                     <div className="p-3">
                       {product.isRx && (
                           <Badge variant="destructive" className="mb-2">Rx</Badge>
