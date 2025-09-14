@@ -146,7 +146,7 @@ export default function ProductDetailPage() {
 
             <main className="flex-1 overflow-y-auto pb-24">
                 <div className="p-4">
-                    <Carousel className="w-full max-w-sm mx-auto">
+                    <Carousel className="w-full max-w-xs mx-auto">
                         <CarouselContent>
                             {Array.from({ length: 3 }).map((_, index) => (
                                 <CarouselItem key={index}>
