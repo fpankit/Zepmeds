@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from "@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Loader2, Send, Mic, Volume2 } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
