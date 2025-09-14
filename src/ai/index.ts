@@ -4,3 +4,4 @@
 // main AI configuration and the individual flow files.
 
 import './flows/ai-symptom-checker';
+import './flows/health-report-flow';

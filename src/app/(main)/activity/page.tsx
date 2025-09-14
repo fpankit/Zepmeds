@@ -46,6 +46,7 @@ export default function ActivityPage() {
             await updateUser({ healthData: newHealthData });
         }
         setEditingMetric(null);
+        toast({ title: 'Metric Updated', description: `Your ${editingMetric?.title} has been saved.` });
     };
 
     // Get current date in MM/DD/YYYY format
@@ -127,10 +128,6 @@ export default function ActivityPage() {
                 </Tabs>
             </CardContent>
         </Card>
-
-        <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold tracking-tight">Log Health Metrics</h2>
-        </div>
         
         <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold text-muted-foreground">Today's Health</h3>
@@ -162,13 +159,10 @@ export default function ActivityPage() {
             })}
         </div>
 
-        <Button 
-            variant="outline" 
-            className="w-full h-14 border-primary border-2 text-primary text-lg font-bold"
-            onClick={() => toast({ title: "Coming Soon!", description: "Google Fit integration is under development."})}
-        >
-            <GitMerge className="mr-3 h-6 w-6"/>
-            Sync with Google Fit
+         <Button asChild variant="secondary" className="w-full h-14 text-lg font-bold">
+            <Link href="/health-report">
+                Generate AI Health Report
+            </Link>
         </Button>
       </main>
       
@@ -184,5 +178,3 @@ export default function ActivityPage() {
     </div>
   );
 }
-
-    
