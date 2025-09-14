@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, Loader2, Upload, X, Languages, Camera, Video, AlertCircle } from 'lucide-react';
+import { BrainCircuit, Loader2, Upload, X, Languages, Camera, Video, AlertCircle, RefreshCw, CircleDot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 const languages = [
     { value: 'English', label: 'English' },
@@ -29,12 +30,19 @@ const languages = [
 export default function SymptomCheckerPage() {
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageDataUri, setImageDataUri] = useState<string | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaDataUri, setMediaDataUri] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [targetLanguage, setTargetLanguage] = useState('English');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [isRecording, setIsRecording] = useState(false);
+  const [countdown, setCountdown] = useState(3);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
   
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   
@@ -42,13 +50,22 @@ export default function SymptomCheckerPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  const getCameraPermission = async () => {
-    if (hasCameraPermission === true) return;
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  };
+  
+  const getCameraPermission = async (mode: 'user' | 'environment') => {
+    stopCamera(); // Stop any existing stream
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
       setHasCameraPermission(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(e => console.error("Video play failed:", e));
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -57,15 +74,10 @@ export default function SymptomCheckerPage() {
   };
   
   const handleTabChange = (value: string) => {
-      if (value === 'live' && hasCameraPermission !== true) {
-          getCameraPermission();
+      if (value === 'live') {
+          getCameraPermission(facingMode);
       } else {
-          // Stop camera when switching away
-          if (videoRef.current && videoRef.current.srcObject) {
-              const stream = videoRef.current.srcObject as MediaStream;
-              stream.getTracks().forEach(track => track.stop());
-              videoRef.current.srcObject = null;
-          }
+          stopCamera();
       }
   }
 
@@ -74,8 +86,9 @@ export default function SymptomCheckerPage() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-        setImageDataUri(reader.result as string);
+        setMediaPreview(reader.result as string);
+        setMediaDataUri(reader.result as string);
+        setMediaType('image');
       };
       reader.readAsDataURL(file);
     }
@@ -102,13 +115,34 @@ export default function SymptomCheckerPage() {
     }
 
     setIsLoading(true);
-    // Store data in session storage to pass to the results page
-    sessionStorage.setItem('symptomCheckerData', JSON.stringify({
-      symptoms,
-      photoDataUri: imageDataUri,
-      targetLanguage: targetLanguage
-    }));
-    router.push(`/symptom-checker/results`);
+    let finalMediaDataUri = mediaDataUri;
+    // For video, we need to extract a frame to send to the AI
+    if (mediaType === 'video' && videoRef.current && canvasRef.current) {
+        const video = document.createElement('video');
+        video.src = mediaDataUri!;
+        const canvas = canvasRef.current;
+        video.onloadeddata = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            finalMediaDataUri = canvas.toDataURL('image/jpeg', 0.8); // Compress frame
+            
+            sessionStorage.setItem('symptomCheckerData', JSON.stringify({
+              symptoms,
+              photoDataUri: finalMediaDataUri,
+              targetLanguage: targetLanguage
+            }));
+            router.push(`/symptom-checker/results`);
+        }
+    } else {
+        sessionStorage.setItem('symptomCheckerData', JSON.stringify({
+          symptoms,
+          photoDataUri: finalMediaDataUri,
+          targetLanguage: targetLanguage
+        }));
+        router.push(`/symptom-checker/results`);
+    }
   };
 
   const takePicture = () => {
@@ -119,18 +153,74 @@ export default function SymptomCheckerPage() {
         canvas.height = video.videoHeight;
         const context = canvas.getContext('2d');
         context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        const dataUri = canvas.toDataURL('image/png');
-        setImagePreview(dataUri);
-        setImageDataUri(dataUri);
+        const dataUri = canvas.toDataURL('image/jpeg', 0.8); // Use jpeg and compress
+        setMediaPreview(dataUri);
+        setMediaDataUri(dataUri);
+        setMediaType('image');
+        stopCamera();
     }
   };
+
+  const startRecording = () => {
+    if (!videoRef.current?.srcObject) return;
+    setIsRecording(true);
+    setCountdown(3);
+    recordedChunksRef.current = [];
+    
+    // Find a supported mime type
+    const options = { mimeType: 'video/webm; codecs=vp9' };
+    let supportedMimeType = MediaRecorder.isTypeSupported(options.mimeType) ? options.mimeType : 'video/webm';
+
+    mediaRecorderRef.current = new MediaRecorder(videoRef.current.srcObject as MediaStream, { mimeType: supportedMimeType });
+    
+    mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunksRef.current.push(event.data);
+        }
+    };
+    
+    mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: supportedMimeType });
+        const videoUrl = URL.createObjectURL(blob);
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+            setMediaDataUri(reader.result as string);
+            setMediaPreview(videoUrl);
+            setMediaType('video');
+        }
+        stopCamera();
+    };
+    
+    mediaRecorderRef.current.start();
+
+    const countdownInterval = setInterval(() => {
+        setCountdown(prev => prev - 1);
+    }, 1000);
+
+    setTimeout(() => {
+        clearInterval(countdownInterval);
+        if (mediaRecorderRef.current?.state === 'recording') {
+            mediaRecorderRef.current.stop();
+        }
+        setIsRecording(false);
+    }, 3000);
+  };
   
-  const removeImage = () => {
-      setImagePreview(null);
-      setImageDataUri(null);
+  const removeMedia = () => {
+      setMediaPreview(null);
+      setMediaDataUri(null);
+      setMediaType(null);
       if(fileInputRef.current) {
           fileInputRef.current.value = "";
       }
+      getCameraPermission(facingMode); // Restart camera
+  }
+  
+  const switchCamera = () => {
+      const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+      setFacingMode(newFacingMode);
+      getCameraPermission(newFacingMode);
   }
 
   return (
@@ -174,10 +264,10 @@ export default function SymptomCheckerPage() {
                 </TabsList>
                 <TabsContent value="upload" className="mt-4">
                      <div className="space-y-2">
-                        {imagePreview ? (
+                        {mediaPreview && mediaType === 'image' ? (
                         <div className="relative group">
-                            <Image src={imagePreview} alt="Symptom preview" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
-                            <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={removeImage}>
+                            <Image src={mediaPreview} alt="Symptom preview" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
+                            <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={removeMedia}>
                             <X className="h-5 w-5" />
                             </Button>
                         </div>
@@ -203,31 +293,49 @@ export default function SymptomCheckerPage() {
                                 <AlertCircle className="h-4 w-4" />
                                 <AlertTitle>Camera Access Required</AlertTitle>
                                 <AlertDescription>
-                                    Please allow camera access in your browser to use this feature. You might need to refresh the page after granting permission.
+                                    Please allow camera access in your browser to use this feature.
                                 </AlertDescription>
                             </Alert>
                         )}
                         
                         <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
-                            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                             <canvas ref={canvasRef} className="hidden" />
-                             {imagePreview && (
-                                 <div className="absolute inset-0">
-                                     <Image src={imagePreview} alt="Symptom capture" layout="fill" className="object-cover" />
-                                 </div>
+                            <video ref={videoRef} className={cn("w-full h-full object-cover", { 'hidden': !!mediaPreview })} autoPlay muted playsInline />
+                            <canvas ref={canvasRef} className="hidden" />
+                             {mediaPreview && mediaType === 'image' && (
+                                <Image src={mediaPreview} alt="Symptom capture" layout="fill" className="object-cover" />
+                             )}
+                             {mediaPreview && mediaType === 'video' && (
+                                <video src={mediaPreview} className="w-full h-full object-cover" autoPlay controls loop />
+                             )}
+                             {isRecording && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <CircleDot className="h-8 w-8 text-red-500 animate-pulse"/>
+                                        <p className="font-mono text-4xl font-bold">{countdown}</p>
+                                    </div>
+                                </div>
                              )}
                         </div>
 
                         <div className="flex gap-2">
-                            {imagePreview ? (
-                                <Button variant="outline" className="w-full" onClick={removeImage}>
-                                    Retake Picture
+                            {mediaPreview ? (
+                                <Button variant="outline" className="w-full" onClick={removeMedia}>
+                                    Retake
                                 </Button>
                             ) : (
-                                <Button className="w-full" onClick={takePicture} disabled={hasCameraPermission !== true}>
+                                <>
+                                 <Button className="w-full" onClick={takePicture} disabled={hasCameraPermission !== true || isRecording}>
                                     <Camera className="mr-2 h-4 w-4" />
                                     Take Picture
                                 </Button>
+                                <Button className="w-full" onClick={startRecording} disabled={hasCameraPermission !== true || isRecording}>
+                                    <Video className="mr-2 h-4 w-4" />
+                                    Record Video
+                                </Button>
+                                <Button variant="outline" size="icon" onClick={switchCamera} disabled={hasCameraPermission !== true || isRecording}>
+                                    <RefreshCw className="h-4 w-4"/>
+                                </Button>
+                                </>
                             )}
                         </div>
                      </div>
@@ -252,3 +360,5 @@ export default function SymptomCheckerPage() {
     </div>
   );
 }
+
+    
