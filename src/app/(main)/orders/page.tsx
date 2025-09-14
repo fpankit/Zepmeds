@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { History, ArrowRight, PackageSearch, QrCode, Box } from 'lucide-react';
@@ -13,6 +13,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 interface Order {
   id: string;
@@ -45,12 +47,12 @@ export default function OrdersPage() {
   const { user, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
   const router = useRouter();
 
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.isGuest) {
-      // Don't redirect, just show empty state for guests
       setIsLoading(false);
       return;
     }
@@ -75,6 +77,11 @@ export default function OrdersPage() {
 
     return () => unsubscribe();
   }, [user, authLoading, router]);
+
+  const filteredOrders = useMemo(() => {
+    if (filter === 'all') return orders;
+    return orders.filter(order => order.status.toLowerCase() === filter);
+  }, [orders, filter]);
   
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -86,13 +93,13 @@ export default function OrdersPage() {
   }
   
   const noOrdersContent = (
-      <Card className="text-center p-10">
+      <Card className="text-center p-10 mt-6">
         <PackageSearch className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-        <h3 className="text-xl font-semibold">No Orders Yet</h3>
-        <p className="text-muted-foreground">You haven't placed any orders with us yet.</p>
-        <Button asChild className="mt-4">
-          <Link href="/home">Start Shopping</Link>
-        </Button>
+        <h3 className="text-xl font-semibold">No Orders Found</h3>
+        <p className="text-muted-foreground">You don't have any {filter !== 'all' ? filter : ''} orders.</p>
+        {filter !== 'all' && (
+             <Button variant="link" onClick={() => setFilter('all')}>View all orders</Button>
+        )}
       </Card>
   );
 
@@ -126,14 +133,23 @@ export default function OrdersPage() {
           <p className="text-muted-foreground">View all your past orders.</p>
         </div>
       </div>
+      
+       <Tabs value={filter} onValueChange={setFilter}>
+        <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="delivered">Delivered</TabsTrigger>
+            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+        </TabsList>
+       </Tabs>
+
 
       <div className="space-y-4">
-        {isLoading && orders.length === 0 ? (
+        {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => <OrderCardSkeleton key={i} />)
-        ) : orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
             noOrdersContent
         ) : (
-          orders.map(order => (
+          filteredOrders.map(order => (
             <Card key={order.id}>
               <CardContent className="p-4">
                 <div className="flex justify-between items-start">
