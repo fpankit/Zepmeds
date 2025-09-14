@@ -18,6 +18,7 @@ import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
@@ -171,14 +172,7 @@ export default function HomePage() {
               <Card key={product.id} className="overflow-hidden">
                 <CardContent className="p-0 flex flex-col justify-between h-full">
                   <div>
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      width={200}
-                      height={200}
-                      className="w-full h-32 object-cover"
-                      data-ai-hint={product.dataAiHint}
-                    />
+                    <Skeleton className="w-full h-32" />
                     <div className="p-3">
                       {product.isRx && (
                           <Badge variant="destructive" className="mb-2">Rx</Badge>
