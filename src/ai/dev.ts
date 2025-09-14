@@ -12,7 +12,7 @@ export const ai = genkit({
   plugins: [
     googleAI(),     // Reads GOOGLE_GENAI_API_KEY from .env
   ],
-  model: 'googleai/gemini-1.5-pro',
+  model: 'googleai/gemini-1.5-flash',
   telemetry: {
     instrumentation: {
       flowRetryPolicy: {
