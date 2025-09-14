@@ -27,7 +27,7 @@ function EchoDocCallContent() {
     // Component State
     const [conversation, setConversation] = useState<ConversationTurn[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isMuted, setIsMuted] = useState(false);
+    const [isMuted, setIsMuted] = useState(true); // Start as muted
     const [isSpeaker, setIsSpeaker] = useState(true);
     const [callStatus, setCallStatus] = useState("Connecting...");
     
@@ -55,11 +55,8 @@ function EchoDocCallContent() {
         setIsLoading(true);
         setCallStatus("AI is responding...");
         
-        // Only add user message to history if it's not the very first one
-        const updatedConversation = isInitialMessage 
-            ? conversation 
-            : [...conversation, { role: 'user', text }];
-        if(!isInitialMessage) setConversation(updatedConversation);
+        const updatedConversation = [...conversation, { role: 'user', text }];
+        setConversation(updatedConversation);
 
 
         try {
@@ -152,23 +149,12 @@ function EchoDocCallContent() {
             
             {/* Footer with Call Controls */}
             <footer className="p-6">
-                 {/* Placeholder button to simulate user's next turn */}
-                <div className="flex justify-center mb-4">
-                    <Button 
-                        onClick={() => handleNewMessage("Okay, what should I do next?")} 
-                        disabled={isLoading} 
-                        variant="secondary"
-                    >
-                        <Send className="mr-2 h-4 w-4"/>
-                        Send Next Response
-                    </Button>
-                </div>
                 <div className="flex items-center justify-center gap-6">
                      <div className="flex flex-col items-center gap-2">
                         <Button onClick={() => setIsMuted(!isMuted)} size="icon" className={cn("h-16 w-16 rounded-full", isMuted ? "bg-white text-black" : "bg-white/20 text-white")}>
                             {isMuted ? <MicOff /> : <Mic />}
                         </Button>
-                        <span className="text-xs text-white">Mute</span>
+                        <span className="text-xs text-white">{isMuted ? "Muted" : "Listening..."}</span>
                     </div>
                      <div className="flex flex-col items-center gap-2">
                         <Button onClick={() => setIsSpeaker(!isSpeaker)} size="icon" className="h-16 w-16 rounded-full bg-white/20 text-white">
