@@ -69,7 +69,7 @@ export default function EchoDocSetupPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Choose Your AI Doctor</Label>
+                        <div className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Choose Your AI Doctor</div>
                         <div className="flex gap-4 overflow-x-auto pb-2">
                             {doctors.map(doctor => (
                                 <button key={doctor.id} onClick={() => setSelectedDoctorId(doctor.id)} className={`flex-shrink-0 flex flex-col items-center gap-2 p-2 rounded-lg border-2 ${selectedDoctorId === doctor.id ? 'border-primary' : 'border-transparent'}`}>
