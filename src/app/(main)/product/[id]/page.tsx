@@ -145,29 +145,27 @@ export default function ProductDetailPage() {
             </header>
 
             <main className="flex-1 overflow-y-auto pb-24">
-                <Card className="rounded-none border-0 shadow-none">
-                    <CardContent className="p-0">
-                         <Carousel className="w-full">
-                            <CarouselContent>
-                                {Array.from({ length: 3 }).map((_, index) => (
-                                    <CarouselItem key={index}>
-                                        <Image 
-                                            src={product.imageUrl || `https://picsum.photos/seed/${product.id}-${index}/600/600`}
-                                            alt={product.name}
-                                            width={600}
-                                            height={600}
-                                            className="w-full aspect-square object-cover"
-                                            data-ai-hint={product.dataAiHint}
-                                        />
-                                    </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                             {/* Optional: Add Previous/Next if multiple images are supported */}
-                        </Carousel>
-                    </CardContent>
-                </Card>
+                <div className="p-4">
+                    <Carousel className="w-full max-w-sm mx-auto">
+                        <CarouselContent>
+                            {Array.from({ length: 3 }).map((_, index) => (
+                                <CarouselItem key={index}>
+                                    <Image 
+                                        src={product.imageUrl || `https://picsum.photos/seed/${product.id}-${index}/600/600`}
+                                        alt={product.name}
+                                        width={600}
+                                        height={600}
+                                        className="w-full aspect-square object-cover rounded-lg"
+                                        data-ai-hint={product.dataAiHint}
+                                    />
+                                </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                        {/* Optional: Add Previous/Next if multiple images are supported */}
+                    </Carousel>
+                </div>
                 
-                <div className="p-4 space-y-6">
+                <div className="p-4 pt-0 space-y-6">
                     <div>
                          {product.isRx && <Badge variant="destructive" className="mb-2">Rx Prescription Required</Badge>}
                         <h2 className="text-2xl font-bold">{product.name}</h2>
