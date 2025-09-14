@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Pill, Stethoscope, Search, Gift, CreditCard, Star, Minus, Plus, MessageSquare, Siren, PackageSearch, HeartPulse, QrCode, BrainCircuit } from "lucide-react";
+import { Pill, Stethoscope, Search, Gift, CreditCard, Star, Minus, Plus, MessageSquare, Siren, PackageSearch, HeartPulse, QrCode, BrainCircuit, Clock, Truck } from "lucide-react";
 import Link from "next/link";
 import {
   Carousel,
@@ -41,6 +41,20 @@ const offerCards = [
     icon: CreditCard,
     buttonText: "Shop Now",
     buttonColor: "bg-green-600 hover:bg-green-700",
+  },
+  {
+    title: "Buy Now, Pay Later",
+    description: "Zero interest EMI available",
+    icon: Clock,
+    buttonText: "Shop Now",
+    buttonColor: "bg-orange-500 hover:bg-orange-600",
+  },
+  {
+    title: "Free Express Delivery",
+    description: "On orders above ₹500",
+    icon: Truck,
+    buttonText: "Shop Now",
+    buttonColor: "bg-indigo-500 hover:bg-indigo-600",
   },
 ];
 
@@ -180,26 +194,32 @@ export default function HomePage() {
         </div>
        </div>
 
-        {/* Offers Section */}
-      <div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {offerCards.map((offer) => (
-            <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gray-700/50 rounded-lg">
-                   <offer.icon className="h-6 w-6 text-white" />
+        {/* Special Offers Section */}
+        <div>
+          <h3 className="font-headline text-2xl font-bold mb-4">Special Offers</h3>
+          <div className="grid grid-cols-1 gap-4">
+            {offerCards.map((offer) => (
+              <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gray-700/50 rounded-lg">
+                    <offer.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white">{offer.title}</h3>
+                    <p className="text-sm text-muted-foreground">{offer.description}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-white">{offer.title}</h3>
-                  <p className="text-sm text-muted-foreground">{offer.description}</p>
-                </div>
-              </div>
-              <Button className={`${offer.buttonColor} text-white`}>{offer.buttonText}</Button>
-            </Card>
-          ))}
+                <Button className={`${offer.buttonColor} text-white`}>
+                    <offer.icon className="mr-2 h-4 w-4" />
+                    {offer.buttonText}
+                </Button>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
 
     </div>
   );
 }
+
+    
