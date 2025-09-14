@@ -164,81 +164,83 @@ export default function ProductDetailPage() {
                     </Carousel>
                 </div>
                 
-                <div className="p-4 pt-0 space-y-6">
-                    <div>
-                         {product.isRx && <Badge variant="destructive" className="mb-2">Rx Prescription Required</Badge>}
-                        <h2 className="text-xl font-bold">{product.name}</h2>
-                        <p className="text-muted-foreground mt-1">{packageInfo}</p>
-                    </div>
-
-                    <Card>
-                        <CardContent className="p-4 grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <p className="text-muted-foreground">Manufacturer</p>
-                                <p className="font-semibold">{product.manufacturer || 'N/A'}</p>
-                            </div>
-                            <div>
-                                <p className="text-muted-foreground">Salt Composition</p>
-                                <p className="font-semibold">{product.saltComposition || 'None'}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Accordion type="single" collapsible className="w-full space-y-3">
-                        <AccordionItem value="item-1">
-                            <AccordionTrigger>Key Information</AccordionTrigger>
-                            <AccordionContent>
-                                {product.keyInfo || 'No key information available for this product.'}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="item-2">
-                            <AccordionTrigger>Directions of use</AccordionTrigger>
-                            <AccordionContent>
-                                 {product.directions || 'No directions for use available. Please consult your doctor.'}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="item-3">
-                            <AccordionTrigger>How it works</AccordionTrigger>
-                            <AccordionContent>
-                                {product.howItWorks || 'Information on how this product works is not available.'}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="item-4">
-                            <AccordionTrigger>Quick tips</AccordionTrigger>
-                            <AccordionContent>
-                                {product.quickTips || 'No quick tips available for this product.'}
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                    
-                    {relatedProducts.length > 0 && (
+                <div className="px-4">
+                    <div className="p-4 pt-0 space-y-6">
                         <div>
-                            <h2 className="text-lg font-bold mb-4">Related Products</h2>
-                            <div className="grid grid-cols-2 gap-4">
-                                {relatedProducts.map(related => (
-                                    <Link href={`/product/${related.id}`} key={related.id}>
-                                         <Card className="overflow-hidden h-full flex flex-col">
-                                            <CardContent className="p-0 flex-1 flex flex-col">
-                                                <Image 
-                                                    src={related.imageUrl || `https://picsum.photos/seed/${related.id}/200/200`}
-                                                    alt={related.name}
-                                                    width={200}
-                                                    height={200}
-                                                    className="w-full h-24 object-cover"
-                                                />
-                                                <div className="p-3 flex-1 flex flex-col">
-                                                    <h4 className="font-semibold text-sm truncate">{related.name}</h4>
-                                                    <p className="text-xs text-muted-foreground">1 Strip of 15</p>
-                                                    <p className="font-bold text-base mt-auto pt-2">₹{related.price.toFixed(2)}</p>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </Link>
-                                ))}
-                            </div>
+                            {product.isRx && <Badge variant="destructive" className="mb-2">Rx Prescription Required</Badge>}
+                            <h2 className="text-xl font-bold">{product.name}</h2>
+                            <p className="text-muted-foreground mt-1">{packageInfo}</p>
                         </div>
-                    )}
 
+                        <Card>
+                            <CardContent className="p-4 grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <p className="text-muted-foreground">Manufacturer</p>
+                                    <p className="font-semibold">{product.manufacturer || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground">Salt Composition</p>
+                                    <p className="font-semibold">{product.saltComposition || 'None'}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Accordion type="single" collapsible className="w-full space-y-3">
+                            <AccordionItem value="item-1">
+                                <AccordionTrigger>Key Information</AccordionTrigger>
+                                <AccordionContent>
+                                    {product.keyInfo || 'No key information available for this product.'}
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="item-2">
+                                <AccordionTrigger>Directions of use</AccordionTrigger>
+                                <AccordionContent>
+                                    {product.directions || 'No directions for use available. Please consult your doctor.'}
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="item-3">
+                                <AccordionTrigger>How it works</AccordionTrigger>
+                                <AccordionContent>
+                                    {product.howItWorks || 'Information on how this product works is not available.'}
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="item-4">
+                                <AccordionTrigger>Quick tips</AccordionTrigger>
+                                <AccordionContent>
+                                    {product.quickTips || 'No quick tips available for this product.'}
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                        
+                        {relatedProducts.length > 0 && (
+                            <div>
+                                <h2 className="text-lg font-bold mb-4">Related Products</h2>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {relatedProducts.map(related => (
+                                        <Link href={`/product/${related.id}`} key={related.id}>
+                                            <Card className="overflow-hidden h-full flex flex-col">
+                                                <CardContent className="p-0 flex-1 flex flex-col">
+                                                    <Image 
+                                                        src={related.imageUrl || `https://picsum.photos/seed/${related.id}/200/200`}
+                                                        alt={related.name}
+                                                        width={200}
+                                                        height={200}
+                                                        className="w-full h-24 object-cover"
+                                                    />
+                                                    <div className="p-3 flex-1 flex flex-col">
+                                                        <h4 className="font-semibold text-sm truncate">{related.name}</h4>
+                                                        <p className="text-xs text-muted-foreground">1 Strip of 15</p>
+                                                        <p className="font-bold text-base mt-auto pt-2">₹{related.price.toFixed(2)}</p>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
                 </div>
             </main>
 
