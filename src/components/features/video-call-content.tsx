@@ -21,13 +21,14 @@ export function VideoCallContent({ roomId }: { roomId: string }) {
 
   useEffect(() => {
     // This effect handles leaving the room when the component unmounts.
+    // The dependency array is modified to only include hmsActions, ensuring
+    // the leave action is called only once on unmount, preventing race conditions.
     return () => {
-      // Check if we are connected before trying to leave.
-      if (hmsActions.leave && isConnected) {
+      if (hmsActions.leave) {
         hmsActions.leave();
       }
     };
-  }, [hmsActions, isConnected]);
+  }, [hmsActions]);
 
   if (authLoading || !user) {
     return (
