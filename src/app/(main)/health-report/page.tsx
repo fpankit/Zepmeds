@@ -15,6 +15,8 @@ import 'jspdf-autotable';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, Timestamp } from "firebase/firestore";
 import { format } from 'date-fns';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend } from 'recharts';
+
 
 interface PastReport {
     id: string;
@@ -124,27 +126,48 @@ export default function HealthReportPage() {
     if (!reportToDownload || !user) return;
 
     const doc = new jsPDF();
-    const today = new Date().toLocaleDateString();
+    
+    // Add charts as images
+    const chartContainer = document.getElementById('pdf-charts');
+    if (chartContainer) {
+        const canvases = chartContainer.getElementsByTagName('canvas');
+        if (canvases.length > 0) {
+            // Logic to convert canvas to image and add to PDF will go here
+            // For simplicity in this step, we're setting up the structure.
+        }
+    }
 
-    // Title
-    doc.setFontSize(22);
-    doc.text('AI Health Report', 105, 20, { align: 'center' });
+    // Header
+    doc.setFontSize(32);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Zepmeds', 15, 20);
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Your personalized Health Report', 15, 30);
+    
+    doc.setLineWidth(0.5);
+    doc.line(15, 35, 195, 35);
+    
+    doc.setFontSize(16);
+    doc.text(`${user.firstName} ${user.lastName}`, 15, 45);
     doc.setFontSize(12);
-    doc.text(`For: ${user.firstName} ${user.lastName}`, 105, 28, { align: 'center' });
-    doc.text(`Date: ${today}`, 105, 34, { align: 'center' });
+    doc.setTextColor(100);
+    doc.text(user.email, 15, 52);
+
 
     // Disclaimer
     doc.setFontSize(10);
-    doc.setTextColor(100);
+    doc.setTextColor(150);
     const disclaimerText = doc.splitTextToSize(reportToDownload.disclaimer, 180);
-    doc.text(disclaimerText, 15, 45);
+    doc.text(disclaimerText, 15, 65);
 
     // Risk Analysis
-    doc.setFontSize(16);
+    doc.setFontSize(18);
     doc.setTextColor(0);
-    doc.text('Risk Analysis', 15, 65);
+    doc.text('Health Risk Analysis', 15, 85);
     (doc as any).autoTable({
-        startY: 70,
+        startY: 90,
         head: [['Condition', 'Risk Level', 'Explanation']],
         body: reportToDownload.riskAnalysis.map(r => [r.condition, r.riskLevel, r.explanation]),
         theme: 'striped',
@@ -152,10 +175,14 @@ export default function HealthReportPage() {
     });
 
     // Diet Plan
-    const lastY = (doc as any).lastAutoTable.finalY || 70;
-    doc.text('Diet Plan (Indian Cuisine)', 15, lastY + 15);
+    let lastY = (doc as any).lastAutoTable.finalY || 90;
+    doc.addPage();
+    doc.setFontSize(18);
+    doc.text('Personalized Recommendations', 15, 20);
+    doc.setFontSize(14);
+    doc.text('Diet Plan (Indian Cuisine)', 15, 30);
     (doc as any).autoTable({
-        startY: lastY + 20,
+        startY: 35,
         theme: 'grid',
         head: [['Meal', 'Recommendation']],
         body: [
@@ -166,27 +193,38 @@ export default function HealthReportPage() {
     });
 
     // Exercise, Remedies, Do's/Don'ts
-    let finalY = (doc as any).lastAutoTable.finalY;
+    lastY = (doc as any).lastAutoTable.finalY;
     const addSection = (title: string, items: string[]) => {
-      if (finalY > 250) { doc.addPage(); finalY = 20; }
+      if (lastY > 250) { doc.addPage(); lastY = 20; }
       doc.setFontSize(14);
-      doc.text(title, 15, finalY + 15);
+      doc.text(title, 15, lastY + 15);
       doc.setFontSize(10);
       items.forEach((item, index) => {
-        doc.text(`• ${item}`, 20, finalY + 22 + (index * 6));
+        doc.text(`• ${item}`, 20, lastY + 22 + (index * 6));
       });
-      finalY += 22 + (items.length * 6);
+      lastY += 22 + (items.length * 6);
     }
     
     addSection('Exercise Plan', reportToDownload.exercisePlan);
     addSection('Home Remedies', reportToDownload.homeRemedies);
+    
+    doc.addPage();
+    doc.setFontSize(18);
+    doc.text("Do's and Don'ts", 15, 20);
+    lastY= 25;
     addSection("Do's", reportToDownload.dosAndDonts.dos);
     addSection("Don'ts", reportToDownload.dosAndDonts.donts);
     
-    doc.save(`Health_Report_${user.firstName}_${today}.pdf`);
+    doc.save(`Health_Report_${user.firstName}_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
-  const ReportDisplay = ({ reportToDisplay }: { reportToDisplay: HealthReportOutput }) => (
+  const ReportDisplay = ({ reportToDisplay }: { reportToDisplay: HealthReportOutput }) => {
+    const riskData = reportToDisplay.riskAnalysis.map(risk => ({
+        name: risk.condition,
+        risk: risk.riskLevel === 'High' ? 3 : risk.riskLevel === 'Moderate' ? 2 : 1
+    }));
+    
+    return (
      <Card className="mt-6">
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -205,6 +243,17 @@ export default function HealthReportPage() {
 
                 <div>
                     <h3 className="font-bold text-xl mb-4 flex items-center gap-2"><Heart /> Risk Analysis</h3>
+                     <div className="h-[250px] my-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                             <BarChart data={riskData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="name" />
+                                <YAxis domain={[0, 3]} ticks={[1, 2, 3]} tickFormatter={(val) => ['Low', 'Mod', 'High'][val-1]} />
+                                <Legend />
+                                <Bar dataKey="risk" fill="hsl(var(--primary))" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                     <div className="space-y-4">
                         {reportToDisplay.riskAnalysis.map((risk, i) => (
                              <div key={i} className="p-4 border rounded-lg bg-card/50">
@@ -263,7 +312,8 @@ export default function HealthReportPage() {
                 </div>
             </CardContent>
         </Card>
-  );
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -292,6 +342,23 @@ export default function HealthReportPage() {
       )}
 
       {report && <ReportDisplay reportToDisplay={report} />}
+      
+       {/* Hidden container for PDF rendering */}
+      <div id="pdf-charts" className="hidden">
+        {report && (
+            <div style={{ width: 800, height: 400 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={report.riskAnalysis.map(r => ({ name: r.condition, risk: r.riskLevel === 'High' ? 3 : r.riskLevel === 'Moderate' ? 2 : 1 }))}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis domain={[0, 3]} />
+                        <Bar dataKey="risk" fill="#8884d8" />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        )}
+      </div>
+
 
       <Card className="mt-6">
         <CardHeader>
