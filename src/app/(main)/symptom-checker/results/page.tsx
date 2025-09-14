@@ -64,8 +64,7 @@ function SymptomCheckerResultsContent() {
       setIsLoading(false);
       return;
     }
-    const parsedData: AiSymptomCheckerInput = JSON.parse(storedData);
-    setInputData(parsedData);
+    const parsedData: {symptoms: string; photoDataUri: string | null} = JSON.parse(storedData);
 
     if (!user || user.isGuest) {
       toast({ variant: 'destructive', title: 'Login Required' });
@@ -78,9 +77,19 @@ function SymptomCheckerResultsContent() {
       setIsLoading(false);
       return;
     }
+    
+    const requestPayload: AiSymptomCheckerInput = {
+        symptoms: parsedData.symptoms,
+    };
 
+    if (parsedData.photoDataUri) {
+        requestPayload.photoDataUri = parsedData.photoDataUri;
+    }
+
+    setInputData(requestPayload);
     setIsLoading(true);
-    aiSymptomChecker(parsedData)
+
+    aiSymptomChecker(requestPayload)
       .then((res) => {
         setResult(res);
         setError(null);
