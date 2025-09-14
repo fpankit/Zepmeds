@@ -105,11 +105,7 @@ const echoDocFlow = ai.defineFlow(
   },
   async (input) => {
     // 1. Generate the text response
-    const { output } = await prompt({
-        symptoms: input.symptoms,
-        language: input.language,
-        conversationHistory: input.conversationHistory || [],
-    });
+    const { output } = await prompt(input);
 
     if (!output?.responseText) {
       throw new Error('Failed to generate text response.');

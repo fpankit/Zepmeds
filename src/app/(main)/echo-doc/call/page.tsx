@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Mic, MicOff, PhoneOff, Volume2, Bot } from "lucide-react";
+import { ArrowLeft, Loader2, Mic, MicOff, PhoneOff, Volume2, Bot, Send } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { echoDoc, EchoDocInput } from '@/ai/flows/echo-doc-flow';
 import Typewriter from 'typewriter-effect';
@@ -42,27 +42,31 @@ function EchoDocCallContent() {
     // Initial message effect
     useEffect(() => {
         if (initialSymptoms && language) {
-            handleNewMessage(initialSymptoms);
+            handleNewMessage(initialSymptoms, true);
         } else {
             toast({ variant: 'destructive', title: 'Missing required information.' });
             router.push('/echo-doc');
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialSymptoms, language]);
     
 
-    const handleNewMessage = async (text: string) => {
+    const handleNewMessage = async (text: string, isInitialMessage = false) => {
         setIsLoading(true);
         setCallStatus("AI is responding...");
         
-        const newUserTurn: ConversationTurn = { role: 'user', text };
-        const updatedConversation = [...conversation, newUserTurn];
-        setConversation(updatedConversation);
+        // Only add user message to history if it's not the very first one
+        const updatedConversation = isInitialMessage 
+            ? conversation 
+            : [...conversation, { role: 'user', text }];
+        if(!isInitialMessage) setConversation(updatedConversation);
+
 
         try {
             const input: EchoDocInput = {
                 symptoms: text,
                 language: language || 'English',
-                conversationHistory: conversation.map(c => ({ role: c.role, text: c.text })),
+                conversationHistory: updatedConversation,
             };
 
             const result = await echoDoc(input);
@@ -79,7 +83,6 @@ function EchoDocCallContent() {
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'AI Error', description: error.message });
             setCallStatus("Call Failed");
-            setConversation(conversation); // Revert conversation on error
         } finally {
             setIsLoading(false);
         }
@@ -135,6 +138,7 @@ function EchoDocCallContent() {
                                         loop: false,
                                         delay: 40,
                                         cursor: '',
+                                        deleteSpeed: Infinity, // Prevents deletion
                                     }}
                                 />
                              ) : (
@@ -148,6 +152,17 @@ function EchoDocCallContent() {
             
             {/* Footer with Call Controls */}
             <footer className="p-6">
+                 {/* Placeholder button to simulate user's next turn */}
+                <div className="flex justify-center mb-4">
+                    <Button 
+                        onClick={() => handleNewMessage("Okay, what should I do next?")} 
+                        disabled={isLoading} 
+                        variant="secondary"
+                    >
+                        <Send className="mr-2 h-4 w-4"/>
+                        Send Next Response
+                    </Button>
+                </div>
                 <div className="flex items-center justify-center gap-6">
                      <div className="flex flex-col items-center gap-2">
                         <Button onClick={() => setIsMuted(!isMuted)} size="icon" className={cn("h-16 w-16 rounded-full", isMuted ? "bg-white text-black" : "bg-white/20 text-white")}>
