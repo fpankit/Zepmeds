@@ -130,6 +130,8 @@ export default function ProductDetailPage() {
         return null; // Or a 'not found' component
     }
 
+    const packageInfo = `1 ${product.packageType || 'unit'} of ${product.packageUnit || ''}`.trim();
+
     return (
         <div className="flex flex-col h-screen bg-background">
             <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background border-b">
@@ -167,7 +169,9 @@ export default function ProductDetailPage() {
                 
                 <div className="p-4 space-y-6">
                     <div>
-                        <p className="text-muted-foreground mt-1">1 Tube of 100 Gm</p>
+                         {product.isRx && <Badge variant="destructive" className="mb-2">Rx Prescription Required</Badge>}
+                        <h2 className="text-2xl font-bold">{product.name}</h2>
+                        <p className="text-muted-foreground mt-1">{packageInfo}</p>
                     </div>
 
                     <Card>
@@ -244,7 +248,7 @@ export default function ProductDetailPage() {
             <footer className="fixed bottom-0 left-0 right-0 p-4 border-t bg-background">
                 <div className="flex items-center justify-between gap-4">
                     <div>
-                        <p className="text-sm text-muted-foreground">1 Tube of 100 Gm</p>
+                        <p className="text-sm text-muted-foreground">{packageInfo}</p>
                         <p className="text-2xl font-bold">₹{product.price.toFixed(2)}</p>
                     </div>
                     {cartItem ? (

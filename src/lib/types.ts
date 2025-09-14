@@ -33,6 +33,8 @@ export interface Product {
     directions?: string;
     howItWorks?: string;
     quickTips?: string;
+    packageType?: string; // e.g., "Tube", "Strip"
+    packageUnit?: string; // e.g., "100 Gm", "15 tablets"
     // Fields from verification that might not be on all products
     batch_no?: string;
     expiry_date?: string; 
