@@ -4,17 +4,24 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, ShoppingCart, ChevronRight } from "lucide-react";
+import { ArrowLeft, Bell, ShoppingCart, ChevronRight, Edit, Camera } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/context/cart-context";
 import { profileLinks } from "@/lib/data";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { cart } = useCart();
+  
+  const getInitials = (firstName: string, lastName: string) => {
+    if (!firstName || !lastName) return 'U';
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -39,18 +46,56 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 space-y-3">
-        {profileLinks.map((link) => (
-            <Link href={link.href} key={link.text}>
-                <div className="flex items-center p-4 rounded-xl bg-card/80 hover:bg-card/50 transition-colors">
-                    <div className="p-2 bg-gray-700/50 rounded-lg mr-4">
-                        <link.icon className={`h-6 w-6 ${link.color}`} />
+      <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="p-4 rounded-xl bg-card/80">
+           {loading || !user ? (
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-16 w-16 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-4 w-32" />
                     </div>
-                    <span className="flex-1 font-semibold">{link.text}</span>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    <Skeleton className="h-10 w-10" />
                 </div>
-            </Link>
-        ))}
+           ) : (
+                <>
+                <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16 text-xl">
+                        <AvatarImage src={user.photoURL} alt={`${user.firstName} ${user.lastName}`} />
+                        <AvatarFallback className="bg-pink-500/30 text-pink-400">
+                            {getInitials(user.firstName, user.lastName)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                        <h2 className="text-lg font-bold">{user.firstName} {user.lastName}</h2>
+                        <p className="text-sm text-muted-foreground">{user.phone}</p>
+                    </div>
+                    <Button size="icon" variant="outline" className="bg-primary/10 border-primary/50 text-primary" onClick={() => router.push('/profile/edit')}>
+                        <Edit className="h-5 w-5" />
+                    </Button>
+                </div>
+                 <Button variant="link" className="mt-2 text-yellow-400">
+                    <Camera className="mr-2 h-4 w-4" />
+                    Change Profile Photo
+                </Button>
+                </>
+           )}
+        </div>
+
+
+        <div className="space-y-3">
+            {profileLinks.map((link) => (
+                <Link href={link.href} key={link.text}>
+                    <div className="flex items-center p-4 rounded-xl bg-card/80 hover:bg-card/50 transition-colors">
+                        <div className="p-2 bg-gray-700/50 rounded-lg mr-4">
+                            <link.icon className={`h-6 w-6 ${link.color}`} />
+                        </div>
+                        <span className="flex-1 font-semibold">{link.text}</span>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                </Link>
+            ))}
+        </div>
       </main>
     </div>
   );
