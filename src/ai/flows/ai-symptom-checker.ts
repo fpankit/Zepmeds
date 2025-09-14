@@ -54,7 +54,7 @@ const prompt = ai.definePrompt({
   Based on the symptoms, perform the following actions:
   1.  **Differential Diagnosis**: Identify 2-3 potential medical conditions. For each condition, provide:
       -   condition: The name of the condition.
-      -   confidence: A confidence score ('High', 'Medium', or 'Low').
+      -   confidence: A confidence score ('High', 'Medium', 'Low').
       -   reasoning: Explain *why* you suspect this condition based on the specific symptoms provided. This is crucial for explainability.
 
   2.  **General Guidance**: Provide comprehensive and safe recommendations.
@@ -93,12 +93,14 @@ export const aiSymptomChecker = ai.defineFlow(
           // Fallback to the sentry checker
           console.log('Primary model overloaded, calling sentry checker as fallback.');
           const fallbackOutput = await aiSentryChecker(input);
-          return fallbackOutput;
+          return fallbackOutput; // <-- Correctly return the successful fallback output
         } catch (fallbackError: any) {
            console.error('Error in fallback aiSentryCheckerFlow:', fallbackError);
+           // This error is thrown only if the fallback also fails
            throw new Error('The AI model and its backup are currently busy. Please try again in a few moments.');
         }
       }
+      // This error is for non-overload issues
       throw new Error('An error occurred while analyzing symptoms. Please try again.');
     }
   }
