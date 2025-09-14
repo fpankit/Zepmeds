@@ -53,7 +53,7 @@ const prompt = ai.definePrompt({
   Based on the symptoms, perform the following actions:
   1.  **Differential Diagnosis**: Identify 2-3 potential medical conditions. For each condition, provide:
       -   \`condition\`: The name of the condition.
-      -   \`confidence\`: A confidence score ('High', 'Medium', or 'Low').
+      -   \`confidence\`: A confidence score ('High', 'Medium', 'Low').
       -   \`reasoning\`: Explain *why* you suspect this condition based on the specific symptoms provided. This is crucial for explainability.
 
   2.  **General Guidance**: Provide general recommendations that are safe for the identified potential conditions.

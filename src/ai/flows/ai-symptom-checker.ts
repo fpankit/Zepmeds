@@ -88,7 +88,7 @@ export const aiSymptomChecker = ai.defineFlow(
     } catch (error: any) {
       console.error('Error in primary aiSymptomCheckerFlow, attempting fallback:', error);
       const errorMessage = error.message || 'An unknown error occurred.';
-       if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+       if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded') || errorMessage.includes('quota')) {
         try {
           // Fallback to the sentry checker
           console.log('Primary model overloaded, calling sentry checker as fallback.');
