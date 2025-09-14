@@ -26,6 +26,10 @@ const languages = [
     { value: 'Chinese', label: 'Chinese (中文)' },
 ];
 
+const MAX_WIDTH = 800;
+const MAX_HEIGHT = 600;
+const COMPRESSION_QUALITY = 0.8; // 80% quality
+
 
 export default function SymptomCheckerPage() {
   const [symptoms, setSymptoms] = useState('');
@@ -86,9 +90,22 @@ export default function SymptomCheckerPage() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setMediaPreview(reader.result as string);
-        setMediaDataUri(reader.result as string);
-        setMediaType('image');
+        const image = document.createElement('img');
+        image.src = reader.result as string;
+        image.onload = () => {
+            const canvas = canvasRef.current;
+            if (canvas) {
+                const context = canvas.getContext('2d');
+                const { width, height } = getResizedDimensions(image.width, image.height);
+                canvas.width = width;
+                canvas.height = height;
+                context?.drawImage(image, 0, 0, width, height);
+                const compressedDataUri = canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY);
+                setMediaPreview(compressedDataUri);
+                setMediaDataUri(compressedDataUri);
+                setMediaType('image');
+            }
+        };
       };
       reader.readAsDataURL(file);
     }
@@ -115,22 +132,24 @@ export default function SymptomCheckerPage() {
     }
 
     setIsLoading(true);
-    let finalMediaDataUri = mediaDataUri;
-    // For video, we need to extract a frame to send to the AI
-    if (mediaType === 'video' && videoRef.current && canvasRef.current) {
+
+    if (mediaType === 'video' && mediaDataUri) {
         const video = document.createElement('video');
-        video.src = mediaDataUri!;
+        video.src = mediaDataUri;
         const canvas = canvasRef.current;
         video.onloadeddata = () => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const context = canvas.getContext('2d');
-            context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            finalMediaDataUri = canvas.toDataURL('image/jpeg', 0.8); // Compress frame
+            const context = canvas?.getContext('2d');
+            const { width, height } = getResizedDimensions(video.videoWidth, video.videoHeight);
+            if (canvas) {
+              canvas.width = width;
+              canvas.height = height;
+            }
+            context?.drawImage(video, 0, 0, width, height);
+            const frameDataUri = canvas?.toDataURL('image/jpeg', COMPRESSION_QUALITY);
             
             sessionStorage.setItem('symptomCheckerData', JSON.stringify({
               symptoms,
-              photoDataUri: finalMediaDataUri,
+              photoDataUri: frameDataUri,
               targetLanguage: targetLanguage
             }));
             router.push(`/symptom-checker/results`);
@@ -138,22 +157,41 @@ export default function SymptomCheckerPage() {
     } else {
         sessionStorage.setItem('symptomCheckerData', JSON.stringify({
           symptoms,
-          photoDataUri: finalMediaDataUri,
+          photoDataUri: mediaDataUri,
           targetLanguage: targetLanguage
         }));
         router.push(`/symptom-checker/results`);
     }
   };
+  
+  const getResizedDimensions = (originalWidth: number, originalHeight: number) => {
+    let width = originalWidth;
+    let height = originalHeight;
+
+    if (width > height) {
+        if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+        }
+    } else {
+        if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+        }
+    }
+    return { width, height };
+  }
 
   const takePicture = () => {
     if (videoRef.current && canvasRef.current) {
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        const { width, height } = getResizedDimensions(video.videoWidth, video.videoHeight);
+        canvas.width = width;
+        canvas.height = height;
         const context = canvas.getContext('2d');
-        context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        const dataUri = canvas.toDataURL('image/jpeg', 0.8); // Use jpeg and compress
+        context?.drawImage(video, 0, 0, width, height);
+        const dataUri = canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY);
         setMediaPreview(dataUri);
         setMediaDataUri(dataUri);
         setMediaType('image');
@@ -182,13 +220,9 @@ export default function SymptomCheckerPage() {
     mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: supportedMimeType });
         const videoUrl = URL.createObjectURL(blob);
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = () => {
-            setMediaDataUri(reader.result as string);
-            setMediaPreview(videoUrl);
-            setMediaType('video');
-        }
+        setMediaDataUri(videoUrl); // Store blob URL for frame extraction later
+        setMediaPreview(videoUrl);
+        setMediaType('video');
         stopCamera();
     };
     
@@ -327,7 +361,7 @@ export default function SymptomCheckerPage() {
                                  <Button className="w-full" onClick={takePicture} disabled={hasCameraPermission !== true || isRecording}>
                                     <Camera className="mr-2 h-4 w-4" />
                                     Take Picture
-                                </Button>
+                                 </Button>
                                 <Button className="w-full" onClick={startRecording} disabled={hasCameraPermission !== true || isRecording}>
                                     <Video className="mr-2 h-4 w-4" />
                                     Record Video
@@ -360,5 +394,3 @@ export default function SymptomCheckerPage() {
     </div>
   );
 }
-
-    
