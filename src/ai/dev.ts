@@ -5,13 +5,12 @@ config({ path: '.env' });
 // ✅ Correct Genkit + plugins imports
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { firebase } from '@genkit-ai/firebase';   // <- Corrected path
+import { enableFirebaseTelemetry } from '@genkit-ai/firebase';
 
 // ✅ Genkit configuration
 export const ai = genkit({
   plugins: [
     googleAI(),     // Reads GOOGLE_GENAI_API_KEY from .env
-    firebase(),     // ✅ Must call the plugin function
   ],
   model: 'googleai/gemini-2.5-flash',
   telemetry: {
@@ -27,3 +26,6 @@ export const ai = genkit({
     },
   },
 });
+
+// Enable Firebase Telemetry for monitoring
+enableFirebaseTelemetry();
