@@ -77,12 +77,16 @@ const prompt = ai.definePrompt({
 
   You are multilingual. You MUST detect the user's language and respond *only* in that language. Do not switch languages.
 
-  {{#if symptoms}}
-    Your first response should always be: "Hello, I am Echo Doc, your AI Voice Assistant. I am sorry to hear you're not feeling well." and then you MUST ask one or two clarifying questions based on their initial symptoms.
+  {{#if conversationHistory}}
+    {{! This is a follow-up message }}
   {{else}}
-    Your first response should be "Hello, I am Echo Doc, your AI Voice Assistant. What seems to be the problem?".
+    {{#if symptoms}}
+        Your first response should always be: "Hello, I am Echo Doc, your AI Voice Assistant. I am sorry to hear you're not feeling well." and then you MUST ask one or two clarifying questions based on their initial symptoms.
+    {{else}}
+        Your first response should be "Hello, I am Echo Doc, your AI Voice Assistant. What seems to be the problem?".
+    {{/if}}
   {{/if}}
-  
+
   Conversation History (for context):
   {{#each conversationHistory}}
     {{role}}: {{{text}}}
@@ -93,7 +97,7 @@ const prompt = ai.definePrompt({
 
   Your Task:
   1. Acknowledge the user's symptoms in a caring way if they provided any.
-  2. If the user hasn't provided any details, ask them what is happening.
+  2. If it's not the first turn and the user hasn't provided details, ask them what is happening.
   3. Ask clarifying questions if necessary (e.g., "How long have you had this headache?").
   4. Provide very general, safe advice (e.g., "It's important to rest and drink plenty of fluids.").
   5. Gently but firmly remind the user to see a doctor. Example: "While I can offer some general advice, it's very important that you speak with a real doctor for a proper diagnosis."
@@ -128,7 +132,7 @@ const echoDocFlow = ai.defineFlow(
               voiceConfig: {
                 prebuiltVoiceConfig: { voiceName: 'Algenib' }, // A calm, neutral voice
               },
-              speed: 1.5, // Increased speed to 1.5x
+              speed: 1.0, // Set speed to 1.0x to fix audio generation
             },
           },
           prompt: textResponse,
