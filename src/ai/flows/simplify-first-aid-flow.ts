@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent for simplifying and translating first-aid instructions.
@@ -10,14 +11,14 @@
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
 
-export const SimplifyFirstAidInputSchema = z.object({
+const SimplifyFirstAidInputSchema = z.object({
   topic: z.string().describe('The title of the first-aid topic, e.g., "Snake Bite".'),
   steps: z.array(z.string()).describe('The list of official first-aid steps.'),
   targetLanguage: z.string().describe("The language for the simplified explanation (e.g., 'Hindi', 'English', 'Punjabi')."),
 });
 export type SimplifyFirstAidInput = z.infer<typeof SimplifyFirstAidInputSchema>;
 
-export const SimplifyFirstAidOutputSchema = z.object({
+const SimplifyFirstAidOutputSchema = z.object({
   simplifiedExplanation: z.string().describe('A single string containing the simplified, easy-to-understand explanation of all steps, formatted with newlines.'),
 });
 export type SimplifyFirstAidOutput = z.infer<typeof SimplifyFirstAidOutputSchema>;
