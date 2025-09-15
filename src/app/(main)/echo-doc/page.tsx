@@ -7,26 +7,17 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowRight, Bot } from 'lucide-react';
-import { useCalls } from '@/hooks/use-calls';
 
 
 export default function EchoDocSetupPage() {
     const router = useRouter();
-    const { doctors } = useCalls();
-    
-    const [selectedDoctorId, setSelectedDoctorId] = useState(doctors[0].id);
     const [symptoms, setSymptoms] = useState('');
 
-    const selectedDoctor = doctors.find(doc => doc.id === selectedDoctorId);
-
     const handleStartConsultation = () => {
-        if (selectedDoctor) {
-            // Pass data to the call page via query parameters
-            // Language is no longer needed
-            router.push(`/echo-doc/call?symptoms=${encodeURIComponent(symptoms)}&doctorId=${selectedDoctorId}&doctorName=${encodeURIComponent(selectedDoctor.name)}`);
-        }
+        // Pass data to the call page via query parameters
+        // Doctor ID is no longer needed.
+        router.push(`/echo-doc/call?symptoms=${encodeURIComponent(symptoms)}`);
     };
 
     return (
@@ -40,21 +31,6 @@ export default function EchoDocSetupPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <div className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Choose Your AI Doctor</div>
-                        <div className="flex gap-4 overflow-x-auto pb-2">
-                            {doctors.map(doctor => (
-                                <button key={doctor.id} onClick={() => setSelectedDoctorId(doctor.id)} className={`flex-shrink-0 flex flex-col items-center gap-2 p-2 rounded-lg border-2 ${selectedDoctorId === doctor.id ? 'border-primary' : 'border-transparent'}`}>
-                                    <Avatar className="h-16 w-16">
-                                        <AvatarImage src={doctor.image} alt={doctor.name} />
-                                        <AvatarFallback>{doctor.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="text-xs font-semibold">{doctor.name}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
                     <div className="space-y-2">
                         <Label htmlFor="symptoms">You can add some details to start, or begin by just saying hello. (Optional)</Label>
                         <Textarea

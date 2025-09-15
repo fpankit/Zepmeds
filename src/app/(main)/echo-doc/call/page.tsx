@@ -9,7 +9,6 @@ import { ArrowLeft, Loader2, Mic, MicOff, PhoneOff, Volume2, Bot } from "lucide-
 import { useToast } from '@/hooks/use-toast';
 import { echoDoc, EchoDocInput, EchoDocOutput } from '@/ai/flows/echo-doc-flow';
 import Typewriter from 'typewriter-effect';
-import { useCalls } from '@/hooks/use-calls';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -27,7 +26,6 @@ const SpeechRecognition =
 function EchoDocCallContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { doctors } = useCalls();
     const { toast } = useToast();
 
     // Component State
@@ -40,11 +38,9 @@ function EchoDocCallContent() {
     
     // Extracted URL Params
     const initialSymptoms = searchParams.get('symptoms');
-    const doctorId = searchParams.get('doctorId');
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const recognitionRef = useRef<any>(null);
-    const doctor = doctors.find(doc => doc.id === doctorId);
     
     // Request microphone permission on component mount
     useEffect(() => {
@@ -197,11 +193,12 @@ function EchoDocCallContent() {
                 )}
                  <div className="flex flex-col items-center">
                     <Avatar className="h-32 w-32 border-4 border-primary/50 shadow-lg">
-                        <AvatarImage src={doctor?.image} />
-                        <AvatarFallback className="text-4xl bg-primary/20">{doctor?.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="text-4xl bg-primary/20">
+                            <Bot className="h-16 w-16" />
+                        </AvatarFallback>
                     </Avatar>
-                    <h1 className="text-3xl font-bold mt-4">{doctor?.name}</h1>
-                    <p className="text-lg text-primary">{doctor?.specialty}</p>
+                    <h1 className="text-3xl font-bold mt-4">Echo Doc AI</h1>
+                    <p className="text-lg text-primary">Your AI Medical Assistant</p>
                     <p className="text-muted-foreground mt-2">{callStatus}</p>
                 </div>
                 
