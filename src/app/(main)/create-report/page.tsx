@@ -85,7 +85,8 @@ export default function CreateReportPage() {
   useEffect(() => {
     const fetchPatients = async () => {
       const usersCollection = collection(db, 'users');
-      const q = query(usersCollection, where('isDoctor', '!=', true));
+      // Corrected Query: Use '==' for a reliable fetch. '!=' can be problematic.
+      const q = query(usersCollection, where('isDoctor', '==', false));
       const querySnapshot = await getDocs(q);
       const patientList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
       setPatients(patientList);

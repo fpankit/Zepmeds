@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 addresses: [defaultAddress],
                 healthData: {},
                 isGuest: false,
-                isDoctor: false,
+                isDoctor: false, // Explicitly set isDoctor to false for new users
             };
             await setDoc(userDocRef, finalUser);
         }
