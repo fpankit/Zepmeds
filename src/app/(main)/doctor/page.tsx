@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { useEffect, useState, useMemo, Suspense } from "react";
+import { useEffect, useState, useMemo, Suspense, useCallback } from "react";
 import { collection, query, onSnapshot, doc, setDoc, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,51 +61,50 @@ function DoctorPageContent() {
       toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
   };
 
-  useEffect(() => {
-    const fetchDoctors = async () => {
-        setIsLoading(true);
-        try {
-            const doctorsQuery = query(collection(db, "doctors"));
-            const querySnapshot = await getDocs(doctorsQuery);
-            const fetchedDoctors = querySnapshot.docs.map(doc => {
-                const data = doc.data();
-                return { 
-                    id: data.uid || doc.id,
-                    displayName: data.displayName || `${data.firstName} ${data.lastName}`, 
-                    name: data.displayName || `${data.firstName} ${data.lastName}`,
-                    specialty: data.qualification || data.specialty || "No Specialty",
-                    experience: data.about || "No experience listed.",
-                    image: data.photoURL || "",
-                    dataAiHint: "doctor portrait",
-                    isOnline: data.isOnline || false,
-                    firstName: data.firstName || '',
-                    lastName: data.lastName || '',
-                    email: data.email || '',
-                    phone: data.phone || '',
-                    age: data.age || 0,
-                    addresses: data.addresses || [],
-                    isDoctor: true,
-                 } as AuthUser
-            });
-            
-            fetchedDoctors.sort((a, b) => {
-                if (a.isOnline && !b.isOnline) return -1;
-                if (!a.isOnline && b.isOnline) return 1;
-                return (a.displayName || '').localeCompare(b.displayName || '');
-            });
+  const fetchDoctors = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const doctorsQuery = query(collection(db, "doctors"));
+        const querySnapshot = await getDocs(doctorsQuery);
+        const fetchedDoctors = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { 
+                id: data.uid || doc.id,
+                displayName: data.displayName || `${data.firstName} ${data.lastName}`, 
+                name: data.displayName || `${data.firstName} ${data.lastName}`,
+                specialty: data.qualification || data.specialty || "No Specialty",
+                experience: data.about || "No experience listed.",
+                image: data.photoURL || "",
+                dataAiHint: "doctor portrait",
+                isOnline: data.isOnline || false,
+                firstName: data.firstName || '',
+                lastName: data.lastName || '',
+                email: data.email || '',
+                phone: data.phone || '',
+                age: data.age || 0,
+                addresses: data.addresses || [],
+                isDoctor: true,
+             } as AuthUser
+        });
+        
+        fetchedDoctors.sort((a, b) => {
+            if (a.isOnline && !b.isOnline) return -1;
+            if (!a.isOnline && b.isOnline) return 1;
+            return (a.displayName || '').localeCompare(b.displayName || '');
+        });
 
-            setDoctors(fetchedDoctors);
-        } catch (error) {
-            console.error("Error fetching doctors: ", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctors.' });
-        } finally {
-            setIsLoading(false);
-        }
+        setDoctors(fetchedDoctors);
+    } catch (error) {
+        console.error("Error fetching doctors: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctors.' });
+    } finally {
+        setIsLoading(false);
     }
-    
+  }, [toast]);
+  
+  useEffect(() => {
     fetchDoctors();
     
-    // Set up a real-time listener only for the current user's doctor status if they are a doctor
     let unsubscribe: Function | null = null;
     if(user && user.isDoctor) {
         const doctorDocRef = doc(db, "doctors", user.id);
@@ -113,6 +112,8 @@ function DoctorPageContent() {
             if (doc.exists()) {
                 const data = doc.data();
                 updateUser({ isOnline: data.isOnline });
+                // When a doctor's own status changes, refetch the list to re-sort.
+                fetchDoctors();
             }
         });
     }
@@ -122,7 +123,7 @@ function DoctorPageContent() {
             unsubscribe();
         }
     };
-  }, [toast, user, updateUser]);
+  }, [user, updateUser, fetchDoctors]);
   
   const filteredDoctors = useMemo(() => {
       return doctors.filter(doctor => 
@@ -268,3 +269,5 @@ export default function DoctorPage() {
         </Suspense>
     )
 }
+
+    
