@@ -126,7 +126,7 @@ const echoDocFlow = ai.defineFlow(
     outputSchema: EchoDocOutputSchema,
   },
   async (input) => {
-    let englishText: string;
+    let englishText: string | null = null;
     const { language = 'English' } = input; // Default to English if no language is provided
 
     // 1. Generate the text response in English. Let Genkit's retry policy handle transient errors.
@@ -138,10 +138,12 @@ const echoDocFlow = ai.defineFlow(
         englishText = output.responseText;
     } catch (error: any) {
         console.error("Text Generation failed after retries:", error);
-        // After all retries, return a user-friendly error.
-        const finalErrorText = 'I am having trouble processing your request right now. Please try again in a moment.';
-        // We will generate audio for this error message.
-        englishText = finalErrorText;
+        // If text generation fails, englishText will remain null.
+    }
+    
+    // If text generation failed after all retries, set a user-friendly error message.
+    if (englishText === null) {
+        englishText = 'I am having trouble processing your request right now. Please try again in a moment.';
     }
     
     // 2. Translate the response if needed
