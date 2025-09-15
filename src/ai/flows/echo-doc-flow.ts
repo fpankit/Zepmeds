@@ -67,15 +67,13 @@ export async function echoDoc(input: EchoDocInput): Promise<EchoDocOutput> {
 }
 
 
-// Genkit Prompt - Using a faster preview model for quicker text responses
-const prompt = ai.definePrompt({
-  name: 'echoDocPrompt',
+// Genkit Prompt for generating the base response in English
+const conversationPrompt = ai.definePrompt({
+  name: 'echoDocConversationPrompt',
   input: { schema: EchoDocInputSchema },
   output: { schema: z.object({ responseText: z.string() }) },
   model: 'googleai/gemini-1.5-pro',
-  prompt: `You are a helpful and empathetic AI medical assistant named Echo Doc. Your goal is to have a natural conversation, understand the user's health problems, and provide safe, preliminary advice. You are not a real doctor, and you must make that clear.
-
-You are multilingual. You MUST detect the user's language from their messages and respond *only* in that language.
+  prompt: `You are a helpful and empathetic AI medical assistant named Echo Doc. Your goal is to have a natural conversation, understand the user's health problems, and provide safe, preliminary advice in English. You are not a real doctor, and you must make that clear.
 
 Conversation Flow:
 1.  **First Turn**: If this is the first message of the conversation (check if conversationHistory is empty or only has one user message), greet the user warmly.
@@ -91,7 +89,7 @@ Conversation Flow:
     - State what the preliminary issue MIGHT be (e.g., "Based on what you've told me, it sounds like you might have a common cold.").
     - Recommend 2-3 safe home remedies (e.g., "For a cough, you can try gargling with warm salt water.").
     - Suggest 1-2 safe, common over-the-counter medications (e.g., "A common pain reliever like Paracetamol could help with the headache.").
-    - **Crucially, ALWAYS end your diagnostic response with a strong disclaimer**: "Please remember, this is not a substitute for professional medical advice. It's very important that you consult a real doctor for a proper diagnosis."
+    - **Crucially, ALWAYS end your diagnostic response with this exact disclaimer**: "Please remember, this is not a substitute for professional medical advice. It's very important that you consult a real doctor for a proper diagnosis."
 
 Conversation History (for context):
 {{#each conversationHistory}}
@@ -102,8 +100,21 @@ User's latest message:
 "{{{symptoms}}}"
 
 Your Task:
-Based on the conversation history and the user's latest message, decide which stage of the conversation you are in (First Turn, Information Gathering, or Providing Advice) and generate the appropriate response.
+Based on the conversation history and the user's latest message, decide which stage of the conversation you are in and generate the appropriate response **in English**.
 `,
+});
+
+// Genkit Prompt for translating the English text
+const translationPrompt = ai.definePrompt({
+    name: 'echoDocTranslationPrompt',
+    input: { schema: z.object({ textToTranslate: z.string(), targetLanguage: z.string() }) },
+    output: { schema: z.object({ translatedText: z.string() }) },
+    model: 'googleai/gemini-1.5-flash', // Using a faster model for translation
+    prompt: `Translate the following English text into '{{{targetLanguage}}}'. Provide only the translated text, nothing else.
+
+English Text:
+"{{{textToTranslate}}}"
+`
 });
 
 
@@ -115,36 +126,55 @@ const echoDocFlow = ai.defineFlow(
     outputSchema: EchoDocOutputSchema,
   },
   async (input) => {
-    let textResponse: string;
+    let englishText: string;
     const busyMessage = "I'm sorry, but our system is experiencing high traffic right now. Please try again in a few moments.";
+    const { language = 'English' } = input; // Default to English if no language is provided
 
-    // 1. Generate the text response
+    // 1. Generate the text response in English
     try {
-        const { output } = await prompt(input);
+        const { output } = await conversationPrompt(input);
         if (!output?.responseText) {
           throw new Error('Failed to generate text response.');
         }
-        textResponse = output.responseText;
+        englishText = output.responseText;
     } catch (error: any) {
         console.error("Text Generation failed:", error);
         const errorMessage = error.message || '';
         if (errorMessage.includes('Too Many Requests') || errorMessage.toLowerCase().includes('quota')) {
-            textResponse = busyMessage;
+            englishText = busyMessage;
         } else {
-            textResponse = 'I had trouble understanding. Could you please try again?';
+            englishText = 'I had trouble understanding. Could you please try again?';
         }
     }
     
-    // If text generation failed and returned a busy message, skip TTS.
-    if (textResponse === busyMessage || textResponse === 'I had trouble understanding. Could you please try again?') {
-        return {
-            responseText: textResponse,
-            responseAudio: '',
-        };
+    // 2. Translate the response if needed
+    let finalResponseText = englishText;
+    if (language !== 'English' && englishText !== busyMessage && englishText !== 'I had trouble understanding. Could you please try again?') {
+        try {
+            const { output } = await translationPrompt({ textToTranslate: englishText, targetLanguage: language });
+            if (!output?.translatedText) {
+                // If translation fails, fall back to English.
+                console.error('Translation model failed to return text.');
+                finalResponseText = englishText;
+            } else {
+                finalResponseText = output.translatedText;
+            }
+        } catch (error) {
+            console.error("Translation failed, falling back to English:", error);
+            // In case of any error during translation, we still have the English response.
+            finalResponseText = englishText;
+        }
     }
 
-    // 2. Generate the audio response using the text
+    // 3. Generate the audio response using the (potentially translated) text
     try {
+        if (finalResponseText === busyMessage || finalResponseText === 'I had trouble understanding. Could you please try again?') {
+             return {
+                responseText: finalResponseText,
+                responseAudio: '',
+            };
+        }
+
         const { media } = await ai.generate({
           model: 'gemini-2.5-flash-preview-tts',
           config: {
@@ -155,7 +185,7 @@ const echoDocFlow = ai.defineFlow(
               },
             },
           },
-          prompt: textResponse,
+          prompt: finalResponseText,
         });
 
         if (!media?.url) {
@@ -170,7 +200,7 @@ const echoDocFlow = ai.defineFlow(
         const wavDataUri = await toWav(audioBuffer);
 
         return {
-          responseText: textResponse,
+          responseText: finalResponseText,
           responseAudio: wavDataUri,
         };
     } catch(error: any) {
@@ -185,7 +215,7 @@ const echoDocFlow = ai.defineFlow(
 
         // For other errors, return the text response but with empty audio so the app doesn't crash.
         return {
-          responseText: textResponse,
+          responseText: finalResponseText,
           responseAudio: '', 
         };
     }
