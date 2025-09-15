@@ -6,3 +6,4 @@ import './flows/ai-symptom-checker';
 import './flows/health-report-flow';
 import './flows/ai-sentry-checker';
 import './flows/echo-doc-flow';
+import './flows/simplify-first-aid-flow';
