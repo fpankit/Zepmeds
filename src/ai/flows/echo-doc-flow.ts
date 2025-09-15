@@ -13,10 +13,10 @@ import { z } from 'zod';
 import wav from 'wav';
 import { googleAI } from '@genkit-ai/googleai';
 
-// Input Schema
+// Input Schema - Language is now optional as it will be auto-detected.
 const EchoDocInputSchema = z.object({
   symptoms: z.string().describe("The user's description of their symptoms and questions."),
-  language: z.string().describe("The language for the conversation (e.g., 'Hindi', 'English', 'Marathi')."),
+  language: z.string().optional().describe("The language for the conversation (e.g., 'Hindi', 'English', 'Marathi'). If not provided, it will be auto-detected."),
   conversationHistory: z.array(z.object({
     role: z.enum(['user', 'model']),
     text: z.string(),
@@ -75,11 +75,14 @@ const prompt = ai.definePrompt({
   output: { schema: z.object({ responseText: z.string() }) },
   prompt: `You are a helpful and empathetic AI medical assistant named Echo Doc. Your role is to listen to a user's symptoms and provide clear, reassuring preliminary guidance. Always prioritize safety and strongly advise consulting a human doctor for a real diagnosis.
 
-  Your first response should always be: "Hello, I am Echo Doc, your AI Voice Assistant. I am sorry to hear you're not feeling well." and then you MUST ask one or two clarifying questions based on their initial symptoms.
+  You are multilingual. You MUST detect the user's language and respond *only* in that language. Do not switch languages.
 
-  Current Language: {{{language}}}
-  IMPORTANT: You MUST respond *only* in the language specified above. Do not switch languages.
-
+  {{#if symptoms}}
+    Your first response should always be: "Hello, I am Echo Doc, your AI Voice Assistant. I am sorry to hear you're not feeling well." and then you MUST ask one or two clarifying questions based on their initial symptoms.
+  {{else}}
+    Your first response should be "Hello, I am Echo Doc, your AI Voice Assistant. What seems to be the problem?".
+  {{/if}}
+  
   Conversation History (for context):
   {{#each conversationHistory}}
     {{role}}: {{{text}}}
@@ -89,11 +92,12 @@ const prompt = ai.definePrompt({
   "{{{symptoms}}}"
 
   Your Task:
-  1. Acknowledge the user's symptoms in a caring way.
-  2. Ask one or two clarifying questions if necessary (e.g., "How long have you had this headache?").
-  3. Provide very general, safe advice (e.g., "It's important to rest and drink plenty of fluids.").
-  4. Gently but firmly remind the user to see a doctor. Example: "While I can offer some general advice, it's very important that you speak with a real doctor for a proper diagnosis."
-  5. Keep your response concise, clear, and easy to understand.
+  1. Acknowledge the user's symptoms in a caring way if they provided any.
+  2. If the user hasn't provided any details, ask them what is happening.
+  3. Ask clarifying questions if necessary (e.g., "How long have you had this headache?").
+  4. Provide very general, safe advice (e.g., "It's important to rest and drink plenty of fluids.").
+  5. Gently but firmly remind the user to see a doctor. Example: "While I can offer some general advice, it's very important that you speak with a real doctor for a proper diagnosis."
+  6. Keep your response concise, clear, and easy to understand.
   `,
 });
 
@@ -124,6 +128,7 @@ const echoDocFlow = ai.defineFlow(
               voiceConfig: {
                 prebuiltVoiceConfig: { voiceName: 'Algenib' }, // A calm, neutral voice
               },
+              speed: 1.5, // Increased speed to 1.5x
             },
           },
           prompt: textResponse,
@@ -145,10 +150,19 @@ const echoDocFlow = ai.defineFlow(
           responseText: textResponse,
           responseAudio: wavDataUri,
         };
-    } catch(error) {
+    } catch(error: any) {
         console.error("TTS Generation failed:", error);
-        // If TTS fails (e.g., model overloaded), return the text response with an empty audio URI.
-        // The UI can then inform the user that audio is unavailable.
+        
+        // Check for overload or rate limit errors
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+             return {
+                responseText: "I'm sorry, but I'm unable to generate audio at this moment. Please try again in a little while.",
+                responseAudio: '', 
+            };
+        }
+
+        // For other errors, return the text response with an empty audio URI.
         return {
           responseText: textResponse,
           responseAudio: '', // Send empty audio URI on failure

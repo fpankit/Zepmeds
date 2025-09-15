@@ -6,35 +6,26 @@ import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Languages, ArrowRight, Bot } from 'lucide-react';
+import { ArrowRight, Bot } from 'lucide-react';
 import { useCalls } from '@/hooks/use-calls';
 
-const languages = [
-    { value: 'English', label: 'English' },
-    { value: 'Hindi', label: 'Hindi (हिन्दी)' },
-    { value: 'Marathi', label: 'Marathi (मराठी)' },
-    { value: 'Kannada', label: 'Kannada (ಕನ್ನಡ)' },
-    { value: 'Tamil', label: 'Tamil (தமிழ்)' },
-    { value: 'Telugu', label: 'Telugu (తెలుగు)' },
-];
 
 export default function EchoDocSetupPage() {
     const router = useRouter();
     const { doctors } = useCalls();
     
-    const [selectedLanguage, setSelectedLanguage] = useState(languages[0].value);
     const [selectedDoctorId, setSelectedDoctorId] = useState(doctors[0].id);
     const [symptoms, setSymptoms] = useState('');
 
     const selectedDoctor = doctors.find(doc => doc.id === selectedDoctorId);
 
     const handleStartConsultation = () => {
-        if (symptoms.trim() && selectedDoctor) {
+        if (selectedDoctor) {
             // Pass data to the call page via query parameters
-            router.push(`/echo-doc/call?symptoms=${encodeURIComponent(symptoms)}&language=${encodeURIComponent(selectedLanguage)}&doctorId=${selectedDoctorId}&doctorName=${encodeURIComponent(selectedDoctor.name)}`);
+            // Language is no longer needed
+            router.push(`/echo-doc/call?symptoms=${encodeURIComponent(symptoms)}&doctorId=${selectedDoctorId}&doctorName=${encodeURIComponent(selectedDoctor.name)}`);
         }
     };
 
@@ -45,29 +36,10 @@ export default function EchoDocSetupPage() {
                     <Bot className="mx-auto h-12 w-12 text-primary" />
                     <CardTitle className="text-2xl font-bold">Echo Doc AI</CardTitle>
                     <CardDescription>
-                        Start a conversation with a friendly AI medical agent in your preferred language.
+                        Start a conversation with a friendly AI medical agent who can understand any language.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="language-select" className="flex items-center gap-2">
-                            <Languages className="h-4 w-4" />
-                            Choose Your Language
-                        </Label>
-                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                            <SelectTrigger id="language-select">
-                                <SelectValue placeholder="Select a language" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {languages.map(lang => (
-                                    <SelectItem key={lang.value} value={lang.value}>
-                                        {lang.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
                     <div className="space-y-2">
                         <div className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Choose Your AI Doctor</div>
                         <div className="flex gap-4 overflow-x-auto pb-2">
@@ -84,10 +56,10 @@ export default function EchoDocSetupPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="symptoms">Add Symptoms or Any Other Details</Label>
+                        <Label htmlFor="symptoms">You can add some details to start, or begin by just saying hello. (Optional)</Label>
                         <Textarea
                             id="symptoms"
-                            placeholder="Add detail here..."
+                            placeholder="e.g., I have a headache..."
                             value={symptoms}
                             onChange={(e) => setSymptoms(e.target.value)}
                             className="min-h-[120px]"
@@ -98,7 +70,6 @@ export default function EchoDocSetupPage() {
                     <Button 
                         className="w-full" 
                         onClick={handleStartConsultation} 
-                        disabled={!symptoms.trim()}
                     >
                         Start Consultation <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>

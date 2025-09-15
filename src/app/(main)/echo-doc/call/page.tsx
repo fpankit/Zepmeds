@@ -40,7 +40,6 @@ function EchoDocCallContent() {
     
     // Extracted URL Params
     const initialSymptoms = searchParams.get('symptoms');
-    const language = searchParams.get('language');
     const doctorId = searchParams.get('doctorId');
 
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -64,20 +63,16 @@ function EchoDocCallContent() {
 
     // Initial message effect
     useEffect(() => {
-        if (initialSymptoms && language) {
-            handleNewMessage(initialSymptoms);
-        } else {
-            toast({ variant: 'destructive', title: 'Missing required information.' });
-            router.push('/echo-doc');
-        }
+        handleNewMessage(initialSymptoms || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialSymptoms, language]);
+    }, [initialSymptoms]);
     
 
     const handleNewMessage = async (text: string) => {
         setIsLoading(true);
         setCallStatus("AI is responding...");
         
+        // Add user message to conversation history only if it's not the initial empty message
         const updatedConversation: ConversationTurn[] = text ? [...conversation, { role: 'user', text }] : conversation;
         if(text) setConversation(updatedConversation);
 
@@ -85,7 +80,7 @@ function EchoDocCallContent() {
         try {
             const input: EchoDocInput = {
                 symptoms: text || initialSymptoms || '',
-                language: language || 'English',
+                // Language is no longer needed
                 conversationHistory: updatedConversation,
             };
 
@@ -118,7 +113,8 @@ function EchoDocCallContent() {
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = language || 'en-US'; // Set language for recognition
+        // Let the service auto-detect language
+        // recognition.lang = 'en-US';
 
         recognition.onstart = () => {
             setIsListening(true);
@@ -144,7 +140,7 @@ function EchoDocCallContent() {
 
         recognitionRef.current = recognition;
 
-    }, [language, toast, isLoading]);
+    }, [toast, isLoading]);
 
     const toggleMute = () => {
         if (!hasMicPermission) {
