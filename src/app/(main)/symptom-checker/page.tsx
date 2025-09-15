@@ -22,8 +22,6 @@ const languages = [
     { value: 'Kannada', label: 'Kannada (ಕನ್ನಡ)' },
     { value: 'Tamil', label: 'Tamil (தமிழ்)' },
     { value: 'Telugu', label: 'Telugu (తెలుగు)' },
-    { value: 'German', label: 'German (Deutsch)' },
-    { value: 'Chinese', label: 'Chinese (中文)' },
 ];
 
 const MAX_WIDTH = 800;
