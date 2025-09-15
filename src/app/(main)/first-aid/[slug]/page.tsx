@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { firstAidCategories, FirstAidTopic } from '@/lib/first-aid-data';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Languages, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ArrowLeft, Sparkles, Languages, Loader2, ThumbsUp, ThumbsDown, CheckSquare } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { simplifyFirstAidFlow } from '@/ai/flows/simplify-first-aid-flow';
