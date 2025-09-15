@@ -31,7 +31,6 @@ const riderDetails = {
     phone: "+91 1234567890",
     image: "https://picsum.photos/200/200?random=31",
     dataAiHint: "person portrait",
-    location: { lat: 28.50, lng: 77.05 } // Simulated rider location
 }
 
 // Simulated user location for demonstration. In a real app, this would come from the order details.
@@ -57,6 +56,7 @@ export function OrderStatusContent() {
   const [showMap, setShowMap] = useState(false);
   const [isItemsOpen, setIsItemsOpen] = useState(false);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
+  const [riderLocation, setRiderLocation] = useState({ lat: 28.50, lng: 77.05 }); // Default simulated location
   
   useEffect(() => {
     if (!orderId) {
@@ -69,6 +69,10 @@ export function OrderStatusContent() {
         if (doc.exists()) {
             const orderData = doc.data();
             setOrder({ id: doc.id, ...orderData });
+            // Listen for rider location updates
+            if (orderData.riderLocation) {
+                setRiderLocation(orderData.riderLocation);
+            }
         } else {
             console.error("Order not found");
             setOrder(null);
@@ -212,7 +216,7 @@ export function OrderStatusContent() {
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                 <Card>
                     <CardContent className='p-4'>
-                        <LiveTrackingMap riderLocation={riderDetails.location} userLocation={userLocation} />
+                        <LiveTrackingMap riderLocation={riderLocation} userLocation={userLocation} />
                     </CardContent>
                 </Card>
             </motion.div>
@@ -348,3 +352,5 @@ export function OrderStatusContent() {
     </div>
   );
 }
+
+    
