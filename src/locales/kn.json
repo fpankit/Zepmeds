@@ -1,0 +1,60 @@
+
+{
+    "home": {
+        "searchPlaceholder": "ಔಷಧಿಗಳು ಮತ್ತು ಹೆಚ್ಚಿನದನ್ನು ಹುಡುಕಿ!",
+        "trendingProducts": "ಟ್ರೆಂಡಿಂಗ್ ಉತ್ಪನ್ನಗಳು",
+        "specialOffers": "ವಿಶೇಷ ಕೊಡುಗೆಗಳು"
+    },
+    "bottomNav": {
+        "home": "ಹೋಮ್",
+        "activity": "ಚಟುವಟಿಕೆ",
+        "doctor": "ವೈದ್ಯರು",
+        "cart": "ಕಾರ್ಟ್",
+        "more": "ಇನ್ನಷ್ಟು"
+    },
+    "profile": {
+        "title": "ಪ್ರೊಫೈಲ್",
+        "changePhoto": "ಪ್ರೊಫೈಲ್ ಫೋಟೋ ಬದಲಾಯಿಸಿ",
+        "patientDetails": "ರೋಗಿಯ ವಿವರಗಳು",
+        "manageAddresses": "ವಿಳಾಸಗಳನ್ನು ನಿರ್ವಹಿಸಿ",
+        "orderHistory": "ಆರ್ಡರ್ ಇತಿಹಾಸ",
+        "pastMedicines": "ಹಿಂದಿನ ಔಷಧಿಗಳು",
+        "diagnosticReports": "ರೋಗನಿರ್ಣಯ ವರದಿಗಳು",
+        "myHealthReport": "ನನ್ನ ಆರೋಗ್ಯ ವರದಿ",
+        "consultDoctor": "ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ",
+        "emergencyServices": "ತುರ್ತು ಸೇವೆಗಳು",
+        "helpSupport": "ಸಹಾಯ ಮತ್ತು ಬೆಂಬಲ",
+        "changeLanguage": "ಭಾಷೆ ಬದಲಾಯಿಸಿ"
+    },
+    "language": {
+        "selectLanguage": "ಒಂದು ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+        "description": "ನಿಮ್ಮ ಆಯ್ಕೆಮಾಡಿದ ಭಾಷೆಯನ್ನು ಅಪ್ಲಿಕೇಶನ್‌ನಾದ್ಯಂತ ಬಳಸಲಾಗುತ್ತದೆ."
+    },
+    "orderMedicines": {
+        "searchPlaceholder": "ಔಷಧಿಗಳಿಗಾಗಿ ಹುಡುಕಿ...",
+        "categoriesTitle": "ವರ್ಗಗಳು",
+        "allProducts": "ಎಲ್ಲಾ ಉತ್ಪನ್ನಗಳು",
+        "addToCart": "ಸೇರಿಸಿ",
+        "endOfResults": "ನೀವು ಅಂತ್ಯವನ್ನು ತಲುಪಿದ್ದೀರಿ.",
+        "noProductsInCategory": "ಈ ವರ್ಗದಲ್ಲಿ ಯಾವುದೇ ಉತ್ಪನ್ನಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
+        "categories": {
+            "all": "ಎಲ್ಲವೂ",
+            "generalHealth": "ಸಾಮಾನ್ಯ ಆರೋಗ್ಯ",
+            "painRelief": "ನೋವು ನಿವಾರಣೆ",
+            "skinCare": "ಚರ್ಮದ ಆರೈಕೆ",
+            "eyeCare": "ಕಣ್ಣಿನ ಆರೈಕೆ",
+            "petCare": "ಸಾಕುಪ್ರಾಣಿಗಳ ಆರೈಕೆ",
+            "devices": "ಸಾಧನಗಳು"
+        },
+        "toast": {
+            "addedToCart": "ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ",
+            "hasBeenAdded": "ನಿಮ್ಮ ಕಾರ್ಟ್‌ಗೆ ಸೇರಿಸಲಾಗಿದೆ."
+        },
+        "notFound": {
+            "title": "ಔಷಧಿ ಕಂಡುಬಂದಿಲ್ಲ",
+            "description1": "ನಮಗೆ \"{searchQuery}\" ಸಿಗಲಿಲ್ಲ. ಆದರೆ ಚಿಂತಿಸಬೇಡಿ!",
+            "description2": "ತುರ್ತಾಗಿ ಬೇಕೇ? ನಾವು ನಿಮಗಾಗಿ 1 ಗಂಟೆಯೊಳಗೆ ವ್ಯವಸ್ಥೆ ಮಾಡಬಹುದು.",
+            "button": "ನಮಗೆ ತಿಳಿಸಿ"
+        }
+    }
+}

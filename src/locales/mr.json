@@ -29,5 +29,32 @@
     "language": {
         "selectLanguage": "एक भाषा निवडा",
         "description": "तुमची निवडलेली भाषा संपूर्ण ॲपमध्ये वापरली जाईल."
+    },
+    "orderMedicines": {
+        "searchPlaceholder": "औषधे शोधा...",
+        "categoriesTitle": "श्रेणी",
+        "allProducts": "सर्व उत्पादने",
+        "addToCart": "जोडा",
+        "endOfResults": "तुम्ही शेवटपर्यंत पोहोचला आहात.",
+        "noProductsInCategory": "या श्रेणीमध्ये कोणतीही उत्पादने आढळली नाहीत.",
+        "categories": {
+            "all": "सर्व",
+            "generalHealth": "सामान्य आरोग्य",
+            "painRelief": "वेदना आराम",
+            "skinCare": "त्वचेची काळजी",
+            "eyeCare": "डोळ्यांची काळजी",
+            "petCare": "पाळीव प्राण्यांची काळजी",
+            "devices": "उपकरणे"
+        },
+        "toast": {
+            "addedToCart": "कार्टमध्ये जोडले",
+            "hasBeenAdded": "तुमच्या कार्टमध्ये जोडले गेले आहे."
+        },
+        "notFound": {
+            "title": "औषध सापडले नाही",
+            "description1": "आम्हाला \"{searchQuery}\" सापडले नाही. पण काळजी करू नका!",
+            "description2": "तातडीने हवे आहे? आम्ही तुमच्यासाठी 1 तासात व्यवस्था करू शकतो.",
+            "button": "आम्हाला सूचित करा"
+        }
     }
 }

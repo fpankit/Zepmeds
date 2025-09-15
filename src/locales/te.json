@@ -29,5 +29,32 @@
     "language": {
         "selectLanguage": "ఒక భాషను ఎంచుకోండి",
         "description": "మీరు ఎంచుకున్న భాష యాప్ అంతటా ఉపయోగించబడుతుంది."
+    },
+    "orderMedicines": {
+        "searchPlaceholder": "మందుల కోసం శోధించండి...",
+        "categoriesTitle": "వర్గాలు",
+        "allProducts": "అన్ని ఉత్పత్తులు",
+        "addToCart": "జోడించు",
+        "endOfResults": "మీరు చివరికి చేరుకున్నారు.",
+        "noProductsInCategory": "ఈ వర్గంలో ఉత్పత్తులు ఏవీ కనుగొనబడలేదు.",
+        "categories": {
+            "all": "అన్నీ",
+            "generalHealth": "సాధారణ ఆరోగ్యం",
+            "painRelief": "నొప్పి నివారణ",
+            "skinCare": "చర్మ సంరక్షణ",
+            "eyeCare": "కంటి సంరక్షణ",
+            "petCare": "పెంపుడు జంతువుల సంరక్షణ",
+            "devices": "పరికరాలు"
+        },
+        "toast": {
+            "addedToCart": "కార్ట్‌లో జోడించబడింది",
+            "hasBeenAdded": "మీ కార్ట్‌కు జోడించబడింది."
+        },
+        "notFound": {
+            "title": "మందు కనుగొనబడలేదు",
+            "description1": "మేము \"{searchQuery}\"ని కనుగొనలేకపోయాము. కానీ చింతించకండి!",
+            "description2": "అత్యవసరంగా కావాలా? మేము 1 గంటలో మీ కోసం దాన్ని ఏర్పాటు చేయగలము.",
+            "button": "మాకు తెలియజేయండి"
+        }
     }
 }

@@ -36,16 +36,7 @@ import { db } from '@/lib/firebase';
 import { useIntersectionObserver } from '@/hooks/use-intersection-observer';
 import { DelayedSkeleton } from '@/components/features/delayed-skeleton';
 import Link from 'next/link';
-
-const categories = [
-  { name: 'All', icon: Pill, gradient: 'from-blue-500 to-cyan-400' },
-  { name: 'General Health', icon: Heart, gradient: 'from-green-500 to-teal-400' },
-  { name: 'Pain Relief', icon: Bone, gradient: 'from-red-500 to-orange-400' },
-  { name: 'Skin Care', icon: Sun, gradient: 'from-yellow-500 to-amber-400' },
-  { name: 'Eye Care', icon: Eye, gradient: 'from-indigo-500 to-purple-400' },
-  { name: 'Pet Care', icon: Dog, gradient: 'from-pink-500 to-rose-400' },
-  { name: 'Devices', icon: Thermometer, gradient: 'from-gray-500 to-slate-400' },
-];
+import { useTranslation } from '@/context/language-context';
 
 const PRODUCTS_PER_PAGE = 8;
 
@@ -64,6 +55,18 @@ const ProductCardSkeleton = () => (
 );
 
 export default function OrderMedicinesPage() {
+  const t = useTranslation();
+  
+  const categories = [
+    { name: t('orderMedicines.categories.all'), icon: Pill, gradient: 'from-blue-500 to-cyan-400', key: 'All' },
+    { name: t('orderMedicines.categories.generalHealth'), icon: Heart, gradient: 'from-green-500 to-teal-400', key: 'General Health' },
+    { name: t('orderMedicines.categories.painRelief'), icon: Bone, gradient: 'from-red-500 to-orange-400', key: 'Pain Relief' },
+    { name: t('orderMedicines.categories.skinCare'), icon: Sun, gradient: 'from-yellow-500 to-amber-400', key: 'Skin Care' },
+    { name: t('orderMedicines.categories.eyeCare'), icon: Eye, gradient: 'from-indigo-500 to-purple-400', key: 'Eye Care' },
+    { name: t('orderMedicines.categories.petCare'), icon: Dog, gradient: 'from-pink-500 to-rose-400', key: 'Pet Care' },
+    { name: t('orderMedicines.categories.devices'), icon: Thermometer, gradient: 'from-gray-500 to-slate-400', key: 'Devices' },
+  ];
+
   const [selectedCategory, setSelectedCategory] = useState('All');
   const { cart, addToCart, updateQuantity, setProductMap } = useCart();
   const { toast } = useToast();
@@ -161,8 +164,8 @@ export default function OrderMedicinesPage() {
   const handleAddToCart = (product: Product) => {
     addToCart({ ...product, quantity: 1, imageUrl: product.imageUrl });
     toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
+      title: t('orderMedicines.toast.addedToCart'),
+      description: `${product.name} ${t('orderMedicines.toast.hasBeenAdded')}`,
     });
   }
 
@@ -171,7 +174,7 @@ export default function OrderMedicinesPage() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
         <Input 
-            placeholder="Search for medicines..." 
+            placeholder={t('orderMedicines.searchPlaceholder')} 
             className="pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -179,18 +182,18 @@ export default function OrderMedicinesPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-bold">Categories</h2>
+        <h2 className="text-xl font-bold">{t('orderMedicines.categoriesTitle')}</h2>
         <ScrollArea className="w-full whitespace-nowrap rounded-md">
           <div className="flex w-max space-x-4">
             {categories.map((category) => (
               <button
-                key={category.name}
-                onClick={() => setSelectedCategory(category.name)}
+                key={category.key}
+                onClick={() => setSelectedCategory(category.key)}
                 className={cn(
                   'flex flex-col items-center justify-center space-y-2 w-20 h-20 rounded-2xl text-center p-2 transition-all duration-200 transform hover:scale-105',
                    'bg-gradient-to-br text-white shadow-lg',
                    category.gradient,
-                  selectedCategory === category.name
+                  selectedCategory === category.key
                     ? 'ring-2 ring-offset-2 ring-offset-background ring-white'
                     : 'opacity-80 hover:opacity-100'
                 )}
@@ -206,7 +209,7 @@ export default function OrderMedicinesPage() {
 
       <div>
         <h2 className="text-xl font-bold mb-4">
-            {selectedCategory === 'All' && !searchQuery ? 'All Products' : (searchQuery || selectedCategory)}
+            {searchQuery || (categories.find(c => c.key === selectedCategory)?.name || t('orderMedicines.allProducts'))}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {isLoading && products.length === 0 ? (
@@ -245,7 +248,7 @@ export default function OrderMedicinesPage() {
                                 ) : (
                                     <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)}>
                                         <ShoppingCart className="mr-2 h-4 w-4"/>
-                                        Add
+                                        {t('orderMedicines.addToCart')}
                                     </Button>
                                 )}
                             </div>
@@ -259,7 +262,7 @@ export default function OrderMedicinesPage() {
 
         <div ref={loadMoreRef} className="col-span-full flex justify-center py-6">
             {isLoadingMore && <Loader2 className="h-8 w-8 animate-spin text-primary" />}
-            {!hasMore && products.length > 0 && <p className="text-muted-foreground">You've reached the end.</p>}
+            {!hasMore && products.length > 0 && <p className="text-muted-foreground">{t('orderMedicines.endOfResults')}</p>}
         </div>
          {!isLoading && products.length === 0 && (
             <div className="col-span-full text-center py-10">
@@ -268,21 +271,21 @@ export default function OrderMedicinesPage() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <AlertTriangle className="text-yellow-500" />
-                                Medicine Not Found
+                                {t('orderMedicines.notFound.title')}
                             </CardTitle>
                         </CardHeader>
                          <CardContent>
-                             <p className="text-muted-foreground">We couldn't find "{searchQuery}". But don't worry!</p>
-                             <p className="text-muted-foreground mt-1">Need it urgently? We can arrange it for you within 1 hour.</p>
+                             <p className="text-muted-foreground">{t('orderMedicines.notFound.description1').replace('{searchQuery}', searchQuery)}</p>
+                             <p className="text-muted-foreground mt-1">{t('orderMedicines.notFound.description2')}</p>
                             <Button asChild className="mt-4">
                                 <Link href={`/urgent-medicine?name=${searchQuery}`}>
-                                    Notify Us
+                                    {t('orderMedicines.notFound.button')}
                                 </Link>
                             </Button>
                          </CardContent>
                      </Card>
                 ) : (
-                    <p className="text-muted-foreground">No products found in this category.</p>
+                    <p className="text-muted-foreground">{t('orderMedicines.noProductsInCategory')}</p>
                 )}
             </div>
          )}

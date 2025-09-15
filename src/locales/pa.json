@@ -29,5 +29,32 @@
     "language": {
         "selectLanguage": "ਇੱਕ ਭਾਸ਼ਾ ਚੁਣੋ",
         "description": "ਤੁਹਾਡੀ ਚੁਣੀ ਹੋਈ ਭਾਸ਼ਾ ਪੂਰੇ ਐਪ ਵਿੱਚ ਵਰਤੀ ਜਾਵੇਗੀ।"
+    },
+    "orderMedicines": {
+        "searchPlaceholder": "ਦਵਾਈਆਂ ਦੀ ਖੋਜ ਕਰੋ...",
+        "categoriesTitle": "ਸ਼੍ਰੇਣੀਆਂ",
+        "allProducts": "ਸਾਰੇ ਉਤਪਾਦ",
+        "addToCart": "ਸ਼ਾਮਲ ਕਰੋ",
+        "endOfResults": "ਤੁਸੀਂ ਅੰਤ 'ਤੇ ਪਹੁੰਚ ਗਏ ਹੋ।",
+        "noProductsInCategory": "ਇਸ ਸ਼੍ਰੇਣੀ ਵਿੱਚ ਕੋਈ ਉਤਪਾਦ ਨਹੀਂ ਮਿਲਿਆ।",
+        "categories": {
+            "all": "ਸਾਰੇ",
+            "generalHealth": "ਆਮ ਸਿਹਤ",
+            "painRelief": "ਦਰਦ ਤੋਂ ਰਾਹਤ",
+            "skinCare": "ਚਮੜੀ ਦੀ ਦੇਖਭਾਲ",
+            "eyeCare": "ਅੱਖਾਂ ਦੀ ਦੇਖਭਾਲ",
+            "petCare": "ਪਾਲਤੂ ਜਾਨਵਰਾਂ ਦੀ ਦੇਖਭਾਲ",
+            "devices": "ਉਪਕਰਣ"
+        },
+        "toast": {
+            "addedToCart": "ਕਾਰਟ ਵਿੱਚ ਸ਼ਾਮਲ ਕੀਤਾ ਗਿਆ",
+            "hasBeenAdded": "ਨੂੰ ਤੁਹਾਡੇ ਕਾਰਟ ਵਿੱਚ ਸ਼ਾਮਲ ਕੀਤਾ ਗਿਆ ਹੈ।"
+        },
+        "notFound": {
+            "title": "ਦਵਾਈ ਨਹੀਂ ਮਿਲੀ",
+            "description1": "ਸਾਨੂੰ \"{searchQuery}\" ਨਹੀਂ ਮਿਲਿਆ। ਪਰ ਚਿੰਤਾ ਨਾ ਕਰੋ!",
+            "description2": "ਇਸਦੀ ਤੁਰੰਤ ਲੋੜ ਹੈ? ਅਸੀਂ 1 ਘੰਟੇ ਦੇ ਅੰਦਰ ਤੁਹਾਡੇ ਲਈ ਇਸਦਾ ਪ੍ਰਬੰਧ ਕਰ ਸਕਦੇ ਹਾਂ।",
+            "button": "ਸਾਨੂੰ ਸੂਚਿਤ ਕਰੋ"
+        }
     }
 }

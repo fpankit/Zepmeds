@@ -29,5 +29,32 @@
     "language": {
         "selectLanguage": "Select a Language",
         "description": "Your selected language will be used across the app."
+    },
+    "orderMedicines": {
+        "searchPlaceholder": "Search for medicines...",
+        "categoriesTitle": "Categories",
+        "allProducts": "All Products",
+        "addToCart": "Add",
+        "endOfResults": "You've reached the end.",
+        "noProductsInCategory": "No products found in this category.",
+        "categories": {
+            "all": "All",
+            "generalHealth": "General Health",
+            "painRelief": "Pain Relief",
+            "skinCare": "Skin Care",
+            "eyeCare": "Eye Care",
+            "petCare": "Pet Care",
+            "devices": "Devices"
+        },
+        "toast": {
+            "addedToCart": "Added to cart",
+            "hasBeenAdded": "has been added to your cart."
+        },
+        "notFound": {
+            "title": "Medicine Not Found",
+            "description1": "We couldn't find \"{searchQuery}\". But don't worry!",
+            "description2": "Need it urgently? We can arrange it for you within 1 hour.",
+            "button": "Notify Us"
+        }
     }
 }

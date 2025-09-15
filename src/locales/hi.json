@@ -29,5 +29,32 @@
     "language": {
         "selectLanguage": "एक भाषा चुनें",
         "description": "आपकी चुनी हुई भाषा पूरे ऐप में इस्तेमाल की जाएगी।"
+    },
+    "orderMedicines": {
+        "searchPlaceholder": "दवाइयाँ खोजें...",
+        "categoriesTitle": "श्रेणियाँ",
+        "allProducts": "सभी उत्पाद",
+        "addToCart": "जोड़ें",
+        "endOfResults": "आप अंत तक पहुँच गए हैं।",
+        "noProductsInCategory": "इस श्रेणी में कोई उत्पाद नहीं मिला।",
+        "categories": {
+            "all": "सभी",
+            "generalHealth": "सामान्य स्वास्थ्य",
+            "painRelief": "दर्द निवारक",
+            "skinCare": "त्वचा की देखभाल",
+            "eyeCare": "आंखों की देखभाल",
+            "petCare": "पालतू जानवरों की देखभाल",
+            "devices": "उपकरण"
+        },
+        "toast": {
+            "addedToCart": "कार्ट में जोड़ा गया",
+            "hasBeenAdded": "को आपके कार्ट में जोड़ा गया है।"
+        },
+        "notFound": {
+            "title": "दवा नहीं मिली",
+            "description1": "हमें \"{searchQuery}\" नहीं मिला। लेकिन चिंता न करें!",
+            "description2": "तुरंत चाहिए? हम 1 घंटे के भीतर आपके लिए इसकी व्यवस्था कर सकते हैं।",
+            "button": "हमें सूचित करें"
+        }
     }
 }

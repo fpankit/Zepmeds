@@ -9,6 +9,7 @@ import pa from '@/locales/pa.json';
 import ta from '@/locales/ta.json';
 import te from '@/locales/te.json';
 import mr from '@/locales/mr.json';
+import kn from '@/locales/kn.json';
 
 const translations: Record<LanguageCode, any> = {
     en,
@@ -17,6 +18,7 @@ const translations: Record<LanguageCode, any> = {
     ta,
     te,
     mr,
+    kn,
 };
 
 interface LanguageContextType {

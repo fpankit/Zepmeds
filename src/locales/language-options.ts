@@ -6,6 +6,7 @@ export const languageOptions = [
     { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
     { code: 'te', name: 'Telugu', nativeName: 'తెలుగు' },
     { code: 'mr', name: 'Marathi', nativeName: 'मराठी' },
+    { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ' },
 ] as const;
 
 export type LanguageCode = typeof languageOptions[number]['code'];
