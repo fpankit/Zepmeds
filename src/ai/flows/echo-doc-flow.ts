@@ -116,25 +116,33 @@ const echoDocFlow = ai.defineFlow(
   },
   async (input) => {
     let textResponse: string;
+    const busyMessage = "I'm sorry, but our system is experiencing high traffic right now. Please try again in a few moments.";
 
     // 1. Generate the text response
     try {
         const { output } = await prompt(input);
-
         if (!output?.responseText) {
           throw new Error('Failed to generate text response.');
         }
         textResponse = output.responseText;
-
     } catch (error: any) {
         console.error("Text Generation failed:", error);
         const errorMessage = error.message || '';
         if (errorMessage.includes('Too Many Requests') || errorMessage.toLowerCase().includes('quota')) {
-            throw new Error("I'm sorry, but our system is experiencing high traffic right now. Please try again in a few moments.");
+            textResponse = busyMessage;
+        } else {
+            textResponse = 'I had trouble understanding. Could you please try again?';
         }
-        throw new Error('I had trouble understanding. Could you please try again?');
     }
     
+    // If text generation failed and returned a busy message, skip TTS.
+    if (textResponse === busyMessage || textResponse === 'I had trouble understanding. Could you please try again?') {
+        return {
+            responseText: textResponse,
+            responseAudio: '',
+        };
+    }
+
     // 2. Generate the audio response using the text
     try {
         const { media } = await ai.generate({
@@ -167,10 +175,9 @@ const echoDocFlow = ai.defineFlow(
         };
     } catch(error: any) {
         console.error("TTS Generation failed:", error);
-        
         const errorMessage = error.message || '';
         if (errorMessage.includes('Too Many Requests') || errorMessage.toLowerCase().includes('resource has been exhausted')) {
-             return {
+            return {
                 responseText: "I'm sorry, but I'm unable to generate audio at this moment due to high demand. Please try again in a little while.",
                 responseAudio: '', 
             };
