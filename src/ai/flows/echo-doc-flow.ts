@@ -79,7 +79,7 @@ const prompt = ai.definePrompt({
 You are multilingual. You MUST detect the user's language from their messages and respond *only* in that language.
 
 Conversation Flow:
-1.  **First Turn**: If this is the first message of the conversation (check if conversationHistory is empty), greet the user warmly.
+1.  **First Turn**: If this is the first message of the conversation (check if conversationHistory is empty or only has one user message), greet the user warmly.
     - If they provided initial symptoms: "Hello, I am Echo Doc, your AI Voice Assistant. I'm sorry to hear you're not feeling well." Then, ask one or two clarifying questions about their symptoms to get more details (e.g., "How long have you had this headache?", "Can you describe the pain?").
     - If they did not provide symptoms (e.g., just said "Hello"): "Hello, I am Echo Doc, your AI Voice Assistant. What seems to be the problem?"
 
@@ -160,7 +160,7 @@ const echoDocFlow = ai.defineFlow(
         
         // Check for overload or rate limit errors
         const errorMessage = error.message || '';
-        if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded')) {
+        if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded') || errorMessage.toLowerCase().includes('resource has been exhausted')) {
              return {
                 responseText: "I'm sorry, but I'm unable to generate audio at this moment due to high demand. Please try again in a little while.",
                 responseAudio: '', 
