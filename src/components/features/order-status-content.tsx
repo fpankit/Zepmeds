@@ -1,15 +1,15 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
-import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle, QrCode, Box } from 'lucide-react';
+import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle, QrCode, Box, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +18,7 @@ import { Separator } from '../ui/separator';
 import { Progress } from '../ui/progress';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { useToast } from '@/hooks/use-toast';
 
 const LiveTrackingMap = dynamic(() => import('./live-tracking-map').then(mod => mod.LiveTrackingMap), {
     ssr: false,
@@ -50,38 +51,49 @@ export function OrderStatusContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const router = useRouter();
+  const { toast } = useToast();
 
   const [order, setOrder] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [isItemsOpen, setIsItemsOpen] = useState(false);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   const [riderLocation, setRiderLocation] = useState({ lat: 28.50, lng: 77.05 }); // Default simulated location
   
-  useEffect(() => {
+  const fetchOrder = useCallback(async () => {
     if (!orderId) {
         setIsLoading(false);
         return;
     }
     
-    const orderDocRef = doc(db, "orders", orderId);
-    const unsubscribe = onSnapshot(orderDocRef, (doc) => {
-        if (doc.exists()) {
-            const orderData = doc.data();
-            setOrder({ id: doc.id, ...orderData });
-            // Listen for rider location updates
-            if (orderData.riderLocation) {
+    setIsRefreshing(true);
+    try {
+        const orderDocRef = doc(db, "orders", orderId);
+        const docSnap = await getDoc(orderDocRef);
+        if (docSnap.exists()) {
+            const orderData = docSnap.data();
+            setOrder({ id: docSnap.id, ...orderData });
+             if (orderData.riderLocation) {
                 setRiderLocation(orderData.riderLocation);
             }
+             toast({ title: "Status Updated", description: "Your order status has been refreshed." });
         } else {
             console.error("Order not found");
             setOrder(null);
+            toast({ variant: "destructive", title: "Order not found" });
         }
+    } catch (e) {
+        toast({ variant: "destructive", title: "Error", description: "Failed to fetch order status." });
+    } finally {
         setIsLoading(false);
-    });
+        setIsRefreshing(false);
+    }
+  }, [orderId, toast]);
 
-    return () => unsubscribe();
-  }, [orderId]);
+  useEffect(() => {
+    fetchOrder();
+  }, [fetchOrder]);
   
    useEffect(() => {
     if (order && order.status) {
@@ -224,6 +236,12 @@ export function OrderStatusContent() {
         </AnimatePresence>
 
         <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle>Delivery Status</CardTitle>
+                <Button variant="ghost" size="sm" onClick={fetchOrder} disabled={isRefreshing}>
+                    {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin"/> : <RefreshCw className="h-4 w-4"/>}
+                </Button>
+            </CardHeader>
             <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12">
@@ -352,5 +370,3 @@ export function OrderStatusContent() {
     </div>
   );
 }
-
-    

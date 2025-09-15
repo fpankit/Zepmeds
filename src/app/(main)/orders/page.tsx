@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -57,25 +57,30 @@ export default function OrdersPage() {
       return;
     }
 
-    const q = query(
-      collection(db, "orders"),
-      where("userId", "==", user.id),
-      orderBy("orderDate", "desc")
-    );
+    const fetchOrders = async () => {
+        setIsLoading(true);
+        try {
+            const q = query(
+              collection(db, "orders"),
+              where("userId", "==", user.id),
+              orderBy("orderDate", "desc")
+            );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const fetchedOrders = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Order));
-      setOrders(fetchedOrders);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching orders: ", error);
-      setIsLoading(false);
-    });
+            const querySnapshot = await getDocs(q);
+            const fetchedOrders = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Order));
+            setOrders(fetchedOrders);
+        } catch (error) {
+            console.error("Error fetching orders: ", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    fetchOrders();
 
-    return () => unsubscribe();
   }, [user, authLoading, router]);
 
   const filteredOrders = useMemo(() => {
