@@ -13,7 +13,7 @@ export const firstAidCategories = [
         description: 'Do\'s and don\'ts for snake bites.',
         icon: HelpCircle,
         steps: [
-            "Call for emergency medical help right away.",
+            "Call for emergency medical help (112 or 108) right away.",
             "Stay calm and still. Movement can cause the venom to travel more quickly through the body.",
             "Keep the bite below the level of the heart.",
             "Cover the bite with a loose, sterile bandage.",
@@ -46,7 +46,7 @@ export const firstAidCategories = [
             "Wash the area with soap and water.",
             "Apply a cold pack to reduce swelling and pain.",
             "For a scorpion sting, clean the area and apply a cool compress. Keep the affected limb still.",
-            "Seek medical help immediately for severe reactions like difficulty breathing, or if a scorpion sting occurred in a child.",
+            "Seek medical help immediately (call 112) for severe reactions like difficulty breathing, or if a scorpion sting occurred in a child.",
             "Do not squeeze the stinger, as this can release more venom."
         ],
         videoUrl: 'https://www.youtube.com/embed/R1-E-r1_g8U'
@@ -73,7 +73,7 @@ export const firstAidCategories = [
         description: 'Handling fractures & bleeding.',
         icon: Siren,
         steps: [
-            "Ensure the scene is safe before approaching. Call for an ambulance.",
+            "Ensure the scene is safe before approaching. Call for an ambulance (108 or 112).",
             "Control severe bleeding by applying direct pressure with a clean cloth.",
             "For suspected fractures, immobilize the injured area.",
             "Keep the person warm and as comfortable as possible until help arrives.",
@@ -102,7 +102,7 @@ export const firstAidCategories = [
         icon: Flame,
         steps: [
             "For minor burns, cool the burn with cool (not cold) running water for 10-20 minutes.",
-            "For severe burns, call emergency services. Do not immerse large severe burns in water.",
+            "For severe burns, call emergency services (112). Do not immerse large severe burns in water.",
             "Cover the burn with a sterile, non-fluffy dressing or clean cloth.",
             "Remove jewelry and tight clothing from the burn area before it swells.",
             "Do not apply ointments, butter, ice, or break any blisters that form."
@@ -132,7 +132,7 @@ export const firstAidCategories = [
             "Apply a cold pack to the injured area for 20 minutes to reduce swelling.",
             "Observe the person for 24 hours for any red flags.",
             "Red Flags: Severe headache, repeated vomiting, confusion, drowsiness, vision changes, or unequal pupils.",
-            "If the person is unconscious or has any red flags, call for an ambulance immediately.",
+            "If the person is unconscious or has any red flags, call for an ambulance (108 or 112) immediately.",
             "Do not leave the person alone for the first 24 hours, and avoid giving them any medication without a doctor's advice."
         ],
         videoUrl: 'https://www.youtube.com/embed/5_gP81F6rG8'
@@ -145,7 +145,7 @@ export const firstAidCategories = [
         description: 'Recognizing symptoms and giving immediate help.',
         icon: HeartPulse,
         steps: [
-            "Call for an ambulance immediately.",
+            "Call for an ambulance (108 or 112) immediately.",
             "Help the person sit down and rest. Keep them calm.",
             "Loosen any tight clothing around their neck.",
             "If they take medication for angina (like nitroglycerin), help them take it.",
@@ -161,7 +161,7 @@ export const firstAidCategories = [
         icon: Brain,
         steps: [
             "Use the F.A.S.T. test: Face (is one side drooping?), Arms (can they raise both?), Speech (is it slurred?), Time (call for help now).",
-            "Call for an ambulance immediately. Note the time the first symptoms appeared.",
+            "Call for an ambulance (108 or 112) immediately. Note the time the first symptoms appeared.",
             "If the person is conscious, help them into a comfortable position, preferably lying on their side.",
             "Keep them calm and reassured until help arrives.",
             "Do not give the person anything to eat or drink, as their ability to swallow may be affected."
@@ -177,7 +177,7 @@ export const firstAidCategories = [
             "Ease the person to the floor and turn them gently onto one side to help them breathe.",
             "Clear the area of hard or sharp objects.",
             "Put something soft under their head and remove eyeglasses.",
-            "Time the seizure. Call for help if it lasts longer than 5 minutes.",
+            "Time the seizure. Call for help (112) if it lasts longer than 5 minutes.",
             "Do not hold the person down or put anything in their mouth."
         ],
         videoUrl: 'https://www.youtube.com/embed/H7w5pW_o5a8'
@@ -190,7 +190,7 @@ export const firstAidCategories = [
         steps: [
             "If you feel faint, lie down or sit with your head between your knees.",
             "If someone else faints, position them on their back. If they are breathing, raise their legs above heart level.",
-            "Check for breathing. If they aren't breathing, call for help and start CPR.",
+            "Check for breathing. If they aren't breathing, call for help (112) and start CPR.",
             "If they are unconscious but breathing, place them in the recovery position (on their side).",
             "Avoid letting the person get up too quickly after fainting."
         ],
@@ -218,7 +218,7 @@ export const firstAidCategories = [
         description: 'Immediate actions to take.',
         icon: AlertTriangle,
         steps: [
-            "If the person is unconscious or has trouble breathing, call an ambulance first.",
+            "If the person is unconscious or has trouble breathing, call an ambulance (108 or 112) first.",
             "Remove the person from the area to get fresh air.",
             "Remove any contaminated clothing.",
             "Wash the skin and hair thoroughly with soap and water.",
@@ -233,7 +233,7 @@ export const firstAidCategories = [
         description: 'What to do for a near-drowning victim.',
         icon: Waves,
         steps: [
-            "Get the person out of the water. Call for help.",
+            "Get the person out of the water. Call for help (112).",
             "Check for breathing. Tilt their head back to open the airway.",
             "If they are not breathing, give 5 rescue breaths, then start CPR (30 chest compressions, 2 breaths).",
             "If they are breathing, place them in the recovery position (on their side).",
@@ -249,7 +249,7 @@ export const firstAidCategories = [
         icon: Sun,
         steps: [
             "Move the person to a cooler place, preferably in the shade.",
-            "Call for emergency medical assistance.",
+            "Call for emergency medical assistance (112 or 108).",
             "Cool the person's entire body by sponging or spraying with cool water.",
             "Apply ice packs to the neck, groin, and armpits.",
             "Do not give the person sugary drinks or medication unless directed by a doctor."
@@ -291,7 +291,7 @@ export const firstAidCategories = [
         description: 'Handling until a midwife or doctor arrives.',
         icon: Baby,
         steps: [
-            "Call for an ambulance or trained medical help immediately.",
+            "Call for an ambulance or trained medical help (102 or 112) immediately.",
             "Help the mother find a comfortable position, often lying on her back with pillows.",
             "Wash your hands thoroughly with soap and water.",
             "Provide clean, dry towels or sheets to place under the mother.",
