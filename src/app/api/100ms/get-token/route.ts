@@ -1,4 +1,7 @@
 
+import { config } from 'dotenv';
+config({ path: '.env' });
+
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
