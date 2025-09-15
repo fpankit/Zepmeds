@@ -60,6 +60,27 @@ async function toWav(
   });
 }
 
+/**
+ * A robust retry function with exponential backoff to handle temporary service outages.
+ */
+async function retry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      // Check for 503 Service Unavailable or other rate-limit related errors.
+      const isRetryableError = e?.status === 503 || e?.message?.includes('429') || e?.message?.toLowerCase().includes('quota');
+      if (isRetryableError && i < retries - 1) {
+        console.warn(`Attempt ${i + 1} failed. Retrying in ${delay * (i + 1)}ms...`);
+        await new Promise(r => setTimeout(r, delay * (i + 1))); // backoff
+      } else {
+        throw e; // Rethrow if not a retryable error or if retries are exhausted
+      }
+    }
+  }
+  throw new Error('All retries failed');
+}
+
 
 // Main exported function that wraps the Genkit flow
 export async function echoDoc(input: EchoDocInput): Promise<EchoDocOutput> {
@@ -129,28 +150,24 @@ const echoDocFlow = ai.defineFlow(
     let englishText: string | null = null;
     const { language = 'English' } = input; // Default to English if no language is provided
 
-    // 1. Generate the text response in English. Let Genkit's retry policy handle transient errors.
+    // 1. Generate the text response in English, with retries.
     try {
-        const { output } = await conversationPrompt(input);
+        const { output } = await retry(() => conversationPrompt(input));
         if (!output?.responseText) {
           throw new Error('Failed to generate text response. The AI model returned an empty message.');
         }
         englishText = output.responseText;
     } catch (error: any) {
         console.error("Text Generation failed after retries:", error);
-        // If text generation fails, englishText will remain null.
-    }
-    
-    // If text generation failed after all retries, set a user-friendly error message.
-    if (englishText === null) {
+        // If text generation fails after all retries, set a user-friendly error message.
         englishText = 'I am having trouble processing your request right now. Please try again in a moment.';
     }
     
-    // 2. Translate the response if needed
+    // 2. Translate the response if needed, with retries.
     let finalResponseText = englishText;
     if (language !== 'English' && !englishText.includes('processing your request')) {
         try {
-            const { output } = await translationPrompt({ textToTranslate: englishText, targetLanguage: language });
+            const { output } = await retry(() => translationPrompt({ textToTranslate: englishText, targetLanguage: language }));
             if (!output?.translatedText) {
                 // If translation fails, fall back to English.
                 console.error('Translation model failed to return text.');
@@ -159,15 +176,15 @@ const echoDocFlow = ai.defineFlow(
                 finalResponseText = output.translatedText;
             }
         } catch (error) {
-            console.error("Translation failed, falling back to English:", error);
+            console.error("Translation failed after retries, falling back to English:", error);
             // In case of any error during translation, we still have the English response.
             finalResponseText = englishText;
         }
     }
 
-    // 3. Generate the audio response using the (potentially translated) text
+    // 3. Generate the audio response, with retries.
     try {
-        const { media } = await ai.generate({
+        const { media } = await retry(() => ai.generate({
           model: 'gemini-2.5-flash-preview-tts',
           config: {
             responseModalities: ['AUDIO'],
@@ -178,7 +195,7 @@ const echoDocFlow = ai.defineFlow(
             },
           },
           prompt: finalResponseText,
-        });
+        }));
 
         if (!media?.url) {
           throw new Error('Failed to generate audio response.');
@@ -198,6 +215,7 @@ const echoDocFlow = ai.defineFlow(
     } catch(error: any) {
         console.error("TTS Generation failed after retries:", error);
         // If TTS fails after retries, return the text but with empty audio.
+        // This is our final fallback.
         return {
           responseText: finalResponseText,
           responseAudio: '', 
@@ -205,5 +223,3 @@ const echoDocFlow = ai.defineFlow(
     }
   }
 );
-
-    
