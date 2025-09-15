@@ -50,22 +50,24 @@ const prompt = ai.definePrompt({
   {{media url=photoDataUri}}
   {{/if}}
 
-  Based on the symptoms, perform the following actions:
-  1.  **Differential Diagnosis**: Identify 2-3 potential medical conditions. For each condition, provide:
+  Follow these steps sequentially:
+  
+  Step 1: **Differential Diagnosis**.
+  Based on the symptoms, identify 2-3 potential medical conditions. For each condition, provide:
       -   condition: The name of the condition.
       -   confidence: A confidence score ('High', 'Medium', 'Low').
       -   reasoning: Explain *why* you suspect this condition based on the specific symptoms provided. This is crucial for explainability.
 
-  2.  **General Guidance**: Provide comprehensive and safe recommendations.
+  Step 2: **General Guidance & Doctor Advisory**.
+  Based *only* on the diagnosis from Step 1, provide comprehensive and safe recommendations.
       -   **Medicines**: First, suggest 2-3 safe home remedies. Then, suggest 2-3 common, safe, over-the-counter medicines relevant to the symptoms. Combine them into the single 'potentialMedicines' list.
       -   **Precautions**: List 3-4 important and detailed precautions to take.
       -   **Diet**: Recommend a simple, easy-to-follow diet with 3-4 specific food items to eat or avoid.
       -   **Exercise**: Suggest 2-3 specific light exercises or clear rest instructions. Be descriptive.
-
-  3.  **Doctor Advisory**:
-      -   Provide a clear, direct advisory on whether a doctor visit is recommended.
-      -   Set the 'recommendedSpecialist' field to the most appropriate specialist (e.g., 'General Physician', 'Dermatologist'). If no specific specialist is needed but a doctor visit is advised, suggest 'General Physician'.
-      -   IMPORTANT: The 'doctorAdvisory' text MUST begin with a translated version of this exact sentence: "This is not a substitute for professional medical advice. Please consult a doctor for a proper diagnosis."
+      -   **Doctor Advisory**:
+          -   Provide a clear, direct advisory on whether a doctor visit is recommended.
+          -   Set the 'recommendedSpecialist' field to the most appropriate specialist (e.g., 'General Physician', 'Dermatologist'). If no specific specialist is needed but a doctor visit is advised, suggest 'General Physician'.
+          -   IMPORTANT: The 'doctorAdvisory' text MUST begin with a translated version of this exact sentence: "This is not a substitute for professional medical advice. Please consult a doctor for a proper diagnosis."
   
   Provide the output in the specified JSON format. Do not provide any information outside of this structure.
   `,
