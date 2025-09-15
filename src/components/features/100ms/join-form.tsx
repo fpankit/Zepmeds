@@ -10,7 +10,7 @@ import { User } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
 // The correct, static Room ID from the 100ms dashboard.
-const HMS_ROOM_ID = '669f69741a3541797e10c732';
+const HMS_ROOM_ID = '68c3b6cea48ca61c46479a3a';
 
 export function JoinForm({ user }: { user: User }) {
   const hmsActions = useHMSActions();
