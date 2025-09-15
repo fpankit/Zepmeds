@@ -32,6 +32,7 @@ export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }:
     const mapInstanceRef = useRef<Map | null>(null);
     const markerRef = useRef<L.Marker | null>(null);
 
+    // Effect for map initialization and cleanup
     useEffect(() => {
         if (mapContainerRef.current && !mapInstanceRef.current) {
             mapInstanceRef.current = L.map(mapContainerRef.current).setView([position.lat, position.lng], zoom);
@@ -48,8 +49,9 @@ export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }:
                 mapInstanceRef.current = null;
             }
         };
-    }, []); // Empty dependency array ensures this runs only on mount and unmount
+    }, []); // Empty dependency array ensures this runs only once on mount and unmount
 
+     // Effect for updating the marker and view when props change
      useEffect(() => {
         if (mapInstanceRef.current) {
             // Remove old marker if it exists
@@ -74,3 +76,4 @@ export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }:
         />
     );
 }
+

@@ -35,8 +35,8 @@ export function LiveEmergencyMap({ userPosition }: LiveEmergencyMapProps) {
     // The ambulance starts from a fixed offset for a predictable simulation
     const ambulanceStartPosition = { lat: userPosition.lat + 0.05, lng: userPosition.lng + 0.05 };
 
+    // Effect for map initialization and cleanup
     useEffect(() => {
-        // Initialize map only if the container is available and map is not already initialized
         if (mapContainerRef.current && !mapInstanceRef.current) {
             mapInstanceRef.current = L.map(mapContainerRef.current).setView([userPosition.lat, userPosition.lng], 13);
 
@@ -44,6 +44,30 @@ export function LiveEmergencyMap({ userPosition }: LiveEmergencyMapProps) {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
                 maxZoom: 20
+            }).addTo(mapInstanceRef.current);
+        }
+
+        // Cleanup function to run when the component unmounts
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+        };
+    }, []); // Empty dependency array ensures this runs only on mount and unmount
+
+    // Effect for updating map content when positions change
+    useEffect(() => {
+         if (mapInstanceRef.current) {
+            // Clear existing layers before adding new ones
+            mapInstanceRef.current.eachLayer((layer) => {
+                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    mapInstanceRef.current?.removeLayer(layer);
+                }
+            });
+            // Re-add tile layer if it was removed
+             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             }).addTo(mapInstanceRef.current);
 
             // Add markers
@@ -65,16 +89,8 @@ export function LiveEmergencyMap({ userPosition }: LiveEmergencyMapProps) {
             // Adjust map view to fit both points
             mapInstanceRef.current.fitBounds(L.latLngBounds(latlngs as LatLngExpression[]).pad(0.1));
         }
-
-        // Cleanup function to run when the component unmounts
-        return () => {
-            if (mapInstanceRef.current) {
-                mapInstanceRef.current.remove();
-                mapInstanceRef.current = null;
-            }
-        };
-    // Dependencies are set to ensure this effect runs only when positions change, not on every render.
     }, [userPosition, ambulanceStartPosition]);
+
 
     return (
         <div ref={mapContainerRef} className="h-64 w-full rounded-md" />

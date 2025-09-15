@@ -49,6 +49,7 @@ export function LiveTrackingMap({ riderLocation, userLocation }: LiveTrackingMap
         userLocation.lat, userLocation.lng
     );
 
+    // Effect for map initialization and cleanup
     useEffect(() => {
         if (mapContainerRef.current && !mapInstanceRef.current) {
             mapInstanceRef.current = L.map(mapContainerRef.current, {
@@ -60,6 +61,30 @@ export function LiveTrackingMap({ riderLocation, userLocation }: LiveTrackingMap
                 subdomains: 'abcd',
                 maxZoom: 20
             }).addTo(mapInstanceRef.current);
+        }
+
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+        };
+    }, []); // Empty dependency array ensures this runs only on mount and unmount
+
+    // Effect for updating map content when locations change
+    useEffect(() => {
+        if (mapInstanceRef.current) {
+            // Clear existing layers before adding new ones
+            mapInstanceRef.current.eachLayer((layer) => {
+                 if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    mapInstanceRef.current?.removeLayer(layer);
+                }
+            });
+             // Re-add tile layer if it was removed
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            }).addTo(mapInstanceRef.current);
+
 
             // Add markers
             L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
@@ -78,13 +103,6 @@ export function LiveTrackingMap({ riderLocation, userLocation }: LiveTrackingMap
             // Adjust map view to fit both points
             mapInstanceRef.current.fitBounds(L.latLngBounds(latlngs as LatLngExpression[]).pad(0.2));
         }
-
-        return () => {
-            if (mapInstanceRef.current) {
-                mapInstanceRef.current.remove();
-                mapInstanceRef.current = null;
-            }
-        };
     }, [userLocation, riderLocation]);
 
     return (
