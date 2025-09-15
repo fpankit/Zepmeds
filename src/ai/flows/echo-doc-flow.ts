@@ -19,7 +19,7 @@ const EchoDocInputSchema = z.object({
   conversationHistory: z.array(z.object({
     role: z.enum(['user', 'model']),
     text: z.string(),
-  })).optional().describe('The history of the conversation so far.'),
+  })).optional().default([]).describe('The history of the conversation so far.'),
 });
 export type EchoDocInput = z.infer<typeof EchoDocInputSchema>;
 
