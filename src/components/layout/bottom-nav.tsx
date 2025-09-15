@@ -8,18 +8,20 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/context/cart-context";
 import { Badge } from "../ui/badge";
+import { useTranslation } from "@/context/language-context";
 
-const navItems = [
-  { href: "/home", icon: Home, label: "Home" },
-  { href: "/activity", icon: Activity, label: "Activity" },
-  { href: "/doctor", icon: Stethoscope, label: "Doctor" },
-  { href: "/cart", icon: ShoppingCart, label: "Cart" },
-  { href: "/more", icon: MoreHorizontal, label: "More" },
-];
-
-function BottomNavComponent() {
+const BottomNavComponent = () => {
   const pathname = usePathname();
   const { cart } = useCart();
+  const t = useTranslation();
+
+  const navItems = [
+    { href: "/home", icon: Home, label: t('bottomNav.home') },
+    { href: "/activity", icon: Activity, label: t('bottomNav.activity') },
+    { href: "/doctor", icon: Stethoscope, label: t('bottomNav.doctor') },
+    { href: "/cart", icon: ShoppingCart, label: t('bottomNav.cart') },
+    { href: "/more", icon: MoreHorizontal, label: t('bottomNav.more') },
+  ];
 
   // A more robust check for activity page and its children
   const isActivityActive = pathname === '/activity' || pathname.startsWith('/activity/');
@@ -29,7 +31,7 @@ function BottomNavComponent() {
       <div className="flex h-16 items-center justify-around">
         {navItems.map((item) => {
           // Special check for activity tab
-          const isActive = item.href === '/activity' ? isActivityActive : pathname.startsWith(item.href);
+          const isActive = item.label === t('bottomNav.activity') ? isActivityActive : pathname.startsWith(item.href);
           return (
             <Link
               key={item.label}
@@ -40,7 +42,7 @@ function BottomNavComponent() {
                 "p-2 rounded-lg transition-all relative",
                 isActive ? "bg-primary/20 shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" : ""
               )}>
-                 {item.label === 'Cart' && cart.length > 0 && (
+                 {item.label === t('bottomNav.cart') && cart.length > 0 && (
                      <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0">{cart.length}</Badge>
                  )}
                 

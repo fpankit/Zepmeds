@@ -1,0 +1,33 @@
+
+{
+    "home": {
+        "searchPlaceholder": "Search for medicines, and more!",
+        "trendingProducts": "Trending Products",
+        "specialOffers": "Special Offers"
+    },
+    "bottomNav": {
+        "home": "Home",
+        "activity": "Activity",
+        "doctor": "Doctor",
+        "cart": "Cart",
+        "more": "More"
+    },
+    "profile": {
+        "title": "Profile",
+        "changePhoto": "Change Profile Photo",
+        "patientDetails": "Patient Details",
+        "manageAddresses": "Manage Addresses",
+        "orderHistory": "Order History",
+        "pastMedicines": "Past Medicines",
+        "diagnosticReports": "Diagnostic Reports",
+        "myHealthReport": "My Health Report",
+        "consultDoctor": "Consult a Doctor",
+        "emergencyServices": "Emergency Services",
+        "helpSupport": "Help & Support",
+        "changeLanguage": "Change Language"
+    },
+    "language": {
+        "selectLanguage": "Select a Language",
+        "description": "Your selected language will be used across the app."
+    }
+}

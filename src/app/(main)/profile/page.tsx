@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, ShoppingCart, ChevronRight, Edit, Camera } from "lucide-react";
+import { ArrowLeft, Bell, ShoppingCart, ChevronRight, Edit, Camera, Languages } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/context/cart-context";
@@ -95,6 +95,15 @@ export default function ProfilePage() {
                     </div>
                 </Link>
             ))}
+             <Link href="/profile/language">
+                <div className="flex items-center p-4 rounded-xl bg-card/80 hover:bg-card/50 transition-colors">
+                    <div className="p-2 bg-gray-700/50 rounded-lg mr-4">
+                        <Languages className="h-6 w-6 text-sky-400" />
+                    </div>
+                    <span className="flex-1 font-semibold">Change Language</span>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+            </Link>
         </div>
       </main>
     </div>

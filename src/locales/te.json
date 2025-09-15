@@ -1,0 +1,33 @@
+
+{
+    "home": {
+        "searchPlaceholder": "మందులు మరియు మరిన్నింటి కోసం శోధించండి!",
+        "trendingProducts": "ట్రెండింగ్ ఉత్పత్తులు",
+        "specialOffers": "ప్రత్యేక ఆఫర్లు"
+    },
+    "bottomNav": {
+        "home": "హోమ్",
+        "activity": "కార్యాచరణ",
+        "doctor": "డాక్టర్",
+        "cart": "కార్ట్",
+        "more": "మరిన్ని"
+    },
+    "profile": {
+        "title": "ప్రొఫైల్",
+        "changePhoto": "ప్రొఫైల్ ఫోటోను మార్చండి",
+        "patientDetails": "రోగి వివరాలు",
+        "manageAddresses": "చిరునామాలను నిర్వహించండి",
+        "orderHistory": "ఆర్డర్ చరిత్ర",
+        "pastMedicines": "గత మందులు",
+        "diagnosticReports": "డయాగ్నొస్టిక్ నివేదికలు",
+        "myHealthReport": "నా ఆరోగ్య నివేదిక",
+        "consultDoctor": "డాక్టర్‌ను సంప్రదించండి",
+        "emergencyServices": "అత్యవసర సేవలు",
+        "helpSupport": "సహాయం మరియు మద్దతు",
+        "changeLanguage": "భాషను మార్చండి"
+    },
+    "language": {
+        "selectLanguage": "ఒక భాషను ఎంచుకోండి",
+        "description": "మీరు ఎంచుకున్న భాష యాప్ అంతటా ఉపయోగించబడుతుంది."
+    }
+}

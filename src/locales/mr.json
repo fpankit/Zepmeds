@@ -1,0 +1,33 @@
+
+{
+    "home": {
+        "searchPlaceholder": "औषधे आणि बरेच काही शोधा!",
+        "trendingProducts": "ट्रेंडिंग उत्पादने",
+        "specialOffers": "विशेष ऑफर"
+    },
+    "bottomNav": {
+        "home": "होम",
+        "activity": "ॲक्टिव्हिटी",
+        "doctor": "डॉक्टर",
+        "cart": "कार्ट",
+        "more": "अधिक"
+    },
+    "profile": {
+        "title": "प्रोफाइल",
+        "changePhoto": "प्रोफाइल फोटो बदला",
+        "patientDetails": "रुग्णाची माहिती",
+        "manageAddresses": "पत्ते व्यवस्थापित करा",
+        "orderHistory": "ऑर्डर इतिहास",
+        "pastMedicines": "मागील औषधे",
+        "diagnosticReports": "निदान अहवाल",
+        "myHealthReport": "माझा आरोग्य अहवाल",
+        "consultDoctor": "डॉक्टरांचा सल्ला घ्या",
+        "emergencyServices": "आपत्कालीन सेवा",
+        "helpSupport": "मदत आणि समर्थन",
+        "changeLanguage": "भाषा बदला"
+    },
+    "language": {
+        "selectLanguage": "एक भाषा निवडा",
+        "description": "तुमची निवडलेली भाषा संपूर्ण ॲपमध्ये वापरली जाईल."
+    }
+}

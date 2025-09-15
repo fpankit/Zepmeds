@@ -1,0 +1,33 @@
+
+{
+    "home": {
+        "searchPlaceholder": "மருந்துகள் மற்றும் பலவற்றைத் தேடுங்கள்!",
+        "trendingProducts": "பிரபலமான தயாரிப்புகள்",
+        "specialOffers": "சிறப்பு சலுகைகள்"
+    },
+    "bottomNav": {
+        "home": "முகப்பு",
+        "activity": "செயல்பாடு",
+        "doctor": "மருத்துவர்",
+        "cart": "கூடை",
+        "more": "மேலும்"
+    },
+    "profile": {
+        "title": "சுயவிவரம்",
+        "changePhoto": "சுயவிவர புகைப்படத்தை மாற்றவும்",
+        "patientDetails": "நோயாளி விவரங்கள்",
+        "manageAddresses": "முகவரிகளை நிர்வகி",
+        "orderHistory": "ஆர்டர் வரலாறு",
+        "pastMedicines": "கடந்தகால மருந்துகள்",
+        "diagnosticReports": "நோய் கண்டறிதல் அறிக்கைகள்",
+        "myHealthReport": "எனது சுகாதார அறிக்கை",
+        "consultDoctor": "மருத்துவரை அணுகவும்",
+        "emergencyServices": "அவசர சேவைகள்",
+        "helpSupport": "உதவி மற்றும் ஆதரவு",
+        "changeLanguage": "மொழியை மாற்று"
+    },
+    "language": {
+        "selectLanguage": "ஒரு மொழியைத் தேர்ந்தெடுக்கவும்",
+        "description": "நீங்கள் தேர்ந்தெடுத்த மொழி பயன்பாடு முழுவதும் பயன்படுத்தப்படும்."
+    }
+}

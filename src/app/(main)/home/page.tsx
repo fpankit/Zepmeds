@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/context/language-context";
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
@@ -101,6 +102,7 @@ const trendingProducts = [
 export default function HomePage() {
   const { cart, addToCart, updateQuantity } = useCart();
   const { toast } = useToast();
+  const t = useTranslation();
 
   const handleAddToCart = (product: typeof trendingProducts[0]) => {
     addToCart({ ...product, quantity: 1 });
@@ -140,7 +142,7 @@ export default function HomePage() {
        <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
         <Input 
-          placeholder="Search for medicines, and more!"
+          placeholder={t('home.searchPlaceholder')}
           className="pl-10"
         />
       </div>
@@ -165,7 +167,7 @@ export default function HomePage() {
 
        {/* Products Section */}
        <div>
-        <h3 className="font-headline text-2xl font-bold mb-4">Trending Products</h3>
+        <h3 className="font-headline text-2xl font-bold mb-4">{t('home.trendingProducts')}</h3>
         <div className="grid grid-cols-2 gap-4">
           {trendingProducts.map((product) => {
             const cartItem = cart.find(item => item.id === product.id);
@@ -207,7 +209,7 @@ export default function HomePage() {
 
         {/* Special Offers Section */}
         <div>
-          <h3 className="font-headline text-2xl font-bold mb-4">Special Offers</h3>
+          <h3 className="font-headline text-2xl font-bold mb-4">{t('home.specialOffers')}</h3>
           <div className="grid grid-cols-1 gap-4">
             {offerCards.map((offer) => (
               <Card key={offer.title} className="p-4 flex items-center justify-between bg-card/80 transition-all hover:bg-card/90 hover:scale-[1.02]">
