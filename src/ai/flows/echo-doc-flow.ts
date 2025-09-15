@@ -116,16 +116,28 @@ const echoDocFlow = ai.defineFlow(
     outputSchema: EchoDocOutputSchema,
   },
   async (input) => {
-    // 1. Generate the text response
-    const { output } = await prompt(input);
+    let textResponse: string;
 
-    if (!output?.responseText) {
-      throw new Error('Failed to generate text response.');
-    }
-    const textResponse = output.responseText;
-    
+    // 1. Generate the text response
     try {
-        // 2. Generate the audio response using the text
+        const { output } = await prompt(input);
+
+        if (!output?.responseText) {
+          throw new Error('Failed to generate text response.');
+        }
+        textResponse = output.responseText;
+
+    } catch (error: any) {
+        console.error("Text Generation failed:", error);
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('Too Many Requests') || errorMessage.toLowerCase().includes('quota')) {
+            throw new Error("I'm sorry, but our system is experiencing high traffic right now. Please try again in a few moments.");
+        }
+        throw new Error('I had trouble understanding. Could you please try again?');
+    }
+    
+    // 2. Generate the audio response using the text
+    try {
         const { media } = await ai.generate({
           model: googleAI.model('gemini-2.5-flash-preview-tts'),
           config: {
@@ -143,7 +155,6 @@ const echoDocFlow = ai.defineFlow(
           throw new Error('Failed to generate audio response.');
         }
 
-        // The TTS model returns raw PCM data in a data URI. We need to convert it to a proper WAV file.
         const audioBuffer = Buffer.from(
           media.url.substring(media.url.indexOf(',') + 1),
           'base64'
@@ -158,22 +169,19 @@ const echoDocFlow = ai.defineFlow(
     } catch(error: any) {
         console.error("TTS Generation failed:", error);
         
-        // Check for overload or rate limit errors
         const errorMessage = error.message || '';
-        if (errorMessage.includes('503') || errorMessage.toLowerCase().includes('overloaded') || errorMessage.toLowerCase().includes('resource has been exhausted')) {
+        if (errorMessage.includes('Too Many Requests') || errorMessage.toLowerCase().includes('resource has been exhausted')) {
              return {
                 responseText: "I'm sorry, but I'm unable to generate audio at this moment due to high demand. Please try again in a little while.",
                 responseAudio: '', 
             };
         }
 
-        // For other errors, return the text response with an empty audio URI.
+        // For other errors, return the text response but with empty audio so the app doesn't crash.
         return {
           responseText: textResponse,
-          responseAudio: '', // Send empty audio URI on failure
+          responseAudio: '', 
         };
     }
   }
 );
-
-    
