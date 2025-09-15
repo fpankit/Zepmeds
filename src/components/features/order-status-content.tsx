@@ -348,5 +348,3 @@ export function OrderStatusContent() {
     </div>
   );
 }
-
-    
