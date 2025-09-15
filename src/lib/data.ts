@@ -13,12 +13,13 @@ export const profileLinks = [
     { icon: Siren, textKey: "profile.emergencyServices", href: "/emergency", color: "text-yellow-400" },
     { icon: LifeBuoy, textKey: "profile.helpSupport", href: "#", color: "text-blue-400" },
     { icon: Languages, textKey: "profile.changeLanguage", href: "/profile/language", color: "text-sky-400" },
-    { icon: FilePlus2, textKey: "profile.createReport", href: "/profile/create-report", color: "text-teal-400", doctorOnly: true },
+    { icon: FilePlus2, textKey: "profile.createReport", href: "/create-report", color: "text-teal-400", doctorOnly: true },
   ];
   
   export const supportLinks = [
       // This can be merged or kept separate if needed elsewhere.
       // For the new profile page, these are not directly used.
   ];
+
 
 
