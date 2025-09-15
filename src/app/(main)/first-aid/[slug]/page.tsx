@@ -4,10 +4,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { firstAidCategories, FirstAidTopic } from '@/lib/first-aid-data';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckSquare, Sparkles, Languages, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckSquare, Sparkles, Languages, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { simplifyFirstAidFlow } from '@/ai/flows/simplify-first-aid-flow';
+import { simplifyFirstAidFlow, SimplifyFirstAidOutput } from '@/ai/flows/simplify-first-aid-flow';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -28,7 +28,7 @@ export default function FirstAidDetailPage() {
 
   const [topic, setTopic] = useState<FirstAidTopic | undefined>(undefined);
   const [targetLanguage, setTargetLanguage] = useState('English');
-  const [simplifiedSteps, setSimplifiedSteps] = useState<string | null>(null);
+  const [simplifiedGuide, setSimplifiedGuide] = useState<SimplifyFirstAidOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function FirstAidDetailPage() {
   const handleSimplify = async () => {
       if (!topic) return;
       setIsLoading(true);
-      setSimplifiedSteps(null);
+      setSimplifiedGuide(null);
       
       try {
         const result = await simplifyFirstAidFlow({
@@ -49,7 +49,7 @@ export default function FirstAidDetailPage() {
             steps: topic.steps,
             targetLanguage: targetLanguage
         });
-        setSimplifiedSteps(result.simplifiedExplanation);
+        setSimplifiedGuide(result);
       } catch (error) {
         console.error("Failed to get simplified steps:", error);
         toast({
@@ -165,12 +165,28 @@ export default function FirstAidDetailPage() {
                                 {isLoading ? 'Generating...' : 'Simplify with AI'}
                             </Button>
 
-                            {simplifiedSteps && (
+                            {simplifiedGuide && (
                                 <Alert className="bg-background/50">
-                                    <AlertTitle className="font-bold">Simplified Steps</AlertTitle>
+                                    <AlertTitle className="font-bold">What To Do</AlertTitle>
                                     <AlertDescription className="whitespace-pre-line">
-                                        {simplifiedSteps}
+                                        {simplifiedGuide.whatToDo}
                                     </AlertDescription>
+                                    
+                                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <h4 className="font-bold flex items-center gap-2 text-green-400"><ThumbsUp/> The Do's</h4>
+                                            <ul className="list-disc pl-5 mt-2 text-sm space-y-1">
+                                                {simplifiedGuide.theDos.map((item, i) => <li key={i}>{item}</li>)}
+                                            </ul>
+                                        </div>
+                                         <div>
+                                            <h4 className="font-bold flex items-center gap-2 text-red-400"><ThumbsDown/> The Don'ts</h4>
+                                            <ul className="list-disc pl-5 mt-2 text-sm space-y-1">
+                                                 {simplifiedGuide.theDonts.map((item, i) => <li key={i}>{item}</li>)}
+                                            </ul>
+                                        </div>
+                                    </div>
+
                                 </Alert>
                             )}
                         </CardContent>
