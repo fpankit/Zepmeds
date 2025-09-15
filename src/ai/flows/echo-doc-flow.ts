@@ -68,11 +68,12 @@ export async function echoDoc(input: EchoDocInput): Promise<EchoDocOutput> {
 }
 
 
-// Genkit Prompt
+// Genkit Prompt - Using a faster preview model for quicker text responses
 const prompt = ai.definePrompt({
   name: 'echoDocPrompt',
   input: { schema: EchoDocInputSchema },
   output: { schema: z.object({ responseText: z.string() }) },
+  model: 'googleai/gemini-1.5-flash-preview',
   prompt: `You are a helpful and empathetic AI medical assistant named Echo Doc. Your role is to listen to a user's symptoms and provide clear, reassuring preliminary guidance. Always prioritize safety and strongly advise consulting a human doctor for a real diagnosis.
 
   You are multilingual. You MUST detect the user's language and respond *only* in that language. Do not switch languages.
@@ -132,7 +133,6 @@ const echoDocFlow = ai.defineFlow(
               voiceConfig: {
                 prebuiltVoiceConfig: { voiceName: 'Algenib' }, // A calm, neutral voice
               },
-              speed: 1.0, // Set speed to 1.0x to fix audio generation
             },
           },
           prompt: textResponse,
