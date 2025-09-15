@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Mic, MicOff, PhoneOff, Volume2, Bot } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
-import { echoDoc, EchoDocInput } from '@/ai/flows/echo-doc-flow';
+import { echoDoc, EchoDocInput, EchoDocOutput } from '@/ai/flows/echo-doc-flow';
 import Typewriter from 'typewriter-effect';
 import { useCalls } from '@/hooks/use-calls';
 import { cn } from '@/lib/utils';
@@ -63,7 +63,10 @@ function EchoDocCallContent() {
 
     // Initial message effect
     useEffect(() => {
-        handleNewMessage(initialSymptoms || '');
+        // This ensures the initial message is sent only once.
+        if (conversation.length === 0) {
+            handleNewMessage(initialSymptoms || '');
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialSymptoms]);
     
@@ -72,19 +75,21 @@ function EchoDocCallContent() {
         setIsLoading(true);
         setCallStatus("AI is responding...");
         
-        // Add user message to conversation history only if it's not the initial empty message
-        const updatedConversation: ConversationTurn[] = text ? [...conversation, { role: 'user', text }] : conversation;
-        if(text) setConversation(updatedConversation);
-
+        let updatedConversation: ConversationTurn[] = [...conversation];
+        // Only add user message if it's not the very first (potentially empty) message
+        if (text || conversation.length > 0) {
+            const userTurn: ConversationTurn = { role: 'user', text: text };
+            updatedConversation = [...conversation, userTurn];
+            setConversation(updatedConversation);
+        }
 
         try {
             const input: EchoDocInput = {
-                symptoms: text || initialSymptoms || '',
-                // Language is no longer needed
-                conversationHistory: updatedConversation,
+                symptoms: text,
+                conversationHistory: conversation, // Send the history *before* the new message
             };
 
-            const result = await echoDoc(input);
+            const result: EchoDocOutput = await echoDoc(input);
             
             const newModelTurn: ConversationTurn = { role: 'model', text: result.responseText };
             setConversation(prev => [...prev, newModelTurn]);
@@ -214,7 +219,9 @@ function EchoDocCallContent() {
                              transition={{ duration: 0.3 }}
                              className="text-lg text-white"
                         >
-                             {isLoading && conversation.length > 0 ? (
+                             {isLoading && conversation.length === 0 ? (
+                                <p>Starting conversation...</p>
+                             ) : isLoading ? (
                                 <Loader2 className="h-6 w-6 animate-spin" />
                              ) : latestAiResponse ? (
                                 <Typewriter
@@ -228,7 +235,7 @@ function EchoDocCallContent() {
                                     }}
                                 />
                              ) : (
-                                <p>Starting conversation...</p>
+                                <p>Conversation ended or failed to start.</p>
                              )}
                         </motion.div>
                     </AnimatePresence>
