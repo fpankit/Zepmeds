@@ -127,29 +127,26 @@ const echoDocFlow = ai.defineFlow(
   },
   async (input) => {
     let englishText: string;
-    const busyMessage = "I'm sorry, but our system is experiencing high traffic right now. Please try again in a few moments.";
     const { language = 'English' } = input; // Default to English if no language is provided
 
-    // 1. Generate the text response in English
+    // 1. Generate the text response in English. Let Genkit's retry policy handle transient errors.
     try {
         const { output } = await conversationPrompt(input);
         if (!output?.responseText) {
-          throw new Error('Failed to generate text response.');
+          throw new Error('Failed to generate text response. The AI model returned an empty message.');
         }
         englishText = output.responseText;
     } catch (error: any) {
-        console.error("Text Generation failed:", error);
-        const errorMessage = error.message || '';
-        if (errorMessage.includes('Too Many Requests') || errorMessage.toLowerCase().includes('quota')) {
-            englishText = busyMessage;
-        } else {
-            englishText = 'I had trouble understanding. Could you please try again?';
-        }
+        console.error("Text Generation failed after retries:", error);
+        // After all retries, return a user-friendly error.
+        const finalErrorText = 'I am having trouble processing your request right now. Please try again in a moment.';
+        // We will generate audio for this error message.
+        englishText = finalErrorText;
     }
     
     // 2. Translate the response if needed
     let finalResponseText = englishText;
-    if (language !== 'English' && englishText !== busyMessage && englishText !== 'I had trouble understanding. Could you please try again?') {
+    if (language !== 'English' && !englishText.includes('processing your request')) {
         try {
             const { output } = await translationPrompt({ textToTranslate: englishText, targetLanguage: language });
             if (!output?.translatedText) {
@@ -168,13 +165,6 @@ const echoDocFlow = ai.defineFlow(
 
     // 3. Generate the audio response using the (potentially translated) text
     try {
-        if (finalResponseText === busyMessage || finalResponseText === 'I had trouble understanding. Could you please try again?') {
-             return {
-                responseText: finalResponseText,
-                responseAudio: '',
-            };
-        }
-
         const { media } = await ai.generate({
           model: 'gemini-2.5-flash-preview-tts',
           config: {
@@ -204,16 +194,8 @@ const echoDocFlow = ai.defineFlow(
           responseAudio: wavDataUri,
         };
     } catch(error: any) {
-        console.error("TTS Generation failed:", error);
-        const errorMessage = error.message || '';
-        if (errorMessage.includes('Too Many Requests') || errorMessage.toLowerCase().includes('resource has been exhausted')) {
-            return {
-                responseText: "I'm sorry, but I'm unable to generate audio at this moment due to high demand. Please try again in a little while.",
-                responseAudio: '', 
-            };
-        }
-
-        // For other errors, return the text response but with empty audio so the app doesn't crash.
+        console.error("TTS Generation failed after retries:", error);
+        // If TTS fails after retries, return the text but with empty audio.
         return {
           responseText: finalResponseText,
           responseAudio: '', 
