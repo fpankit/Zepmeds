@@ -36,9 +36,10 @@ export function LiveEmergencyMap({ userPosition }: LiveEmergencyMapProps) {
     const ambulanceStartPosition = { lat: userPosition.lat + 0.05, lng: userPosition.lng + 0.05 };
 
     useEffect(() => {
+        let map: LeafletMap | null = null;
         // Initialize map only if the container is available and map is not already initialized
         if (mapContainerRef.current && !mapInstanceRef.current) {
-            const map = L.map(mapContainerRef.current).setView([userPosition.lat, userPosition.lng], 13);
+            map = L.map(mapContainerRef.current).setView([userPosition.lat, userPosition.lng], 13);
             mapInstanceRef.current = map;
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -69,10 +70,10 @@ export function LiveEmergencyMap({ userPosition }: LiveEmergencyMapProps) {
 
         // Cleanup function to run when the component unmounts
         return () => {
-            if (mapInstanceRef.current) {
-                mapInstanceRef.current.remove();
-                mapInstanceRef.current = null;
+            if (map) {
+                map.remove();
             }
+            mapInstanceRef.current = null;
         };
     // Dependencies are set to ensure this effect runs only when positions change, not on every render.
     }, [userPosition, ambulanceStartPosition]);

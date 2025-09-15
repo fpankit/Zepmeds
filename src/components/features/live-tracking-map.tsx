@@ -50,8 +50,9 @@ export function LiveTrackingMap({ riderLocation, userLocation }: LiveTrackingMap
     );
 
     useEffect(() => {
+        let map: LeafletMap | null = null;
         if (mapContainerRef.current && !mapInstanceRef.current) {
-            const map = L.map(mapContainerRef.current, {
+            map = L.map(mapContainerRef.current, {
                 zoomControl: false, // Disables the + and - buttons
             }).setView([userLocation.lat, userLocation.lng], 13);
 
@@ -82,10 +83,10 @@ export function LiveTrackingMap({ riderLocation, userLocation }: LiveTrackingMap
         }
 
         return () => {
-            if (mapInstanceRef.current) {
-                mapInstanceRef.current.remove();
-                mapInstanceRef.current = null;
+            if (map) {
+                map.remove();
             }
+            mapInstanceRef.current = null;
         };
     }, [userLocation, riderLocation]);
 

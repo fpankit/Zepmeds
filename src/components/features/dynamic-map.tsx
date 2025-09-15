@@ -30,6 +30,7 @@ type DynamicMapProps = {
 export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }: DynamicMapProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<Map | null>(null);
+    const markerRef = useRef<L.Marker | null>(null);
 
     useEffect(() => {
         if (mapContainerRef.current && !mapInstanceRef.current) {
@@ -39,19 +40,7 @@ export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }:
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(mapInstanceRef.current);
         }
-    }, [position.lat, position.lng, zoom]);
 
-     useEffect(() => {
-        if (mapInstanceRef.current) {
-            L.marker([position.lat, position.lng]).addTo(mapInstanceRef.current)
-                .bindPopup(popupText)
-                .openPopup();
-            
-            mapInstanceRef.current.setView([position.lat, position.lng], zoom);
-        }
-    }, [position, zoom, popupText]);
-
-    useEffect(() => {
         // Cleanup function to destroy the map instance when component unmounts
         return () => {
             if (mapInstanceRef.current) {
@@ -59,7 +48,24 @@ export function DynamicMap({ position, zoom = 15, popupText = "Your Location" }:
                 mapInstanceRef.current = null;
             }
         };
-    }, []);
+    }, []); // Empty dependency array ensures this runs only on mount and unmount
+
+     useEffect(() => {
+        if (mapInstanceRef.current) {
+            // Remove old marker if it exists
+            if (markerRef.current) {
+                markerRef.current.remove();
+            }
+
+            // Add new marker
+            markerRef.current = L.marker([position.lat, position.lng]).addTo(mapInstanceRef.current)
+                .bindPopup(popupText)
+                .openPopup();
+            
+            // Pan to the new position
+            mapInstanceRef.current.setView([position.lat, position.lng], zoom);
+        }
+    }, [position, zoom, popupText]);
 
     return (
         <div 
