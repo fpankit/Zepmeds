@@ -156,7 +156,9 @@ function EchoDocCallContent() {
         setIsMuted(nextMutedState);
 
         if (!nextMutedState) { // If unmuting
-            recognitionRef.current?.start();
+            if (!isListening) {
+                recognitionRef.current?.start();
+            }
         } else { // If muting
             recognitionRef.current?.stop();
         }
@@ -253,7 +255,7 @@ function EchoDocCallContent() {
             </footer>
             
             <audio ref={audioRef} className="hidden" onEnded={() => {
-                 if (!isMuted) recognitionRef.current?.start();
+                 if (!isMuted && !isListening) recognitionRef.current?.start();
             }}/>
         </div>
     );
