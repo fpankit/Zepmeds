@@ -11,7 +11,6 @@
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
 import wav from 'wav';
-import { googleAI } from '@genkit-ai/googleai';
 
 // Input Schema - Language is now optional as it will be auto-detected.
 const EchoDocInputSchema = z.object({
@@ -139,7 +138,7 @@ const echoDocFlow = ai.defineFlow(
     // 2. Generate the audio response using the text
     try {
         const { media } = await ai.generate({
-          model: googleAI.model('gemini-2.5-flash-preview-tts'),
+          model: 'gemini-2.5-flash-preview-tts',
           config: {
             responseModalities: ['AUDIO'],
             speechConfig: {
