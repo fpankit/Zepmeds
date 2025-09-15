@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -11,12 +12,14 @@ import { useCart } from "@/context/cart-context";
 import { profileLinks } from "@/lib/data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/context/language-context";
 
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { cart } = useCart();
+  const t = useTranslation();
   
   const getInitials = (firstName: string, lastName: string) => {
     if (!firstName || !lastName) return 'U';
@@ -29,7 +32,7 @@ export default function ProfilePage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-6 w-6" />
         </Button>
-        <h1 className="text-xl font-bold">Profile</h1>
+        <h1 className="text-xl font-bold">{t('profile.title')}</h1>
         <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-6 w-6" />
@@ -76,7 +79,7 @@ export default function ProfilePage() {
                 </div>
                  <Button variant="link" className="mt-2 text-yellow-400">
                     <Camera className="mr-2 h-4 w-4" />
-                    Change Profile Photo
+                    {t('profile.changePhoto')}
                 </Button>
                 </>
            )}
@@ -85,27 +88,19 @@ export default function ProfilePage() {
 
         <div className="space-y-3">
             {profileLinks.map((link) => (
-                <Link href={link.href} key={link.text}>
+                <Link href={link.href} key={link.textKey}>
                     <div className="flex items-center p-4 rounded-xl bg-card/80 hover:bg-card/50 transition-colors">
                         <div className="p-2 bg-gray-700/50 rounded-lg mr-4">
                             <link.icon className={`h-6 w-6 ${link.color}`} />
                         </div>
-                        <span className="flex-1 font-semibold">{link.text}</span>
+                        <span className="flex-1 font-semibold">{t(link.textKey)}</span>
                         <ChevronRight className="h-5 w-5 text-muted-foreground" />
                     </div>
                 </Link>
             ))}
-             <Link href="/profile/language">
-                <div className="flex items-center p-4 rounded-xl bg-card/80 hover:bg-card/50 transition-colors">
-                    <div className="p-2 bg-gray-700/50 rounded-lg mr-4">
-                        <Languages className="h-6 w-6 text-sky-400" />
-                    </div>
-                    <span className="flex-1 font-semibold">Change Language</span>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </div>
-            </Link>
         </div>
       </main>
     </div>
   );
 }
+
