@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/context/auth-context';
+import { useTranslation } from '@/context/language-context';
 
 
 type PrescriptionStatus = 'needed' | 'uploaded' | 'approved' | 'rejected';
@@ -25,6 +26,7 @@ export default function CartPage() {
   const [prescriptionStatus, setPrescriptionStatus] = useState<PrescriptionStatus>('needed');
   const { toast } = useToast();
   const { user } = useAuth();
+  const t = useTranslation();
 
   // Listen for real-time updates on the prescription document
   useEffect(() => {
@@ -37,8 +39,8 @@ export default function CartPage() {
                 case 'approved':
                     setPrescriptionStatus('approved');
                     toast({
-                        title: "Prescription Approved!",
-                        description: "You can now proceed to checkout.",
+                        title: t('cart.toast.prescriptionApproved'),
+                        description: t('cart.toast.canProceed'),
                         variant: "default",
                         className: "bg-green-500 text-white"
                     });
@@ -47,8 +49,8 @@ export default function CartPage() {
                     setPrescriptionStatus('rejected');
                      toast({
                         variant: "destructive",
-                        title: "Prescription Rejected",
-                        description: data.rejectionReason || "Your prescription was rejected. Please upload a new one.",
+                        title: t('cart.toast.prescriptionRejected'),
+                        description: data.rejectionReason || t('cart.toast.rejectedReason'),
                     });
                     break;
                 default:
@@ -59,7 +61,7 @@ export default function CartPage() {
     });
 
     return () => unsub();
-  }, [prescriptionId, toast]);
+  }, [prescriptionId, toast, t]);
   
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -94,10 +96,10 @@ export default function CartPage() {
             <ShoppingCart className="h-20 w-20 text-primary" />
           </div>
         </div>
-        <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
-        <p className="text-muted-foreground mb-6">Looks like you haven't added anything to your cart yet.</p>
+        <h2 className="text-2xl font-bold mb-2">{t('cart.empty.title')}</h2>
+        <p className="text-muted-foreground mb-6">{t('cart.empty.description')}</p>
         <Button asChild>
-          <Link href="/home">Start Shopping</Link>
+          <Link href="/home">{t('cart.empty.button')}</Link>
         </Button>
       </div>
     );
@@ -107,9 +109,9 @@ export default function CartPage() {
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Your Cart ({cart.length})</CardTitle>
+          <CardTitle>{t('cart.title')} ({cart.length})</CardTitle>
            <Button variant="outline" size="sm" onClick={clearCart}>
-            <Trash2 className="mr-2 h-4 w-4" /> Clear Cart
+            <Trash2 className="mr-2 h-4 w-4" /> {t('cart.clearCart')}
           </Button>
         </CardHeader>
         <CardContent>
@@ -145,13 +147,13 @@ export default function CartPage() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <FileText className="text-primary"/> Prescription Required
+                    <FileText className="text-primary"/> {t('cart.prescription.title')}
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="flex items-center gap-3 p-3 rounded-md bg-yellow-500/10 border border-yellow-500/50">
                     <AlertTriangle className="h-6 w-6 text-yellow-500"/>
-                    <p className="text-sm text-yellow-400">Your cart contains items that require a valid doctor's prescription. Please upload one to proceed.</p>
+                    <p className="text-sm text-yellow-400">{t('cart.prescription.description')}</p>
                 </div>
                 
                 {prescriptionStatus === 'needed' && <PrescriptionUploader onUploadSuccess={handlePrescriptionUploaded} cart={cart}/>}
@@ -160,8 +162,8 @@ export default function CartPage() {
                      <div className="flex items-center gap-3 p-3 rounded-md bg-blue-500/10 border border-blue-500/50">
                         <Clock className="h-6 w-6 text-blue-500"/>
                         <div>
-                            <p className="text-sm font-bold text-blue-400">Prescription Submitted</p>
-                            <p className="text-xs text-blue-500">Please wait while our pharmacy team verifies your prescription. This may take a few minutes.</p>
+                            <p className="text-sm font-bold text-blue-400">{t('cart.prescription.submittedTitle')}</p>
+                            <p className="text-xs text-blue-500">{t('cart.prescription.submittedDescription')}</p>
                         </div>
                     </div>
                 )}
@@ -169,8 +171,8 @@ export default function CartPage() {
                      <div className="flex items-center gap-3 p-3 rounded-md bg-green-500/10 border border-green-500/50">
                         <CheckCircle className="h-6 w-6 text-green-500"/>
                         <div>
-                            <p className="text-sm font-bold text-green-400">Prescription Approved</p>
-                            <p className="text-xs text-green-500">You may now proceed to checkout.</p>
+                            <p className="text-sm font-bold text-green-400">{t('cart.prescription.approvedTitle')}</p>
+                            <p className="text-xs text-green-500">{t('cart.prescription.approvedDescription')}</p>
                         </div>
                     </div>
                 )}
@@ -179,9 +181,9 @@ export default function CartPage() {
                      <div className="flex flex-col gap-3 p-3 rounded-md bg-destructive/10 border border-destructive/50">
                         <div className="flex items-center gap-3">
                             <AlertTriangle className="h-6 w-6 text-destructive"/>
-                            <p className="text-sm text-destructive">Your prescription was rejected. Please upload a valid one to continue.</p>
+                            <p className="text-sm text-destructive">{t('cart.prescription.rejectedTitle')}</p>
                         </div>
-                        <Button variant="outline" onClick={resetPrescription}>Upload Again</Button>
+                        <Button variant="outline" onClick={resetPrescription}>{t('cart.prescription.uploadAgain')}</Button>
                     </div>
                 )}
             </CardContent>
@@ -191,27 +193,27 @@ export default function CartPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Order Summary</CardTitle>
+          <CardTitle>{t('cart.summary.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between">
-            <p className="text-muted-foreground">Subtotal</p>
+            <p className="text-muted-foreground">{t('cart.summary.subtotal')}</p>
             <p>₹{subtotal.toFixed(2)}</p>
           </div>
            <div className="flex justify-between">
-            <p className="text-muted-foreground">Delivery Fee</p>
+            <p className="text-muted-foreground">{t('cart.summary.deliveryFee')}</p>
             <p>₹{deliveryFee.toFixed(2)}</p>
           </div>
           <Separator />
            <div className="flex justify-between font-bold text-lg">
-            <p>Total</p>
+            <p>{t('cart.summary.total')}</p>
             <p>₹{total.toFixed(2)}</p>
           </div>
         </CardContent>
         <CardFooter>
           <Button className="w-full" asChild={!isCheckoutDisabled} disabled={isCheckoutDisabled}>
             <Link href="/checkout">
-              {isCheckoutDisabled ? 'Awaiting Prescription Approval' : 'Proceed to Checkout'}
+              {isCheckoutDisabled ? t('cart.summary.awaitingApproval') : t('cart.summary.proceedToCheckout')}
             </Link>
           </Button>
         </CardFooter>
@@ -219,3 +221,5 @@ export default function CartPage() {
     </div>
   )
 }
+
+    

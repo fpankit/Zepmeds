@@ -11,6 +11,7 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/context/auth-context";
 import { CartItem } from "@/lib/types";
+import { useTranslation } from "@/context/language-context";
 
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -45,6 +46,7 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const t = useTranslation();
 
   const form = useForm<z.infer<typeof formSchema>>();
 
@@ -71,7 +73,7 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
 
   async function handleSubmit(file: File) {
     if (!user || user.isGuest) {
-        toast({ variant: 'destructive', title: "Please login to upload a prescription." });
+        toast({ variant: 'destructive', title: t('prescriptionUploader.loginRequired') });
         return;
     }
     setIsLoading(true);
@@ -91,8 +93,8 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
       });
       
       toast({
-          title: "Prescription Uploaded",
-          description: "Our team will now verify your prescription. You will be notified once it's approved.",
+          title: t('prescriptionUploader.toast.uploadedTitle'),
+          description: t('prescriptionUploader.toast.uploadedDescription'),
       });
 
       // Pass the new document ID back, with an empty summary to satisfy the type
@@ -106,8 +108,8 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
       console.error(err);
       toast({
         variant: "destructive",
-        title: "Upload Failed",
-        description: "Failed to upload prescription. Please try again.",
+        title: t('prescriptionUploader.toast.uploadFailedTitle'),
+        description: t('prescriptionUploader.toast.uploadFailedDescription'),
       });
       resetState();
     } finally {
@@ -128,7 +130,7 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
         {isLoading && (
               <div className="flex items-center justify-center gap-2 text-muted-foreground p-8">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <p>Uploading prescription...</p>
+                <p>{t('prescriptionUploader.uploading')}</p>
               </div>
         )}
         {!preview && !isLoading && (
@@ -145,9 +147,9 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
             />
             <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">
-              Click to upload or drag and drop
+              {t('prescriptionUploader.cta.click')}
             </p>
-            <p className="text-xs text-muted-foreground">PNG, JPG, WEBP up to 5MB</p>
+            <p className="text-xs text-muted-foreground">{t('prescriptionUploader.cta.fileTypes')}</p>
           </div>
         )}
 
@@ -157,3 +159,5 @@ export function PrescriptionUploader({ onUploadSuccess, cart }: PrescriptionUplo
     </div>
   );
 }
+
+    

@@ -56,5 +56,54 @@
             "description2": "Need it urgently? We can arrange it for you within 1 hour.",
             "button": "Notify Us"
         }
+    },
+    "cart": {
+        "title": "Your Cart",
+        "clearCart": "Clear Cart",
+        "empty": {
+            "title": "Your cart is empty",
+            "description": "Looks like you haven't added anything to your cart yet.",
+            "button": "Start Shopping"
+        },
+        "prescription": {
+            "title": "Prescription Required",
+            "description": "Your cart contains items that require a valid doctor's prescription. Please upload one to proceed.",
+            "submittedTitle": "Prescription Submitted",
+            "submittedDescription": "Please wait while our pharmacy team verifies your prescription. This may take a few minutes.",
+            "approvedTitle": "Prescription Approved",
+            "approvedDescription": "You may now proceed to checkout.",
+            "rejectedTitle": "Your prescription was rejected. Please upload a valid one to continue.",
+            "uploadAgain": "Upload Again"
+        },
+        "summary": {
+            "title": "Order Summary",
+            "subtotal": "Subtotal",
+            "deliveryFee": "Delivery Fee",
+            "total": "Total",
+            "awaitingApproval": "Awaiting Prescription Approval",
+            "proceedToCheckout": "Proceed to Checkout"
+        },
+        "toast": {
+            "prescriptionApproved": "Prescription Approved!",
+            "canProceed": "You can now proceed to checkout.",
+            "prescriptionRejected": "Prescription Rejected",
+            "rejectedReason": "Your prescription was rejected. Please upload a new one."
+        }
+    },
+    "prescriptionUploader": {
+        "loginRequired": "Please login to upload a prescription.",
+        "uploading": "Uploading prescription...",
+        "cta": {
+            "click": "Click to upload or drag and drop",
+            "fileTypes": "PNG, JPG, WEBP up to 5MB"
+        },
+        "toast": {
+            "uploadedTitle": "Prescription Uploaded",
+            "uploadedDescription": "Our team will now verify your prescription. You will be notified once it's approved.",
+            "uploadFailedTitle": "Upload Failed",
+            "uploadFailedDescription": "Failed to upload prescription. Please try again."
+        }
     }
 }
+
+    
