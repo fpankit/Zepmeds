@@ -73,7 +73,7 @@ const prompt = ai.definePrompt({
   name: 'echoDocPrompt',
   input: { schema: EchoDocInputSchema },
   output: { schema: z.object({ responseText: z.string() }) },
-  model: 'googleai/gemini-1.5-flash-preview',
+  model: 'googleai/gemini-1.5-flash',
   prompt: `You are a helpful and empathetic AI medical assistant named Echo Doc. Your role is to listen to a user's symptoms and provide clear, reassuring preliminary guidance. Always prioritize safety and strongly advise consulting a human doctor for a real diagnosis.
 
   You are multilingual. You MUST detect the user's language and respond *only* in that language. Do not switch languages.
