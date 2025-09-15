@@ -63,7 +63,6 @@ function EchoDocCallContent() {
 
     // Initial message effect
     useEffect(() => {
-        // This ensures the initial message is sent only once.
         if (conversation.length === 0) {
             handleNewMessage(initialSymptoms || '');
         }
@@ -75,18 +74,15 @@ function EchoDocCallContent() {
         setIsLoading(true);
         setCallStatus("AI is responding...");
         
-        let updatedConversation: ConversationTurn[] = [...conversation];
-        // Only add user message if it's not the very first (potentially empty) message
-        if (text || conversation.length > 0) {
-            const userTurn: ConversationTurn = { role: 'user', text: text };
-            updatedConversation = [...conversation, userTurn];
-            setConversation(updatedConversation);
-        }
+        const userTurn: ConversationTurn | null = (text || conversation.length > 0) ? { role: 'user', text: text } : null;
+        const updatedConversation: ConversationTurn[] = userTurn ? [...conversation, userTurn] : [...conversation];
+        setConversation(updatedConversation);
 
         try {
             const input: EchoDocInput = {
                 symptoms: text,
-                conversationHistory: conversation, // Send the history *before* the new message
+                // The history should be the state *before* this new message
+                conversationHistory: conversation, 
             };
 
             const result: EchoDocOutput = await echoDoc(input);
