@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
-import { HMS_CONFIG } from '@/lib/hms.config';
 
 export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
   const hmsActions = useHMSActions();
@@ -27,7 +26,7 @@ export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
-                room_id: HMS_CONFIG.ROOM_ID, // Use the room ID from the config
+                room_id: roomId, // Pass the dynamic roomId to the API
                 role: userRole,
             }),
         });
@@ -73,5 +72,3 @@ export function JoinForm({ user, roomId }: { user: User, roomId: string }) {
     </Card>
   );
 }
-
-    
