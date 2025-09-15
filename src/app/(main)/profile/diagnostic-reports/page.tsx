@@ -117,12 +117,12 @@ export default function DiagnosticReportsPage() {
 
     // Medications
     if (report.medications && report.medications.length > 0) {
-        doc.addPage();
+        if(lastY > 240) { doc.addPage(); lastY = 15; }
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text('Prescribed Medication', 15, 20);
+        doc.text('Prescribed Medication', 15, lastY + 10);
         (doc as any).autoTable({
-            startY: 25,
+            startY: lastY + 15,
             head: [['Medication', 'Dosage', 'Frequency']],
             body: report.medications.map(m => [m.name, m.dosage, m.frequency]),
             theme: 'striped',
