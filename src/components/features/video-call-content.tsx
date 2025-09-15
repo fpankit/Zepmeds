@@ -13,7 +13,7 @@ import { JoinForm } from '@/components/features/100ms/join-form';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 
-export function VideoCallContent({ roomId }: { roomId: string }) {
+export function VideoCallContent() {
   const isConnected = useHMSStore(selectIsConnectedToRoom);
   const hmsActions = useHMSActions();
   const peers = useHMSStore(selectPeers);
@@ -21,11 +21,12 @@ export function VideoCallContent({ roomId }: { roomId: string }) {
 
   useEffect(() => {
     return () => {
-      if (hmsActions.leave) {
+      // Ensure we leave the room when the component unmounts
+      if (isConnected) {
         hmsActions.leave();
       }
     };
-  }, [hmsActions]);
+  }, [hmsActions, isConnected]);
 
   if (authLoading || !user) {
     return (
@@ -41,7 +42,8 @@ export function VideoCallContent({ roomId }: { roomId: string }) {
       {isConnected ? (
         <Conference peers={peers} />
       ) : (
-        <JoinForm user={user} roomId={roomId} />
+        // The JoinForm component will now handle the Room ID internally.
+        <JoinForm user={user} />
       )}
     </div>
   );
