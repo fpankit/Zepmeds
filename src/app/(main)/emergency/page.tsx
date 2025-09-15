@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import { Siren, MapPin, AlertTriangle, ShieldCheck, Phone, MessageSquare, Loader2, LocateFixed, Edit, WifiOff } from "lucide-react";
+import { Siren, MapPin, AlertTriangle, ShieldCheck, Phone, MessageSquare, Loader2, LocateFixed, Edit, WifiOff, ShieldAlert, Ambulance, Flame, Footprints, Baby } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 import { db } from "@/lib/firebase";
@@ -28,6 +28,16 @@ const LiveEmergencyMap = dynamic(() => import('@/components/features/live-emerge
     ssr: false,
     loading: () => <div className="h-48 w-full rounded-md bg-muted/30 animate-pulse" />
 });
+
+const emergencyNumbers = [
+    { name: "National Emergency", number: "112", icon: ShieldAlert, color: "text-red-400" },
+    { name: "Police", number: "100", icon: ShieldCheck, color: "text-blue-400" },
+    { name: "Fire Brigade", number: "101", icon: Flame, color: "text-orange-400" },
+    { name: "Ambulance", number: "102 / 108", icon: Ambulance, color: "text-rose-400" },
+    { name: "Women Helpline", number: "1091", icon: Footprints, color: "text-pink-400" },
+    { name: "Child Helpline", number: "1098", icon: Baby, color: "text-sky-400" },
+];
+
 
 export default function EmergencyPage() {
   const [isDispatched, setIsDispatched] = useState(false);
@@ -189,8 +199,7 @@ export default function EmergencyPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8">
-      <div>
+    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
         {!isDispatched ? (
           <div
             key="form"
@@ -329,7 +338,27 @@ export default function EmergencyPage() {
             </div>
           </div>
         )}
-      </div>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>National Emergency Numbers</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {emergencyNumbers.map(service => (
+                    <a key={service.name} href={`tel:${service.number.split(' ')[0]}`}>
+                        <Card className="hover:bg-card/50 transition-colors">
+                            <CardContent className="p-4 flex flex-col items-center justify-center text-center">
+                                <service.icon className={cn("h-8 w-8 mb-2", service.color)} />
+                                <p className="font-bold">{service.name}</p>
+                                <p className="text-lg font-mono font-semibold text-muted-foreground">{service.number}</p>
+                            </CardContent>
+                        </Card>
+                    </a>
+                ))}
+            </CardContent>
+        </Card>
     </div>
   );
 }
+
+    
