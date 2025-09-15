@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,6 +18,7 @@ import { ArrowLeft, Loader2, PlusCircle, Trash2, UserSearch, FilePlus2, CheckCir
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const reportSchema = z.object({
@@ -185,6 +185,7 @@ export default function CreateReportPage() {
                            <Command>
                             <CommandInput placeholder="Search patient..." />
                              <CommandList>
+                                <ScrollArea className="h-72">
                                 <CommandEmpty>No patient found.</CommandEmpty>
                                 <CommandGroup>
                                 {patients.map((patient) => (
@@ -209,6 +210,7 @@ export default function CreateReportPage() {
                                     </CommandItem>
                                 ))}
                                 </CommandGroup>
+                                </ScrollArea>
                              </CommandList>
                            </Command>
                         </PopoverContent>
