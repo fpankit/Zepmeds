@@ -11,14 +11,14 @@
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
 
-export const SimplifyFirstAidInputSchema = z.object({
+const SimplifyFirstAidInputSchema = z.object({
   topic: z.string().describe('The title of the first-aid topic, e.g., "Snake Bite".'),
   steps: z.array(z.string()).describe('The list of official first-aid steps.'),
   targetLanguage: z.string().describe("The language for the simplified explanation (e.g., 'Hindi', 'English', 'Punjabi')."),
 });
 export type SimplifyFirstAidInput = z.infer<typeof SimplifyFirstAidInputSchema>;
 
-export const SimplifyFirstAidOutputSchema = z.object({
+const SimplifyFirstAidOutputSchema = z.object({
   whatToDo: z.string().describe('A simple, step-by-step paragraph on what to do. Formatted with newlines.'),
   theDos: z.array(z.string()).describe("A list of crucial things one 'should do' in this situation."),
   theDonts: z.array(z.string()).describe("A list of critical things one 'should not do' in this situation."),

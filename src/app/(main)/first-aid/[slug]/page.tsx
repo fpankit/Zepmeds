@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckSquare, Sparkles, Languages, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { simplifyFirstAidFlow, SimplifyFirstAidOutput } from '@/ai/flows/simplify-first-aid-flow';
+import { simplifyFirstAidFlow } from '@/ai/flows/simplify-first-aid-flow';
+import type { SimplifyFirstAidOutput } from '@/ai/flows/simplify-first-aid-flow';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
