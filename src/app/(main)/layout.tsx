@@ -28,7 +28,7 @@ export default function MainLayout({
 
   if (!isLayoutVisible) {
     // A special check for profile sub-pages which should not have the main layout
-    if (pathname.startsWith('/profile/') || pathname.startsWith('/product/') || pathname.startsWith('/urgent-medicine')) {
+    if (pathname.startsWith('/profile/') || pathname.startsWith('/product/') || pathname.startsWith('/urgent-medicine') || pathname.startsWith('/profile/create-report')) {
         return <main>{children}</main>;
     }
     return <main>{children}</main>;

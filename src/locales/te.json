@@ -25,7 +25,8 @@
         "consultDoctor": "డాక్టర్‌ను సంప్రదించండి",
         "emergencyServices": "అత్యవసర సేవలు",
         "helpSupport": "సహాయం మరియు మద్దతు",
-        "changeLanguage": "భాషను మార్చండి"
+        "changeLanguage": "భాషను మార్చండి",
+        "createReport": "డయాగ్నొస్టిక్ నివేదికను సృష్టించండి"
     },
     "language": {
         "selectLanguage": "ఒక భాషను ఎంచుకోండి",

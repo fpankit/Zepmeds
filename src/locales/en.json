@@ -25,7 +25,8 @@
         "consultDoctor": "Consult a Doctor",
         "emergencyServices": "Emergency Services",
         "helpSupport": "Help & Support",
-        "changeLanguage": "Change Language"
+        "changeLanguage": "Change Language",
+        "createReport": "Create Diagnostic Report"
     },
     "language": {
         "selectLanguage": "Select a Language",

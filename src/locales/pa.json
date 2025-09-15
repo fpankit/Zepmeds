@@ -25,7 +25,8 @@
         "consultDoctor": "ਡਾਕਟਰ ਨਾਲ ਸਲਾਹ ਕਰੋ",
         "emergencyServices": "ਐਮਰਜੈਂਸੀ ਸੇਵਾਵਾਂ",
         "helpSupport": "ਮਦਦ ਅਤੇ ਸਹਾਇਤਾ",
-        "changeLanguage": "ਭਾਸ਼ਾ ਬਦਲੋ"
+        "changeLanguage": "ਭਾਸ਼ਾ ਬਦਲੋ",
+        "createReport": "ਡਾਇਗਨੌਸਟਿਕ ਰਿਪੋਰਟ ਬਣਾਓ"
     },
     "language": {
         "selectLanguage": "ਇੱਕ ਭਾਸ਼ਾ ਚੁਣੋ",

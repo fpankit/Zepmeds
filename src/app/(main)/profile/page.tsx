@@ -87,7 +87,11 @@ export default function ProfilePage() {
 
 
         <div className="space-y-3">
-            {profileLinks.map((link) => (
+            {profileLinks.map((link) => {
+              if (link.doctorOnly && !user?.isDoctor) {
+                return null;
+              }
+              return (
                 <Link href={link.href} key={link.textKey}>
                     <div className="flex items-center p-4 rounded-xl bg-card/80 hover:bg-card/50 transition-colors">
                         <div className="p-2 bg-gray-700/50 rounded-lg mr-4">
@@ -97,7 +101,8 @@ export default function ProfilePage() {
                         <ChevronRight className="h-5 w-5 text-muted-foreground" />
                     </div>
                 </Link>
-            ))}
+              )
+            })}
         </div>
       </main>
     </div>

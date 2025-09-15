@@ -25,7 +25,8 @@
         "consultDoctor": "डॉक्टर से सलाह लें",
         "emergencyServices": "आपातकालीन सेवाएं",
         "helpSupport": "सहायता और समर्थन",
-        "changeLanguage": "भाषा बदलें"
+        "changeLanguage": "भाषा बदलें",
+        "createReport": "नैदानिक रिपोर्ट बनाएं"
     },
     "language": {
         "selectLanguage": "एक भाषा चुनें",

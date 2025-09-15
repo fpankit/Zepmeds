@@ -25,7 +25,8 @@
         "consultDoctor": "ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ",
         "emergencyServices": "ತುರ್ತು ಸೇವೆಗಳು",
         "helpSupport": "ಸಹಾಯ ಮತ್ತು ಬೆಂಬಲ",
-        "changeLanguage": "ಭಾಷೆ ಬದಲಾಯಿಸಿ"
+        "changeLanguage": "ಭಾಷೆ ಬದಲಾಯಿಸಿ",
+        "createReport": "ರೋಗನಿರ್ಣಯ ವರದಿ ರಚಿಸಿ"
     },
     "language": {
         "selectLanguage": "ಒಂದು ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",

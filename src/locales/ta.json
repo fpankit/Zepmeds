@@ -25,7 +25,8 @@
         "consultDoctor": "மருத்துவரை அணுகவும்",
         "emergencyServices": "அவசர சேவைகள்",
         "helpSupport": "உதவி மற்றும் ஆதரவு",
-        "changeLanguage": "மொழியை மாற்று"
+        "changeLanguage": "மொழியை மாற்று",
+        "createReport": "நோய் கண்டறிதல் அறிக்கையை உருவாக்கவும்"
     },
     "language": {
         "selectLanguage": "ஒரு மொழியைத் தேர்ந்தெடுக்கவும்",
