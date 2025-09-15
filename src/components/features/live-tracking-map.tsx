@@ -50,43 +50,40 @@ export function LiveTrackingMap({ riderLocation, userLocation }: LiveTrackingMap
     );
 
     useEffect(() => {
-        let map: LeafletMap | null = null;
         if (mapContainerRef.current && !mapInstanceRef.current) {
-            map = L.map(mapContainerRef.current, {
+            mapInstanceRef.current = L.map(mapContainerRef.current, {
                 zoomControl: false, // Disables the + and - buttons
             }).setView([userLocation.lat, userLocation.lng], 13);
-
-            mapInstanceRef.current = map;
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
                 maxZoom: 20
-            }).addTo(map);
+            }).addTo(mapInstanceRef.current);
 
             // Add markers
             L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
-                .addTo(map);
+                .addTo(mapInstanceRef.current);
             
             L.marker([riderLocation.lat, riderLocation.lng], { icon: riderIcon })
-                .addTo(map);
+                .addTo(mapInstanceRef.current);
             
             // Draw path
             const latlngs = [
                 [riderLocation.lat, riderLocation.lng],
                 [userLocation.lat, userLocation.lng]
             ];
-            L.polyline(latlngs as LatLngExpression[], { color: '#FBBF24', dashArray: '5, 10' }).addTo(map);
+            L.polyline(latlngs as LatLngExpression[], { color: '#FBBF24', dashArray: '5, 10' }).addTo(mapInstanceRef.current);
 
             // Adjust map view to fit both points
-            map.fitBounds(L.latLngBounds(latlngs as LatLngExpression[]).pad(0.2));
+            mapInstanceRef.current.fitBounds(L.latLngBounds(latlngs as LatLngExpression[]).pad(0.2));
         }
 
         return () => {
-            if (map) {
-                map.remove();
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
             }
-            mapInstanceRef.current = null;
         };
     }, [userLocation, riderLocation]);
 

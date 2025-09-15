@@ -5,11 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 import L, { LatLngExpression, Map as LeafletMap } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default icon issues with webpack
+// Fix for default icon issues by using CDN URLs
 const defaultIcon = new L.Icon({
-    iconUrl: '/marker-icon.png',
-    iconRetinaUrl: '/marker-icon-2x.png',
-    shadowUrl: '/marker-shadow.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
@@ -36,44 +36,42 @@ export function LiveEmergencyMap({ userPosition }: LiveEmergencyMapProps) {
     const ambulanceStartPosition = { lat: userPosition.lat + 0.05, lng: userPosition.lng + 0.05 };
 
     useEffect(() => {
-        let map: LeafletMap | null = null;
         // Initialize map only if the container is available and map is not already initialized
         if (mapContainerRef.current && !mapInstanceRef.current) {
-            map = L.map(mapContainerRef.current).setView([userPosition.lat, userPosition.lng], 13);
-            mapInstanceRef.current = map;
+            mapInstanceRef.current = L.map(mapContainerRef.current).setView([userPosition.lat, userPosition.lng], 13);
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
                 maxZoom: 20
-            }).addTo(map);
+            }).addTo(mapInstanceRef.current);
 
             // Add markers
             L.marker([userPosition.lat, userPosition.lng])
                 .bindPopup("Your Location")
-                .addTo(map);
+                .addTo(mapInstanceRef.current);
             
             L.marker([ambulanceStartPosition.lat, ambulanceStartPosition.lng], { icon: ambulanceIcon })
                 .bindPopup("Ambulance")
-                .addTo(map);
+                .addTo(mapInstanceRef.current);
             
             // Draw path
             const latlngs = [
                 [ambulanceStartPosition.lat, ambulanceStartPosition.lng],
                 [userPosition.lat, userPosition.lng]
             ];
-            L.polyline(latlngs as LatLngExpression[], { color: 'red', dashArray: '5, 10' }).addTo(map);
+            L.polyline(latlngs as LatLngExpression[], { color: 'red', dashArray: '5, 10' }).addTo(mapInstanceRef.current);
 
             // Adjust map view to fit both points
-            map.fitBounds(L.latLngBounds(latlngs as LatLngExpression[]).pad(0.1));
+            mapInstanceRef.current.fitBounds(L.latLngBounds(latlngs as LatLngExpression[]).pad(0.1));
         }
 
         // Cleanup function to run when the component unmounts
         return () => {
-            if (map) {
-                map.remove();
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
             }
-            mapInstanceRef.current = null;
         };
     // Dependencies are set to ensure this effect runs only when positions change, not on every render.
     }, [userPosition, ambulanceStartPosition]);

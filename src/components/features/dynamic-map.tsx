@@ -6,11 +6,11 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Map } from 'leaflet';
 
-// Fix for default icon issues with webpack
+// Fix for default icon issues by using CDN URLs
 const defaultIcon = new L.Icon({
-    iconUrl: '/marker-icon.png',
-    iconRetinaUrl: '/marker-icon-2x.png',
-    shadowUrl: '/marker-shadow.png',
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
