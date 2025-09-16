@@ -21,6 +21,7 @@ export interface Product {
     id: string;
     name: string;
     price: number;
+    mrp: number; // For showing discounts
     category: string;
     imageUrl?: string;
     uses?: string;

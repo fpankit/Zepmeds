@@ -217,6 +217,9 @@ export default function OrderMedicinesPage() {
           ) : (
             products.map((product) => {
               const cartItem = cart.find(item => item.id === product.id);
+              const hasDiscount = product.mrp && product.mrp > product.price;
+              const discount = hasDiscount ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0;
+
               return (
                 <DelayedSkeleton key={product.id} isLoading={false} skeleton={<ProductCardSkeleton />}>
                     <Card className="overflow-hidden group flex flex-col">
@@ -228,9 +231,13 @@ export default function OrderMedicinesPage() {
                                     <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
                                     <p className="text-xs text-muted-foreground truncate">{product.uses}</p>
                                     <div className="mt-2">
-                                        <div className="flex items-baseline gap-1">
-                                            <p className="font-bold text-base">₹{product.price}</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <p className="font-bold text-base text-primary">₹{product.price.toFixed(2)}</p>
+                                            {hasDiscount && <p className="text-xs text-muted-foreground line-through">₹{product.mrp.toFixed(2)}</p>}
                                         </div>
+                                         {hasDiscount && (
+                                            <p className="text-xs font-bold text-green-500 mt-1">You save {discount}%</p>
+                                        )}
                                     </div>
                                 </div>
                             </Link>
@@ -293,5 +300,3 @@ export default function OrderMedicinesPage() {
     </div>
   );
 }
-
-    
