@@ -37,8 +37,6 @@ const ReportSkeleton = () => (
     </div>
 );
 
-// Base64 encoded SVG of the Zepmeds logo - CANNOT BE USED DIRECTLY
-const zepmedsLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgNTAiIHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZDEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZmVkYzI4OyIgLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmZWExNTI7IiAvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxwYXRoIGQ9Ik0xMCAyNSBDIDE1IDEwLCAyNSAxMCwgMzAgMjUgUyA0MCA0MCwgNDUgMjUiIHN0cm9rZT0idXJsKCNncmFkMSkiIHN0cm9rZS13aWR0aD0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHRleHQgeD0iNTUiIHk9IjM1IiBmb250LWZhbWlseT0iJ0FyaWFsIFJvdW5kZWQgTVQgQm9sZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMzIiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjM0EzQjNCIj5aZXBtZWRzPC90ZXh0Pjwvc3ZnPg==";
 
 export default function DiagnosticReportsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -80,16 +78,11 @@ export default function DiagnosticReportsPage() {
     const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
     let lastY = 0;
 
-    // Header
-    doc.setFontSize(16);
+    // Header with Zepmeds text logo
+    doc.setFontSize(32);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 139); // Dark Navy Blue
-    doc.text('Zepmeds', pageWidth - 15, 15, { align: 'right' });
-
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0); // Black for main title
-    doc.text('Diagnostic Report', pageWidth / 2, 28, { align: 'center' });
+    doc.setTextColor(36, 63, 158); // Zepmeds Primary Blue/Purple color
+    doc.text('Zepmeds', 15, 28);
     
     doc.setLineWidth(0.5);
     doc.line(15, 35, pageWidth - 15, 35);
@@ -116,6 +109,7 @@ export default function DiagnosticReportsPage() {
         }
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0); // Reset to black
         doc.text(title, 15, y + 10);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
