@@ -22,13 +22,13 @@ interface Report {
   doctorId: string;
   doctorName: string;
   doctorSpecialty: string;
-  createdAt: Timestamp; // Changed from reportDate
+  createdAt: Timestamp; 
   chiefComplaint: string;
-  officialDiagnosis: string; // Changed from diagnosis
-  doctorNotes: string; // Changed from notes
+  officialDiagnosis: string; 
+  doctorNotes: string; 
   medications: { name: string; dosage: string; frequency: string }[];
-  recommendedTests: string; // Changed from array to string
-  followUpAdvice: string; // Changed from followUp
+  recommendedTests: string; 
+  followUpAdvice: string; 
 }
 
 const ReportSkeleton = () => (
@@ -256,7 +256,7 @@ export default function DiagnosticReportsPage() {
                             </div>
 
                             <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(report)}>
-                                <FileDown className="mr-2 h-4 w-4" /> Download as PDF
+                                <FileDown className="mr-2 h-4 w-4" /> View / Download PDF
                             </Button>
                         </div>
                     </AccordionContent>
