@@ -80,13 +80,16 @@ export default function DiagnosticReportsPage() {
     const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
     let lastY = 0;
 
-    // Add Logo
-    // doc.addImage(zepmedsLogoBase64, 'PNG', 15, 12, 50, 12.5);
-
     // Header
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 139); // Dark Navy Blue
+    doc.text('Zepmeds', pageWidth - 15, 15, { align: 'right' });
+
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('Diagnostic Report', pageWidth - 15, 22, { align: 'right' });
+    doc.setTextColor(0, 0, 0); // Black for main title
+    doc.text('Diagnostic Report', pageWidth / 2, 28, { align: 'center' });
     
     doc.setLineWidth(0.5);
     doc.line(15, 35, pageWidth - 15, 35);
