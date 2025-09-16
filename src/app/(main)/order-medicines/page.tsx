@@ -23,7 +23,6 @@ import {
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +36,7 @@ import { useIntersectionObserver } from '@/hooks/use-intersection-observer';
 import { DelayedSkeleton } from '@/components/features/delayed-skeleton';
 import Link from 'next/link';
 import { useTranslation } from '@/context/language-context';
+import { SearchDialog } from '@/components/features/search-dialog';
 
 const PRODUCTS_PER_PAGE = 8;
 
@@ -76,14 +76,13 @@ export default function OrderMedicinesPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const isFetching = useRef(false);
 
   const { ref: loadMoreRef, entry } = useIntersectionObserver({
     threshold: 0.5,
   });
 
-  const fetchProducts = useCallback(async (lastVisibleDoc: QueryDocumentSnapshot<DocumentData> | null = null, category: string = 'All', search: string = '') => {
+  const fetchProducts = useCallback(async (lastVisibleDoc: QueryDocumentSnapshot<DocumentData> | null = null, category: string = 'All') => {
     if (isFetching.current) return;
     isFetching.current = true;
 
@@ -102,11 +101,6 @@ export default function OrderMedicinesPage() {
       
       if (category !== 'All') {
         queries.push(where("category", "==", category));
-      }
-      
-      if (search) {
-         queries.push(where("name", ">=", search));
-         queries.push(where("name", "<=", search + '\uf8ff'));
       }
       
       productsQuery = query(baseQuery, ...queries, orderBy("name"));
@@ -142,24 +136,18 @@ export default function OrderMedicinesPage() {
   }, [toast, setProductMap, products]);
   
    useEffect(() => {
-    const handler = setTimeout(() => {
-        setLastDoc(null);
-        setHasMore(true);
-        fetchProducts(null, selectedCategory, searchQuery);
-    }, 300); // Debounce search by 300ms
-
-    return () => {
-        clearTimeout(handler);
-    };
+    setLastDoc(null);
+    setHasMore(true);
+    fetchProducts(null, selectedCategory);
    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory]);
 
 
   useEffect(() => {
     if (entry?.isIntersecting && hasMore && !isLoadingMore && !isFetching.current) {
-      fetchProducts(lastDoc, selectedCategory, searchQuery);
+      fetchProducts(lastDoc, selectedCategory);
     }
-  }, [entry, hasMore, isLoadingMore, fetchProducts, lastDoc, selectedCategory, searchQuery]);
+  }, [entry, hasMore, isLoadingMore, fetchProducts, lastDoc, selectedCategory]);
 
   const handleAddToCart = (product: Product) => {
     addToCart({ ...product, quantity: 1, imageUrl: product.imageUrl });
@@ -171,15 +159,8 @@ export default function OrderMedicinesPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-        <Input 
-            placeholder={t('orderMedicines.searchPlaceholder')} 
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+      
+      <SearchDialog />
 
       <div className="space-y-4">
         <h2 className="text-xl font-bold">{t('orderMedicines.categoriesTitle')}</h2>
@@ -209,7 +190,7 @@ export default function OrderMedicinesPage() {
 
       <div>
         <h2 className="text-xl font-bold mb-4">
-            {searchQuery || (categories.find(c => c.key === selectedCategory)?.name || t('orderMedicines.allProducts'))}
+            {categories.find(c => c.key === selectedCategory)?.name || t('orderMedicines.allProducts')}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {isLoading && products.length === 0 ? (
@@ -273,27 +254,7 @@ export default function OrderMedicinesPage() {
         </div>
          {!isLoading && products.length === 0 && (
             <div className="col-span-full text-center py-10">
-                {searchQuery ? (
-                     <Card className="max-w-md mx-auto">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <AlertTriangle className="text-yellow-500" />
-                                {t('orderMedicines.notFound.title')}
-                            </CardTitle>
-                        </CardHeader>
-                         <CardContent>
-                             <p className="text-muted-foreground">{t('orderMedicines.notFound.description1').replace('{searchQuery}', searchQuery)}</p>
-                             <p className="text-muted-foreground mt-1">{t('orderMedicines.notFound.description2')}</p>
-                            <Button asChild className="mt-4">
-                                <Link href={`/urgent-medicine?name=${searchQuery}`}>
-                                    {t('orderMedicines.notFound.button')}
-                                </Link>
-                            </Button>
-                         </CardContent>
-                     </Card>
-                ) : (
-                    <p className="text-muted-foreground">{t('orderMedicines.noProductsInCategory')}</p>
-                )}
+                <p className="text-muted-foreground">{t('orderMedicines.noProductsInCategory')}</p>
             </div>
          )}
       </div>
