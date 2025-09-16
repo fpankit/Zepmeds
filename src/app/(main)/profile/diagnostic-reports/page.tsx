@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth-context';
@@ -38,6 +37,9 @@ const ReportSkeleton = () => (
     </div>
 );
 
+// Base64 encoded SVG of the Zepmeds logo
+const zepmedsLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgNTAiIHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZDEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZmVkYzI4OyIgLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmZWExNTI7IiAvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxwYXRoIGQ9Ik0xMCAyNSBDIDE1IDEwLCAyNSAxMCwgMzAgMjUgUyA0MCA0MCwgNDUgMjUiIHN0cm9rZT0idXJsKCNncmFkMSkiIHN0cm9rZS13aWR0aD0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHRleHQgeD0iNTUiIHk9IjM1IiBmb250LWZhbWlseT0iJ0FyaWFsIFJvdW5kZWQgTVQgQm9sZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMzIiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjM0EzQjNCIj5aZXBtZWRzPC90ZXh0Pjwvc3ZnPg==";
+
 export default function DiagnosticReportsPage() {
   const { user, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
@@ -52,9 +54,9 @@ export default function DiagnosticReportsPage() {
     }
 
     const q = query(
-      collection(db, "reports"), // Changed collection to 'reports'
+      collection(db, "reports"), 
       where("patientId", "==", user.id),
-      orderBy("createdAt", "desc") // Changed to 'createdAt'
+      orderBy("createdAt", "desc") 
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -74,50 +76,58 @@ export default function DiagnosticReportsPage() {
 
   const handleDownloadPdf = (report: Report) => {
     const doc = new jsPDF();
+    const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+    const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+    let lastY = 0;
+
+    // Add Logo
+    doc.addImage(zepmedsLogoBase64, 'SVG', 15, 12, 50, 12.5);
 
     // Header
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('Diagnostic Report', 105, 20, { align: 'center' });
-
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Date: ${format(report.createdAt.toDate(), 'PPP')}`, 195, 30, { align: 'right' });
-
-    // Patient and Doctor Details
+    doc.text('Diagnostic Report', pageWidth - 15, 22, { align: 'right' });
+    
     doc.setLineWidth(0.5);
-    doc.line(15, 35, 195, 35);
+    doc.line(15, 35, pageWidth - 15, 35);
+    lastY = 35;
+    
+    // Patient and Doctor Details
     (doc as any).autoTable({
-        startY: 40,
+        startY: lastY + 5,
         body: [
-            [{ content: 'Patient Name:', styles: { fontStyle: 'bold' } }, report.patientName],
-            [{ content: 'Doctor Name:', styles: { fontStyle: 'bold' } }, `${report.doctorName} (${report.doctorSpecialty || 'Physician'})`],
+            [{ content: 'Patient Name:', styles: { fontStyle: 'bold', cellWidth: 35 } }, report.patientName],
+            [{ content: 'Doctor Name:', styles: { fontStyle: 'bold', cellWidth: 35 } }, `${report.doctorName} (${report.doctorSpecialty || 'Physician'})`],
+            [{ content: 'Date Issued:', styles: { fontStyle: 'bold', cellWidth: 35 } }, format(report.createdAt.toDate(), 'PPP')],
         ],
         theme: 'plain',
-        styles: { cellPadding: 2 },
-        columnStyles: { 0: { cellWidth: 40 } },
+        styles: { fontSize: 11, cellPadding: 1.5 },
     });
-    let lastY = (doc as any).lastAutoTable.finalY;
+    lastY = (doc as any).lastAutoTable.finalY;
 
     // Report Content
     const addSection = (title: string, content: string, y: number) => {
+        if (y > pageHeight - 40) { // check for page break
+            doc.addPage();
+            y = 20;
+        }
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text(title, 15, y);
+        doc.text(title, 15, y + 10);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
-        const text = doc.splitTextToSize(content || 'N/A', 180);
-        doc.text(text, 15, y + 7);
-        return y + 7 + (text.length * 5);
+        const text = doc.splitTextToSize(content || 'N/A', pageWidth - 30);
+        doc.text(text, 15, y + 18);
+        return y + 18 + (text.length * 5);
     };
 
-    lastY = addSection('Chief Complaint', report.chiefComplaint, lastY + 10);
-    lastY = addSection('Diagnosis', report.officialDiagnosis, lastY + 5);
-    lastY = addSection('Doctor\'s Notes', report.doctorNotes, lastY + 5);
+    lastY = addSection('Chief Complaint', report.chiefComplaint, lastY);
+    lastY = addSection('Diagnosis', report.officialDiagnosis, lastY);
+    lastY = addSection('Doctor\'s Notes', report.doctorNotes, lastY);
 
     // Medications
     if (report.medications && report.medications.length > 0) {
-        if(lastY > 240) { doc.addPage(); lastY = 15; }
+        if(lastY > pageHeight - 60) { doc.addPage(); lastY = 20; }
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.text('Prescribed Medication', 15, lastY + 10);
@@ -126,20 +136,19 @@ export default function DiagnosticReportsPage() {
             head: [['Medication', 'Dosage', 'Frequency']],
             body: report.medications.map(m => [m.name, m.dosage, m.frequency]),
             theme: 'striped',
-            headStyles: { fillColor: [63, 81, 181] },
+            headStyles: { fillColor: [30, 30, 30] }, // Dark header
+            margin: { left: 15, right: 15 },
         });
         lastY = (doc as any).lastAutoTable.finalY;
     }
     
     // Tests
      if (report.recommendedTests) {
-        if(lastY > 240) { doc.addPage(); lastY = 15; }
-        lastY = addSection('Recommended Tests', report.recommendedTests, lastY + 5);
+        lastY = addSection('Recommended Tests', report.recommendedTests, lastY);
     }
 
     // Follow up
-    if (lastY > 260) { doc.addPage(); lastY = 20; }
-    lastY = addSection('Follow-up Advice', report.followUpAdvice, lastY + 10);
+    lastY = addSection('Follow-up Advice', report.followUpAdvice, lastY);
     
     doc.save(`Diagnostic_Report_${report.patientName}_${format(report.createdAt.toDate(), 'yyyy-MM-dd')}.pdf`);
   };
