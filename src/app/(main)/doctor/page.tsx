@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo, Suspense, useCallback } from "react";
-import { collection, query, onSnapshot, doc, setDoc, getDocs, where } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, setDoc, getDocs, where, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -130,7 +131,16 @@ function DoctorPageContent() {
     setIsCreatingLink(doctor.id);
     
     try {
-        const callDocRef = doc(collection(db, 'video_calls'));
+        const callsCollection = collection(db, 'video_calls');
+
+        // Clean up any previous call documents for this pair to avoid conflicts
+        const q = query(callsCollection, where("patientId", "==", user.id), where("doctorId", "==", doctor.id));
+        const oldCalls = await getDocs(q);
+        const deletePromises = oldCalls.docs.map(doc => deleteDoc(doc.ref));
+        await Promise.all(deletePromises);
+
+        // Create a new call document
+        const callDocRef = doc(callsCollection);
         
         await setDoc(callDocRef, {
             patientId: user.id,
