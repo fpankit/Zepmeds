@@ -32,6 +32,8 @@ export function Controls() {
   };
 
   const leaveRoom = async () => {
+    // Only the patient leaving the call should mark it as 'completed'.
+    // If the doctor leaves, the call remains open for the patient to rejoin or for the doctor to return.
     if (room && room.name && user && !user.isDoctor) {
       try {
         const callId = room.name;
