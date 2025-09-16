@@ -32,16 +32,15 @@ export function Controls() {
   };
 
   const leaveRoom = async () => {
-    if (room && room.id && user && !user.isDoctor) {
+    if (room && room.name && user && !user.isDoctor) {
       try {
-        // The call ID is the room's name in this setup.
         const callId = room.name;
-        if(callId){
-          const callDocRef = doc(db, 'video_calls', callId);
-          await updateDoc(callDocRef, { status: 'completed' });
-        }
+        const callDocRef = doc(db, 'video_calls', callId);
+        await updateDoc(callDocRef, { status: 'completed' });
       } catch (error) {
-        console.error("Failed to update call status to completed:", error);
+        // This can happen in a race condition if the doctor side cleans up the doc first.
+        // It's safe to ignore, as the primary goal is leaving the room.
+        console.warn("Could not update call status to completed (document might already be deleted):", error);
       }
     }
     
