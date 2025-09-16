@@ -12,11 +12,12 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Button } from "../ui/button";
-import { Search, Pill, Loader2 } from "lucide-react";
+import { Search, Pill, Loader2, AlertCircle } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, limit, getDocs, orderBy } from "firebase/firestore";
 import { Product } from "@/lib/types";
 import { DialogTitle } from "../ui/dialog";
+import { useTranslation } from "@/context/language-context";
 
 export function SearchDialog() {
   const [open, setOpen] = useState(false);
@@ -24,6 +25,8 @@ export function SearchDialog() {
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const t = useTranslation();
+
 
   const fetchSuggestions = useCallback(async (search: string) => {
     const trimmedSearch = search.trim();
@@ -33,8 +36,7 @@ export function SearchDialog() {
     }
     setIsLoading(true);
     try {
-      // Capitalize the first letter to handle case-insensitivity simply
-      const capitalizedSearch = trimmedSearch.charAt(0).toUpperCase() + trimmedSearch.slice(1);
+      const capitalizedSearch = trimmedSearch.charAt(0).toUpperCase() + trimmedSearch.slice(1).toLowerCase();
 
       const q = query(
         collection(db, "products"),
@@ -59,7 +61,7 @@ export function SearchDialog() {
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchSuggestions(searchQuery);
-    }, 300); // Debounce search
+    }, 300);
 
     return () => {
       clearTimeout(handler);
@@ -70,8 +72,12 @@ export function SearchDialog() {
     setOpen(false);
     router.push(`/product/${productId}`);
   };
+
+  const handleNotify = () => {
+      setOpen(false);
+      router.push(`/urgent-medicine?name=${encodeURIComponent(searchQuery)}`);
+  }
   
-  // Open dialog with CMD+K or CTRL+K
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -84,6 +90,23 @@ export function SearchDialog() {
   }, [])
 
 
+  const NotFoundContent = () => (
+      <div className="text-center py-6 px-4">
+          <AlertCircle className="mx-auto h-10 w-10 text-muted-foreground" />
+          <p className="mt-4 text-sm font-semibold">{t('orderMedicines.notFound.title')}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+             {t('orderMedicines.notFound.description1', { searchQuery: `"${searchQuery}"` })}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+             {t('orderMedicines.notFound.description2')}
+          </p>
+          <Button onClick={handleNotify} size="sm" className="mt-4">
+            {t('orderMedicines.notFound.button')}
+          </Button>
+      </div>
+  );
+
+
   return (
     <>
       <Button
@@ -92,7 +115,7 @@ export function SearchDialog() {
         onClick={() => setOpen(true)}
       >
         <Search className="mr-2 h-4 w-4" />
-        <span>Search for medicines...</span>
+        <span>{t('orderMedicines.searchPlaceholder')}</span>
         <kbd className="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
           <span className="text-xs">⌘</span>K
         </kbd>
@@ -101,7 +124,7 @@ export function SearchDialog() {
       <CommandDialog open={open} onOpenChange={setOpen}>
          <DialogTitle className="sr-only">Search for medicines</DialogTitle>
         <CommandInput
-          placeholder="Type a medicine name..."
+          placeholder={t('orderMedicines.searchPlaceholder')}
           value={searchQuery}
           onValueChange={setSearchQuery}
         />
@@ -109,7 +132,9 @@ export function SearchDialog() {
           {isLoading && <div className="p-4 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin"/></div>}
           
           {!isLoading && suggestions.length === 0 && searchQuery.length > 1 && (
-            <CommandEmpty>No results found for "{searchQuery}".</CommandEmpty>
+            <CommandEmpty>
+                <NotFoundContent />
+            </CommandEmpty>
           )}
 
           {suggestions.length > 0 && (
