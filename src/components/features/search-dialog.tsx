@@ -36,7 +36,7 @@ export function SearchDialog() {
     }
     setIsLoading(true);
     try {
-      const capitalizedSearch = trimmedSearch.charAt(0).toUpperCase() + trimmedSearch.slice(1).toLowerCase();
+      const capitalizedSearch = trimmedSearch.charAt(0).toUpperCase() + trimmedSearch.slice(1);
 
       const q = query(
         collection(db, "products"),
@@ -95,7 +95,7 @@ export function SearchDialog() {
           <AlertCircle className="mx-auto h-10 w-10 text-muted-foreground" />
           <p className="mt-4 text-sm font-semibold">{t('orderMedicines.notFound.title')}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-             {t('orderMedicines.notFound.description1', { searchQuery: `"${searchQuery}"` })}
+             {t('orderMedicines.notFound.description1').replace('{searchQuery}', `"${searchQuery}"`)}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
              {t('orderMedicines.notFound.description2')}
