@@ -21,13 +21,13 @@ interface Report {
   patientName: string;
   doctorName: string;
   doctorSpecialty: string;
-  reportDate: Timestamp;
+  createdAt: Timestamp; // Changed from reportDate
   chiefComplaint: string;
-  diagnosis: string;
-  notes: string;
+  officialDiagnosis: string; // Changed from diagnosis
+  doctorNotes: string; // Changed from notes
   medications: { name: string; dosage: string; frequency: string }[];
-  tests: { name: string; notes: string }[];
-  followUp: string;
+  recommendedTests: string; // Changed from array to string
+  followUpAdvice: string; // Changed from followUp
 }
 
 const ReportSkeleton = () => (
@@ -52,9 +52,9 @@ export default function DiagnosticReportsPage() {
     }
 
     const q = query(
-      collection(db, "diagnostic_reports"),
+      collection(db, "reports"), // Changed collection to 'reports'
       where("patientId", "==", user.id),
-      orderBy("reportDate", "desc")
+      orderBy("createdAt", "desc") // Changed to 'createdAt'
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -82,7 +82,7 @@ export default function DiagnosticReportsPage() {
 
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Date: ${format(report.reportDate.toDate(), 'PPP')}`, 195, 30, { align: 'right' });
+    doc.text(`Date: ${format(report.createdAt.toDate(), 'PPP')}`, 195, 30, { align: 'right' });
 
     // Patient and Doctor Details
     doc.setLineWidth(0.5);
@@ -91,7 +91,7 @@ export default function DiagnosticReportsPage() {
         startY: 40,
         body: [
             [{ content: 'Patient Name:', styles: { fontStyle: 'bold' } }, report.patientName],
-            [{ content: 'Doctor Name:', styles: { fontStyle: 'bold' } }, `${report.doctorName} (${report.doctorSpecialty})`],
+            [{ content: 'Doctor Name:', styles: { fontStyle: 'bold' } }, `${report.doctorName} (${report.doctorSpecialty || 'Physician'})`],
         ],
         theme: 'plain',
         styles: { cellPadding: 2 },
@@ -106,14 +106,14 @@ export default function DiagnosticReportsPage() {
         doc.text(title, 15, y);
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
-        const text = doc.splitTextToSize(content, 180);
+        const text = doc.splitTextToSize(content || 'N/A', 180);
         doc.text(text, 15, y + 7);
         return y + 7 + (text.length * 5);
     };
 
     lastY = addSection('Chief Complaint', report.chiefComplaint, lastY + 10);
-    lastY = addSection('Diagnosis', report.diagnosis, lastY + 5);
-    lastY = addSection('Doctor\'s Notes', report.notes, lastY + 5);
+    lastY = addSection('Diagnosis', report.officialDiagnosis, lastY + 5);
+    lastY = addSection('Doctor\'s Notes', report.doctorNotes, lastY + 5);
 
     // Medications
     if (report.medications && report.medications.length > 0) {
@@ -132,25 +132,16 @@ export default function DiagnosticReportsPage() {
     }
     
     // Tests
-     if (report.tests && report.tests.length > 0) {
+     if (report.recommendedTests) {
         if(lastY > 240) { doc.addPage(); lastY = 15; }
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Recommended Tests', 15, lastY + 10);
-        (doc as any).autoTable({
-            startY: lastY + 15,
-            head: [['Test Name', 'Notes']],
-            body: report.tests.map(t => [t.name, t.notes]),
-            theme: 'grid',
-        });
-        lastY = (doc as any).lastAutoTable.finalY;
+        lastY = addSection('Recommended Tests', report.recommendedTests, lastY + 5);
     }
 
     // Follow up
     if (lastY > 260) { doc.addPage(); lastY = 20; }
-    lastY = addSection('Follow-up Advice', report.followUp, lastY + 10);
+    lastY = addSection('Follow-up Advice', report.followUpAdvice, lastY + 10);
     
-    doc.save(`Diagnostic_Report_${report.patientName}_${format(report.reportDate.toDate(), 'yyyy-MM-dd')}.pdf`);
+    doc.save(`Diagnostic_Report_${report.patientName}_${format(report.createdAt.toDate(), 'yyyy-MM-dd')}.pdf`);
   };
   
   if (authLoading) {
@@ -203,10 +194,10 @@ export default function DiagnosticReportsPage() {
                     <AccordionTrigger className="p-4 text-left hover:no-underline">
                         <div className="flex-1">
                             <div className="flex justify-between items-center">
-                                <p className="font-bold text-base">Diagnosis: {report.diagnosis}</p>
-                                <Badge variant="secondary">{format(report.reportDate.toDate(), 'PPP')}</Badge>
+                                <p className="font-bold text-base">Diagnosis: {report.officialDiagnosis}</p>
+                                <Badge variant="secondary">{format(report.createdAt.toDate(), 'PPP')}</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1">Dr. {report.doctorName} - {report.doctorSpecialty}</p>
+                            <p className="text-sm text-muted-foreground mt-1">Dr. {report.doctorName} - {report.doctorSpecialty || 'Physician'}</p>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
@@ -217,7 +208,7 @@ export default function DiagnosticReportsPage() {
                             </div>
                              <div>
                                 <h4 className="font-semibold text-sm text-muted-foreground">Doctor's Notes</h4>
-                                <p>{report.notes}</p>
+                                <p>{report.doctorNotes}</p>
                             </div>
 
                             {report.medications && report.medications.length > 0 && (
@@ -229,18 +220,16 @@ export default function DiagnosticReportsPage() {
                                 </div>
                             )}
 
-                             {report.tests && report.tests.length > 0 && (
+                             {report.recommendedTests && (
                                 <div>
                                     <h4 className="font-semibold text-sm text-muted-foreground">Recommended Tests</h4>
-                                    <ul className="list-disc pl-5 mt-1 space-y-1">
-                                        {report.tests.map((test, i) => <li key={i}>{test.name} ({test.notes})</li>)}
-                                    </ul>
+                                    <p>{report.recommendedTests}</p>
                                 </div>
                             )}
 
                              <div>
                                 <h4 className="font-semibold text-sm text-muted-foreground">Follow-up</h4>
-                                <p>{report.followUp}</p>
+                                <p>{report.followUpAdvice}</p>
                             </div>
 
                             <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(report)}>
