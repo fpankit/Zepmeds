@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useEffect, useState, useMemo, Suspense, useCallback } from "react";
-import { collection, query, onSnapshot, doc, setDoc, getDocs } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, setDoc, getDocs, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -60,12 +60,12 @@ function DoctorPageContent() {
 
       toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
   };
-
-  const fetchDoctors = useCallback(async () => {
+  
+  useEffect(() => {
     setIsLoading(true);
-    try {
-        const doctorsQuery = query(collection(db, "doctors"));
-        const querySnapshot = await getDocs(doctorsQuery);
+    const doctorsQuery = query(collection(db, "doctors"), where("isOnline", "in", [true, false]));
+    
+    const unsubscribe = onSnapshot(doctorsQuery, (querySnapshot) => {
         const fetchedDoctors = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return { 
@@ -94,36 +94,15 @@ function DoctorPageContent() {
         });
 
         setDoctors(fetchedDoctors);
-    } catch (error) {
-        console.error("Error fetching doctors: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctors.' });
-    } finally {
         setIsLoading(false);
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchDoctors();
-    
-    let unsubscribe: Function | null = null;
-    if(user && user.isDoctor) {
-        const doctorDocRef = doc(db, "doctors", user.id);
-        unsubscribe = onSnapshot(doctorDocRef, (doc) => {
-            if (doc.exists()) {
-                const data = doc.data();
-                updateUser({ isOnline: data.isOnline });
-                // When a doctor's own status changes, refetch the list to re-sort.
-                fetchDoctors();
-            }
-        });
-    }
+    }, (error) => {
+        console.error("Error fetching doctors in real-time: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctors.' });
+        setIsLoading(false);
+    });
 
-    return () => {
-        if (unsubscribe) {
-            unsubscribe();
-        }
-    };
-  }, [user, updateUser, fetchDoctors]);
+    return () => unsubscribe();
+  }, [toast]);
   
   const filteredDoctors = useMemo(() => {
       return doctors.filter(doctor => 
@@ -269,5 +248,3 @@ export default function DoctorPage() {
         </Suspense>
     )
 }
-
-    

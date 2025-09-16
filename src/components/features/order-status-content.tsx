@@ -6,10 +6,10 @@ import { useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from '../ui/skeleton';
-import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle, QrCode, Box, RefreshCw } from 'lucide-react';
+import { Bike, Check, ChevronDown, ChevronUp, Loader2, MapPin, MessageSquare, Phone, Star, Gift, Bell, Download, HelpCircle, AlertCircle, QrCode, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -55,45 +55,39 @@ export function OrderStatusContent() {
 
   const [order, setOrder] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [isItemsOpen, setIsItemsOpen] = useState(false);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   const [riderLocation, setRiderLocation] = useState({ lat: 28.50, lng: 77.05 }); // Default simulated location
   
-  const fetchOrder = useCallback(async () => {
+  useEffect(() => {
     if (!orderId) {
         setIsLoading(false);
         return;
     }
     
-    setIsRefreshing(true);
-    try {
-        const orderDocRef = doc(db, "orders", orderId);
-        const docSnap = await getDoc(orderDocRef);
+    const orderDocRef = doc(db, "orders", orderId);
+    
+    const unsubscribe = onSnapshot(orderDocRef, (docSnap) => {
         if (docSnap.exists()) {
             const orderData = docSnap.data();
             setOrder({ id: docSnap.id, ...orderData });
-             if (orderData.riderLocation) {
+            if (orderData.riderLocation) {
                 setRiderLocation(orderData.riderLocation);
             }
-             toast({ title: "Status Updated", description: "Your order status has been refreshed." });
         } else {
             console.error("Order not found");
             setOrder(null);
-            toast({ variant: "destructive", title: "Order not found" });
         }
-    } catch (e) {
-        toast({ variant: "destructive", title: "Error", description: "Failed to fetch order status." });
-    } finally {
         setIsLoading(false);
-        setIsRefreshing(false);
-    }
-  }, [orderId, toast]);
+    }, (error) => {
+        console.error("Error fetching order status:", error);
+        toast({ variant: "destructive", title: "Error", description: "Failed to fetch order status." });
+        setIsLoading(false);
+    });
 
-  useEffect(() => {
-    fetchOrder();
-  }, [fetchOrder]);
+    return () => unsubscribe();
+  }, [orderId, toast]);
   
    useEffect(() => {
     if (order && order.status) {
@@ -238,9 +232,6 @@ export function OrderStatusContent() {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle>Delivery Status</CardTitle>
-                <Button variant="ghost" size="sm" onClick={fetchOrder} disabled={isRefreshing}>
-                    {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin"/> : <RefreshCw className="h-4 w-4"/>}
-                </Button>
             </CardHeader>
             <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">

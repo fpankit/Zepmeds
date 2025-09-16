@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/context/cart-context";
-import { Minus, Plus, ShoppingCart, Trash2, FileText, AlertTriangle, CheckCircle, Clock, RefreshCw, Loader2 } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Trash2, FileText, AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { PrescriptionUploader, PrescriptionUploadDetails } from '@/components/features/prescription-uploader';
 import { useToast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/context/auth-context';
 import { useTranslation } from '@/context/language-context';
 
@@ -23,19 +23,28 @@ export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, clearCart, setPrescriptionForCheckout, prescriptionForCheckout } = useCart();
   const [prescriptionId, setPrescriptionId] = useState<string | null>(null);
   const [prescriptionStatus, setPrescriptionStatus] = useState<PrescriptionStatus>('needed');
-  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const t = useTranslation();
 
-  const checkPrescriptionStatus = async () => {
-    if (!prescriptionId) return;
+  useEffect(() => {
+    if (prescriptionForCheckout) {
+      setPrescriptionId(prescriptionForCheckout.id);
+      setPrescriptionStatus('uploaded');
+      setIsLoadingStatus(true);
+    }
+  }, [prescriptionForCheckout]);
 
-    setIsCheckingStatus(true);
-    try {
-        const docRef = doc(db, "prescriptions", prescriptionId);
-        const docSnap = await getDoc(docRef);
+  useEffect(() => {
+    if (!prescriptionId) {
+        setIsLoadingStatus(false);
+        return;
+    }
 
+    const docRef = doc(db, "prescriptions", prescriptionId);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+        setIsLoadingStatus(false);
         if (docSnap.exists()) {
             const data = docSnap.data();
             switch (data.status) {
@@ -58,25 +67,16 @@ export default function CartPage() {
                     break;
                 default:
                     setPrescriptionStatus('uploaded');
-                    // Optional: toast that it's still pending
-                    toast({ title: "Status Update", description: "Your prescription is still pending verification." });
                     break;
             }
         }
-    } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Could not check prescription status." });
-    } finally {
-        setIsCheckingStatus(false);
-    }
-  };
-  
-  // Set initial state from cart context
-  useEffect(() => {
-    if (prescriptionForCheckout) {
-      setPrescriptionId(prescriptionForCheckout.id);
-      setPrescriptionStatus('uploaded');
-    }
-  }, [prescriptionForCheckout]);
+    }, (error) => {
+        setIsLoadingStatus(false);
+        toast({ variant: "destructive", title: "Error", description: "Could not check prescription status in real-time." });
+    });
+
+    return () => unsubscribe();
+  }, [prescriptionId, toast, t]);
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = subtotal > 0 ? 50 : 0;
@@ -180,11 +180,8 @@ export default function CartPage() {
                                 <p className="text-sm font-bold text-blue-400">{t('cart.prescription.submittedTitle')}</p>
                                 <p className="text-xs text-blue-500">{t('cart.prescription.submittedDescription')}</p>
                             </div>
+                             {isLoadingStatus && <Loader2 className="h-5 w-5 animate-spin text-blue-500"/>}
                         </div>
-                        <Button className="w-full" onClick={checkPrescriptionStatus} disabled={isCheckingStatus}>
-                            {isCheckingStatus ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <RefreshCw className="h-4 w-4 mr-2"/>}
-                            {isCheckingStatus ? "Checking..." : "Refresh Status"}
-                        </Button>
                      </div>
                 )}
                  {prescriptionStatus === 'approved' && (
