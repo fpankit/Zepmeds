@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { ArrowLeft, Loader2, PlusCircle, Trash2, UserSearch, FilePlus2, CheckCir
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
-
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const reportSchema = z.object({
   patient: z.object({
@@ -42,9 +42,10 @@ const reportSchema = z.object({
 
 type ReportFormValues = z.infer<typeof reportSchema>;
 
-export default function CreateReportPage() {
+function CreateReportPageContent() {
   const { user: doctorUser, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   
   const [patients, setPatients] = useState<User[]>([]);
@@ -84,14 +85,22 @@ export default function CreateReportPage() {
   useEffect(() => {
     const fetchPatients = async () => {
       const usersCollection = collection(db, 'users');
-      const q = query(usersCollection, where('isDoctor', '!=', true));
+      const q = query(usersCollection, where('isDoctor', '==', false));
       const querySnapshot = await getDocs(q);
       const patientList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
       setPatients(patientList);
+
+      // Pre-select patient if ID is in URL
+      const patientIdFromUrl = searchParams.get('patientId');
+      const patientNameFromUrl = searchParams.get('patientName');
+      if (patientIdFromUrl && patientNameFromUrl) {
+        form.setValue('patient.id', patientIdFromUrl);
+        form.setValue('patient.name', patientNameFromUrl);
+      }
     };
 
     fetchPatients();
-  }, []);
+  }, [searchParams, form]);
 
   const onSubmit = async (data: ReportFormValues) => {
     if (!doctorUser) return;
@@ -169,13 +178,7 @@ export default function CreateReportPage() {
                                 !field.value && 'text-muted-foreground'
                               )}
                             >
-                              {field.value
-                                ? patients.find(
-                                    (p) => p.id === field.value
-                                  )?.firstName + ' ' + patients.find(
-                                    (p) => p.id === field.value
-                                  )?.lastName
-                                : 'Select patient...'}
+                              {form.getValues('patient.name') || 'Select patient...'}
                               <UserSearch className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
@@ -184,6 +187,7 @@ export default function CreateReportPage() {
                            <Command>
                             <CommandInput placeholder="Search patient..." />
                              <CommandList>
+                                <ScrollArea className="h-72">
                                 <CommandEmpty>No patient found.</CommandEmpty>
                                 <CommandGroup>
                                 {patients.map((patient) => (
@@ -208,6 +212,7 @@ export default function CreateReportPage() {
                                     </CommandItem>
                                 ))}
                                 </CommandGroup>
+                                </ScrollArea>
                              </CommandList>
                            </Command>
                         </PopoverContent>
@@ -363,4 +368,12 @@ export default function CreateReportPage() {
       </main>
     </div>
   );
+}
+
+export default function CreateReportPage() {
+    return (
+        <Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <CreateReportPageContent />
+        </Suspense>
+    )
 }

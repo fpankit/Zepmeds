@@ -26,7 +26,8 @@
         "emergencyServices": "ਐਮਰਜੈਂਸੀ ਸੇਵਾਵਾਂ",
         "helpSupport": "ਮਦਦ ਅਤੇ ਸਹਾਇਤਾ",
         "changeLanguage": "ਭਾਸ਼ਾ ਬਦਲੋ",
-        "createReport": "ਡਾਇਗਨੌਸਟਿਕ ਰਿਪੋਰਟ ਬਣਾਓ"
+        "createReport": "ਡਾਇਗਨੌਸਟਿਕ ਰਿਪੋਰਟ ਬਣਾਓ",
+        "myConsultations": "ਮੇਰੀਆਂ ਸਲਾਹਾਂ"
     },
     "language": {
         "selectLanguage": "ਇੱਕ ਭਾਸ਼ਾ ਚੁਣੋ",
@@ -107,5 +108,3 @@
         }
     }
 }
-
-    

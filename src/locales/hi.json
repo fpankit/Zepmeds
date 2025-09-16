@@ -26,7 +26,8 @@
         "emergencyServices": "आपातकालीन सेवाएं",
         "helpSupport": "सहायता और समर्थन",
         "changeLanguage": "भाषा बदलें",
-        "createReport": "नैदानिक रिपोर्ट बनाएं"
+        "createReport": "नैदानिक रिपोर्ट बनाएं",
+        "myConsultations": "मेरी सलाह"
     },
     "language": {
         "selectLanguage": "एक भाषा चुनें",
@@ -107,5 +108,3 @@
         }
     }
 }
-
-    

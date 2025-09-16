@@ -26,7 +26,8 @@
         "emergencyServices": "ತುರ್ತು ಸೇವೆಗಳು",
         "helpSupport": "ಸಹಾಯ ಮತ್ತು ಬೆಂಬಲ",
         "changeLanguage": "ಭಾಷೆ ಬದಲಾಯಿಸಿ",
-        "createReport": "ರೋಗನಿರ್ಣಯ ವರದಿ ರಚಿಸಿ"
+        "createReport": "ರೋಗನಿರ್ಣಯ ವರದಿ ರಚಿಸಿ",
+        "myConsultations": "ನನ್ನ ಸಮಾಲೋಚನೆಗಳು"
     },
     "language": {
         "selectLanguage": "ಒಂದು ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
@@ -107,5 +108,3 @@
         }
     }
 }
-
-    
