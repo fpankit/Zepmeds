@@ -17,7 +17,9 @@ import 'jspdf-autotable';
 
 interface Report {
   id: string;
+  patientId: string;
   patientName: string;
+  doctorId: string;
   doctorName: string;
   doctorSpecialty: string;
   createdAt: Timestamp; // Changed from reportDate
@@ -84,22 +86,37 @@ export default function DiagnosticReportsPage() {
     doc.setTextColor(36, 63, 158); // Zepmeds Primary Blue/Purple color
     doc.text('Zepmeds', 15, 28);
     
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Diagnostic Report', 15, 42);
+
     doc.setLineWidth(0.5);
-    doc.line(15, 35, pageWidth - 15, 35);
-    lastY = 35;
+    doc.line(15, 50, pageWidth - 15, 50);
+    lastY = 50;
     
-    // Patient and Doctor Details
+    // Patient and Doctor Details Table
     (doc as any).autoTable({
-        startY: lastY + 5,
+        startY: lastY + 8,
         body: [
-            [{ content: 'Patient Name:', styles: { fontStyle: 'bold', cellWidth: 35 } }, report.patientName],
-            [{ content: 'Doctor Name:', styles: { fontStyle: 'bold', cellWidth: 35 } }, `${report.doctorName} (${report.doctorSpecialty || 'Physician'})`],
-            [{ content: 'Date Issued:', styles: { fontStyle: 'bold', cellWidth: 35 } }, format(report.createdAt.toDate(), 'PPP')],
+            [
+                { content: 'Patient:', styles: { fontStyle: 'bold' } },
+                `${report.patientName} (ID: ${report.patientId})`,
+                { content: 'Doctor:', styles: { fontStyle: 'bold' } },
+                `${report.doctorName} (ID: ${report.doctorId})`,
+            ],
+            [
+                { content: 'Date:', styles: { fontStyle: 'bold' } },
+                format(report.createdAt.toDate(), 'PPP'),
+                { content: 'Specialty:', styles: { fontStyle: 'bold' } },
+                report.doctorSpecialty || 'N/A',
+            ],
         ],
         theme: 'plain',
-        styles: { fontSize: 11, cellPadding: 1.5 },
+        styles: { fontSize: 10, cellPadding: 2 },
     });
     lastY = (doc as any).lastAutoTable.finalY;
+
 
     // Report Content
     const addSection = (title: string, content: string, y: number) => {
@@ -120,7 +137,7 @@ export default function DiagnosticReportsPage() {
 
     lastY = addSection('Chief Complaint', report.chiefComplaint, lastY);
     lastY = addSection('Diagnosis', report.officialDiagnosis, lastY);
-    lastY = addSection('Doctor\'s Notes', report.doctorNotes, lastY);
+    lastY = addSection("Doctor's Notes", report.doctorNotes, lastY);
 
     // Medications
     if (report.medications && report.medications.length > 0) {
