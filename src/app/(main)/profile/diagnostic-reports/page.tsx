@@ -37,7 +37,7 @@ const ReportSkeleton = () => (
     </div>
 );
 
-// Base64 encoded SVG of the Zepmeds logo
+// Base64 encoded SVG of the Zepmeds logo - CANNOT BE USED DIRECTLY
 const zepmedsLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgNTAiIHdpZHRoPSIyMDAiIGhlaWdodD0iNTAiPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZDEiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZmVkYzI4OyIgLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNmZWExNTI7IiAvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxwYXRoIGQ9Ik0xMCAyNSBDIDE1IDEwLCAyNSAxMCwgMzAgMjUgUyA0MCA0MCwgNDUgMjUiIHN0cm9rZT0idXJsKCNncmFkMSkiIHN0cm9rZS13aWR0aD0iNCIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHRleHQgeD0iNTUiIHk9IjM1IiBmb250LWZhbWlseT0iJ0FyaWFsIFJvdW5kZWQgTVQgQm9sZCcsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMzIiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjM0EzQjNCIj5aZXBtZWRzPC90ZXh0Pjwvc3ZnPg==";
 
 export default function DiagnosticReportsPage() {
@@ -81,7 +81,7 @@ export default function DiagnosticReportsPage() {
     let lastY = 0;
 
     // Add Logo
-    doc.addImage(zepmedsLogoBase64, 'PNG', 15, 12, 50, 12.5);
+    // doc.addImage(zepmedsLogoBase64, 'PNG', 15, 12, 50, 12.5);
 
     // Header
     doc.setFontSize(22);
