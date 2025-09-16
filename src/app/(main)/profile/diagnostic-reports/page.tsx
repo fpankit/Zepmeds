@@ -81,7 +81,7 @@ export default function DiagnosticReportsPage() {
     let lastY = 0;
 
     // Add Logo
-    doc.addImage(zepmedsLogoBase64, 'SVG', 15, 12, 50, 12.5);
+    doc.addImage(zepmedsLogoBase64, 'PNG', 15, 12, 50, 12.5);
 
     // Header
     doc.setFontSize(22);
