@@ -14,8 +14,9 @@ import {
 import { Button } from "../ui/button";
 import { Search, Pill, Loader2 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, limit, getDocs } from "firebase/firestore";
+import { collection, query, where, limit, getDocs, orderBy } from "firebase/firestore";
 import { Product } from "@/lib/types";
+import { DialogTitle } from "../ui/dialog";
 
 export function SearchDialog() {
   const [open, setOpen] = useState(false);
@@ -25,18 +26,24 @@ export function SearchDialog() {
   const router = useRouter();
 
   const fetchSuggestions = useCallback(async (search: string) => {
-    if (search.trim().length < 2) {
+    const trimmedSearch = search.trim();
+    if (trimmedSearch.length < 2) {
       setSuggestions([]);
       return;
     }
     setIsLoading(true);
     try {
+      // Capitalize the first letter to handle case-insensitivity simply
+      const capitalizedSearch = trimmedSearch.charAt(0).toUpperCase() + trimmedSearch.slice(1);
+
       const q = query(
         collection(db, "products"),
-        where("name", ">=", search),
-        where("name", "<=", search + "\uf8ff"),
+        orderBy("name"),
+        where("name", ">=", capitalizedSearch),
+        where("name", "<=", capitalizedSearch + "\uf8ff"),
         limit(10)
       );
+
       const querySnapshot = await getDocs(q);
       const newSuggestions = querySnapshot.docs.map(
         (doc) => ({ id: doc.id, ...doc.data() } as Product)
@@ -92,6 +99,7 @@ export function SearchDialog() {
       </Button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
+         <DialogTitle className="sr-only">Search for medicines</DialogTitle>
         <CommandInput
           placeholder="Type a medicine name..."
           value={searchQuery}
