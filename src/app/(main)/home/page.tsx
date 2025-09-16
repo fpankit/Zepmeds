@@ -3,7 +3,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Pill, Stethoscope, Search, Gift, CreditCard, Star, Minus, Plus, MessageSquare, Siren, PackageSearch, HeartPulse, QrCode, BrainCircuit, Clock, Truck, Voicemail } from "lucide-react";
 import Link from "next/link";
 import {
@@ -20,6 +19,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/context/language-context";
+import { SearchDialog } from "@/components/features/search-dialog";
 
 const featureCards = [
     { title: "Medicine Delivery", description: "Order medicines online", icon: Pill, href: "/order-medicines", color: "bg-blue-500" },
@@ -140,11 +140,7 @@ export default function HomePage() {
       </div>
       
        <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
-        <Input 
-          placeholder={t('home.searchPlaceholder')}
-          className="pl-10"
-        />
+        <SearchDialog />
       </div>
 
        {/* Feature Cards */}
@@ -233,3 +229,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
