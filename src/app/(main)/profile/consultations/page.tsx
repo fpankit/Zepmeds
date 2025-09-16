@@ -5,11 +5,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageSquare, FilePlus2, AlertTriangle, Calendar, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, MessageSquare, FilePlus2, AlertTriangle, Calendar, User as UserIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
@@ -49,19 +49,24 @@ export default function ConsultationsPage() {
             orderBy('createdAt', 'desc')
         );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedConsultations = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            } as Consultation));
-            setConsultations(fetchedConsultations);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching consultations:", error);
-            setIsLoading(false);
-        });
+        // Changed to getDocs for cost saving - no real-time needed here.
+        const fetchConsultations = async () => {
+            try {
+                const snapshot = await getDocs(q);
+                const fetchedConsultations = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                } as Consultation));
+                setConsultations(fetchedConsultations);
+            } catch (error) {
+                console.error("Error fetching consultations:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        fetchConsultations();
 
-        return () => unsubscribe();
     }, [user, authLoading]);
     
     const handleCreateReport = (consultation: Consultation) => {
