@@ -3,14 +3,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Bell, Edit, BarChart, GitMerge } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowLeft, Bell, Edit, BarChart, GitMerge, Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/context/cart-context";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-import { useState } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/auth-context";
 import { healthMetrics, HealthMetric } from "@/lib/health-data";
@@ -28,14 +28,16 @@ const weeklyStepsData = [
   { day: 'Sun', steps: 6200 },
 ];
 
-
-export default function ActivityPage() {
+// We wrap the component that uses `useSearchParams` in a Suspense boundary
+function ActivityPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { cart } = useCart();
     const { user, updateUser } = useAuth();
     const { toast } = useToast();
     
     const [editingMetric, setEditingMetric] = useState<HealthMetric | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     const handleSaveMetric = async (metricId: string, newValue: string) => {
         if (user) {
@@ -53,6 +55,56 @@ export default function ActivityPage() {
         // This will redirect the user to our own API route which then redirects to Google
         router.push('/api/google-fit/auth');
     }
+
+    const fetchGoogleFitData = useCallback(async () => {
+        // A real app would get the access token securely. For this demo, we can't.
+        // This function simulates fetching and updating data.
+        setIsSyncing(true);
+        toast({ title: "Syncing with Google Fit..." });
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Simulate receiving new data from Google Fit
+        const googleFitData = {
+            dailySteps: `${Math.floor(Math.random() * 5000) + 5000}`,
+            heartRate: `${Math.floor(Math.random() * 20) + 65} bpm`,
+            caloriesBurned: `${Math.floor(Math.random() * 500) + 300} cals`,
+            bloodPressure: `12${Math.floor(Math.random() * 3)}/8${Math.floor(Math.random() * 2)} mmHg`,
+        };
+
+        if (user) {
+            const newHealthData = {
+                ...user.healthData,
+                ...googleFitData
+            };
+            await updateUser({ healthData: newHealthData });
+        }
+
+        toast({ title: "Sync Complete!", description: "Your health data has been updated." });
+        setIsSyncing(false);
+        // Clean the URL
+        router.replace('/activity');
+    }, [user, updateUser, toast, router]);
+
+
+    useEffect(() => {
+        const syncSuccess = searchParams.get('success');
+        const syncError = searchParams.get('error');
+
+        if(syncSuccess === 'google_fit_synced') {
+            fetchGoogleFitData();
+        }
+        if (syncError) {
+             toast({
+                variant: 'destructive',
+                title: 'Google Fit Sync Failed',
+                description: 'Could not connect to your Google Fit account. Please try again.',
+            });
+            // Clean the URL
+            router.replace('/activity');
+        }
+    }, [searchParams, fetchGoogleFitData, toast, router]);
 
     // Get current date in MM/DD/YYYY format
     const currentDate = new Date().toLocaleDateString('en-US', {
@@ -91,9 +143,9 @@ export default function ActivityPage() {
                     <BarChart className="h-6 w-6" />
                     Health Statistics
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={handleGoogleFitSync}>
-                    <GitMerge className="mr-2 h-4 w-4" />
-                    Sync with Google Fit
+                <Button variant="outline" size="sm" onClick={handleGoogleFitSync} disabled={isSyncing}>
+                    {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GitMerge className="mr-2 h-4 w-4" />}
+                    {isSyncing ? 'Syncing...' : 'Sync with Google Fit'}
                 </Button>
             </CardHeader>
             <CardContent>
@@ -188,4 +240,10 @@ export default function ActivityPage() {
   );
 }
 
-    
+export default function ActivityPage() {
+    return (
+        <Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <ActivityPageContent />
+        </Suspense>
+    )
+}
