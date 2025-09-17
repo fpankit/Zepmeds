@@ -52,8 +52,9 @@ function ActivityPageContent() {
     };
 
     const handleGoogleFitSync = () => {
-        // This will redirect the user to our own API route which then redirects to Google
-        router.push('/api/google-fit/auth');
+        // This will now use a full page redirect, which is more reliable for external OAuth flows.
+        // It avoids the issues with Next.js App Router's fetch interception.
+        window.location.href = '/api/google-fit/auth';
     }
 
     const fetchGoogleFitData = useCallback(async () => {
@@ -83,8 +84,8 @@ function ActivityPageContent() {
 
         toast({ title: "Sync Complete!", description: "Your health data has been updated." });
         setIsSyncing(false);
-        // Clean the URL
-        router.replace('/activity');
+        // Clean the URL by replacing it, which won't trigger a full navigation.
+        router.replace('/activity', { scroll: false });
     }, [user, updateUser, toast, router]);
 
 
@@ -102,7 +103,7 @@ function ActivityPageContent() {
                 description: 'Could not connect to your Google Fit account. Please try again.',
             });
             // Clean the URL
-            router.replace('/activity');
+            router.replace('/activity', { scroll: false });
         }
     }, [searchParams, fetchGoogleFitData, toast, router]);
 
@@ -143,10 +144,9 @@ function ActivityPageContent() {
                     <BarChart className="h-6 w-6" />
                     Health Statistics
                 </CardTitle>
-                <Button asChild variant="link">
-                    <Link href="/health-report">
-                        Generate AI Health Report
-                    </Link>
+                <Button onClick={handleGoogleFitSync} disabled={isSyncing}>
+                    {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GitMerge className="mr-2 h-4 w-4" />}
+                    {isSyncing ? 'Syncing...' : 'Sync with Google Fit'}
                 </Button>
             </CardHeader>
             <CardContent>
@@ -220,11 +220,6 @@ function ActivityPageContent() {
                 )
             })}
         </div>
-
-         <Button variant="secondary" className="w-full h-14 text-lg font-bold" onClick={handleGoogleFitSync} disabled={isSyncing}>
-            {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GitMerge className="mr-2 h-4 w-4" />}
-            {isSyncing ? 'Syncing...' : 'Sync with Google Fit'}
-        </Button>
       </main>
       
       {editingMetric && (
@@ -247,5 +242,3 @@ export default function ActivityPage() {
         </Suspense>
     )
 }
-
-    

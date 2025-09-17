@@ -4,17 +4,24 @@ import { google } from 'googleapis';
 import { config } from 'dotenv';
 config({ path: '.env' });
 
+const getRedirectUri = () => {
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
+    return `${baseUrl}/api/google-fit/callback`;
+};
+
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  process.env.NEXT_PUBLIC_URL ? `${process.env.NEXT_PUBLIC_URL}/api/google-fit/callback` : 'http://localhost:3000/api/google-fit/callback'
+  getRedirectUri()
 );
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
 
   if (typeof code !== 'string') {
-    return NextResponse.redirect('/activity?error=google_fit_failed');
+    const redirectUrl = new URL('/activity', process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
+    redirectUrl.searchParams.set('error', 'google_fit_failed');
+    return NextResponse.redirect(redirectUrl);
   }
 
   try {
@@ -30,11 +37,14 @@ export async function GET(req: NextRequest) {
     // For this demo, we are not storing the tokens.
 
     // Redirect user back to the activity page with a success message
-    return NextResponse.redirect('/activity?success=google_fit_synced');
+    const redirectUrl = new URL('/activity', process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
+    redirectUrl.searchParams.set('success', 'google_fit_synced');
+    return NextResponse.redirect(redirectUrl);
+    
   } catch (error) {
     console.error('Error exchanging code for tokens', error);
-    return NextResponse.redirect('/activity?error=google_fit_failed');
+    const redirectUrl = new URL('/activity', process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
+    redirectUrl.searchParams.set('error', 'google_fit_failed');
+    return NextResponse.redirect(redirectUrl);
   }
 }
-
-    
