@@ -143,9 +143,10 @@ function ActivityPageContent() {
                     <BarChart className="h-6 w-6" />
                     Health Statistics
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={handleGoogleFitSync} disabled={isSyncing}>
-                    {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GitMerge className="mr-2 h-4 w-4" />}
-                    {isSyncing ? 'Syncing...' : 'Sync with Google Fit'}
+                <Button asChild variant="link">
+                    <Link href="/health-report">
+                        Generate AI Health Report
+                    </Link>
                 </Button>
             </CardHeader>
             <CardContent>
@@ -220,10 +221,9 @@ function ActivityPageContent() {
             })}
         </div>
 
-         <Button asChild variant="secondary" className="w-full h-14 text-lg font-bold">
-            <Link href="/health-report">
-                Generate AI Health Report
-            </Link>
+         <Button variant="secondary" className="w-full h-14 text-lg font-bold" onClick={handleGoogleFitSync} disabled={isSyncing}>
+            {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GitMerge className="mr-2 h-4 w-4" />}
+            {isSyncing ? 'Syncing...' : 'Sync with Google Fit'}
         </Button>
       </main>
       
@@ -247,3 +247,5 @@ export default function ActivityPage() {
         </Suspense>
     )
 }
+
+    
