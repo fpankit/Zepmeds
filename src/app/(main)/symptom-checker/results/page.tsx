@@ -1,23 +1,23 @@
+
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { aiSymptomChecker, AiSymptomCheckerOutput, AiSymptomCheckerInput } from '@/ai/flows/ai-symptom-checker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase, BrainCircuit, Sparkles, BookOpenCheck, Zap } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase, BrainCircuit, Sparkles, BookOpenCheck, WifiOff } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-
+import { offlineSymptomData, findOfflineMatch } from '@/lib/offline-symptom-data';
 
 const loadingMessages = [
     { text: "AI is thinking...", icon: BrainCircuit },
     { text: "Wait, AI can't think... that would be dangerous!", icon: AlertTriangle },
-    { text: "Just cross-referencing symptoms with medical data...", icon: BookOpenCheck },
+    { text: "Cross-referencing symptoms with medical data...", icon: BookOpenCheck },
     { text: "Finalizing your preliminary analysis...", icon: Sparkles },
 ];
 
@@ -27,7 +27,7 @@ function EngagingLoader() {
     useEffect(() => {
         const interval = setInterval(() => {
             setIndex((prev) => (prev + 1) % loadingMessages.length);
-        }, 2500); // Change message every 2.5 seconds
+        }, 2500);
 
         return () => clearInterval(interval);
     }, []);
@@ -63,6 +63,8 @@ function SymptomCheckerResultsContent() {
   const [isOffline, setIsOffline] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  const isOnline = useMemo(() => !isOffline, [isOffline]);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -89,6 +91,13 @@ function SymptomCheckerResultsContent() {
       return;
     }
     const parsedData: {symptoms: string; photoDataUri: string | null; targetLanguage: string;} = JSON.parse(storedData);
+    const requestPayload: AiSymptomCheckerInput = {
+        symptoms: parsedData.symptoms,
+        targetLanguage: parsedData.targetLanguage || 'English',
+        photoDataUri: parsedData.photoDataUri || undefined
+    };
+    setInputData(requestPayload);
+
 
     if (!user || user.isGuest) {
       toast({ variant: 'destructive', title: 'Login Required' });
@@ -96,36 +105,30 @@ function SymptomCheckerResultsContent() {
       return;
     }
 
-    if (isOffline) {
-      setError('You are offline. Please check your internet connection and try again.');
-      setIsLoading(false);
-      return;
-    }
-    
-    const requestPayload: AiSymptomCheckerInput = {
-        symptoms: parsedData.symptoms,
-        targetLanguage: parsedData.targetLanguage || 'English',
-        photoDataUri: parsedData.photoDataUri || undefined
-    };
-
-
-    setInputData(requestPayload);
+    // --- Main Logic ---
     setIsLoading(true);
+    if (isOnline) {
+      // ONLINE: Call the live AI model
+      aiSymptomChecker(requestPayload)
+        .then(setResult)
+        .catch((err) => {
+          console.error(err);
+          const errorMessage = err.message || 'An error occurred while analyzing your symptoms. Please try again later.';
+          setError(errorMessage);
+        })
+        .finally(() => setIsLoading(false));
+    } else {
+      // OFFLINE: Try to find a match in the local data
+      const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
+      if (offlineResult) {
+        setResult(offlineResult);
+      } else {
+        setError("You are offline and no direct match was found for your symptoms. Please connect to the internet for a full AI analysis.");
+      }
+      setIsLoading(false);
+    }
 
-    aiSymptomChecker(requestPayload)
-      .then((res) => {
-        setResult(res);
-        setError(null);
-      })
-      .catch((err) => {
-        console.error(err);
-        const errorMessage = err.message || 'An error occurred while analyzing your symptoms. Please try again later.';
-        setError(errorMessage);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [user, router, toast, isOffline]);
+  }, [user, router, toast, isOnline]);
 
   const ResultCard = ({ title, icon, items }: { title: string, icon: React.ReactNode, items: string[] }) => (
     <Card>
@@ -164,8 +167,8 @@ function SymptomCheckerResultsContent() {
 
         {error && (
           <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Analysis Failed</AlertTitle>
+             {isOffline ? <WifiOff className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+            <AlertTitle>{isOffline ? "You are Offline" : "Analysis Failed"}</AlertTitle>
             <AlertDescription>
               {error}
               <Button variant="link" className="p-0 h-auto ml-1" onClick={() => router.back()}>Go back and try again.</Button>
@@ -175,6 +178,15 @@ function SymptomCheckerResultsContent() {
 
         {result && inputData && (
           <div className="space-y-6">
+            {!isOnline && (
+                 <Alert variant="default" className="bg-blue-500/10 border-blue-500/50">
+                    <WifiOff className="h-4 w-4 text-blue-400" />
+                    <AlertTitle className="text-blue-300">Displaying Offline Results</AlertTitle>
+                    <AlertDescription className="text-blue-400/80">
+                        This is general advice. For a detailed AI analysis, please connect to the internet.
+                    </AlertDescription>
+                </Alert>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle>Your Symptoms</CardTitle>
