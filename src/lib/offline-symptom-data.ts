@@ -109,11 +109,130 @@ const acidity: OfflineAdvice = {
     doctorAdvisory: "This is not a substitute for professional medical advice. Please consult a doctor for a proper diagnosis if symptoms are persistent or severe."
 };
 
+const fever: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Viral Fever",
+            confidence: "Medium",
+            reasoning: "Fever is the body's natural response to an infection, often viral. It's usually accompanied by body aches and weakness."
+        }
+    ],
+    potentialMedicines: [
+        "Take an over-the-counter fever reducer like Paracetamol.",
+        "Place a cool, damp cloth on your forehead.",
+        "Drink plenty of fluids like water, soups, and ORS to stay hydrated."
+    ],
+    precautions: [
+        "Get plenty of rest to allow your body to fight the infection.",
+        "Monitor your temperature regularly.",
+        "Do not use heavy blankets if you have a high fever."
+    ],
+    diet: [
+        "Eat light, easily digestible foods like khichdi, dalia, or toast.",
+        "Avoid heavy, oily, and spicy foods.",
+        "Include fruits rich in Vitamin C."
+    ],
+    exercise: [
+        "Complete rest is advised until the fever subsides.",
+        "Avoid any form of physical exertion."
+    ],
+    doctorAdvisory: "This is not a substitute for professional medical advice. Please consult a doctor if the fever is very high (above 102°F), lasts more than 3 days, or is accompanied by other severe symptoms."
+};
+
+const diarrhea: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Acute Diarrhea",
+            confidence: "Medium",
+            reasoning: "Loose, watery stools are often caused by a viral or bacterial infection (gastroenteritis) or food poisoning."
+        }
+    ],
+    potentialMedicines: [
+        "The most important treatment is to prevent dehydration. Drink plenty of oral rehydration solution (ORS).",
+        "Probiotic supplements may help restore healthy gut bacteria.",
+        "Loperamide (like Imodium) can be used for adults but should be avoided if there is fever or blood in the stool."
+    ],
+    precautions: [
+        "Wash your hands thoroughly with soap and water, especially after using the toilet and before eating.",
+        "Avoid preparing food for others if you are sick.",
+        "Ensure food and water are clean and properly cooked."
+    ],
+    diet: [
+        "Follow the BRAT diet: Bananas, Rice, Applesauce, and Toast.",
+        "Yogurt (curd) with rice is also beneficial.",
+        "Avoid dairy products (except yogurt), fatty foods, and spicy foods until you recover."
+    ],
+    exercise: [
+        "Rest as much as possible.",
+        "Avoid exercise as it can worsen dehydration."
+    ],
+    doctorAdvisory: "This is not a substitute for professional medical advice. Please consult a doctor if diarrhea is severe, contains blood, is accompanied by high fever, or if you see signs of dehydration (like decreased urination, dry mouth)."
+};
+
+const skinRash: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Contact Dermatitis or Allergy",
+            confidence: "Low",
+            reasoning: "A skin rash can have many causes, including allergies, insect bites, or infections. The appearance can vary greatly."
+        }
+    ],
+    potentialMedicines: [
+        "Apply a cool compress or calamine lotion to soothe the itch.",
+        "Oatmeal baths can also provide relief.",
+        "Over-the-counter antihistamine creams or tablets (like Cetirizine) can help with itching."
+    ],
+    precautions: [
+        "Avoid scratching the rash, as this can lead to infection.",
+        "Try to identify and avoid the substance that may have caused the rash (e.g., new soap, detergent, plant).",
+        "Wear loose-fitting cotton clothing."
+    ],
+    diet: [
+        "There is generally no specific diet for a simple rash, but staying hydrated is important for skin health.",
+        "If you suspect a food allergy, avoid the potential trigger food."
+    ],
+    exercise: [
+        "Avoid activities that cause excessive sweating, as it can irritate the rash.",
+        "Keep the rash area clean and dry."
+    ],
+    doctorAdvisory: "This is not a substitute for professional medical advice. A skin rash can be a sign of many different conditions. It is highly recommended to consult a doctor, especially a dermatologist, for a correct diagnosis."
+};
+
+const musclePain: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Muscle Strain or Fatigue",
+            confidence: "Medium",
+            reasoning: "Pain in the muscles is often due to overexertion, unaccustomed exercise, or minor injury."
+        }
+    ],
+    potentialMedicines: [
+        "Rest the affected area.",
+        "Apply a hot water bag or take a warm bath to relax the muscles.",
+        "For a new injury (first 48 hours), an ice pack can help reduce inflammation.",
+        "Over-the-counter pain relief gels or sprays can be applied locally.",
+        "Painkillers like Ibuprofen or Paracetamol can be taken for relief."
+    ],
+    precautions: [
+        "Always warm up before exercising and cool down afterward.",
+        "Avoid sudden, jerky movements.",
+        "Stay well-hydrated, especially during physical activity."
+    ],
+    diet: [
+        "Ensure your diet is rich in protein to help muscle repair.",
+        "Foods rich in magnesium and potassium, like bananas and leafy greens, can help prevent cramps.",
+    ],
+    exercise: [
+        "Gentle stretching of the sore muscles can provide relief.",
+        "Avoid strenuous activity that involves the affected muscle until the pain subsides."
+    ],
+    doctorAdvisory: "This is not a substitute for professional medical advice. Please consult a doctor if the pain is severe, doesn't improve with rest, or is accompanied by signs of infection like redness and swelling."
+};
 
 // The main data map
 export const offlineSymptomData: Record<string, { keywords: string[], data: OfflineAdvice }> = {
     'common_cold': {
-        keywords: ['cold', 'cough', 'sneeze', 'runny nose', 'sore throat', 'fever', 'zukham', 'khasi', 'bukhar'],
+        keywords: ['cold', 'cough', 'sneeze', 'runny nose', 'sore throat', 'zukham', 'khasi'],
         data: commonCold,
     },
     'headache': {
@@ -123,8 +242,23 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
     'acidity': {
         keywords: ['acidity', 'heartburn', 'indigestion', 'gas', 'gerd', 'pet me jalan', 'seeney me jalan'],
         data: acidity,
+    },
+    'fever': {
+        keywords: ['fever', 'temperature', 'bukhar', 'tapman'],
+        data: fever
+    },
+    'diarrhea': {
+        keywords: ['diarrhea', 'loose motion', 'dast', 'pet kharab'],
+        data: diarrhea
+    },
+    'skin_rash': {
+        keywords: ['rash', 'itching', 'khujli', 'dane', 'skin problem', 'chakatte'],
+        data: skinRash
+    },
+    'muscle_pain': {
+        keywords: ['muscle pain', 'body ache', 'sore muscle', 'badan dard', 'manspeshiyo me dard'],
+        data: musclePain
     }
-    // Add more common conditions here
 };
 
 
