@@ -206,7 +206,14 @@ export default function OrderMedicinesPage() {
                     <Card className="overflow-hidden group flex flex-col">
                         <CardContent className="p-0 flex-1 flex flex-col">
                            <Link href={`/product/${product.id}`} className="block">
-                                <Skeleton className="w-full h-32" />
+                                <Image
+                                  src={product.imageUrl || `https://picsum.photos/seed/${product.id}/200/200`}
+                                  alt={product.name}
+                                  width={200}
+                                  height={200}
+                                  className="w-full h-32 object-cover"
+                                  data-ai-hint={product.dataAiHint || 'medicine product'}
+                                />
                                 <div className="p-3">
                                     {product.isRx && <Badge variant="destructive" className="mb-2">Rx</Badge>}
                                     <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
