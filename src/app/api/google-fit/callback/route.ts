@@ -4,24 +4,30 @@ import { google } from 'googleapis';
 import { config } from 'dotenv';
 config({ path: '.env' });
 
-const getRedirectUri = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
+// This function now dynamically determines the base URL from the request headers
+// to ensure it matches the one used in the auth route.
+const getRedirectUri = (req: NextRequest) => {
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const host = req.headers.get('host');
+    const baseUrl = `${protocol}://${host}`;
     return `${baseUrl}/api/google-fit/callback`;
 };
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  getRedirectUri()
-);
-
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get('code');
+  const redirectUri = getRedirectUri(req);
+
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    redirectUri
+  );
+  
+  const activityUrl = new URL('/activity', redirectUri);
 
   if (typeof code !== 'string') {
-    const redirectUrl = new URL('/activity', process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
-    redirectUrl.searchParams.set('error', 'google_fit_failed');
-    return NextResponse.redirect(redirectUrl);
+    activityUrl.searchParams.set('error', 'google_fit_failed');
+    return NextResponse.redirect(activityUrl);
   }
 
   try {
@@ -37,14 +43,12 @@ export async function GET(req: NextRequest) {
     // For this demo, we are not storing the tokens.
 
     // Redirect user back to the activity page with a success message
-    const redirectUrl = new URL('/activity', process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
-    redirectUrl.searchParams.set('success', 'google_fit_synced');
-    return NextResponse.redirect(redirectUrl);
+    activityUrl.searchParams.set('success', 'google_fit_synced');
+    return NextResponse.redirect(activityUrl);
     
   } catch (error) {
     console.error('Error exchanging code for tokens', error);
-    const redirectUrl = new URL('/activity', process.env.NEXT_PUBLIC_URL || 'http://localhost:3000');
-    redirectUrl.searchParams.set('error', 'google_fit_failed');
-    return NextResponse.redirect(redirectUrl);
+    activityUrl.searchParams.set('error', 'google_fit_failed');
+    return NextResponse.redirect(activityUrl);
   }
 }
