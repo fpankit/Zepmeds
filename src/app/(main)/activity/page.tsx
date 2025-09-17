@@ -242,3 +242,5 @@ export default function ActivityPage() {
         </Suspense>
     )
 }
+
+    
