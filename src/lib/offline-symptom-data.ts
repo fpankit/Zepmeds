@@ -496,14 +496,129 @@ const motionSickness: OfflineAdvice = {
 };
 
 
+const nauseaVomiting: OfflineAdvice = {
+    differentialDiagnosis: [
+        { condition: "Gastroenteritis or Indigestion", confidence: "Medium", reasoning: "Nausea and vomiting are common symptoms of stomach infections or a reaction to food. It's the body's way of getting rid of something harmful." }
+    ],
+    potentialMedicines: [
+        "Sip on clear fluids like water, ORS, or coconut water to avoid dehydration.",
+        "Chew on ginger or drink ginger tea to calm the stomach.",
+        "Over-the-counter medicine like Ondansetron can help control vomiting, but consult a doctor first, especially for children."
+    ],
+    precautions: ["Avoid solid food until vomiting stops.", "Get plenty of rest.", "Wash hands frequently to prevent spreading infection."],
+    diet: ["Once you can eat, start with bland foods like bananas, rice, or toast (BRAT diet).", "Avoid oily, spicy, and heavy foods for a day or two."],
+    exercise: ["Rest is most important. Avoid all forms of exercise until you feel completely better."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. See a doctor if vomiting is severe, lasts more than 24 hours, you see blood, or are unable to keep any fluids down, as this can lead to severe dehydration."
+};
+
+
+const soreThroat: OfflineAdvice = {
+    differentialDiagnosis: [
+        { condition: "Pharyngitis (Viral or Bacterial)", confidence: "Medium", reasoning: "A sore, scratchy, or painful throat is a primary symptom of pharyngitis, which is most often caused by a virus (like the common cold) but can also be bacterial (strep throat)." }
+    ],
+    potentialMedicines: [
+        "Gargle with warm salt water every few hours.",
+        "Suck on throat lozenges or hard candies to keep the throat moist.",
+        "Drink warm liquids like herbal tea with honey and lemon, or clear soups."
+    ],
+    precautions: ["Rest your voice as much as possible.", "Use a humidifier to add moisture to the air.", "Avoid smoking and secondhand smoke."],
+    diet: ["Eat soft foods that are easy to swallow.", "Avoid spicy or acidic foods that can irritate your throat.", "Stay well-hydrated with warm fluids."],
+    exercise: ["Avoid strenuous exercise. Rest allows your body to fight the infection."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. You should see a doctor if your sore throat is severe, lasts longer than a week, is accompanied by a high fever, rash, or difficulty breathing, as it could be a sign of a bacterial infection like strep throat that requires antibiotics."
+};
+
+const fatigue: OfflineAdvice = {
+    differentialDiagnosis: [
+        { condition: "General Fatigue / Overexertion", confidence: "Low", reasoning: "Fatigue is a very general symptom that can be caused by many things, including lack of sleep, stress, poor diet, or as a symptom of another illness." }
+    ],
+    potentialMedicines: [
+        "There is no specific medicine for general fatigue. Focus on lifestyle changes.",
+        "Ensure you are properly hydrated by drinking plenty of water.",
+        "Consider a balanced diet to ensure you're not missing any key nutrients."
+    ],
+    precautions: ["Prioritize getting 7-9 hours of quality sleep per night.", "Try to reduce and manage stress through relaxation techniques.", "Listen to your body and rest when you feel tired."],
+    diet: ["Eat a balanced diet with whole grains, lean protein, fruits, and vegetables.", "Avoid excessive sugar and processed foods, which can cause energy crashes.", "Ensure adequate iron intake, as deficiency can cause fatigue."],
+    exercise: ["Regular, moderate exercise can actually boost your energy levels in the long run.", "Start with short walks and gradually increase the duration and intensity.", "Avoid over-exercising, which can make fatigue worse."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. If fatigue is persistent, severe, and unexplained by lifestyle factors, it's very important to see a doctor to rule out underlying medical conditions like anemia, thyroid issues, or chronic fatigue syndrome."
+};
+
+const toothache: OfflineAdvice = {
+    differentialDiagnosis: [
+        { condition: "Dental Caries (Cavity) or Gum Inflammation", confidence: "Low", reasoning: "Tooth pain is most commonly caused by a cavity, but it can also result from gum disease, an abscess, or teeth grinding. A professional dental exam is needed to know the exact cause." }
+    ],
+    potentialMedicines: [
+        "Rinse your mouth with warm salt water.",
+        "Over-the-counter pain relievers like Ibuprofen or Paracetamol can help manage the pain temporarily.",
+        "Applying clove oil (eugenol) on a cotton swab to the affected tooth can provide temporary relief."
+    ],
+    precautions: ["Avoid very hot, cold, or sugary foods and drinks that can trigger pain.", "Try to chew on the opposite side of your mouth.", "Maintain good oral hygiene by brushing and flossing gently."],
+    diet: ["Stick to soft foods if chewing is painful."],
+    exercise: ["No specific recommendations, but avoid clenching your jaw during exercise."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. You must see a dentist as soon as possible. A toothache is a sign of a problem that will likely get worse without professional treatment. Do not ignore it."
+};
+
+// CROSS-SYMPTOM ENTRIES
+const feverAndHeadache: OfflineAdvice = {
+    differentialDiagnosis: [
+        { condition: "Viral Fever or Influenza", confidence: "Medium", reasoning: "The combination of fever and headache is very common with viral infections like the flu, where the body's immune response causes inflammation and pain." },
+        { condition: "Sinusitis", confidence: "Low", reasoning: "If the headache is concentrated around the front of the face and accompanied by facial pressure or a stuffy nose, it could be a sinus infection."}
+    ],
+    potentialMedicines: [
+        "Take Paracetamol or Ibuprofen to manage both fever and headache.",
+        "Apply a cool, damp cloth to your forehead.",
+        "Rest in a quiet, dark room to ease headache sensitivity."
+    ],
+    precautions: ["Drink plenty of fluids (water, ORS, soup) to stay hydrated, which is crucial during a fever.", "Get as much rest as possible.", "Monitor your temperature."],
+    diet: ["Eat light and nutritious food like soups or khichdi.", "Avoid heavy, oily foods and alcohol."],
+    exercise: ["Complete rest is necessary. Do not exercise with a fever."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. See a doctor if the headache is severe, the fever is high (over 102°F), or if you develop a stiff neck, rash, or confusion. These could be signs of a more serious condition like meningitis."
+};
+
+const diarrheaAndVomiting: OfflineAdvice = {
+    differentialDiagnosis: [
+        { condition: "Gastroenteritis (Stomach Flu)", confidence: "High", reasoning: "The simultaneous occurrence of diarrhea and vomiting is a classic sign of gastroenteritis, an inflammation of the stomach and intestines, usually caused by a virus or bacteria from contaminated food or water." }
+    ],
+    potentialMedicines: [
+        "The absolute priority is to prevent dehydration. Sip an Oral Rehydration Solution (ORS) continuously throughout the day.",
+        "Avoid solid food for several hours to let your stomach rest.",
+        "Medicines to stop vomiting (like Ondansetron) or diarrhea (like Loperamide) should only be taken after consulting a doctor, as they can sometimes trap the infection."
+    ],
+    precautions: ["Rest is essential.", "Wash your hands thoroughly and frequently.", "Do not handle or prepare food for others to prevent spreading the illness."],
+    diet: ["Once vomiting subsides, slowly introduce the BRAT diet (Bananas, Rice, Applesauce, Toast).", "Probiotic yogurt (curd) can be beneficial.", "Strictly avoid dairy, spicy, oily, and sugary foods."],
+    exercise: ["Do not exercise. Your body needs to conserve all its energy and fluids to fight the infection."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. Seek immediate medical attention if you cannot keep any fluids down for more than a few hours, notice blood in your vomit or stool, have a high fever, or show signs of severe dehydration (dizziness, no urination, extreme weakness)."
+};
+
+const coughAndFever: OfflineAdvice = {
+    differentialDiagnosis: [
+        { condition: "Bronchitis or Influenza (Flu)", confidence: "Medium", reasoning: "A cough combined with fever suggests an infection in the respiratory tract. It could be bronchitis (inflammation of the airways) or a more systemic viral illness like the flu." }
+    ],
+    potentialMedicines: [
+        "Use Paracetamol to control the fever and relieve body aches.",
+        "For a dry cough, honey and lemon in warm water can be soothing. Over-the-counter cough suppressants can be used at night.",
+        "For a wet cough (with phlegm), a mucolytic cough syrup can help loosen mucus. Steam inhalation is also very effective."
+    ],
+    precautions: ["Get plenty of rest.", "Drink lots of warm fluids to soothe the throat and thin mucus.", "Use a humidifier in your room."],
+    diet: ["Have warm soups and broths.", "Avoid cold drinks and foods.", "Turmeric milk (haldi doodh) has anti-inflammatory properties that may help."],
+    exercise: ["Avoid exercise completely. Rest is crucial for recovery from a respiratory infection."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. Consult a doctor if the fever is high, the cough is severe or produces colored phlegm, or if you experience shortness of breath or chest pain. This could indicate a more serious infection like pneumonia."
+};
+
 
 // The main data map
 export const offlineSymptomData: Record<string, { keywords: string[], data: OfflineAdvice }> = {
-    // Primary Conditions
+    // Cross-Symptom Entries (Higher Priority)
+    'diarrhea_and_vomiting': { keywords: ['diarrhea and vomiting', 'dast aur ulti', 'loose motion and vomiting'], data: diarrheaAndVomiting },
+    'cough_and_fever': { keywords: ['cough and fever', 'khasi aur bukhar', 'fever with cough'], data: coughAndFever },
+    'fever_and_headache': { keywords: ['fever and headache', 'bukhar aur sar dard', 'headache with fever'], data: feverAndHeadache },
+
+    // Individual Conditions
     'common_cold': {
-        keywords: ['cold', 'cough', 'sneeze', 'runny nose', 'sore throat', 'zukham', 'khasi', 'jukaam', 'gale me kharash'],
+        keywords: ['cold', 'sneeze', 'runny nose', 'zukham', 'jukaam'],
         data: commonCold,
     },
+     'sore_throat': { keywords: ['sore throat', 'gale me kharash', 'throat pain', 'gala dukhna'], data: soreThroat },
+     'cough': { keywords: ['cough', 'khasi'], data: commonCold }, // Fallback to common cold if just cough
     'headache': {
         keywords: ['headache', 'head pain', 'migraine', 'sir dard', 'sar dard'],
         data: headache,
@@ -520,6 +635,7 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
         keywords: ['diarrhea', 'diarrhoea', 'loose motion', 'dast', 'pet kharab'],
         data: diarrhea
     },
+     'nausea_vomiting': { keywords: ['nausea', 'vomiting', 'ji machalna', 'ulti', 'matli'], data: nauseaVomiting },
     'skin_rash': {
         keywords: ['rash', 'itching', 'khujli', 'dane', 'skin problem', 'chakatte', 'eczema', 'hives'],
         data: skinRash
@@ -528,6 +644,7 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
         keywords: ['muscle pain', 'body ache', 'sore muscle', 'badan dard', 'manspeshiyo me dard', 'backache', 'neck stiffness', 'sprain'],
         data: musclePain
     },
+    'fatigue': { keywords: ['fatigue', 'weakness', 'tiredness', 'thakaan', 'kamzori'], data: fatigue },
     'constipation': {
         keywords: ['constipation', 'qabz', 'pet saaf na hona'],
         data: constipation,
@@ -564,21 +681,21 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
         keywords: ['motion sickness', 'travel sickness', 'safar me ulti'],
         data: motionSickness
     },
+    'toothache': { keywords: ['toothache', 'daant me dard', 'tooth pain'], data: toothache },
 
-    // Mapped to existing advice
+    // Mapped to existing advice for wider coverage
     'allergic_rhinitis': { keywords: ['allergic rhinitis', 'hay fever', 'seasonal allergies', 'naak behna'], data: commonCold },
     'allergies': { keywords: ['allergies', 'allergy'], data: skinRash },
     'ankle_sprain': { keywords: ['ankle sprain', 'ankle injury', 'takne me moch'], data: musclePain },
     'arthritis': { keywords: ['arthritis', 'jodo ka dard'], data: musclePain },
     'back_pain': { keywords: ['back pain', 'kamar dard', 'back problems'], data: musclePain },
-    'bronchitis': { keywords: ['bronchitis'], data: commonCold },
-    'chest_infection': { keywords: ['chest infection'], data: commonCold },
+    'bronchitis': { keywords: ['bronchitis'], data: coughAndFever },
     'concussion': { keywords: ['concussion', 'sar me chot'], data: headache },
-    'conjunctivitis': { keywords: ['conjunctivitis', 'pink eye', 'aankh aana'], data: skinRash },
-    'flu': { keywords: ['flu', 'influenza'], data: commonCold },
-    'food_poisoning': { keywords: ['food poisoning'], data: diarrhea },
+    'conjunctivitis': { keywords: ['conjunctivitis', 'pink eye', 'aankh aana'], data: dryEyes }, // Simple mapping for now
+    'flu': { keywords: ['flu', 'influenza'], data: coughAndFever },
+    'food_poisoning': { keywords: ['food poisoning'], data: diarrheaAndVomiting },
     'frozen_shoulder': { keywords: ['frozen shoulder'], data: musclePain },
-    'gastroenteritis': { keywords: ['gastroenteritis', 'stomach flu'], data: diarrhea },
+    'gastroenteritis': { keywords: ['gastroenteritis', 'stomach flu'], data: diarrheaAndVomiting },
     'gord': { keywords: ['gord', 'gastro-oesophageal reflux disease'], data: acidity },
     'leg_cramps': { keywords: ['leg cramps', 'pairon me dard'], data: musclePain },
 
@@ -719,19 +836,37 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
 
 /**
  * Finds a matching offline advice object based on keywords in the user's symptom description.
+ * It now prioritizes multi-symptom matches.
  * @param symptoms The user's symptom description.
  * @returns An `AiSymptomCheckerOutput`-like object or null if no match is found.
  */
 export function findOfflineMatch(symptoms: string, targetLanguage: string): AiSymptomCheckerOutput | null {
     const lowercasedSymptoms = symptoms.toLowerCase();
     
-    for (const key in offlineSymptomData) {
+    // Create a list of all keywords from the symptom map to search for multi-word matches first
+    const allSymptomKeys = Object.keys(offlineSymptomData);
+
+    // Prioritize cross-symptom matches (which have ' and ' in their keywords)
+    const crossSymptomKeys = allSymptomKeys.filter(k => offlineSymptomData[k].keywords.some(kw => kw.includes(' and ')));
+    const singleSymptomKeys = allSymptomKeys.filter(k => !crossSymptomKeys.includes(k));
+
+    // Search for cross-symptoms first
+    for (const key of crossSymptomKeys) {
+        const entry = offlineSymptomData[key];
+        for (const keyword of entry.keywords) {
+            const multiKeywords = keyword.split(' and ');
+            const allKeywordsPresent = multiKeywords.every(kw => lowercasedSymptoms.includes(kw.trim()));
+            if (allKeywordsPresent) {
+                return entry.data;
+            }
+        }
+    }
+
+    // Then search for single symptoms
+    for (const key of singleSymptomKeys) {
         const entry = offlineSymptomData[key];
         for (const keyword of entry.keywords) {
             if (lowercasedSymptoms.includes(keyword)) {
-                // We found a match, return the corresponding data
-                // For offline mode, we can't translate, so we return the default English data.
-                // The UI should ideally show a notice that this is general, non-translated advice.
                 return entry.data;
             }
         }
