@@ -7,13 +7,15 @@ import {
   useHMSStore,
   selectIsConnectedToRoom,
   selectPeers,
+  HMSRoomProvider, // Import the provider here
 } from '@100mslive/react-sdk';
 import { Conference } from '@/components/features/100ms/conference';
 import { JoinForm } from '@/components/features/100ms/join-form';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 
-export function VideoCallContent() {
+// This is the inner component that uses the hooks
+function VideoCallInnerContent() {
   const isConnected = useHMSStore(selectIsConnectedToRoom);
   const hmsActions = useHMSActions();
   const peers = useHMSStore(selectPeers);
@@ -42,9 +44,18 @@ export function VideoCallContent() {
       {isConnected ? (
         <Conference peers={peers} />
       ) : (
-        // The JoinForm component will now handle the Room ID internally.
         <JoinForm user={user} />
       )}
     </div>
+  );
+}
+
+// This is the new wrapper component
+export function VideoCallContent() {
+  // Wrap the functionality with the provider only on this page
+  return (
+    <HMSRoomProvider>
+      <VideoCallInnerContent />
+    </HMSRoomProvider>
   );
 }

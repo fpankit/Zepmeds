@@ -9,13 +9,12 @@ import { HMSRoomProvider } from "@100mslive/react-sdk";
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <LanguageProvider>
-        <HMSRoomProvider>
-          <AuthProvider>
-            <CartProvider>
-              {children}
-            </CartProvider>
-          </AuthProvider>
-        </HMSRoomProvider>
+        {/* The HMSRoomProvider has been moved to VideoCallContent to prevent conflicts */}
+        <AuthProvider>
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </AuthProvider>
     </LanguageProvider>
   );
 }
