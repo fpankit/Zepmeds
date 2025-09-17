@@ -15,6 +15,7 @@
   "dependencies": {
     "@100mslive/hms-video-store": "^0.12.38",
     "@100mslive/react-sdk": "^0.10.38",
+    "@ducanh2912/next-pwa": "^10.2.7",
     "@genkit-ai/firebase": "^1.14.1",
     "@genkit-ai/googleai": "^1.14.1",
     "@genkit-ai/next": "^1.14.1",
