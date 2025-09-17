@@ -39,6 +39,8 @@ export interface User {
   isDoctor?: boolean;
   isOnline?: boolean;
   specialty?: string;
+  experience?: number; // Added experience in years
+  rating?: number; // Added rating
   about?: string;
   photoURL?: string;
   displayName?: string; // Add displayName to match doctor schema

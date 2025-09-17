@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Star } from "lucide-react";
 import { useEffect, useState, useMemo, Suspense, useCallback } from "react";
 import { collection, query, onSnapshot, doc, setDoc, getDocs, where, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -15,17 +15,32 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth, User as AuthUser } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
+const specialties = [
+    { name: "All", key: "all" },
+    { name: "Dermatologist", key: "dermatologist" },
+    { name: "Pediatrician", key: "pediatrician" },
+    { name: "General Physician", key: "general physician" },
+    { name: "Dietician", key: "dietician" },
+    { name: "Urologist", key: "urologist" },
+    { name: "Cardiologist", key: "cardiologist" },
+    { name: "Neurologist", key: "neurologist" },
+];
 
 
 const DoctorCardSkeleton = () => (
     <Card className="overflow-hidden">
         <CardContent className="p-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-4">
             <Skeleton className="h-20 w-20 rounded-full" />
             <div className="space-y-2 flex-1">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <div className="flex gap-4 pt-1">
+                    <Skeleton className="h-4 w-1/4" />
+                    <Skeleton className="h-4 w-1/4" />
+                </div>
             </div>
         </div>
         <div className="flex gap-2 mt-4">
@@ -40,6 +55,7 @@ function DoctorPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingLink, setIsCreatingLink] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
 
   const { user, updateUser } = useAuth();
   const router = useRouter();
@@ -50,6 +66,10 @@ function DoctorPageContent() {
   useEffect(() => {
     if(specialtyFilter) {
       setSearchQuery(specialtyFilter);
+      const matchingSpecialty = specialties.find(s => s.name.toLowerCase() === specialtyFilter.toLowerCase());
+      if (matchingSpecialty) {
+          setSelectedSpecialty(matchingSpecialty.key);
+      }
     }
   }, [specialtyFilter]);
 
@@ -73,8 +93,9 @@ function DoctorPageContent() {
                 id: data.uid || doc.id,
                 displayName: data.displayName || `${data.firstName} ${data.lastName}`, 
                 name: data.displayName || `${data.firstName} ${data.lastName}`,
-                specialty: data.qualification || data.specialty || "No Specialty",
-                experience: data.about || "No experience listed.",
+                specialty: data.specialty || "General Physician",
+                experience: data.experience || 5, // Default experience
+                rating: data.rating || 4.5, // Default rating
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
                 isOnline: data.isOnline || false,
@@ -106,11 +127,14 @@ function DoctorPageContent() {
   }, [toast]);
   
   const filteredDoctors = useMemo(() => {
-      return doctors.filter(doctor => 
-        (doctor.displayName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (doctor.specialty || '').toLowerCase().includes(searchQuery.toLowerCase())
-      );
-  }, [doctors, searchQuery]);
+      return doctors.filter(doctor => {
+        const matchesSearch = (doctor.displayName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (doctor.specialty || '').toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSpecialty = selectedSpecialty === 'all' || (doctor.specialty || '').toLowerCase() === selectedSpecialty;
+
+        return matchesSearch && matchesSpecialty;
+      });
+  }, [doctors, searchQuery, selectedSpecialty]);
 
 
   const getInitials = (name: string) => {
@@ -158,6 +182,13 @@ function DoctorPageContent() {
         setIsCreatingLink(null);
     }
   }
+  
+  const StarRating = ({ rating }: { rating: number }) => (
+    <div className="flex items-center gap-1 text-yellow-500">
+        <Star className="w-4 h-4 fill-current" />
+        <span className="text-sm font-semibold text-muted-foreground">{rating.toFixed(1)}</span>
+    </div>
+  )
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -172,12 +203,28 @@ function DoctorPageContent() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
         <Input 
-          placeholder="Search by doctor or specialty" 
+          placeholder="Search by doctor name..." 
           className="pl-10"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
+
+       <ScrollArea className="w-full whitespace-nowrap rounded-md">
+          <div className="flex w-max space-x-3">
+            {specialties.map((specialty) => (
+              <Button
+                key={specialty.key}
+                variant={selectedSpecialty === specialty.key ? 'default' : 'outline'}
+                onClick={() => setSelectedSpecialty(specialty.key)}
+                className="rounded-full"
+              >
+                {specialty.name}
+              </Button>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" className="h-2" />
+        </ScrollArea>
 
       {user?.isDoctor && (
         <Card className="p-4 flex items-center justify-between">
@@ -198,24 +245,25 @@ function DoctorPageContent() {
             filteredDoctors.map((doctor) => (
                 <Card key={doctor.id} className="overflow-hidden">
                     <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-start gap-4">
                         <Avatar className="h-20 w-20 border-4" style={{ borderColor: doctor.isOnline ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }}>
                             <AvatarImage src={doctor.photoURL} alt={doctor.displayName} data-ai-hint={doctor.dataAiHint} />
                             <AvatarFallback>{getInitials(doctor.displayName || '')}</AvatarFallback>
                         </Avatar>
-                        <div className="space-y-1">
-                        <h3 className="font-bold text-lg">{doctor.displayName}</h3>
-                        <p className="text-primary font-medium">{doctor.specialty}</p>
-                        <p className="text-sm text-muted-foreground">
-                            {doctor.about}
-                        </p>
-                        <div className={cn(
-                            "flex items-center gap-1 text-xs font-semibold",
-                            doctor.isOnline ? "text-green-500" : "text-red-500"
-                        )}>
-                            {doctor.isOnline ? <CheckCircle className="h-3 w-3"/> : <XCircle className="h-3 w-3"/>}
-                            {doctor.isOnline ? "Online" : "Offline"}
-                        </div>
+                        <div className="space-y-1 flex-1">
+                            <h3 className="font-bold text-lg">{doctor.displayName}</h3>
+                            <p className="text-primary font-medium">{doctor.specialty}</p>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <StarRating rating={doctor.rating || 0} />
+                                <span>{doctor.experience}+ yrs exp.</span>
+                            </div>
+                             <div className={cn(
+                                "flex items-center gap-1 text-xs font-semibold pt-1",
+                                doctor.isOnline ? "text-green-500" : "text-red-500"
+                            )}>
+                                {doctor.isOnline ? <CheckCircle className="h-3 w-3"/> : <XCircle className="h-3 w-3"/>}
+                                {doctor.isOnline ? "Online" : "Offline"}
+                            </div>
                         </div>
                     </div>
                     <div className="flex gap-2 mt-4">
@@ -237,7 +285,7 @@ function DoctorPageContent() {
             ))
         ) : (
             !isLoading && <div className="col-span-full text-center py-10">
-                <p className="text-muted-foreground">No doctors found for "{searchQuery}". Please check back later or broaden your search.</p>
+                <p className="text-muted-foreground">No doctors found matching your criteria. Please check back later or broaden your search.</p>
             </div>
         )}
       </div>
