@@ -335,6 +335,167 @@ const minorCuts: OfflineAdvice = {
     doctorAdvisory: "This is not a substitute for professional medical advice. Seek medical attention if the cut is deep, won't stop bleeding, was caused by a dirty or rusty object, or shows signs of infection."
 };
 
+const acne: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Acne Vulgaris",
+            confidence: "Medium",
+            reasoning: "Pimples, blackheads, or whiteheads on the face, neck, and back are signs of acne, a common skin condition caused by clogged hair follicles."
+        }
+    ],
+    potentialMedicines: [
+        "Wash your face twice a day with a gentle, non-comedogenic cleanser.",
+        "Apply an over-the-counter cream containing Benzoyl Peroxide or Salicylic Acid.",
+        "A paste of turmeric (haldi) and sandalwood (chandan) can have anti-inflammatory effects.",
+        "Multani mitti (Fuller's earth) face packs can help absorb excess oil."
+    ],
+    precautions: [
+        "Avoid popping or squeezing pimples, as it can cause scarring and infection.",
+        "Keep your hair clean and away from your face.",
+        "Use oil-free or non-comedogenic makeup and skincare products."
+    ],
+    diet: [
+        "Drink plenty of water to keep your skin hydrated.",
+        "Some people find that limiting dairy and high-glycemic foods (like sugar and white bread) helps.",
+        "Eat a balanced diet rich in fruits and vegetables."
+    ],
+    exercise: ["Regular exercise can improve circulation and reduce stress, which may help with acne."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. Consult a dermatologist if acne is severe, painful (cystic), or not responding to over-the-counter treatments."
+};
+
+const menstrualCramps: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Dysmenorrhea (Menstrual Cramps)",
+            confidence: "High",
+            reasoning: "Throbbing or cramping pain in the lower abdomen before or during a menstrual period is very common and known as dysmenorrhea."
+        }
+    ],
+    potentialMedicines: [
+        "Apply a hot water bag or take a warm bath to relax the abdominal muscles.",
+        "Drink warm ginger tea or ajwain (carom seeds) water.",
+        "Over-the-counter pain relievers like Meftal-Spas (Mefenamic Acid) or Ibuprofen are effective."
+    ],
+    precautions: [
+        "Get adequate rest during your period.",
+        "Avoid stress as much as possible."
+    ],
+    diet: [
+        "Avoid salty foods, caffeine, and carbonated drinks, which can cause bloating and discomfort.",
+        "Include iron-rich foods in your diet to compensate for blood loss.",
+        "Eat light and healthy meals."
+    ],
+    exercise: [
+        "Gentle exercises like walking, yoga, or light stretching can help reduce pain.",
+        "Avoid high-intensity workouts during heavy flow days if they cause discomfort."
+    ],
+    doctorAdvisory: "This is not a substitute for professional medical advice. See a gynecologist if the pain is severe, debilitating, or gets worse over time, as it could be a sign of an underlying condition."
+};
+
+const insomnia: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Insomnia / Poor Sleep Hygiene",
+            confidence: "Medium",
+            reasoning: "Difficulty falling asleep, staying asleep, or waking up too early are signs of insomnia, often related to stress, anxiety, or poor sleep habits."
+        }
+    ],
+    potentialMedicines: [
+        "Drink a glass of warm milk with a pinch of turmeric or nutmeg before bed.",
+        "Chamomile tea is known for its calming effects and can promote sleep.",
+        "Over-the-counter sleep aids should be used with caution and only for a short term. Consulting a doctor is better."
+    ],
+    precautions: [
+        "Create a relaxing bedtime routine, such as reading a book, listening to calm music, or taking a warm bath.",
+        "Avoid screens (phone, TV, laptop) for at least an hour before bed as the blue light can interfere with sleep.",
+        "Ensure your bedroom is dark, quiet, and cool."
+    ],
+    diet: [
+        "Avoid heavy meals, caffeine, and alcohol close to bedtime.",
+        "A light, healthy snack an hour before bed is okay if you're hungry."
+    ],
+    exercise: [
+        "Regular physical activity during the day can improve sleep quality.",
+        "Avoid intense exercise within 2-3 hours of your bedtime."
+    ],
+    doctorAdvisory: "This is not a substitute for professional medical advice. If insomnia is chronic (lasts for more than a month), significantly affects your daily life, or is related to a mental health condition, please consult a doctor."
+};
+
+const dryEyes: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Dry Eye Syndrome",
+            confidence: "Medium",
+            reasoning: "A feeling of dryness, scratchiness, or burning in the eyes, often worsened by screen use or dry environments, is a classic sign of dry eyes."
+        }
+    ],
+    potentialMedicines: [
+        "Use over-the-counter lubricating eye drops (artificial tears) frequently throughout the day.",
+        "A warm compress on the eyes for a few minutes can help stimulate tear production."
+    ],
+    precautions: [
+        "Remember to blink regularly, especially when using digital screens.",
+        "Follow the 20-20-20 rule: Every 20 minutes, look away from your screen at something 20 feet away for at least 20 seconds.",
+        "Avoid direct wind from fans or ACs blowing into your eyes."
+    ],
+    diet: [
+        "Stay hydrated by drinking plenty of water.",
+        "Foods rich in Omega-3 fatty acids (like fish, walnuts, and flaxseeds) may help improve tear quality."
+    ],
+    exercise: ["General exercise is not directly related, but reducing screen time is a key lifestyle change."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. Consult an ophthalmologist (eye doctor) if symptoms are severe, persistent, or accompanied by pain or vision changes."
+};
+
+const cankerSores: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Aphthous Ulcer (Canker Sore)",
+            confidence: "High",
+            reasoning: "Small, painful, round or oval sores inside the mouth are known as canker sores. They are common and usually heal on their own."
+        }
+    ],
+    potentialMedicines: [
+        "Rinse your mouth with salt water (1/2 teaspoon of salt in a glass of warm water).",
+        "Apply a small amount of honey or coconut oil to the sore.",
+        "Over-the-counter oral gels (like Dologel-CT or Orajel) can provide temporary pain relief."
+    ],
+    precautions: [
+        "Avoid spicy, acidic, or rough foods that can irritate the sore.",
+        "Use a soft-bristled toothbrush to avoid injuring the sore."
+    ],
+    diet: [
+        "Eat soft, bland foods.",
+        "Ensure you have adequate Vitamin B12, zinc, and iron in your diet, as deficiencies can sometimes trigger canker sores."
+    ],
+    exercise: ["No specific exercise recommendations."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. See a doctor or dentist if the sores are unusually large, last longer than two weeks, or are accompanied by a fever."
+};
+
+const motionSickness: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Motion Sickness",
+            confidence: "High",
+            reasoning: "Nausea, dizziness, and vomiting during travel (car, bus, boat) are classic symptoms of motion sickness, caused by mixed signals sent to the brain."
+        }
+    ],
+    potentialMedicines: [
+        "Chew on ginger candy or sip ginger tea.",
+        "Suck on a lemon wedge or smell it.",
+        "Over-the-counter tablets like Avomine can be taken about 30-60 minutes before starting your journey."
+    ],
+    precautions: [
+        "Try to sit in the front seat of a car or in the middle of a boat where motion is least felt.",
+        "Look at a stable point on the horizon.",
+        "Avoid reading or using your phone while traveling.",
+        "Ensure fresh air circulation."
+    ],
+    diet: ["Avoid heavy, greasy, or acidic meals before and during travel."],
+    exercise: ["No specific exercise recommendations."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. If motion sickness is severe and not managed by simple measures, a doctor can prescribe stronger medication."
+};
+
+
 
 // The main data map
 export const offlineSymptomData: Record<string, { keywords: string[], data: OfflineAdvice }> = {
@@ -379,9 +540,32 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
         keywords: ['cut', 'scrape', 'wound', 'chot', 'khat'],
         data: minorCuts
     },
+     'acne': { 
+        keywords: ['acne', 'pimples', 'muhase'], 
+        data: acne 
+    },
+    'menstrual_cramps': {
+        keywords: ['menstrual cramps', 'period pain', 'mahine ka dard'],
+        data: menstrualCramps
+    },
+    'insomnia': {
+        keywords: ['insomnia', 'sleeplessness', 'neend na aana'],
+        data: insomnia
+    },
+    'dry_eyes': {
+        keywords: ['dry eyes', 'aankhon me jalan', 'aankhon me sookha'],
+        data: dryEyes
+    },
+    'canker_sores': {
+        keywords: ['canker sore', 'mouth ulcer', 'muh me chhale'],
+        data: cankerSores
+    },
+    'motion_sickness': {
+        keywords: ['motion sickness', 'travel sickness', 'safar me ulti'],
+        data: motionSickness
+    },
 
     // Mapped to existing advice
-    'acne': { keywords: ['acne', 'pimples', 'muhase'], data: skinRash },
     'allergic_rhinitis': { keywords: ['allergic rhinitis', 'hay fever', 'seasonal allergies', 'naak behna'], data: commonCold },
     'allergies': { keywords: ['allergies', 'allergy'], data: skinRash },
     'ankle_sprain': { keywords: ['ankle sprain', 'ankle injury', 'takne me moch'], data: musclePain },
@@ -499,7 +683,6 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
     'gum_disease': { keywords: ['gum disease', 'masoodo me sujan'], data: genericPlaceholderAdvice },
     'haemorrhoids': { keywords: ['haemorrhoids', 'piles', 'bawasir'], data: genericPlaceholderAdvice },
     'hand_foot_and_mouth_disease': { keywords: ['hand, foot and mouth disease'], data: genericPlaceholderAdvice },
-    'hearing_loss': { keywords: ['hearing loss'], data: genericPlaceholderAdvice },
     'heart_attack': { keywords: ['heart attack'], data: genericPlaceholderAdvice },
     'heart_failure': { keywords: ['heart failure'], data: genericPlaceholderAdvice },
     'hepatitis': { keywords: ['hepatitis'], data: genericPlaceholderAdvice },
@@ -516,7 +699,6 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
     'ingrown_toenail': { keywords: ['ingrown toenail'], data: genericPlaceholderAdvice },
     'infertility': { keywords: ['infertility'], data: genericPlaceholderAdvice },
     'ibd': { keywords: ['inflammatory bowel disease', 'ibd'], data: genericPlaceholderAdvice },
-    'insomnia': { keywords: ['insomnia', 'sleeplessness', 'neend na aana'], data: genericPlaceholderAdvice },
     'iron_deficiency_anaemia': { keywords: ['anaemia', 'iron deficiency', 'khoon ki kami'], data: genericPlaceholderAdvice },
     'ibs': { keywords: ['irritable bowel syndrome', 'ibs'], data: genericPlaceholderAdvice },
     'joint_hypermobility': { keywords: ['joint hypermobility'], data: genericPlaceholderAdvice },
