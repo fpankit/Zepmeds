@@ -49,6 +49,11 @@ export default function ActivityPage() {
         toast({ title: 'Metric Updated', description: `Your ${editingMetric?.title} has been saved.` });
     };
 
+    const handleGoogleFitSync = () => {
+        // This will redirect the user to our own API route which then redirects to Google
+        router.push('/api/google-fit/auth');
+    }
+
     // Get current date in MM/DD/YYYY format
     const currentDate = new Date().toLocaleDateString('en-US', {
         month: 'numeric',
@@ -81,11 +86,15 @@ export default function ActivityPage() {
       <main className="flex-1 overflow-y-auto p-4 space-y-6">
 
         <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                     <BarChart className="h-6 w-6" />
                     Health Statistics
                 </CardTitle>
+                <Button variant="outline" size="sm" onClick={handleGoogleFitSync}>
+                    <GitMerge className="mr-2 h-4 w-4" />
+                    Sync with Google Fit
+                </Button>
             </CardHeader>
             <CardContent>
                  <Tabs defaultValue="week" className="w-full">
@@ -178,3 +187,5 @@ export default function ActivityPage() {
     </div>
   );
 }
+
+    
