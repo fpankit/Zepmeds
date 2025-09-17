@@ -1,4 +1,5 @@
 
+
 import { AiSymptomCheckerOutput } from "@/ai/flows/ai-symptom-checker";
 
 /**
@@ -9,6 +10,24 @@ import { AiSymptomCheckerOutput } from "@/ai/flows/ai-symptom-checker";
 
 // A simplified, offline version of the AI output schema
 type OfflineAdvice = Omit<AiSymptomCheckerOutput, 'recommendedSpecialist'>;
+
+const genericDoctorAdvisory = "This is a complex condition that requires professional diagnosis. Please consult a doctor immediately for proper diagnosis and treatment. Self-medication can be dangerous.";
+
+const genericPlaceholderAdvice: OfflineAdvice = {
+    differentialDiagnosis: [
+        {
+            condition: "Requires Professional Diagnosis",
+            confidence: "Low",
+            reasoning: "The symptoms for this condition can vary widely and require a professional medical evaluation."
+        }
+    ],
+    potentialMedicines: ["Do not self-medicate. Follow the prescription provided by your doctor."],
+    precautions: ["Consult a doctor for appropriate precautions based on your specific condition."],
+    diet: ["Follow the dietary advice given by your healthcare provider."],
+    exercise: ["Consult your doctor before starting any exercise regimen."],
+    doctorAdvisory: genericDoctorAdvisory
+};
+
 
 const commonCold: OfflineAdvice = {
     differentialDiagnosis: [
@@ -248,17 +267,168 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
         data: fever
     },
     'diarrhea': {
-        keywords: ['diarrhea', 'loose motion', 'dast', 'pet kharab'],
+        keywords: ['diarrhea', 'diarrhoea', 'loose motion', 'dast', 'pet kharab'],
         data: diarrhea
     },
     'skin_rash': {
-        keywords: ['rash', 'itching', 'khujli', 'dane', 'skin problem', 'chakatte'],
+        keywords: ['rash', 'itching', 'khujli', 'dane', 'skin problem', 'chakatte', 'eczema'],
         data: skinRash
     },
     'muscle_pain': {
         keywords: ['muscle pain', 'body ache', 'sore muscle', 'badan dard', 'manspeshiyo me dard'],
         data: musclePain
-    }
+    },
+    // Placeholder entries for the user's list
+    'abdominal_aortic_aneurysm': { keywords: ['abdominal aortic aneurysm'], data: genericPlaceholderAdvice },
+    'achilles_tendinopathy': { keywords: ['achilles tendinopathy'], data: genericPlaceholderAdvice },
+    'acne': { keywords: ['acne', 'pimples'], data: skinRash }, // Map to existing rash advice
+    'acute_cholecystitis': { keywords: ['acute cholecystitis'], data: genericPlaceholderAdvice },
+    'leukaemia': { keywords: ['leukaemia', 'leukemia'], data: genericPlaceholderAdvice },
+    'pancreatitis': { keywords: ['pancreatitis'], data: genericPlaceholderAdvice },
+    'addison_disease': { keywords: ['addison\'s disease'], data: genericPlaceholderAdvice },
+    'adenomyosis': { keywords: ['adenomyosis'], data: genericPlaceholderAdvice },
+    'liver_disease': { keywords: ['liver disease', 'cirrhosis'], data: genericPlaceholderAdvice },
+    'allergic_rhinitis': { keywords: ['allergic rhinitis', 'hay fever'], data: commonCold }, // Map to cold
+    'allergies': { keywords: ['allergies', 'allergy'], data: skinRash }, // Map to rash
+    'alzheimer_disease': { keywords: ['alzheimer\'s disease', 'dementia'], data: genericPlaceholderAdvice },
+    'anal_cancer': { keywords: ['anal cancer'], data: genericPlaceholderAdvice },
+    'anaphylaxis': { keywords: ['anaphylaxis'], data: genericPlaceholderAdvice },
+    'angina': { keywords: ['angina'], data: genericPlaceholderAdvice },
+    'angioedema': { keywords: ['angioedema'], data: genericPlaceholderAdvice },
+    'ankle_sprain': { keywords: ['ankle sprain', 'ankle injury'], data: musclePain }, // Map to pain
+    'ankylosing_spondylitis': { keywords: ['ankylosing spondylitis'], data: genericPlaceholderAdvice },
+    'anorexia_nervosa': { keywords: ['anorexia'], data: genericPlaceholderAdvice },
+    'anxiety': { keywords: ['anxiety'], data: genericPlaceholderAdvice },
+    'aplastic_anaemia': { keywords: ['aplastic anaemia'], data: genericPlaceholderAdvice },
+    'appendicitis': { keywords: ['appendicitis'], data: genericPlaceholderAdvice },
+    'arterial_thrombosis': { keywords: ['thrombosis'], data: genericPlaceholderAdvice },
+    'arthritis': { keywords: ['arthritis'], data: musclePain }, // Map to pain
+    'asbestosis': { keywords: ['asbestosis'], data: genericPlaceholderAdvice },
+    'asthma': { keywords: ['asthma'], data: genericPlaceholderAdvice },
+    'ataxia': { keywords: ['ataxia'], data: genericPlaceholderAdvice },
+    'atopic_eczema': { keywords: ['atopic eczema'], data: skinRash },
+    'atrial_fibrillation': { keywords: ['atrial fibrillation'], data: genericPlaceholderAdvice },
+    'adhd': { keywords: ['adhd', 'attention deficit hyperactivity disorder'], data: genericPlaceholderAdvice },
+    'autism': { keywords: ['autism'], data: genericPlaceholderAdvice },
+    'back_pain': { keywords: ['back pain', 'back problems'], data: musclePain },
+    'bacterial_vaginosis': { keywords: ['bacterial vaginosis'], data: genericPlaceholderAdvice },
+    'benign_prostate_enlargement': { keywords: ['prostate enlargement'], data: genericPlaceholderAdvice },
+    'bile_duct_cancer': { keywords: ['bile duct cancer', 'cholangiocarcinoma'], data: genericPlaceholderAdvice },
+    'binge_eating_disorder': { keywords: ['eating disorder', 'binge eating'], data: genericPlaceholderAdvice },
+    'bipolar_disorder': { keywords: ['bipolar disorder'], data: genericPlaceholderAdvice },
+    'bladder_cancer': { keywords: ['bladder cancer'], data: genericPlaceholderAdvice },
+    'sepsis': { keywords: ['sepsis', 'blood poisoning'], data: genericPlaceholderAdvice },
+    'bone_cancer': { keywords: ['bone cancer'], data: genericPlaceholderAdvice },
+    'bowel_cancer': { keywords: ['bowel cancer'], data: genericPlaceholderAdvice },
+    'bowel_incontinence': { keywords: ['bowel incontinence'], data: genericPlaceholderAdvice },
+    'bowel_polyps': { keywords: ['bowel polyps'], data: genericPlaceholderAdvice },
+    'brain_tumours': { keywords: ['brain tumour'], data: genericPlaceholderAdvice },
+    'breast_cancer': { keywords: ['breast cancer'], data: genericPlaceholderAdvice },
+    'bronchitis': { keywords: ['bronchitis'], data: commonCold }, // Map to cold
+    'bulimia_nervosa': { keywords: ['bulimia'], data: genericPlaceholderAdvice },
+    'bunion': { keywords: ['bunion'], data: genericPlaceholderAdvice },
+    'cardiovascular_disease': { keywords: ['cardiovascular disease'], data: genericPlaceholderAdvice },
+    'carpal_tunnel_syndrome': { keywords: ['carpal tunnel'], data: genericPlaceholderAdvice },
+    'cellulitis': { keywords: ['cellulitis'], data: genericPlaceholderAdvice },
+    'cerebral_palsy': { keywords: ['cerebral palsy'], data: genericPlaceholderAdvice },
+    'cervical_cancer': { keywords: ['cervical cancer'], data: genericPlaceholderAdvice },
+    'chest_infection': { keywords: ['chest infection'], data: commonCold },
+    'chickenpox': { keywords: ['chickenpox'], data: skinRash },
+    'chlamydia': { keywords: ['chlamydia'], data: genericPlaceholderAdvice },
+    'chronic_fatigue_syndrome': { keywords: ['chronic fatigue'], data: genericPlaceholderAdvice },
+    'chronic_kidney_disease': { keywords: ['kidney disease'], data: genericPlaceholderAdvice },
+    'copd': { keywords: ['copd', 'chronic obstructive pulmonary disease'], data: genericPlaceholderAdvice },
+    'chronic_pain': { keywords: ['chronic pain'], data: musclePain },
+    'coeliac_disease': { keywords: ['coeliac disease'], data: genericPlaceholderAdvice },
+    'cold_sore': { keywords: ['cold sore'], data: skinRash },
+    'coma': { keywords: ['coma'], data: genericPlaceholderAdvice },
+    'concussion': { keywords: ['concussion'], data: headache },
+    'congenital_heart_disease': { keywords: ['congenital heart disease'], data: genericPlaceholderAdvice },
+    'conjunctivitis': { keywords: ['conjunctivitis', 'pink eye'], data: genericPlaceholderAdvice },
+    'constipation': { keywords: ['constipation'], data: genericPlaceholderAdvice },
+    'coronavirus': { keywords: ['coronavirus', 'covid-19', 'long covid'], data: genericPlaceholderAdvice },
+    'costochondritis': { keywords: ['costochondritis'], data: genericPlaceholderAdvice },
+    'crohns_disease': { keywords: ['crohn\'s disease'], data: genericPlaceholderAdvice },
+    'croup': { keywords: ['croup'], data: genericPlaceholderAdvice },
+    'cystic_fibrosis': { keywords: ['cystic fibrosis'], data: genericPlaceholderAdvice },
+    'cystitis': { keywords: ['cystitis'], data: genericPlaceholderAdvice },
+    'deep_vein_thrombosis': { keywords: ['deep vein thrombosis', 'dvt'], data: genericPlaceholderAdvice },
+    'dehydration': { keywords: ['dehydration'], data: genericPlaceholderAdvice },
+    'delirium': { keywords: ['delirium'], data: genericPlaceholderAdvice },
+    'dental_abscess': { keywords: ['dental abscess', 'tooth infection'], data: genericPlaceholderAdvice },
+    'depression': { keywords: ['depression'], data: genericPlaceholderAdvice },
+    'diabetic_ketoacidosis': { keywords: ['diabetic ketoacidosis', 'dka'], data: genericPlaceholderAdvice },
+    'diverticulitis': { keywords: ['diverticulitis'], data: genericPlaceholderAdvice },
+    'dizziness': { keywords: ['dizziness', 'lightheadedness'], data: genericPlaceholderAdvice },
+    'downs_syndrome': { keywords: ['down\'s syndrome'], data: genericPlaceholderAdvice },
+    'dysphagia': { keywords: ['dysphagia', 'swallowing problems'], data: genericPlaceholderAdvice },
+    'dystonia': { keywords: ['dystonia'], data: genericPlaceholderAdvice },
+    'earache': { keywords: ['earache', 'ear pain'], data: genericPlaceholderAdvice },
+    'eating_disorders': { keywords: ['eating disorders'], data: genericPlaceholderAdvice },
+    'ebola': { keywords: ['ebola'], data: genericPlaceholderAdvice },
+    'ectopic_pregnancy': { keywords: ['ectopic pregnancy'], data: genericPlaceholderAdvice },
+    'endometriosis': { keywords: ['endometriosis'], data: genericPlaceholderAdvice },
+    'epilepsy': { keywords: ['epilepsy', 'seizure'], data: genericPlaceholderAdvice },
+    'erectile_dysfunction': { keywords: ['erectile dysfunction', 'impotence'], data: genericPlaceholderAdvice },
+    'escherichia_coli': { keywords: ['e. coli'], data: genericPlaceholderAdvice },
+    'eye_cancer': { keywords: ['eye cancer'], data: genericPlaceholderAdvice },
+    'febrile_seizures': { keywords: ['febrile seizures'], data: genericPlaceholderAdvice },
+    'fibroids': { keywords: ['fibroids'], data: genericPlaceholderAdvice },
+    'fibromyalgia': { keywords: ['fibromyalgia'], data: genericPlaceholderAdvice },
+    'flu': { keywords: ['flu', 'influenza'], data: commonCold },
+    'food_allergy': { keywords: ['food allergy'], data: genericPlaceholderAdvice },
+    'food_poisoning': { keywords: ['food poisoning'], data: diarrhea },
+    'frozen_shoulder': { keywords: ['frozen shoulder'], data: musclePain },
+    'fungal_nail_infection': { keywords: ['fungal nail infection'], data: genericPlaceholderAdvice },
+    'gallbladder_cancer': { keywords: ['gallbladder cancer'], data: genericPlaceholderAdvice },
+    'gallstones': { keywords: ['gallstones'], data: genericPlaceholderAdvice },
+    'ganglion_cyst': { keywords: ['ganglion cyst'], data: genericPlaceholderAdvice },
+    'gastroenteritis': { keywords: ['gastroenteritis', 'stomach flu'], data: diarrhea },
+    'gord': { keywords: ['gord', 'gastro-oesophageal reflux disease'], data: acidity },
+    'gad': { keywords: ['gad', 'generalised anxiety disorder'], data: genericPlaceholderAdvice },
+    'genital_herpes': { keywords: ['genital herpes'], data: genericPlaceholderAdvice },
+    'genital_warts': { keywords: ['genital warts'], data: genericPlaceholderAdvice },
+    'glandular_fever': { keywords: ['glandular fever'], data: genericPlaceholderAdvice },
+    'gonorrhoea': { keywords: ['gonorrhoea'], data: genericPlaceholderAdvice },
+    'gout': { keywords: ['gout'], data: genericPlaceholderAdvice },
+    'gum_disease': { keywords: ['gum disease'], data: genericPlaceholderAdvice },
+    'haemorrhoids': { keywords: ['haemorrhoids', 'piles'], data: genericPlaceholderAdvice },
+    'hand_foot_and_mouth_disease': { keywords: ['hand, foot and mouth disease'], data: genericPlaceholderAdvice },
+    'hearing_loss': { keywords: ['hearing loss'], data: genericPlaceholderAdvice },
+    'heart_attack': { keywords: ['heart attack'], data: genericPlaceholderAdvice },
+    'heart_failure': { keywords: ['heart failure'], data: genericPlaceholderAdvice },
+    'hepatitis': { keywords: ['hepatitis'], data: genericPlaceholderAdvice },
+    'hiatus_hernia': { keywords: ['hiatus hernia'], data: genericPlaceholderAdvice },
+    'high_blood_pressure': { keywords: ['high blood pressure', 'hypertension'], data: genericPlaceholderAdvice },
+    'high_cholesterol': { keywords: ['high cholesterol'], data: genericPlaceholderAdvice },
+    'hiv': { keywords: ['hiv'], data: genericPlaceholderAdvice },
+    'hives': { keywords: ['hives'], data: skinRash },
+    'hodgkin_lymphoma': { keywords: ['hodgkin lymphoma'], data: genericPlaceholderAdvice },
+    'huntingtons_disease': { keywords: ['huntington\'s disease'], data: genericPlaceholderAdvice },
+    'hydrocephalus': { keywords: ['hydrocephalus'], data: genericPlaceholderAdvice },
+    'hyperglycaemia': { keywords: ['hyperglycaemia', 'high blood sugar'], data: genericPlaceholderAdvice },
+    'hypoglycaemia': { keywords: ['hypoglycaemia', 'low blood sugar'], data: genericPlaceholderAdvice },
+    'impetigo': { keywords: ['impetigo'], data: skinRash },
+    'ingrown_toenail': { keywords: ['ingrown toenail'], data: genericPlaceholderAdvice },
+    'infertility': { keywords: ['infertility'], data: genericPlaceholderAdvice },
+    'ibd': { keywords: ['inflammatory bowel disease', 'ibd'], data: genericPlaceholderAdvice },
+    'insomnia': { keywords: ['insomnia', 'sleeplessness'], data: genericPlaceholderAdvice },
+    'iron_deficiency_anaemia': { keywords: ['anaemia', 'iron deficiency'], data: genericPlaceholderAdvice },
+    'ibs': { keywords: ['irritable bowel syndrome', 'ibs'], data: genericPlaceholderAdvice },
+    'joint_hypermobility': { keywords: ['joint hypermobility'], data: genericPlaceholderAdvice },
+    'kidney_infection': { keywords: ['kidney infection'], data: genericPlaceholderAdvice },
+    'kidney_stones': { keywords: ['kidney stones'], data: genericPlaceholderAdvice },
+    'labyrinthitis': { keywords: ['labyrinthitis'], data: genericPlaceholderAdvice },
+    'lactose_intolerance': { keywords: ['lactose intolerance'], data: genericPlaceholderAdvice },
+    'laryngitis': { keywords: ['laryngitis'], data: genericPlaceholderAdvice },
+    'leg_cramps': { keywords: ['leg cramps'], data: musclePain },
+    'lichen_planus': { keywords: ['lichen planus'], data: genericPlaceholderAdvice },
+    'loss_of_libido': { keywords: ['loss of libido', 'low libido'], data: genericPlaceholderAdvice },
+    'low_blood_pressure': { keywords: ['low blood pressure', 'hypotension'], data: genericPlaceholderAdvice },
+    'lung_cancer': { keywords: ['lung cancer'], data: genericPlaceholderAdvice },
+    'lupus': { keywords: ['lupus'], data: genericPlaceholderAdvice },
+    'lyme_disease': { keywords: ['lyme disease'], data: genericPlaceholderAdvice },
+    'lymphoedema': { keywords: ['lymphoedema'], data: genericPlaceholderAdvice },
 };
 
 
