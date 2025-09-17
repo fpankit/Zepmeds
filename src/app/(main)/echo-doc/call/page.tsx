@@ -60,7 +60,8 @@ function EchoDocCallContent() {
     // Initial message effect
     useEffect(() => {
         if (conversation.length === 0) {
-            handleNewMessage(initialSymptoms || '');
+            // Use a small timeout to ensure permissions are requested first.
+            setTimeout(() => handleNewMessage(initialSymptoms || ''), 100);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialSymptoms]);
@@ -70,20 +71,21 @@ function EchoDocCallContent() {
         setIsLoading(true);
         setCallStatus("AI is responding...");
         
-        const userTurn: ConversationTurn | null = (text || conversation.length > 0) ? { role: 'user', text: text } : null;
-        const updatedConversation: ConversationTurn[] = userTurn ? [...conversation, userTurn] : [...conversation];
-        setConversation(updatedConversation);
+        const currentConversation = text ? [...conversation, { role: 'user', text }] : [...conversation];
+        setConversation(currentConversation);
 
         try {
             const input: EchoDocInput = {
                 symptoms: text,
-                // The history should be the state *before* this new message
+                // Pass the conversation state just before the new user message was added.
+                // This is the most reliable source for history.
                 conversationHistory: conversation, 
             };
 
             const result: EchoDocOutput = await echoDoc(input);
             
             const newModelTurn: ConversationTurn = { role: 'model', text: result.responseText };
+            // Update conversation state with the new AI response
             setConversation(prev => [...prev, newModelTurn]);
             
             if (audioRef.current && result.responseAudio) {
