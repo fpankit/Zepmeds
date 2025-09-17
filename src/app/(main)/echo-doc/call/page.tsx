@@ -87,27 +87,29 @@ function EchoDocCallContent() {
     const handleNewMessage = useCallback(async (text: string) => {
         setIsLoading(true);
         setCallStatus(isOffline ? "Checking offline data..." : "AI is responding...");
-
+        
+        const currentConversation = [...conversation];
+        let newHistory: ConversationTurn[] = [...currentConversation];
+        
         if (text) {
-          setConversation(prev => [...prev, { role: 'user', text }]);
+          newHistory.push({ role: 'user', text });
         }
-
+        
         // --- ONLINE LOGIC ---
         if (!isOffline) {
             try {
                 const input: EchoDocInput = {
                     symptoms: text,
-                    conversationHistory: conversation, 
+                    // Pass the existing conversation history, NOT including the new user message
+                    conversationHistory: currentConversation, 
                 };
 
                 const result: EchoDocOutput = await echoDoc(input);
                 
                 const newModelTurn: ConversationTurn = { role: 'model', text: result.responseText };
                 
-                setConversation(prev => {
-                  const newHistory = text ? prev.slice(0, -1) : prev;
-                  return text ? [...newHistory, { role: 'user', text }, newModelTurn] : [...newHistory, newModelTurn];
-                });
+                // Now, update the state with both the user's turn (if any) and the model's response
+                setConversation([...newHistory, newModelTurn]);
                 
                 if (audioRef.current && result.responseAudio) {
                     audioRef.current.src = result.responseAudio;
@@ -118,9 +120,6 @@ function EchoDocCallContent() {
             } catch (error: any) {
                 toast({ variant: 'destructive', title: 'AI Error', description: error.message });
                 setCallStatus("Call Failed");
-                if (text) {
-                    setConversation(prev => prev.slice(0, -1));
-                }
             } finally {
                 setIsLoading(false);
             }
@@ -136,10 +135,7 @@ function EchoDocCallContent() {
             
             const newModelTurn: ConversationTurn = { role: 'model', text: responseText };
 
-            setConversation(prev => {
-                const newHistory = text ? prev.slice(0, -1) : prev;
-                return text ? [...newHistory, { role: 'user', text }, newModelTurn] : [...newHistory, newModelTurn];
-            });
+            setConversation([...newHistory, newModelTurn]);
 
             setCallStatus("Offline Mode");
             setIsLoading(false);
@@ -298,5 +294,7 @@ export default function EchoDocCallPage() {
         </Suspense>
     )
 }
+
+    
 
     
