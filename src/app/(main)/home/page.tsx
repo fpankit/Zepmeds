@@ -91,11 +91,11 @@ const sponsorCards = [
 
 const trendingProducts = [
   { id: 'prod1', name: 'Paracetamol 500mg', price: 25.00, category: 'Popular', image: 'https://picsum.photos/seed/paracetamol-tablets/200/200', dataAiHint: 'medicine tablets', isRx: false },
-  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular', image: 'https://picsum.photos/seed/antiseptic-bottle-clean/200/200', dataAiHint: 'antiseptic liquid', isRx: false },
-  { id: 'prod3', name: 'Amoxicillin 250mg', price: 150.00, category: ['Popular', 'Antibiotics'], image: 'https://picsum.photos/seed/antibiotic-capsule-pack/200/200', dataAiHint: 'antibiotic medicine', isRx: true },
-  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care', image: 'https://picsum.photos/seed/cosmetic-skincare-cream/200/200', dataAiHint: 'skincare cream', isRx: false },
-  { id: 'prod5', name: 'Amlodipine 5mg', price: 220.00, category: 'Heart', image: 'https://picsum.photos/seed/heart-medicine-pills/200/200', dataAiHint: 'hypertension medicine', isRx: true },
-  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular', image: 'https://picsum.photos/seed/adhesive-bandage-box/200/200', dataAiHint: 'bandages pack', isRx: false },
+  { id: 'prod2', name: 'Antiseptic Liquid', price: 80.00, category: 'Popular', image: 'https://picsum.photos/seed/antiseptic-bottle/200/200', dataAiHint: 'antiseptic liquid', isRx: false },
+  { id: 'prod3', name: 'Amoxicillin 250mg', price: 150.00, category: 'Popular', image: 'https://picsum.photos/seed/antibiotic-capsules/200/200', dataAiHint: 'antibiotic medicine', isRx: true },
+  { id: 'prod4', name: 'Moisturizing Cream', price: 350.00, category: 'Skin Care', image: 'https://picsum.photos/seed/skincare-cream/200/200', dataAiHint: 'skincare cream', isRx: false },
+  { id: 'prod5', name: 'Amlodipine 5mg', price: 220.00, category: 'Heart', image: 'https://picsum.photos/seed/heart-pills/200/200', dataAiHint: 'hypertension medicine', isRx: true },
+  { id: 'prod6', name: 'Band-Aid Pack', price: 50.00, category: 'Popular', image: 'https://picsum.photos/seed/bandages-box/200/200', dataAiHint: 'bandages pack', isRx: false },
 ];
 
 export default function HomePage() {
