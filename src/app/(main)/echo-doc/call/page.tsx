@@ -71,22 +71,30 @@ function EchoDocCallContent() {
         setIsLoading(true);
         setCallStatus("AI is responding...");
         
-        const currentConversation = text ? [...conversation, { role: 'user', text }] : [...conversation];
-        setConversation(currentConversation);
+        // Temporarily add user's message to show it instantly in the UI if there is text.
+        if (text) {
+          setConversation(prev => [...prev, { role: 'user', text }]);
+        }
 
         try {
             const input: EchoDocInput = {
                 symptoms: text,
-                // Pass the conversation state just before the new user message was added.
-                // This is the most reliable source for history.
+                // Pass the correct history (state before adding the new user message)
                 conversationHistory: conversation, 
             };
 
             const result: EchoDocOutput = await echoDoc(input);
             
             const newModelTurn: ConversationTurn = { role: 'model', text: result.responseText };
-            // Update conversation state with the new AI response
-            setConversation(prev => [...prev, newModelTurn]);
+            
+            // Correctly update conversation state with both user's turn and AI's turn
+            // If the user text was empty (first message), only add the model turn.
+            if (text) {
+                 setConversation(prev => [...prev.slice(0, -1), { role: 'user', text }, newModelTurn]);
+            } else {
+                 setConversation(prev => [...prev, newModelTurn]);
+            }
+
             
             if (audioRef.current && result.responseAudio) {
                 audioRef.current.src = result.responseAudio;
@@ -97,6 +105,10 @@ function EchoDocCallContent() {
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'AI Error', description: error.message });
             setCallStatus("Call Failed");
+            // If there was an error, roll back the temporary user message if it was added
+            if (text) {
+                setConversation(prev => prev.slice(0, -1));
+            }
         } finally {
             setIsLoading(false);
         }
@@ -139,7 +151,7 @@ function EchoDocCallContent() {
 
         recognitionRef.current = recognition;
 
-    }, [toast, isLoading]);
+    }, [toast, isLoading, handleNewMessage]);
 
     const toggleMute = () => {
         if (!hasMicPermission) {
@@ -216,7 +228,7 @@ function EchoDocCallContent() {
                         >
                              {isLoading && conversation.length === 0 ? (
                                 <p>Starting conversation...</p>
-                             ) : isLoading ? (
+                             ) : isLoading && !latestAiResponse ? (
                                 <Loader2 className="h-6 w-6 animate-spin" />
                              ) : latestAiResponse ? (
                                 <Typewriter
