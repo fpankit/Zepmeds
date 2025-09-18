@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -27,9 +26,13 @@ import { languageOptions } from '@/locales/language-options';
 import { liveTranslateFlow } from '@/ai/flows/live-translate-flow';
 import { useToast } from '@/hooks/use-toast';
 
+interface Captions {
+    original: string;
+    translated: string;
+}
 
 // This component will handle listening to the remote peer's audio
-const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLanguage }: { isTranslationEnabled: boolean, myLanguage: string, peerLanguage: string }) => {
+const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLanguage, setCaptions }: { isTranslationEnabled: boolean, myLanguage: string, peerLanguage: string, setCaptions: (captions: Captions) => void }) => {
     const remotePeers = useHMSStore(selectRemotePeers);
     const remotePeer = remotePeers.length > 0 ? remotePeers[0] : null;
     const audioTrack = useHMSStore(selectAudioTrackByPeerID(remotePeer?.id));
@@ -54,9 +57,17 @@ const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLangua
                     targetLanguage: myLanguage,
                 });
                 
-                if (result && result.translatedAudioUri) {
-                    const translatedAudio = new Audio(result.translatedAudioUri);
-                    translatedAudio.play().catch(e => console.error("Error playing translated audio:", e));
+                if (result) {
+                     // Play the translated audio
+                    if (result.translatedAudioUri) {
+                        const translatedAudio = new Audio(result.translatedAudioUri);
+                        translatedAudio.play().catch(e => console.error("Error playing translated audio:", e));
+                    }
+                    // Update the captions on screen
+                    setCaptions({
+                        original: result.transcribedText,
+                        translated: result.translatedText,
+                    });
                 }
                 isProcessingRef.current = false;
             };
@@ -69,13 +80,12 @@ const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLangua
             });
             isProcessingRef.current = false;
         }
-    }, [peerLanguage, myLanguage, toast]);
+    }, [peerLanguage, myLanguage, toast, setCaptions]);
 
     useEffect(() => {
         if (isTranslationEnabled && audioTrack?.nativeTrack) {
             const stream = new MediaStream([audioTrack.nativeTrack]);
             
-            // Check for supported MIME type
             const mimeType = MediaRecorder.isTypeSupported('audio/webm; codecs=opus')
                 ? 'audio/webm; codecs=opus'
                 : 'audio/webm';
@@ -88,8 +98,7 @@ const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLangua
                 }
             };
             
-            // Record in 3-second chunks
-            mediaRecorderRef.current.start(3000);
+            mediaRecorderRef.current.start(3000); // Process audio in 3-second chunks
 
             return () => {
                 mediaRecorderRef.current?.stop();
@@ -99,11 +108,11 @@ const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLangua
         }
     }, [isTranslationEnabled, audioTrack, processAudioChunk]);
 
-    return null; // This component does not render anything
+    return null;
 }
 
 
-export function Controls() {
+export function Controls({ setCaptions }: { setCaptions: (captions: Captions) => void }) {
   const hmsActions = useHMSActions();
   const router = useRouter();
   const room = useHMSStore(selectRoom);
@@ -111,7 +120,6 @@ export function Controls() {
   const { isLocalAudioEnabled, isLocalVideoEnabled, toggleAudio, toggleVideo } = useAVToggle();
   
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
-  // Default to English as my language and Hindi as peer's
   const [myLanguage, setMyLanguage] = useState('en');
   const [peerLanguage, setPeerLanguage] = useState('hi');
 
@@ -122,7 +130,7 @@ export function Controls() {
         const callDocRef = doc(db, 'video_calls', callId);
         await updateDoc(callDocRef, { status: 'completed' });
       } catch (error) {
-        console.warn("Could not update call status to completed (document might already be deleted):", error);
+        console.warn("Could not update call status to completed:", error);
       }
     }
     
@@ -132,7 +140,7 @@ export function Controls() {
 
   return (
     <>
-    {isTranslationEnabled && <RemotePeerAudioProcessor isTranslationEnabled={isTranslationEnabled} myLanguage={myLanguage} peerLanguage={peerLanguage} />}
+    {isTranslationEnabled && <RemotePeerAudioProcessor isTranslationEnabled={isTranslationEnabled} myLanguage={myLanguage} peerLanguage={peerLanguage} setCaptions={setCaptions} />}
     <div className="bg-black/50 p-4">
       <div className="flex items-center justify-center gap-4">
         <Button onClick={toggleAudio} size="icon" className={`h-14 w-14 rounded-full ${isLocalAudioEnabled ? 'bg-gray-600' : 'bg-red-600'}`}>

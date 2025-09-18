@@ -1,18 +1,22 @@
-
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   useHMSActions,
   useHMSStore,
   selectIsConnectedToRoom,
   selectPeers,
-  HMSRoomProvider, // Import the provider here
+  HMSRoomProvider,
 } from '@100mslive/react-sdk';
 import { Conference } from '@/components/features/100ms/conference';
 import { JoinForm } from '@/components/features/100ms/join-form';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
+
+interface Captions {
+    original: string;
+    translated: string;
+}
 
 // This is the inner component that uses the hooks
 function VideoCallInnerContent() {
@@ -20,6 +24,19 @@ function VideoCallInnerContent() {
   const hmsActions = useHMSActions();
   const peers = useHMSStore(selectPeers);
   const { user, loading: authLoading } = useAuth();
+  
+  const [captions, setCaptions] = useState<Captions>({ original: '', translated: '' });
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (captions.translated) {
+        // Clear captions after 5 seconds of inactivity
+        timer = setTimeout(() => {
+            setCaptions({ original: '', translated: '' });
+        }, 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [captions]);
 
   useEffect(() => {
     return () => {
@@ -42,7 +59,7 @@ function VideoCallInnerContent() {
   return (
     <div className="h-screen bg-black flex items-center justify-center">
       {isConnected ? (
-        <Conference peers={peers} />
+        <Conference peers={peers} captions={captions} setCaptions={setCaptions} />
       ) : (
         <JoinForm user={user} />
       )}
