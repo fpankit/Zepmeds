@@ -90,7 +90,8 @@ export const echoDocFlow = ai.defineFlow(
     const llmResponse = await ai.generate({
         model: googleAI.model('gemini-1.5-flash'),
         prompt: CONVERSATION_PROMPT_TEMPLATE,
-        history: input.conversationHistory,
+        // The CORRECT way: Pass both history and new prompt in the 'input' object
+        // so the Handlebars template can access them.
         input: {
             prompt: transcribedText,
             history: input.conversationHistory
