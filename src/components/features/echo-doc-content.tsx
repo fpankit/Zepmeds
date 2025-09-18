@@ -3,7 +3,6 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Bot, Mic, MicOff, Loader2, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -95,13 +94,18 @@ export function EchoDocContent() {
                             setConversation(prev => [...prev, newUserTurn]);
                         }
                         
+                        // Play the AI's audio response
                         if (result.aiAudioUri && result.aiResponseText) {
                             const audio = new Audio(result.aiAudioUri);
                             audio.play();
-                             // Add AI's response after a short delay to feel more natural
+                            
+                            // Add AI's response text to conversation after a short delay
                             setTimeout(() => {
                                 setConversation(prev => [...prev, newModelTurn]);
-                            }, 100);
+                            }, 100); 
+                        } else if (!newUserTurn.text) {
+                            // Handle case where transcription might be empty
+                             toast({ variant: "default", title: "Couldn't hear anything", description: "Could you please speak a bit louder or clearer?" });
                         }
 
                     } catch (error: any) {
