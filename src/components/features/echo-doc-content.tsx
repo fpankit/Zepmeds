@@ -49,7 +49,7 @@ export function EchoDocContent() {
         audioChunksRef.current = [];
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' }); // Use a more common format
+            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' }); 
             setMediaRecorder(recorder);
 
             recorder.ondataavailable = (event) => {
@@ -59,6 +59,16 @@ export function EchoDocContent() {
             };
 
             recorder.onstop = async () => {
+                if (audioChunksRef.current.length === 0) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'No audio captured',
+                        description: 'Please press and hold the button for a bit longer while speaking.'
+                    });
+                    setIsProcessing(false);
+                    return;
+                }
+
                 setIsProcessing(true);
                 const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
                 const reader = new FileReader();
@@ -66,29 +76,21 @@ export function EchoDocContent() {
                 reader.onloadend = async () => {
                     const base64Audio = reader.result as string;
                     
-                    const lastUserTurn = conversation.filter(t => t.role === 'user').pop();
-                    if(lastUserTurn) {
-                        setConversation(prev => [...prev.slice(0, -1)]);
-                    }
-                    
                     try {
                         const result = await echoDocFlow({
                             audioDataUri: base64Audio,
                             conversationHistory: conversation,
                         });
                         
-                        // Add the user's transcribed turn
-                        const newUserTurn = { role: 'user' as const, text: result.detectedLanguage }; // Placeholder, AI flow returns transcription
-                        // The flow should return the transcription text which we'd use here.
-                        // Let's assume the flow returns transcription for now.
-                        // This part needs the actual transcription text from the flow output.
-                        // For now, let's just show the response.
+                        const newUserTurn = { role: 'user' as const, text: result.detectedLanguage };
                         
-                        if (result.aiAudioUri) {
+                        if (result.aiAudioUri && result.aiResponseText) {
                             const audio = new Audio(result.aiAudioUri);
                             audio.play();
-                            // A proper implementation would first show the user transcription, then the AI response.
-                            setConversation(prev => [...prev, { role: 'model', text: result.aiResponseText }]);
+                            setConversation(prev => [...prev, newUserTurn, { role: 'model', text: result.aiResponseText }]);
+                        } else if (!result.aiResponseText && newUserTurn.text) {
+                            // This case handles when user speaks but AI has no reply
+                            setConversation(prev => [...prev, newUserTurn]);
                         }
 
                     } catch (error: any) {
