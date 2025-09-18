@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -26,6 +25,39 @@ import { useToast } from '@/hooks/use-toast';
 import { Captions } from './conference';
 
 
+// Helper function to speak text using browser's SpeechSynthesis API
+const speakText = (text: string, lang: string) => {
+    try {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang; // Use the target language code
+
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+                window.speechSynthesis.speak(utterance);
+            } else {
+                // Fallback if voices are not loaded yet
+                window.speechSynthesis.onvoiceschanged = () => {
+                     const voices = window.speechSynthesis.getVoices();
+                     const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
+                     if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+                    window.speechSynthesis.speak(utterance);
+                };
+            }
+        }
+    } catch (e) {
+        console.error("Browser speech synthesis failed.", e);
+    }
+};
+
 // This component will handle listening to the remote peer's audio
 const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLanguage, setCaptions }: { isTranslationEnabled: boolean, myLanguage: string, peerLanguage: string, setCaptions: (captions: Captions) => void }) => {
     const remotePeers = useHMSStore(selectRemotePeers);
@@ -47,6 +79,9 @@ const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLangua
             if (audioTrack) {
                 hmsActions.setVolume(100, audioTrack.id);
             }
+             if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
         };
     }, [isTranslationEnabled, audioTrack, hmsActions]);
 
@@ -66,12 +101,11 @@ const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLangua
                     targetLanguage: myLanguage,
                 });
                 
-                if (result) {
-                    if (result.translatedAudioUri) {
-                        const translatedAudio = new Audio(result.translatedAudioUri);
-                        translatedAudio.play().catch(e => console.error("Error playing translated audio:", e));
-                    }
-                    // This is where we update the captions state
+                if (result && result.translatedText) {
+                    // Play the translated text using client-side TTS
+                    speakText(result.translatedText, myLanguage);
+
+                    // Update the captions state for display
                     setCaptions({
                         original: result.transcribedText,
                         translated: result.translatedText,
