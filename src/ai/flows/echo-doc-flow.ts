@@ -90,7 +90,7 @@ export const echoDocFlow = ai.defineFlow(
         prompt: [{
             media: {
                 url: input.audioDataUri,
-                contentType: 'audio/webm' // Assuming webm from browser MediaRecorder
+                contentType: 'audio/webm' // FIX: Changed from 'audio/wav' to 'audio/webm'
             }
         }, {
             text: "Transcribe the following audio. The user could be speaking in any language, detect it."
