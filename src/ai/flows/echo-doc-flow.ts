@@ -90,7 +90,7 @@ export const echoDocFlow = ai.defineFlow(
         prompt: [{
             media: {
                 url: input.audioDataUri,
-                contentType: 'audio/webm' // FIX: Changed from 'audio/wav' to 'audio/webm'
+                contentType: 'audio/wav' // **THE FIX**: Changed from 'audio/webm' to 'audio/wav'
             }
         }, {
             text: "Transcribe the following audio. The user could be speaking in any language, detect it."
@@ -105,9 +105,8 @@ export const echoDocFlow = ai.defineFlow(
     // Step 2: Generate Text Response based on transcription and history
     const llmResponse = await ai.generate({
         model: googleAI.model('gemini-1.5-flash'),
-        prompt: CONVERSATION_PROMPT,
+        prompt: CONVERSATION_PROMPT.replace('{{{transcription}}}', transcribedText), // Use simple replacement
         context: {
-            transcription: transcribedText,
             conversationHistory: input.conversationHistory,
         },
     });
