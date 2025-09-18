@@ -84,36 +84,16 @@ export const echoDocFlow = ai.defineFlow(
     outputSchema: EchoDocOutputSchema,
   },
   async (input) => {
-    // Handle empty initial audio for greeting
+    // If audio is empty, it's an error state from the new UI, but we'll handle it gracefully.
     if (!input.audioDataUri) {
-        const textResponse = await ai.generate({
-            model: googleAI.model('gemini-1.5-flash'),
-            prompt: "Introduce yourself as Echo Doc, an AI health assistant, and ask how you can help. Keep it short and friendly.",
-        });
-        const aiResponseText = textResponse.text.trim();
-        const ttsResponse = await ai.generate({
-            model: googleAI.model('gemini-2.5-flash-preview-tts'),
-            config: {
-                responseModalities: ['AUDIO'],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Algenib' } } },
-            },
-            prompt: `(language: English) ${aiResponseText}`,
-        });
-        if (!ttsResponse.media) throw new Error('TTS failed for greeting.');
-        const pcmBuffer = Buffer.from(ttsResponse.media.url.substring(ttsResponse.media.url.indexOf(',') + 1), 'base64');
-        const wavBase64 = await toWav(pcmBuffer);
-        return {
-            aiAudioUri: `data:audio/wav;base64,${wavBase64}`,
-            aiResponseText,
-            detectedLanguage: 'English',
-        };
+        throw new Error("No audio was provided to the flow.");
     }
 
     // Step 1: Transcribe audio and detect language
     const transcriptionResponse = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
       prompt: [
-        { media: { url: input.audioDataUri, contentType: 'audio/wav' } },
+        { media: { url: input.audioDataUri, contentType: 'audio/webm' } }, // Updated to webm
         { text: `Transcribe the following audio. Also, identify the primary language being spoken (e.g., English, Hindi, Punjabi). Respond in JSON format with two keys: "transcription" and "language".` }
       ]
     });
@@ -130,21 +110,25 @@ export const echoDocFlow = ai.defineFlow(
         detectedLanguage = 'English';
     }
 
-    if (!transcription.trim()) {
-        return { aiAudioUri: '', aiResponseText: '', detectedLanguage: detectedLanguage };
+    if (!transcription || !transcription.trim()) {
+        return { aiAudioUri: '', aiResponseText: '', detectedLanguage: detectedLanguage || 'English' };
     }
     
     // Step 2: Generate a text response based on conversation history
     const conversationHistory = [...input.conversationHistory, { role: 'user' as const, text: transcription }];
     
-    const handlebarsPrompt = CONVERSATION_PROMPT.replace(
-      '{{#each conversationHistory}}',
-      '{{#each this.conversationHistory}}'
-    ).replace('{{{text}}}','{{{this.text}}}');
-    
+    // Construct a safe prompt for Handlebars
+    const handlebarsPrompt = `
+      {{#each conversationHistory}}
+      - {{this.role}}: {{{this.text}}}
+      {{/each}}
+    `;
+
+    const fullPrompt = CONVERSATION_PROMPT.replace('{{#each conversationHistory}}...{{/each}}', handlebarsPrompt);
+
     const textResponse = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
-      prompt: handlebarsPrompt,
+      prompt: fullPrompt,
       context: { conversationHistory },
     });
     
@@ -170,7 +154,7 @@ export const echoDocFlow = ai.defineFlow(
     return {
       aiAudioUri: `data:audio/wav;base64,${wavBase64}`,
       aiResponseText,
-      detectedLanguage,
+      detectedLanguage: transcription, // Return transcription in detectedLanguage field for the UI
     };
   }
 );

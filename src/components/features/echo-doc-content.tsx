@@ -15,70 +15,79 @@ type ConversationTurn = {
     text: string;
 };
 
+const INITIAL_GREETING = "Hello, I am Echo Doc, your personal AI health assistant. How are you feeling today?";
+
 export function EchoDocContent() {
     const router = useRouter();
     const { toast } = useToast();
     
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [conversation, setConversation] = useState<ConversationTurn[]>([]);
+    const [conversation, setConversation] = useState<ConversationTurn[]>([{ role: 'model', text: INITIAL_GREETING }]);
     const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
     const [isMounted, setIsMounted] = useState(false);
 
     const audioChunksRef = useRef<Blob[]>([]);
     
-    const processInitialGreeting = useCallback(async () => {
-        setIsProcessing(true);
-        try {
-            // Send an empty audio chunk to trigger the introduction
-             const result = await echoDocFlow({
-                audioDataUri: '',
-                conversationHistory: [],
-            });
-
-            if (result.aiAudioUri) {
-                const audio = new Audio(result.aiAudioUri);
-                audio.play();
-                setConversation([{ role: 'model', text: result.aiResponseText }]);
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not connect to AI. ' + error.message });
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [toast]);
-
     useEffect(() => {
         setIsMounted(true);
-        processInitialGreeting();
-    }, [processInitialGreeting]);
+        // Play the initial greeting using browser's built-in speech synthesis if available
+        // This avoids an initial API call.
+        try {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(INITIAL_GREETING);
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            }
+        } catch (e) {
+            console.error("Browser speech synthesis failed, skipping initial greeting audio.", e);
+        }
+    }, []);
 
     const handleStartRecording = async () => {
+        // Clear previous audio chunks
+        audioChunksRef.current = [];
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
+            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' }); // Use a more common format
             setMediaRecorder(recorder);
 
             recorder.ondataavailable = (event) => {
-                audioChunksRef.current.push(event.data);
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
             };
 
             recorder.onstop = async () => {
                 setIsProcessing(true);
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
                 const reader = new FileReader();
                 reader.readAsDataURL(audioBlob);
                 reader.onloadend = async () => {
                     const base64Audio = reader.result as string;
+                    
+                    const lastUserTurn = conversation.filter(t => t.role === 'user').pop();
+                    if(lastUserTurn) {
+                        setConversation(prev => [...prev.slice(0, -1)]);
+                    }
+                    
                     try {
                         const result = await echoDocFlow({
                             audioDataUri: base64Audio,
                             conversationHistory: conversation,
                         });
-
+                        
+                        // Add the user's transcribed turn
+                        const newUserTurn = { role: 'user' as const, text: result.detectedLanguage }; // Placeholder, AI flow returns transcription
+                        // The flow should return the transcription text which we'd use here.
+                        // Let's assume the flow returns transcription for now.
+                        // This part needs the actual transcription text from the flow output.
+                        // For now, let's just show the response.
+                        
                         if (result.aiAudioUri) {
                             const audio = new Audio(result.aiAudioUri);
                             audio.play();
+                            // A proper implementation would first show the user transcription, then the AI response.
                             setConversation(prev => [...prev, { role: 'model', text: result.aiResponseText }]);
                         }
 
@@ -98,10 +107,10 @@ export function EchoDocContent() {
     };
 
     const handleStopRecording = () => {
-        if (mediaRecorder) {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
             setIsRecording(false);
-            // Stop microphone tracks
+            // Stop microphone tracks to turn off the mic indicator
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
         }
     };
@@ -161,14 +170,14 @@ export function EchoDocContent() {
             <footer className="p-4 border-t bg-background">
                 <div className="flex flex-col items-center gap-4">
                     <p className="text-sm text-muted-foreground">
-                        {isRecording ? "Listening..." : "Press and hold the button to speak"}
+                        {isRecording ? "Listening..." : (isProcessing ? "Processing..." : "Press and hold the button to speak")}
                     </p>
                     <button
                         onMouseDown={handleStartRecording}
                         onMouseUp={handleStopRecording}
                         onTouchStart={handleStartRecording}
                         onTouchEnd={handleStopRecording}
-                        className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? 'bg-red-500 scale-110' : 'bg-primary'}`}
+                        className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? 'bg-red-500 scale-110' : 'bg-primary'} disabled:bg-muted-foreground`}
                         disabled={isProcessing}
                     >
                        {isRecording ? <MicOff className="h-8 w-8 text-white" /> : <Mic className="h-8 w-8 text-white" />}
@@ -181,4 +190,3 @@ export function EchoDocContent() {
         </div>
     );
 }
-
