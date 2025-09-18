@@ -84,11 +84,36 @@ export const echoDocFlow = ai.defineFlow(
     outputSchema: EchoDocOutputSchema,
   },
   async (input) => {
+    // Handle empty initial audio for greeting
+    if (!input.audioDataUri) {
+        const textResponse = await ai.generate({
+            model: googleAI.model('gemini-1.5-flash'),
+            prompt: "Introduce yourself as Echo Doc, an AI health assistant, and ask how you can help. Keep it short and friendly.",
+        });
+        const aiResponseText = textResponse.text.trim();
+        const ttsResponse = await ai.generate({
+            model: googleAI.model('gemini-2.5-flash-preview-tts'),
+            config: {
+                responseModalities: ['AUDIO'],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Algenib' } } },
+            },
+            prompt: `(language: English) ${aiResponseText}`,
+        });
+        if (!ttsResponse.media) throw new Error('TTS failed for greeting.');
+        const pcmBuffer = Buffer.from(ttsResponse.media.url.substring(ttsResponse.media.url.indexOf(',') + 1), 'base64');
+        const wavBase64 = await toWav(pcmBuffer);
+        return {
+            aiAudioUri: `data:audio/wav;base64,${wavBase64}`,
+            aiResponseText,
+            detectedLanguage: 'English',
+        };
+    }
+
     // Step 1: Transcribe audio and detect language
     const transcriptionResponse = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
       prompt: [
-        { media: { url: input.audioDataUri } },
+        { media: { url: input.audioDataUri, contentType: 'audio/wav' } },
         { text: `Transcribe the following audio. Also, identify the primary language being spoken (e.g., English, Hindi, Punjabi). Respond in JSON format with two keys: "transcription" and "language".` }
       ]
     });
