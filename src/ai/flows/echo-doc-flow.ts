@@ -103,14 +103,14 @@ export const echoDocFlow = ai.defineFlow(
     }
 
     // Step 2: Generate Text Response based on transcription and history
-    const prompt = CONVERSATION_PROMPT_TEMPLATE
+    const llmPrompt = CONVERSATION_PROMPT_TEMPLATE
         .replace('{{{transcription}}}', transcribedText)
         .replace('{{#each conversationHistory}}', '{{#each history}}')
         .replace('{{/each}}', '{{/each}}');
         
     const llmResponse = await ai.generate({
         model: googleAI.model('gemini-1.5-flash'),
-        prompt: prompt,
+        prompt: llmPrompt,
         history: input.conversationHistory,
     });
     const aiResponseText = llmResponse.text.trim();
