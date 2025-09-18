@@ -52,8 +52,8 @@ function ActivityPageContent() {
     };
 
     const handleGoogleFitSync = () => {
-        // This will now use a full page redirect, which is more reliable for external OAuth flows.
-        // It avoids the issues with Next.js App Router's fetch interception.
+        // **THE FIX**: Using an absolute path forces a full browser redirect,
+        // bypassing Next.js App Router's fetch interception which causes the issue.
         window.location.href = '/api/google-fit/auth';
     }
 
@@ -243,5 +243,4 @@ export default function ActivityPage() {
     )
 }
 
-    
     
