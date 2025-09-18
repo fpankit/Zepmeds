@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Bot, Mic, MicOff, Loader2, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -15,63 +15,6 @@ type ConversationTurn = {
 };
 
 const INITIAL_GREETING = "Hello, I am Echo Doc, your personal AI health assistant. How are you feeling today?";
-
-// Helper function to convert AudioBuffer to WAV
-function bufferToWav(buffer: AudioBuffer) {
-  const numOfChan = buffer.numberOfChannels;
-  const length = buffer.length * numOfChan * 2 + 44;
-  const buffer_ = new ArrayBuffer(length);
-  const view = new DataView(buffer_);
-  const channels = [];
-  let i;
-  let sample;
-  let offset = 0;
-  let pos = 0;
-
-  // write WAVE header
-  setUint32(0x46464952); // "RIFF"
-  setUint32(length - 8); // file length - 8
-  setUint32(0x45564157); // "WAVE"
-
-  setUint32(0x20746d66); // "fmt " chunk
-  setUint32(16); // length = 16
-  setUint16(1); // PCM (uncompressed)
-  setUint16(numOfChan);
-  setUint32(buffer.sampleRate);
-  setUint32(buffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
-  setUint16(numOfChan * 2); // block-align
-  setUint16(16); // 16-bit
-
-  setUint32(0x61746164); // "data" - chunk
-  setUint32(length - pos - 4); // chunk length
-
-  // write interleaved data
-  for (i = 0; i < buffer.numberOfChannels; i++)
-    channels.push(buffer.getChannelData(i));
-
-  while (pos < length) {
-    for (i = 0; i < numOfChan; i++) {
-      // interleave channels
-      sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
-      sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0; // scale to 16-bit signed int
-      view.setInt16(pos, sample, true); // write 16-bit sample
-      pos += 2;
-    }
-    offset++; // next source sample
-  }
-
-  return new Blob([view], { type: 'audio/wav' });
-
-  function setUint16(data: number) {
-    view.setUint16(pos, data, true);
-    pos += 2;
-  }
-
-  function setUint32(data: number) {
-    view.setUint32(pos, data, true);
-    pos += 4;
-  }
-}
 
 // Function to speak text using browser's SpeechSynthesis API
 const speakText = (text: string) => {
@@ -98,7 +41,7 @@ const speakText = (text: string) => {
                 }
                 window.speechSynthesis.speak(utterance);
             } else {
-                // Fallback if voices are not loaded yet, might not work on first call but will on subsequent ones
+                // Fallback if voices are not loaded yet
                 window.speechSynthesis.onvoiceschanged = () => {
                      const voices = window.speechSynthesis.getVoices();
                      const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
@@ -107,6 +50,8 @@ const speakText = (text: string) => {
                     }
                     window.speechSynthesis.speak(utterance);
                 };
+                // Fallback for browsers that don't fire onvoiceschanged
+                setTimeout(() => window.speechSynthesis.speak(utterance), 50);
             }
         }
     } catch (e) {
@@ -161,31 +106,20 @@ export function EchoDocContent() {
 
             recorder.onstop = async () => {
                 if (audioChunksRef.current.length === 0) {
-                    toast({
-                        variant: 'destructive',
-                        title: 'No audio captured',
-                        description: 'Please press and hold the button while speaking.'
-                    });
-                    setIsProcessing(false);
+                     setIsProcessing(false);
                     return;
                 }
 
                 setIsProcessing(true);
-                const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder?.mimeType || 'audio/webm' });
-
-                // Convert Blob to WAV Data URI before sending
-                const audioContext = new AudioContext();
-                const arrayBuffer = await audioBlob.arrayBuffer();
-                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                const wavBlob = bufferToWav(audioBuffer);
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
                 
                 const reader = new FileReader();
-                reader.readAsDataURL(wavBlob);
+                reader.readAsDataURL(audioBlob);
                 reader.onloadend = async () => {
                     const base64Audio = reader.result as string;
                     
                     try {
-                        const history = conversation.length > 1 ? conversation : [];
+                        const history = conversation.length > 1 ? conversation.slice(1) : [];
 
                         const result = await echoDocFlow({
                             audioDataUri: base64Audio,
@@ -201,8 +135,8 @@ export function EchoDocContent() {
                         }
                         
                         // Play the AI's audio response using the browser's TTS
-                        if (result.aiResponseText) {
-                            speakText(result.aiResponseText);
+                        if (newModelTurn.text) {
+                            speakText(newModelTurn.text);
                             
                             // Add AI's response text to conversation after a short delay
                             setTimeout(() => {

@@ -3,9 +3,9 @@
 /**
  * @fileOverview A conversational AI doctor that detects language and responds accordingly.
  *
- * This flow is designed for a voice conversation. It takes an audio chunk,
- * transcribes it, and generates a context-aware text response.
- * The text-to-speech conversion will be handled on the client-side.
+ * This flow is designed for a voice conversation. It now only handles transcription
+ * and text response generation. The text-to-speech (TTS) is handled on the client-side
+ * to avoid server-side rate-limiting issues.
  */
 
 import { ai } from '@/ai/dev';
@@ -25,7 +25,7 @@ const EchoDocInputSchema = z.object({
 export type EchoDocInput = z.infer<typeof EchoDocInputSchema>;
 
 
-// Output: The AI's audio response and the text for display
+// Output: The AI's text response and the user's transcription.
 const EchoDocOutputSchema = z.object({
   aiResponseText: z.string().describe("The text version of the AI's response."),
   userTranscription: z.string().describe("The transcribed text from the user's audio input."),
@@ -41,7 +41,7 @@ Your personality:
 - You CAN suggest general advice, home remedies, and precautions.
 
 Conversation Flow:
-1.  **Listen & Analyze**: Analyze the user's spoken input.
+1.  **Listen & Analyze**: Analyze the user's spoken input from the transcription.
 2.  **Detect Language**: Automatically detect the user's language from their speech.
 3.  **Provide Guidance**: Based on the symptoms, provide a concise and helpful response.
 4.  **Respond in Same Language**: YOU MUST RESPOND IN THE SAME LANGUAGE THE USER IS SPEAKING.
@@ -73,7 +73,7 @@ export const echoDocFlow = ai.defineFlow(
         prompt: [{
             media: {
                 url: input.audioDataUri,
-                contentType: 'audio/wav'
+                contentType: 'audio/webm' // Corrected content type
             }
         }, {
             text: "Transcribe the following audio. The user could be speaking in any language, detect it and provide the transcription."
@@ -102,6 +102,8 @@ export const echoDocFlow = ai.defineFlow(
     if (!aiResponseText) {
         return { userTranscription: transcribedText, aiResponseText: '' };
     }
+    
+    // Step 3 (REMOVED): No more server-side TTS. We return text to the client.
     
     // Return text parts to the client. TTS will be handled by the browser.
     return {
