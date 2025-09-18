@@ -9,7 +9,7 @@ import {
   selectIsLocalVideoEnabled,
   selectRoom,
   selectRemotePeers,
-  selectPeerAudioTrack,
+  selectAudioTrackByPeerID,
 } from '@100mslive/react-sdk';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Languages, Loader2 } from 'lucide-react';
@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLanguage }: { isTranslationEnabled: boolean, myLanguage: string, peerLanguage: string }) => {
     const remotePeers = useHMSStore(selectRemotePeers);
     const remotePeer = remotePeers.length > 0 ? remotePeers[0] : null;
-    const audioTrack = useHMSStore(selectPeerAudioTrack(remotePeer?.id));
+    const audioTrack = useHMSStore(selectAudioTrackByPeerID(remotePeer?.id));
     
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const isProcessingRef = useRef(false);
