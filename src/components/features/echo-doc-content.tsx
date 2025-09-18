@@ -98,7 +98,9 @@ const speakText = (text: string) => {
                 }
                 window.speechSynthesis.speak(utterance);
             } else {
+                // Fallback if voices are not loaded yet, might not work on first call but will on subsequent ones
                 window.speechSynthesis.onvoiceschanged = () => {
+                     const voices = window.speechSynthesis.getVoices();
                      const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
                      if (selectedVoice) {
                         utterance.voice = selectedVoice;
@@ -148,7 +150,7 @@ export function EchoDocContent() {
         audioChunksRef.current = [];
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
+            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             setMediaRecorder(recorder);
 
             recorder.ondataavailable = (event) => {
