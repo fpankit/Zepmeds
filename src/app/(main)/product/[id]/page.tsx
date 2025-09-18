@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,6 +17,7 @@ import Image from 'next/image';
 import { useCart } from '@/context/cart-context';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const ProductDetailSkeleton = () => (
     <div className="p-4 space-y-6">
@@ -130,6 +132,8 @@ export default function ProductDetailPage() {
     }
 
     const packageInfo = `1 ${product.packageType || 'unit'} of ${product.packageUnit || ''}`.trim();
+    const stock = product.stock ?? 100;
+    const fewLeft = stock < 50;
 
     return (
         <div className="flex flex-col h-screen bg-background">
@@ -170,6 +174,9 @@ export default function ProductDetailPage() {
                             {product.isRx && <Badge variant="destructive" className="mb-2">Rx Prescription Required</Badge>}
                             <h2 className="text-xl font-bold">{product.name}</h2>
                             <p className="text-muted-foreground mt-1">{packageInfo}</p>
+                            <p className={cn("text-sm font-bold mt-2", fewLeft ? "text-red-500" : "text-green-500")}>
+                                {stock > 0 ? (fewLeft ? 'A few left' : 'In Stock') : 'Out of Stock'}
+                            </p>
                         </div>
 
                         <Card>
@@ -257,9 +264,8 @@ export default function ProductDetailPage() {
                              <Button size="lg" variant="outline" className="px-4" onClick={() => updateQuantity(product.id, cartItem.quantity + 1)}>+</Button>
                          </div>
                     ) : (
-                        <Button size="lg" className="w-1/2" onClick={handleAddToCart}>
-                            <ShoppingCart className="mr-2 h-5 w-5" />
-                            Add to cart
+                        <Button size="lg" className="w-1/2" onClick={handleAddToCart} disabled={stock === 0}>
+                            {stock === 0 ? "Out of Stock" : <><ShoppingCart className="mr-2 h-5 w-5" /> Add to cart</>}
                         </Button>
                     )}
                 </div>
@@ -267,3 +273,5 @@ export default function ProductDetailPage() {
         </div>
     );
 }
+
+    

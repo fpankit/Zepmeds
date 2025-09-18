@@ -200,6 +200,8 @@ export default function OrderMedicinesPage() {
               const cartItem = cart.find(item => item.id === product.id);
               const hasDiscount = product.mrp && product.mrp > product.price;
               const discount = hasDiscount ? Math.round(((product.mrp - product.price) / product.mrp) * 100) : 0;
+              const stock = product.stock ?? 100; // Default to 100 if stock is not defined
+              const fewLeft = stock < 50;
 
               return (
                 <DelayedSkeleton key={product.id} isLoading={false} skeleton={<ProductCardSkeleton />}>
@@ -227,6 +229,9 @@ export default function OrderMedicinesPage() {
                                             <p className="text-xs font-bold text-green-500 mt-1">You save {discount}%</p>
                                         )}
                                     </div>
+                                    <p className={cn("text-xs font-bold mt-1", fewLeft ? "text-red-500" : "text-green-500")}>
+                                      {fewLeft ? 'A few left' : 'In Stock'}
+                                    </p>
                                 </div>
                             </Link>
                             <div className="p-3 pt-0 mt-auto">
@@ -241,9 +246,8 @@ export default function OrderMedicinesPage() {
                                         </Button>
                                     </div>
                                 ) : (
-                                    <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)}>
-                                        <ShoppingCart className="mr-2 h-4 w-4"/>
-                                        {t('orderMedicines.addToCart')}
+                                    <Button size="sm" className="w-full" onClick={() => handleAddToCart(product)} disabled={stock === 0}>
+                                        {stock === 0 ? "Out of Stock" : <><ShoppingCart className="mr-2 h-4 w-4"/> {t('orderMedicines.addToCart')}</>}
                                     </Button>
                                 )}
                             </div>
@@ -268,3 +272,5 @@ export default function OrderMedicinesPage() {
     </div>
   );
 }
+
+    
