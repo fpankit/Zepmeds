@@ -1,19 +1,17 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   useHMSActions,
   useHMSStore,
-  selectIsLocalAudioEnabled,
-  selectIsLocalVideoEnabled,
   selectRoom,
   selectRemotePeers,
   selectAudioTrackByPeerID,
-  useAudioLevel,
   useAVToggle,
 } from '@100mslive/react-sdk';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Languages, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Languages } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -36,10 +34,24 @@ const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLangua
     const remotePeers = useHMSStore(selectRemotePeers);
     const remotePeer = remotePeers.length > 0 ? remotePeers[0] : null;
     const audioTrack = useHMSStore(selectAudioTrackByPeerID(remotePeer?.id));
+    const hmsActions = useHMSActions();
     
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const isProcessingRef = useRef(false);
     const { toast } = useToast();
+
+    // Mute/unmute remote peer based on translation status
+    useEffect(() => {
+        if (audioTrack) {
+            hmsActions.setVolume(isTranslationEnabled ? 0 : 100, audioTrack.id);
+        }
+        return () => {
+            // Unmute when component unmounts
+            if (audioTrack) {
+                hmsActions.setVolume(100, audioTrack.id);
+            }
+        };
+    }, [isTranslationEnabled, audioTrack, hmsActions]);
 
     const processAudioChunk = useCallback(async (audioBlob: Blob) => {
         if (isProcessingRef.current) return;
@@ -58,12 +70,11 @@ const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLangua
                 });
                 
                 if (result) {
-                     // Play the translated audio
                     if (result.translatedAudioUri) {
                         const translatedAudio = new Audio(result.translatedAudioUri);
                         translatedAudio.play().catch(e => console.error("Error playing translated audio:", e));
                     }
-                    // Update the captions on screen
+                    // This is where we update the captions state
                     setCaptions({
                         original: result.transcribedText,
                         translated: result.translatedText,
@@ -140,7 +151,7 @@ export function Controls({ setCaptions }: { setCaptions: (captions: Captions) =>
 
   return (
     <>
-    {isTranslationEnabled && <RemotePeerAudioProcessor isTranslationEnabled={isTranslationEnabled} myLanguage={myLanguage} peerLanguage={peerLanguage} setCaptions={setCaptions} />}
+    <RemotePeerAudioProcessor isTranslationEnabled={isTranslationEnabled} myLanguage={myLanguage} peerLanguage={peerLanguage} setCaptions={setCaptions} />
     <div className="bg-black/50 p-4">
       <div className="flex items-center justify-center gap-4">
         <Button onClick={toggleAudio} size="icon" className={`h-14 w-14 rounded-full ${isLocalAudioEnabled ? 'bg-gray-600' : 'bg-red-600'}`}>
