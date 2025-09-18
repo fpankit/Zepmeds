@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import {
   useHMSActions,
   useHMSStore,
@@ -9,11 +10,17 @@ import {
   selectRoom,
 } from '@100mslive/react-sdk';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Languages } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { languageOptions } from '@/locales/language-options';
+
 
 export function Controls() {
   const hmsActions = useHMSActions();
@@ -22,6 +29,9 @@ export function Controls() {
   const { user } = useAuth();
   const isLocalAudioEnabled = useHMSStore(selectIsLocalAudioEnabled);
   const isLocalVideoEnabled = useHMSStore(selectIsLocalVideoEnabled);
+  
+  const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
+  const [myLanguage, setMyLanguage] = useState('en');
 
   const toggleAudio = async () => {
     await hmsActions.setLocalAudioEnabled(!isLocalAudioEnabled);
@@ -32,16 +42,12 @@ export function Controls() {
   };
 
   const leaveRoom = async () => {
-    // Only the patient leaving the call should mark it as 'completed'.
-    // If the doctor leaves, the call remains open for the patient to rejoin or for the doctor to return.
     if (room && room.name && user && !user.isDoctor) {
       try {
         const callId = room.name;
         const callDocRef = doc(db, 'video_calls', callId);
         await updateDoc(callDocRef, { status: 'completed' });
       } catch (error) {
-        // This can happen in a race condition if the doctor side cleans up the doc first.
-        // It's safe to ignore, as the primary goal is leaving the room.
         console.warn("Could not update call status to completed (document might already be deleted):", error);
       }
     }
@@ -59,6 +65,50 @@ export function Controls() {
         <Button onClick={toggleVideo} size="icon" className={`h-14 w-14 rounded-full ${isLocalVideoEnabled ? 'bg-gray-600' : 'bg-red-600'}`}>
           {isLocalVideoEnabled ? <Video /> : <VideoOff />}
         </Button>
+        
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className={`h-14 w-14 rounded-full ${isTranslationEnabled ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                    <Languages />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 mb-4">
+                <div className="grid gap-4">
+                    <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Live Translation</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Translate the call in real-time.
+                        </p>
+                    </div>
+                    <div className="grid gap-2">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="translation-switch">Enable Translation</Label>
+                            <Switch
+                                id="translation-switch"
+                                checked={isTranslationEnabled}
+                                onCheckedChange={setIsTranslationEnabled}
+                            />
+                        </div>
+                         <div className="flex items-center justify-between">
+                            <Label htmlFor="my-language">My Language</Label>
+                             <Select value={myLanguage} onValueChange={setMyLanguage}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Select language" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {languageOptions.map(lang => (
+                                        <SelectItem key={lang.code} value={lang.code}>
+                                            {lang.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
+        
         <Button onClick={leaveRoom} variant="destructive" size="icon" className="h-14 w-14 rounded-full">
           <PhoneOff />
         </Button>
