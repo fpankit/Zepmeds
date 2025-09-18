@@ -10,6 +10,8 @@ import {
   selectRoom,
   selectRemotePeers,
   selectAudioTrackByPeerID,
+  useAudioLevel,
+  useAVToggle,
 } from '@100mslive/react-sdk';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Languages, Loader2 } from 'lucide-react';
@@ -106,21 +108,12 @@ export function Controls() {
   const router = useRouter();
   const room = useHMSStore(selectRoom);
   const { user } = useAuth();
-  const isLocalAudioEnabled = useHMSStore(selectIsLocalAudioEnabled);
-  const isLocalVideoEnabled = useHMSStore(selectIsLocalVideoEnabled);
+  const { isLocalAudioEnabled, isLocalVideoEnabled, toggleAudio, toggleVideo } = useAVToggle();
   
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
   // Default to English as my language and Hindi as peer's
   const [myLanguage, setMyLanguage] = useState('en');
   const [peerLanguage, setPeerLanguage] = useState('hi');
-
-  const toggleAudio = async () => {
-    await hmsActions.setLocalAudioEnabled(!isLocalAudioEnabled);
-  };
-
-  const toggleVideo = async () => {
-    await hmsActions.setLocalVideoEnabled(!isLocalVideoEnabled);
-  };
 
   const leaveRoom = async () => {
     if (room && room.name && user && !user.isDoctor) {
