@@ -31,13 +31,19 @@ export function EchoDocContent() {
     
     useEffect(() => {
         setIsMounted(true);
-        // Play the initial greeting using browser's built-in speech synthesis if available
-        // This avoids an initial API call.
+        // Play the initial greeting using browser's built-in speech synthesis to save an API call.
         try {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(INITIAL_GREETING);
-                utterance.lang = 'en-US';
-                window.speechSynthesis.speak(utterance);
+            if ('speechSynthesis' in window && window.speechSynthesis.getVoices().length > 0) {
+                 const utterance = new SpeechSynthesisUtterance(INITIAL_GREETING);
+                 utterance.lang = 'en-US';
+                 window.speechSynthesis.speak(utterance);
+            } else if ('speechSynthesis' in window) {
+                // If voices aren't loaded, wait for them
+                window.speechSynthesis.onvoiceschanged = () => {
+                    const utterance = new SpeechSynthesisUtterance(INITIAL_GREETING);
+                    utterance.lang = 'en-US';
+                    window.speechSynthesis.speak(utterance);
+                };
             }
         } catch (e) {
             console.error("Browser speech synthesis failed, skipping initial greeting audio.", e);
@@ -45,7 +51,6 @@ export function EchoDocContent() {
     }, []);
 
     const handleStartRecording = async () => {
-        // Clear previous audio chunks
         audioChunksRef.current = [];
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -63,7 +68,7 @@ export function EchoDocContent() {
                     toast({
                         variant: 'destructive',
                         title: 'No audio captured',
-                        description: 'Please press and hold the button for a bit longer while speaking.'
+                        description: 'Please press and hold the button while speaking.'
                     });
                     setIsProcessing(false);
                     return;
@@ -82,22 +87,21 @@ export function EchoDocContent() {
                             conversationHistory: conversation,
                         });
                         
-                        const newUserTurn = { role: 'user' as const, text: result.detectedLanguage }; // This now holds the transcription
+                        const newUserTurn = { role: 'user' as const, text: result.userTranscription };
+                        const newModelTurn = { role: 'model' as const, text: result.aiResponseText };
+
+                        // Add user's transcribed text to conversation
+                        if (newUserTurn.text) {
+                            setConversation(prev => [...prev, newUserTurn]);
+                        }
                         
                         if (result.aiAudioUri && result.aiResponseText) {
                             const audio = new Audio(result.aiAudioUri);
                             audio.play();
-                            setConversation(prev => [...prev, newUserTurn, { role: 'model', text: result.aiResponseText }]);
-                        } else if (!result.aiResponseText && newUserTurn.text) {
-                            // This case handles when user speaks but AI has no reply
-                            setConversation(prev => [...prev, newUserTurn]);
-                        } else {
-                            // If transcription is empty but we got a response, don't add user turn
-                            if (result.aiResponseText) {
-                                const audio = new Audio(result.aiAudioUri);
-                                audio.play();
-                                setConversation(prev => [...prev, { role: 'model', text: result.aiResponseText }]);
-                            }
+                             // Add AI's response after a short delay to feel more natural
+                            setTimeout(() => {
+                                setConversation(prev => [...prev, newModelTurn]);
+                            }, 100);
                         }
 
                     } catch (error: any) {
@@ -119,7 +123,6 @@ export function EchoDocContent() {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
             setIsRecording(false);
-            // Stop microphone tracks to turn off the mic indicator
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
         }
     };
