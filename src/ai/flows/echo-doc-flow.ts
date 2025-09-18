@@ -63,13 +63,13 @@ Conversation Flow:
 3.  **Provide Guidance**: Based on the symptoms, provide a concise and helpful response.
 4.  **Respond in Same Language**: YOU MUST RESPOND IN THE SAME LANGUAGE THE USER IS SPEAKING.
 
-Current Conversation History:
-{{#each conversationHistory}}
+Current Conversation History (for context only):
+{{#each history}}
 - {{role}}: {{{text}}}
 {{/each}}
-- user: {{{transcription}}}
+- user: {{{prompt}}}
 
-Your task is to generate the next appropriate text response for the 'model' role.
+Based on the prompt from the user, generate the next appropriate and helpful response for the 'model' role.
 `;
 
 
@@ -84,7 +84,7 @@ export const echoDocFlow = ai.defineFlow(
         throw new Error("No audio was provided to the flow.");
     }
 
-    // Step 1: Transcribe Audio to Text
+    // Step 1: Transcribe Audio to Text using Gemini 1.5 Flash
     const transcriptionResponse = await ai.generate({
         model: googleAI.model('gemini-1.5-flash'),
         prompt: [{
@@ -93,25 +93,25 @@ export const echoDocFlow = ai.defineFlow(
                 contentType: 'audio/wav'
             }
         }, {
-            text: "Transcribe the following audio. The user could be speaking in any language, detect it."
+            text: "Transcribe the following audio. The user could be speaking in any language, detect it and provide the transcription."
         }]
     });
     const transcribedText = transcriptionResponse.text.trim();
+    
+    // If transcription is empty, it means the user didn't say anything. Don't proceed.
     if (!transcribedText) {
-        // If transcription is empty, don't proceed.
         return { userTranscription: '', aiResponseText: '', aiAudioUri: '' };
     }
 
-    // Step 2: Generate Text Response based on transcription and history
-    const llmPrompt = CONVERSATION_PROMPT_TEMPLATE
-        .replace('{{{transcription}}}', transcribedText)
-        .replace('{{#each conversationHistory}}', '{{#each history}}')
-        .replace('{{/each}}', '{{/each}}');
-        
+    // Step 2: Generate a text response using the transcription and conversation history.
     const llmResponse = await ai.generate({
         model: googleAI.model('gemini-1.5-flash'),
-        prompt: llmPrompt,
+        prompt: CONVERSATION_PROMPT_TEMPLATE,
         history: input.conversationHistory,
+        input: {
+            prompt: transcribedText,
+            history: input.conversationHistory
+        },
     });
     const aiResponseText = llmResponse.text.trim();
 
@@ -119,26 +119,27 @@ export const echoDocFlow = ai.defineFlow(
         return { userTranscription: transcribedText, aiResponseText: '', aiAudioUri: '' };
     }
     
-    // Step 3: Convert the AI's text response to Speech
+    // Step 3: Convert the AI's text response to Speech using the specialized TTS model.
     const ttsResponse = await ai.generate({
         model: googleAI.model('gemini-2.5-flash-preview-tts'),
         config: {
             responseModalities: ['AUDIO'],
             speechConfig: {
-                voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Algenib' } },
+                voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Algenib' } }, // Using a standard, high-quality voice
             },
         },
         prompt: aiResponseText,
     });
 
     if (!ttsResponse.media) {
-      throw new Error('Text-to-Speech conversion failed.');
+      throw new Error('Text-to-Speech conversion failed. The AI model did not return any audio.');
     }
     
-    // Convert the raw PCM audio data to a WAV file format
+    // Convert the raw PCM audio data from the TTS model to a proper WAV file format.
     const pcmBuffer = Buffer.from(ttsResponse.media.url.substring(ttsResponse.media.url.indexOf(',') + 1), 'base64');
     const wavBase64 = await toWav(pcmBuffer);
     
+    // Return all parts to the client
     return {
       aiAudioUri: `data:audio/wav;base64,${wavBase64}`,
       aiResponseText: aiResponseText,
@@ -146,3 +147,5 @@ export const echoDocFlow = ai.defineFlow(
     };
   }
 );
+
+    
