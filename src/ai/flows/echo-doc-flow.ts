@@ -115,14 +115,12 @@ export const echoDocFlow = ai.defineFlow(
     }
     
     // Step 2: Generate a text response based on conversation history
-    const conversationHistory = [...input.conversationHistory];
-    
     const textResponse = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
       prompt: CONVERSATION_PROMPT,
-      history: conversation.map(turn => ({ role: turn.role, parts: [{ text: turn.text }] })),
+      history: input.conversationHistory.map(turn => ({ role: turn.role, parts: [{ text: turn.text }] })),
       context: {
-          conversationHistory: conversation,
+          conversationHistory: input.conversationHistory,
           transcription: transcription,
       }
     });
