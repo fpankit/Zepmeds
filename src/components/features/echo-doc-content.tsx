@@ -73,6 +73,45 @@ function bufferToWav(buffer: AudioBuffer) {
   }
 }
 
+// Function to speak text using browser's SpeechSynthesis API
+const speakText = (text: string) => {
+    try {
+        if ('speechSynthesis' in window) {
+            // Cancel any previous speech
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Basic language detection for voice selection
+            if (/[\u0900-\u097F]/.test(text)) { // Devanagari script (Hindi, etc.)
+                utterance.lang = 'hi-IN';
+            } else {
+                utterance.lang = 'en-US';
+            }
+
+            // Ensure voices are loaded before speaking
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+                window.speechSynthesis.speak(utterance);
+            } else {
+                window.speechSynthesis.onvoiceschanged = () => {
+                     const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
+                     if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+                    window.speechSynthesis.speak(utterance);
+                };
+            }
+        }
+    } catch (e) {
+        console.error("Browser speech synthesis failed.", e);
+    }
+};
+
 export function EchoDocContent() {
     const router = useRouter();
     const { toast } = useToast();
@@ -91,27 +130,21 @@ export function EchoDocContent() {
         setConversation([{ role: 'model', text: INITIAL_GREETING }]);
         
         // Play the initial greeting using browser's built-in speech synthesis
-        try {
+        speakText(INITIAL_GREETING);
+        
+        // Cleanup speech on unmount
+        return () => {
             if ('speechSynthesis' in window) {
-                 const utterance = new SpeechSynthesisUtterance(INITIAL_GREETING);
-                 utterance.lang = 'en-US';
-
-                 // Ensure voices are loaded before speaking
-                 const voices = window.speechSynthesis.getVoices();
-                 if (voices.length > 0) {
-                    window.speechSynthesis.speak(utterance);
-                 } else {
-                    window.speechSynthesis.onvoiceschanged = () => {
-                         window.speechSynthesis.speak(utterance);
-                    };
-                 }
+                window.speechSynthesis.cancel();
             }
-        } catch (e) {
-            console.error("Browser speech synthesis failed, skipping initial greeting audio.", e);
-        }
+        };
+
     }, []);
 
     const handleStartRecording = async () => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // Stop any ongoing speech
+        }
         audioChunksRef.current = [];
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -165,10 +198,9 @@ export function EchoDocContent() {
                             setConversation(prev => [...prev, newUserTurn]);
                         }
                         
-                        // Play the AI's audio response
-                        if (result.aiAudioUri && result.aiResponseText) {
-                            const audio = new Audio(result.aiAudioUri);
-                            audio.play();
+                        // Play the AI's audio response using the browser's TTS
+                        if (result.aiResponseText) {
+                            speakText(result.aiResponseText);
                             
                             // Add AI's response text to conversation after a short delay
                             setTimeout(() => {
