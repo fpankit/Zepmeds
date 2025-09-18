@@ -1,16 +1,18 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   useHMSActions,
   useHMSStore,
   selectIsLocalAudioEnabled,
   selectIsLocalVideoEnabled,
   selectRoom,
+  selectRemotePeers,
+  selectPeerAudioTrack,
 } from '@100mslive/react-sdk';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Languages } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Languages, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -20,6 +22,83 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { languageOptions } from '@/locales/language-options';
+import { liveTranslateFlow } from '@/ai/flows/live-translate-flow';
+import { useToast } from '@/hooks/use-toast';
+
+
+// This component will handle listening to the remote peer's audio
+const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLanguage }: { isTranslationEnabled: boolean, myLanguage: string, peerLanguage: string }) => {
+    const remotePeers = useHMSStore(selectRemotePeers);
+    const remotePeer = remotePeers.length > 0 ? remotePeers[0] : null;
+    const audioTrack = useHMSStore(selectPeerAudioTrack(remotePeer?.id));
+    
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const isProcessingRef = useRef(false);
+    const { toast } = useToast();
+
+    const processAudioChunk = useCallback(async (audioBlob: Blob) => {
+        if (isProcessingRef.current) return;
+        isProcessingRef.current = true;
+
+        try {
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = async () => {
+                const base64Audio = reader.result as string;
+                
+                const result = await liveTranslateFlow({
+                    audioDataUri: base64Audio,
+                    sourceLanguage: peerLanguage,
+                    targetLanguage: myLanguage,
+                });
+                
+                if (result && result.translatedAudioUri) {
+                    const translatedAudio = new Audio(result.translatedAudioUri);
+                    translatedAudio.play().catch(e => console.error("Error playing translated audio:", e));
+                }
+                isProcessingRef.current = false;
+            };
+        } catch (error) {
+            console.error("Translation flow error:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Translation Error',
+                description: 'Could not translate audio chunk.'
+            });
+            isProcessingRef.current = false;
+        }
+    }, [peerLanguage, myLanguage, toast]);
+
+    useEffect(() => {
+        if (isTranslationEnabled && audioTrack?.nativeTrack) {
+            const stream = new MediaStream([audioTrack.nativeTrack]);
+            
+            // Check for supported MIME type
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm; codecs=opus')
+                ? 'audio/webm; codecs=opus'
+                : 'audio/webm';
+
+            mediaRecorderRef.current = new MediaRecorder(stream, { mimeType });
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    processAudioChunk(event.data);
+                }
+            };
+            
+            // Record in 3-second chunks
+            mediaRecorderRef.current.start(3000);
+
+            return () => {
+                mediaRecorderRef.current?.stop();
+            };
+        } else {
+            mediaRecorderRef.current?.stop();
+        }
+    }, [isTranslationEnabled, audioTrack, processAudioChunk]);
+
+    return null; // This component does not render anything
+}
 
 
 export function Controls() {
@@ -31,7 +110,9 @@ export function Controls() {
   const isLocalVideoEnabled = useHMSStore(selectIsLocalVideoEnabled);
   
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
+  // Default to English as my language and Hindi as peer's
   const [myLanguage, setMyLanguage] = useState('en');
+  const [peerLanguage, setPeerLanguage] = useState('hi');
 
   const toggleAudio = async () => {
     await hmsActions.setLocalAudioEnabled(!isLocalAudioEnabled);
@@ -57,6 +138,8 @@ export function Controls() {
   };
 
   return (
+    <>
+    {isTranslationEnabled && <RemotePeerAudioProcessor isTranslationEnabled={isTranslationEnabled} myLanguage={myLanguage} peerLanguage={peerLanguage} />}
     <div className="bg-black/50 p-4">
       <div className="flex items-center justify-center gap-4">
         <Button onClick={toggleAudio} size="icon" className={`h-14 w-14 rounded-full ${isLocalAudioEnabled ? 'bg-gray-600' : 'bg-red-600'}`}>
@@ -68,7 +151,7 @@ export function Controls() {
         
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="outline" size="icon" className={`h-14 w-14 rounded-full ${isTranslationEnabled ? 'bg-blue-600' : 'bg-gray-600'}`}>
+                <Button variant="outline" size="icon" className={`h-14 w-14 rounded-full ${isTranslationEnabled ? 'bg-blue-600 ring-2 ring-blue-400' : 'bg-gray-600'}`}>
                     <Languages />
                 </Button>
             </PopoverTrigger>
@@ -90,8 +173,23 @@ export function Controls() {
                             />
                         </div>
                          <div className="flex items-center justify-between">
-                            <Label htmlFor="my-language">My Language</Label>
+                            <Label htmlFor="my-language">I want to hear in</Label>
                              <Select value={myLanguage} onValueChange={setMyLanguage}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Select language" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {languageOptions.map(lang => (
+                                        <SelectItem key={lang.code} value={lang.code}>
+                                            {lang.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="peer-language">Other person is speaking</Label>
+                             <Select value={peerLanguage} onValueChange={setPeerLanguage}>
                                 <SelectTrigger className="w-[180px]">
                                     <SelectValue placeholder="Select language" />
                                 </SelectTrigger>
@@ -114,5 +212,6 @@ export function Controls() {
         </Button>
       </div>
     </div>
+    </>
   );
 }
