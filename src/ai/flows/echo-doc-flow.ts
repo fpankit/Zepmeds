@@ -50,7 +50,7 @@ async function toWav(pcmData: Buffer): Promise<string> {
   });
 }
 
-const CONVERSATION_PROMPT = `You are Echo Doc, a friendly and empathetic AI medical assistant. Your goal is to have a natural voice conversation with a user about their health concerns.
+const CONVERSATION_PROMPT_TEMPLATE = `You are Echo Doc, a friendly and empathetic AI medical assistant. Your goal is to have a natural voice conversation with a user about their health concerns.
 
 Your personality:
 - You are reassuring, calm, and clear.
@@ -90,7 +90,7 @@ export const echoDocFlow = ai.defineFlow(
         prompt: [{
             media: {
                 url: input.audioDataUri,
-                contentType: 'audio/wav' // **THE FIX**: Changed from 'audio/webm' to 'audio/wav'
+                contentType: 'audio/wav'
             }
         }, {
             text: "Transcribe the following audio. The user could be speaking in any language, detect it."
@@ -103,15 +103,22 @@ export const echoDocFlow = ai.defineFlow(
     }
 
     // Step 2: Generate Text Response based on transcription and history
+    const prompt = CONVERSATION_PROMPT_TEMPLATE
+        .replace('{{{transcription}}}', transcribedText)
+        .replace('{{#each conversationHistory}}', '{{#each history}}')
+        .replace('{{/each}}', '{{/each}}');
+        
     const llmResponse = await ai.generate({
         model: googleAI.model('gemini-1.5-flash'),
-        prompt: CONVERSATION_PROMPT.replace('{{{transcription}}}', transcribedText), // Use simple replacement
-        context: {
-            conversationHistory: input.conversationHistory,
-        },
+        prompt: prompt,
+        history: input.conversationHistory,
     });
     const aiResponseText = llmResponse.text.trim();
 
+    if (!aiResponseText) {
+        return { userTranscription: transcribedText, aiResponseText: '', aiAudioUri: '' };
+    }
+    
     // Step 3: Convert the AI's text response to Speech
     const ttsResponse = await ai.generate({
         model: googleAI.model('gemini-2.5-flash-preview-tts'),

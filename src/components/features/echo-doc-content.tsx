@@ -79,7 +79,7 @@ export function EchoDocContent() {
     
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [conversation, setConversation] = useState<ConversationTurn[]>([{ role: 'model', text: INITIAL_GREETING }]);
+    const [conversation, setConversation] = useState<ConversationTurn[]>([]);
     const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
     const [isMounted, setIsMounted] = useState(false);
 
@@ -87,19 +87,24 @@ export function EchoDocContent() {
     
     useEffect(() => {
         setIsMounted(true);
-        // Play the initial greeting using browser's built-in speech synthesis to save an API call.
+        // Set the initial greeting text
+        setConversation([{ role: 'model', text: INITIAL_GREETING }]);
+        
+        // Play the initial greeting using browser's built-in speech synthesis
         try {
-            if ('speechSynthesis' in window && window.speechSynthesis.getVoices().length > 0) {
+            if ('speechSynthesis' in window) {
                  const utterance = new SpeechSynthesisUtterance(INITIAL_GREETING);
                  utterance.lang = 'en-US';
-                 window.speechSynthesis.speak(utterance);
-            } else if ('speechSynthesis' in window) {
-                // If voices aren't loaded, wait for them
-                window.speechSynthesis.onvoiceschanged = () => {
-                    const utterance = new SpeechSynthesisUtterance(INITIAL_GREETING);
-                    utterance.lang = 'en-US';
+
+                 // Ensure voices are loaded before speaking
+                 const voices = window.speechSynthesis.getVoices();
+                 if (voices.length > 0) {
                     window.speechSynthesis.speak(utterance);
-                };
+                 } else {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                         window.speechSynthesis.speak(utterance);
+                    };
+                 }
             }
         } catch (e) {
             console.error("Browser speech synthesis failed, skipping initial greeting audio.", e);
@@ -110,7 +115,7 @@ export function EchoDocContent() {
         audioChunksRef.current = [];
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' }); 
+            const recorder = new MediaRecorder(stream);
             setMediaRecorder(recorder);
 
             recorder.ondataavailable = (event) => {
@@ -131,9 +136,9 @@ export function EchoDocContent() {
                 }
 
                 setIsProcessing(true);
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorder?.mimeType || 'audio/webm' });
 
-                // **THE FIX**: Convert WEBM Blob to WAV Data URI
+                // Convert Blob to WAV Data URI before sending
                 const audioContext = new AudioContext();
                 const arrayBuffer = await audioBlob.arrayBuffer();
                 const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -145,9 +150,11 @@ export function EchoDocContent() {
                     const base64Audio = reader.result as string;
                     
                     try {
+                        const history = conversation.length > 1 ? conversation : [];
+
                         const result = await echoDocFlow({
                             audioDataUri: base64Audio,
-                            conversationHistory: conversation,
+                            conversationHistory: history,
                         });
                         
                         const newUserTurn = { role: 'user' as const, text: result.userTranscription };
@@ -168,7 +175,6 @@ export function EchoDocContent() {
                                 setConversation(prev => [...prev, newModelTurn]);
                             }, 100); 
                         } else if (!newUserTurn.text) {
-                            // Handle case where transcription might be empty
                              toast({ variant: "default", title: "Couldn't hear anything", description: "Could you please speak a bit louder or clearer?" });
                         }
 
