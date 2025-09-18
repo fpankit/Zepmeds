@@ -23,11 +23,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { languageOptions } from '@/locales/language-options';
 import { liveTranslateFlow } from '@/ai/flows/live-translate-flow';
 import { useToast } from '@/hooks/use-toast';
+import { Captions } from './conference';
 
-interface Captions {
-    original: string;
-    translated: string;
-}
 
 // This component will handle listening to the remote peer's audio
 const RemotePeerAudioProcessor = ({ isTranslationEnabled, myLanguage, peerLanguage, setCaptions }: { isTranslationEnabled: boolean, myLanguage: string, peerLanguage: string, setCaptions: (captions: Captions) => void }) => {

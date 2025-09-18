@@ -5,7 +5,7 @@ import { Peer } from './peer';
 import { Controls } from './controls';
 import { AnimatePresence, motion } from 'framer-motion';
 
-interface Captions {
+export interface Captions {
     original: string;
     translated: string;
 }

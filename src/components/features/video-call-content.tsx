@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,15 +9,10 @@ import {
   selectPeers,
   HMSRoomProvider,
 } from '@100mslive/react-sdk';
-import { Conference } from '@/components/features/100ms/conference';
+import { Conference, Captions } from '@/components/features/100ms/conference';
 import { JoinForm } from '@/components/features/100ms/join-form';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
-
-interface Captions {
-    original: string;
-    translated: string;
-}
 
 // This is the inner component that uses the hooks
 function VideoCallInnerContent() {
