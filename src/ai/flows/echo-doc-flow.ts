@@ -71,9 +71,9 @@ Current Conversation:
 {{#each conversationHistory}}
 - {{role}}: {{{text}}}
 {{/each}}
-- user: (The user's next response is in the provided audio)
+- user: {{{transcription}}}
 
-Your task is to generate the next response for the 'model' role based on the audio and history.
+Your task is to generate the next response for the 'model' role based on the new user input and the past history.
 `;
 
 
@@ -93,7 +93,7 @@ export const echoDocFlow = ai.defineFlow(
     const transcriptionResponse = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
       prompt: [
-        { media: { url: input.audioDataUri, contentType: 'audio/webm' } }, // Updated to webm
+        { media: { url: input.audioDataUri, contentType: 'audio/webm' } },
         { text: `Transcribe the following audio. Also, identify the primary language being spoken (e.g., English, Hindi, Punjabi). Respond in JSON format with two keys: "transcription" and "language".` }
       ]
     });
@@ -115,21 +115,16 @@ export const echoDocFlow = ai.defineFlow(
     }
     
     // Step 2: Generate a text response based on conversation history
-    const conversationHistory = [...input.conversationHistory, { role: 'user' as const, text: transcription }];
+    const conversationHistory = [...input.conversationHistory];
     
-    // Construct a safe prompt for Handlebars
-    const handlebarsPrompt = `
-      {{#each conversationHistory}}
-      - {{this.role}}: {{{this.text}}}
-      {{/each}}
-    `;
-
-    const fullPrompt = CONVERSATION_PROMPT.replace('{{#each conversationHistory}}...{{/each}}', handlebarsPrompt);
-
     const textResponse = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
-      prompt: fullPrompt,
-      context: { conversationHistory },
+      prompt: CONVERSATION_PROMPT,
+      history: conversation.map(turn => ({ role: turn.role, parts: [{ text: turn.text }] })),
+      context: {
+          conversationHistory: conversation,
+          transcription: transcription,
+      }
     });
     
     const aiResponseText = textResponse.text.trim();

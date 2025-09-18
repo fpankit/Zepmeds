@@ -82,7 +82,7 @@ export function EchoDocContent() {
                             conversationHistory: conversation,
                         });
                         
-                        const newUserTurn = { role: 'user' as const, text: result.detectedLanguage };
+                        const newUserTurn = { role: 'user' as const, text: result.detectedLanguage }; // This now holds the transcription
                         
                         if (result.aiAudioUri && result.aiResponseText) {
                             const audio = new Audio(result.aiAudioUri);
@@ -91,6 +91,13 @@ export function EchoDocContent() {
                         } else if (!result.aiResponseText && newUserTurn.text) {
                             // This case handles when user speaks but AI has no reply
                             setConversation(prev => [...prev, newUserTurn]);
+                        } else {
+                            // If transcription is empty but we got a response, don't add user turn
+                            if (result.aiResponseText) {
+                                const audio = new Audio(result.aiAudioUri);
+                                audio.play();
+                                setConversation(prev => [...prev, { role: 'model', text: result.aiResponseText }]);
+                            }
                         }
 
                     } catch (error: any) {
