@@ -16,13 +16,10 @@ const AiSymptomCheckerInputSchema = z.object({
   duration: z.string().optional().describe("How long the user has been experiencing the symptoms."),
   pastMedications: z.string().optional().describe("Any medications the user has taken recently."),
   allergies: z.string().optional().describe("Any known allergies the user has."),
-  photoUrl: z.string().optional().describe(
-      "An optional public URL to a photo or a single frame from a video of a visible symptom. This should be a direct link to an image file (e.g., from Firebase Storage)."
+  photoDataUri: z.string().optional().describe(
+      "A Base64 encoded data URI of a photo or a single frame from a video of a visible symptom. This should be a direct data URI string."
     ),
   targetLanguage: z.string().describe("The language in which the AI's response should be translated (e.g., 'Hindi', 'English', 'Punjabi')."),
-  photoDataUri: z.string().optional().describe(
-      "A Base64 encoded data URI of the symptom image. This is used for display purposes on the results page and is not sent to the AI model."
-    ),
 });
 export type AiSymptomCheckerInput = z.infer<typeof AiSymptomCheckerInputSchema>;
 
@@ -43,15 +40,7 @@ export type AiSymptomCheckerOutput = z.infer<typeof AiSymptomCheckerOutputSchema
 
 const prompt = ai.definePrompt({
   name: 'aiSymptomCheckerPrompt',
-  input: { schema: z.object({
-      symptoms: AiSymptomCheckerInputSchema.shape.symptoms,
-      age: AiSymptomCheckerInputSchema.shape.age,
-      duration: AiSymptomCheckerInputSchema.shape.duration,
-      pastMedications: AiSymptomCheckerInputSchema.shape.pastMedications,
-      allergies: AiSymptomCheckerInputSchema.shape.allergies,
-      photoUrl: AiSymptomCheckerInputSchema.shape.photoUrl,
-      targetLanguage: AiSymptomCheckerInputSchema.shape.targetLanguage,
-  }) },
+  input: { schema: AiSymptomCheckerInputSchema },
   output: { schema: AiSymptomCheckerOutputSchema },
   prompt: `You are an expert medical AI assistant. Your primary function is to perform a differential diagnosis based on user-provided symptoms and provide safe, helpful, and detailed guidance.
 
@@ -65,9 +54,9 @@ const prompt = ai.definePrompt({
 
   User Symptoms:
   {{{symptoms}}}
-  {{#if photoUrl}}
-  Symptom Photo (URL):
-  {{media url=photoUrl}}
+  {{#if photoDataUri}}
+  Symptom Photo (Data URI):
+  {{media url=photoDataUri}}
   {{/if}}
 
   Follow these steps sequentially:
@@ -101,15 +90,7 @@ export const aiSymptomChecker = ai.defineFlow(
   },
   async (input) => {
     try {
-      const { output } = await prompt({
-          symptoms: input.symptoms,
-          targetLanguage: input.targetLanguage,
-          photoUrl: input.photoUrl,
-          age: input.age,
-          duration: input.duration,
-          pastMedications: input.pastMedications,
-          allergies: input.allergies,
-      });
+      const { output } = await prompt(input);
       if (!output) {
         throw new Error('The AI model did not return a valid response. Please try again.');
       }

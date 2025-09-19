@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { aiSymptomChecker, AiSymptomCheckerOutput, AiSymptomCheckerInput } from '@/ai/flows/ai-symptom-checker';
-import { uploadFileFlow } from '@/ai/flows/upload-file-flow';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -23,36 +22,34 @@ interface HistoryItem {
 }
 
 const loadingMessages = [
-    { text: "AI is thinking...", icon: BrainCircuit, state: 'analyzing' },
-    { text: "Uploading symptom image...", icon: Loader2, state: 'uploading' },
-    { text: "Cross-referencing symptoms with medical data...", icon: BookOpenCheck, state: 'analyzing' },
-    { text: "Finalizing your preliminary analysis...", icon: Sparkles, state: 'analyzing' },
+    { text: "AI is thinking...", icon: BrainCircuit },
+    { text: "Cross-referencing symptoms with medical data...", icon: BookOpenCheck },
+    { text: "Analyzing symptom image with Vision AI...", icon: Loader2 },
+    { text: "Finalizing your preliminary analysis...", icon: Sparkles },
 ];
 
-function EngagingLoader({ loadingStep }: { loadingStep: 'uploading' | 'analyzing' }) {
+function EngagingLoader({ hasImage }: { hasImage: boolean }) {
     const [index, setIndex] = useState(0);
 
     const relevantMessages = useMemo(() => 
-        loadingMessages.filter(m => m.state === loadingStep), 
-    [loadingStep]);
+        loadingMessages.filter(m => hasImage || m.icon !== Loader2), 
+    [hasImage]);
 
     useEffect(() => {
-        if (loadingStep === 'analyzing') {
-            const interval = setInterval(() => {
-                setIndex((prev) => (prev + 1) % relevantMessages.length);
-            }, 2500);
-            return () => clearInterval(interval);
-        }
-    }, [loadingStep, relevantMessages.length]);
+        const interval = setInterval(() => {
+            setIndex((prev) => (prev + 1) % relevantMessages.length);
+        }, 2500);
+        return () => clearInterval(interval);
+    }, [relevantMessages.length]);
     
-    const currentMessage = loadingStep === 'uploading' ? loadingMessages[1] : relevantMessages[index];
+    const currentMessage = relevantMessages[index];
     const Icon = currentMessage.icon;
 
     return (
         <div className="flex flex-col items-center justify-center text-center p-8 space-y-6 bg-card/50 rounded-xl">
              <AnimatePresence mode="wait">
                 <motion.div
-                    key={loadingStep === 'uploading' ? 'uploading' : index}
+                    key={index}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
@@ -74,7 +71,6 @@ function SymptomCheckerResultsContent() {
   const [result, setResult] = useState<AiSymptomCheckerOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingStep, setLoadingStep] = useState<'uploading' | 'analyzing'>('analyzing');
   const [isOffline, setIsOffline] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -138,29 +134,11 @@ function SymptomCheckerResultsContent() {
             router.replace('/login');
             return;
         }
-
-        let finalPhotoUrl: string | undefined = undefined;
-
-        if (dataToProcess.mediaDataUri && isOnline) {
-            setLoadingStep('uploading');
-            try {
-                const uploadResult = await uploadFileFlow({
-                    dataUri: dataToProcess.mediaDataUri,
-                    userId: user.id
-                });
-                finalPhotoUrl = uploadResult.downloadUrl;
-            } catch (uploadError) {
-                console.error("Failed during image upload:", uploadError);
-                toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload image. Proceeding with text-only analysis." });
-            }
-        }
         
-        setLoadingStep('analyzing');
-
         const requestPayload: AiSymptomCheckerInput = {
             symptoms: dataToProcess.symptoms,
             targetLanguage: dataToProcess.targetLanguage || 'English',
-            photoUrl: finalPhotoUrl,
+            photoDataUri: dataToProcess.mediaDataUri,
             age: dataToProcess.age,
             duration: dataToProcess.duration,
             pastMedications: dataToProcess.pastMedications,
@@ -265,7 +243,7 @@ function SymptomCheckerResultsContent() {
       </header>
 
       <main className="flex-1 p-4 md:p-6 space-y-6">
-        {isLoading && <EngagingLoader loadingStep={loadingStep} />}
+        {isLoading && <EngagingLoader hasImage={!!inputData?.photoDataUri} />}
 
         {error && !isLoading && (
           <Alert variant="destructive">
