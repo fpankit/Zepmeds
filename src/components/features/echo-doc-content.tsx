@@ -28,7 +28,7 @@ type ConversationTurn = {
 };
 
 const INITIAL_GREETING = "Hello, I am Echo Doc, your personal AI health assistant. How can I help you today?";
-const OFFLINE_RESPONSE = "I seem to be having trouble connecting to my knowledge base. Please check your internet connection and try again.";
+const INITIAL_GREETING_HI = "नमस्ते, मैं इको डॉक्टर हूँ, आपका व्यक्तिगत AI स्वास्थ्य सहायक। मैं आपकी कैसे मदद कर सकता हूँ?";
 
 // --- Client-side Text-to-Speech ---
 const speakText = (text: string) => {
@@ -68,41 +68,59 @@ const speakText = (text: string) => {
     }
 };
 
-// --- Improved Client-Side Logic ---
+// --- Improved Client-Side Logic with Hindi Responses ---
 const getSimpleResponse = (userText: string): string => {
     const text = userText.toLowerCase();
 
-    // Keywords in different languages
-    const feverKeywords = ['fever', 'bukhar', 'taap', 'ज्वर', 'ताप', 'ಜ್ವರ'];
-    const headacheKeywords = ['headache', 'sir dard', 'sar dard', 'matha dukhna', 'डोकेदुखी', 'ತಲೆನೋವು', 'தலைவலி'];
-    const coldKeywords = ['cold', 'sardi', 'zukham', 'jukaam', 'सर्दी', 'ಶೀತ', 'சளி'];
-    const coughKeywords = ['cough', 'khansi', 'khaasi', 'खांसी', 'ಕೆಮ್ಮು', 'இருமல்'];
-    const nauseaKeywords = ['nausea', 'vomiting', 'ulti', 'ji machalna', 'उलटी', 'ವಾಂತಿ'];
-    const diarrheaKeywords = ['diarrhea', 'dast', 'loose motion', 'दस्त', 'ಭೇದಿ'];
-    const helloKeywords = ['hello', 'hi', 'namaste', 'hey', 'హలో', 'வணக்கம்', 'ನಮಸ್ಕಾರ', 'नमस्ते'];
-    const thanksKeywords = ['thank you', 'thanks', 'dhanyavad', 'shukriya', 'धन्यवाद', 'ధన్యవాదాలు', 'നന്ദി'];
+    // English Keywords
+    const feverKeywords = ['fever', 'temperature'];
+    const headacheKeywords = ['headache', 'head pain', 'migraine'];
+    const coldKeywords = ['cold', 'sneeze', 'runny nose'];
+    const coughKeywords = ['cough'];
+    const nauseaKeywords = ['nausea', 'vomiting'];
+    const diarrheaKeywords = ['diarrhea', 'loose motion'];
+    const helloKeywords = ['hello', 'hi', 'hey'];
+    const thanksKeywords = ['thank you', 'thanks'];
+
+    // Hindi Keywords
+    const feverKeywords_hi = ['बुखार', 'ताप'];
+    const headacheKeywords_hi = ['सर दर्द', 'सिर दर्द', 'माथा दर्द'];
+    const coldKeywords_hi = ['सर्दी', 'जुकाम'];
+    const coughKeywords_hi = ['खांसी'];
+    const nauseaKeywords_hi = ['उल्टी', 'जी मिचलाना'];
+    const diarrheaKeywords_hi = ['दस्त', 'पेट खराब'];
+    const helloKeywords_hi = ['नमस्ते', 'नमस्कार'];
+    const thanksKeywords_hi = ['धन्यवाद', 'शुक्रिया'];
 
     const hasKeyword = (keywords: string[]) => keywords.some(kw => text.includes(kw));
 
-    if (hasKeyword(helloKeywords)) {
-        return "Hello! I'm here to help. How are you feeling today?";
+    // Hindi Responses
+    if (hasKeyword(helloKeywords_hi)) {
+        return "नमस्ते! मैं आपकी मदद करने के लिए यहाँ हूँ। आज आप कैसा महसूस कर रहे हैं?";
+    }
+    if (hasKeyword(headacheKeywords_hi)) {
+        return "ऐसा लगता है कि आपको सिरदर्द है। राहत के लिए, अपने माथे पर एक ठंडा कपड़ा रखने और आराम करने की कोशिश करें। अदरक की चाय जैसे घरेलू उपचार आरामदायक हो सकते हैं। पैरासिटामॉल जैसी ओवर-द-काउंटर दवा मदद कर सकती है। उचित निदान के लिए, असली डॉक्टर से परामर्श करना बहुत महत्वपूर्ण है।";
+    }
+    if (hasKeyword(feverKeywords_hi)) {
+        return "मुझे समझ में आया कि आपको बुखार है। शरीर के तापमान को कम करने के लिए पैरासिटामॉल ले सकते हैं और माथे पर ठंडे पानी की पट्टियां रख सकते हैं। खूब सारे तरल पदार्थ पिएं और आराम करें। यदि बुखार 3 दिनों से अधिक रहता है, तो कृपया डॉक्टर से मिलें।";
+    }
+    if (hasKeyword(coldKeywords_hi) || hasKeyword(coughKeywords_hi)) {
+        return "मैं समझता हूं कि आप सर्दी और खांसी से जूझ रहे हैं। मैं गर्म नमक के पानी से गरारे करने और भाप लेने की सलाह देता हूं। गर्म पानी में शहद और नींबू जैसे घरेलू उपचार भी मदद कर सकते हैं। खांसी के लिए, आप बेनाड्रिल जैसा ओवर-द-काउंटर सिरप आजमा सकते हैं। लेकिन कृपया याद रखें, यह चिकित्सा सलाह का विकल्प नहीं है।";
+    }
+     if (hasKeyword(nauseaKeywords_hi) || hasKeyword(diarrheaKeywords_hi)) {
+        return "मतली या दस्त के लिए, हाइड्रेटेड रहना महत्वपूर्ण है। खूब पानी या ORS घोल पिएं। घरेलू उपचार के लिए, अदरक मतली में मदद कर सकता है, और केला और चावल का आहार दस्त में मदद कर सकता है। लेकिन अगर लक्षण गंभीर हैं, तो कृपया तुरंत डॉक्टर से मिलें।";
+    }
+    if (hasKeyword(thanksKeywords_hi)) {
+        return "आपका स्वागत है! अगर आपको किसी और चीज की जरूरत है तो मैं यहां हूं। कृपया अपना ध्यान रखें।";
     }
 
-    if (hasKeyword(feverKeywords) || hasKeyword(headacheKeywords)) {
-        return "It sounds like you have a fever and headache. For relief, try placing a cool cloth on your forehead and getting rest. Home remedies like ginger tea can be soothing. Over-the-counter medicine like Paracetamol can help. For a proper diagnosis, it's very important to consult a real doctor.";
-    }
 
-    if (hasKeyword(coldKeywords) || hasKeyword(coughKeywords)) {
-        return "I understand you're dealing with a cold and cough. I recommend gargling with warm salt water and taking steam. Home remedies like honey and lemon in warm water can also help. For cough, you can try an over-the-counter syrup like Benadryl. But please remember, this is not a substitute for medical advice. Please see a doctor.";
-    }
-
-    if (hasKeyword(nauseaKeywords) || hasKeyword(diarrheaKeywords)) {
-        return "For nausea or diarrhea, it's important to stay hydrated. Drink plenty of water or ORS solution. For home remedies, ginger can help with nausea, and a diet of bananas and rice can help with diarrhea. But if symptoms are severe, please see a doctor immediately.";
-    }
-
-    if (hasKeyword(thanksKeywords)) {
-        return "You're most welcome! I'm here if you need anything else. Please take care of yourself.";
-    }
+    // English Responses (as a fallback)
+    if (hasKeyword(helloKeywords)) return "Hello! I'm here to help. How are you feeling today?";
+    if (hasKeyword(feverKeywords) || hasKeyword(headacheKeywords)) return "It sounds like you have a fever and headache. For relief, try placing a cool cloth on your forehead and getting rest. Home remedies like ginger tea can be soothing. Over-the-counter medicine like Paracetamol can help. For a proper diagnosis, it's very important to consult a real doctor.";
+    if (hasKeyword(coldKeywords) || hasKeyword(coughKeywords)) return "I understand you're dealing with a cold and cough. I recommend gargling with warm salt water and taking steam. Home remedies like honey and lemon in warm water can also help. For cough, you can try an over-the-counter syrup like Benadryl. But please remember, this is not a substitute for medical advice. Please see a doctor.";
+    if (hasKeyword(nauseaKeywords) || hasKeyword(diarrheaKeywords)) return "For nausea or diarrhea, it's important to stay hydrated. Drink plenty of water or ORS solution. For home remedies, ginger can help with nausea, and a diet of bananas and rice can help with diarrhea. But if symptoms are severe, please see a doctor immediately.";
+    if (hasKeyword(thanksKeywords)) return "You're most welcome! I'm here if you need anything else. Please take care of yourself.";
 
     return "I'm sorry, I can only provide basic information on a few common symptoms. For any real medical concerns, it is always best to consult a qualified doctor for a proper diagnosis and treatment.";
 };
