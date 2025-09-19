@@ -61,14 +61,18 @@ const prompt = ai.definePrompt({
 
   Follow these steps sequentially:
   
-  Step 1: **Differential Diagnosis**.
-  Based on all the patient details and symptoms, identify 2-3 potential medical conditions. For each condition, provide:
+  Step 1: **Analyze Photo (if provided)**.
+  - Look at the photo. If the photo does not seem to be a medical image (e.g., it's a QR code, an object, a landscape), state this in your reasoning.
+  - If the image shows a visible symptom (like a rash, swelling, or cut), use it as a key piece of information in your diagnosis.
+  
+  Step 2: **Differential Diagnosis**.
+  Based on all the patient details, symptoms, AND the photo analysis from Step 1, identify 2-3 potential medical conditions. For each condition, provide:
       -   condition: The name of the condition.
       -   confidence: A confidence score ('High', 'Medium', 'Low'). Consider all factors like age and duration.
-      -   reasoning: Explain *why* you suspect this condition based on the specific symptoms and patient details provided. This is crucial for explainability.
+      -   reasoning: Explain *why* you suspect this condition based on the specific symptoms and patient details provided. **If a photo was provided, you MUST mention how it influenced your reasoning (e.g., "The image shows a red, patchy rash which is consistent with..." or "The provided image of a QR code was not relevant to the symptoms of a headache.")** This is crucial for explainability.
 
-  Step 2: **General Guidance & Doctor Advisory**.
-  Based *only* on the diagnosis from Step 1, provide comprehensive and safe recommendations.
+  Step 3: **General Guidance & Doctor Advisory**.
+  Based *only* on the diagnosis from Step 2, provide comprehensive and safe recommendations.
       -   **Medicines**: First, suggest 2-3 safe home remedies. Then, suggest 2-3 common, safe, over-the-counter medicines relevant to the symptoms. Combine them into the single 'potentialMedicines' list.
       -   **Precautions**: List 3-4 important and detailed precautions to take.
       -   **Diet**: Recommend a simple, easy-to-follow diet with 3-4 specific food items to eat or avoid.
