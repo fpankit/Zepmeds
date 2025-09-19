@@ -13,6 +13,14 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { findOfflineMatch } from '@/lib/offline-symptom-data';
+import { v4 as uuidv4 } from 'uuid';
+
+interface HistoryItem {
+    id: string;
+    input: AiSymptomCheckerInput;
+    result: AiSymptomCheckerOutput;
+    timestamp: string;
+}
 
 const loadingMessages = [
     { text: "AI is thinking...", icon: BrainCircuit, state: 'analyzing' },
@@ -90,7 +98,40 @@ function SymptomCheckerResultsContent() {
     };
   }, []);
 
+  const saveToHistory = (input: AiSymptomCheckerInput, result: AiSymptomCheckerOutput) => {
+    try {
+        const newHistoryItem: HistoryItem = {
+            id: uuidv4(),
+            input,
+            result,
+            timestamp: new Date().toISOString(),
+        };
+        const existingHistoryString = localStorage.getItem('symptomCheckerHistory');
+        const existingHistory: HistoryItem[] = existingHistoryString ? JSON.parse(existingHistoryString) : [];
+        const updatedHistory = [newHistoryItem, ...existingHistory].slice(0, 10); // Keep last 10
+        localStorage.setItem('symptomCheckerHistory', JSON.stringify(updatedHistory));
+    } catch (e) {
+        console.error("Failed to save to history:", e);
+    }
+  };
+  
   useEffect(() => {
+    const historyItemData = sessionStorage.getItem('symptomCheckerHistoryItem');
+
+    if(historyItemData){
+        try {
+            const parsedData: HistoryItem = JSON.parse(historyItemData);
+            setInputData(parsedData.input);
+            setResult(parsedData.result);
+            setIsLoading(false);
+            sessionStorage.removeItem('symptomCheckerHistoryItem'); // Clean up
+            return;
+        } catch(e) {
+             console.error("Failed to parse history item", e);
+             sessionStorage.removeItem('symptomCheckerHistoryItem');
+        }
+    }
+
     const storedData = sessionStorage.getItem('symptomCheckerData');
     if (!storedData) {
       setError('No symptom data found. Please go back and describe your symptoms.');
@@ -158,11 +199,13 @@ function SymptomCheckerResultsContent() {
             try {
                 const aiResult = await aiSymptomChecker(requestPayload);
                 setResult(aiResult);
+                saveToHistory(displayInput, aiResult);
             } catch (err: any) {
                 if (err.message === 'AI_MODEL_BUSY') {
                     const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
                     if (offlineResult) {
                         setResult(offlineResult);
+                        saveToHistory(displayInput, offlineResult);
                         toast({
                             variant: 'default',
                             title: 'AI is Busy',
@@ -180,6 +223,7 @@ function SymptomCheckerResultsContent() {
             const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
             if (offlineResult) {
                 setResult(offlineResult);
+                saveToHistory(displayInput, offlineResult);
             } else {
                 setError("You are offline and no direct match was found for your symptoms. Please connect to the internet for a full AI analysis.");
             }
@@ -188,6 +232,7 @@ function SymptomCheckerResultsContent() {
     };
 
     performAnalysis();
+    sessionStorage.removeItem('symptomCheckerData');
 
   }, [user, router, toast, isOnline]);
 

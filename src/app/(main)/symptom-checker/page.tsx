@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, Loader2, Upload, X, Languages, Calendar, Pill, ShieldAlert, User } from 'lucide-react';
+import { BrainCircuit, Loader2, Upload, X, Languages, Calendar, Pill, ShieldAlert, User, History, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { AiSymptomCheckerInput, AiSymptomCheckerOutput } from '@/ai/flows/ai-symptom-checker';
 
 const languages = [
     { value: 'English', label: 'English' },
@@ -26,6 +27,13 @@ const MAX_WIDTH = 800;
 const MAX_HEIGHT = 600;
 const COMPRESSION_QUALITY = 0.7;
 
+interface HistoryItem {
+    id: string;
+    input: AiSymptomCheckerInput;
+    result: AiSymptomCheckerOutput;
+    timestamp: string;
+}
+
 
 export default function SymptomCheckerPage() {
   const [symptoms, setSymptoms] = useState('');
@@ -37,6 +45,7 @@ export default function SymptomCheckerPage() {
   const [duration, setDuration] = useState('');
   const [pastMedications, setPastMedications] = useState('');
   const [allergies, setAllergies] = useState('');
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,6 +53,19 @@ export default function SymptomCheckerPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
+
+  useEffect(() => {
+    try {
+        const storedHistory = localStorage.getItem('symptomCheckerHistory');
+        if (storedHistory) {
+            setHistory(JSON.parse(storedHistory));
+        }
+    } catch (e) {
+        console.error("Could not parse history from localStorage", e);
+        // If parsing fails, it might be good to clear the corrupted data
+        localStorage.removeItem('symptomCheckerHistory');
+    }
+  }, []);
   
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -139,8 +161,13 @@ export default function SymptomCheckerPage() {
       }
   }
 
+  const viewHistoryItem = (item: HistoryItem) => {
+      sessionStorage.setItem('symptomCheckerHistoryItem', JSON.stringify(item));
+      router.push('/symptom-checker/results');
+  }
+
   return (
-    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8">
+    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
       <Card className="max-w-2xl mx-auto">
         <CardHeader className="text-center">
           <BrainCircuit className="mx-auto h-12 w-12 text-primary" />
@@ -244,6 +271,29 @@ export default function SymptomCheckerPage() {
           </Button>
         </CardFooter>
       </Card>
+      
+      {history.length > 0 && (
+        <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <History className="text-primary"/>
+                    Analysis History
+                </CardTitle>
+                <CardDescription>View your past symptom analyses, available offline.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                {history.map(item => (
+                    <div key={item.id} className="p-4 rounded-lg bg-card/50 border flex items-center justify-between cursor-pointer hover:bg-card/80" onClick={() => viewHistoryItem(item)}>
+                        <div>
+                            <p className="font-semibold truncate max-w-xs">{item.input.symptoms}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground"/>
+                    </div>
+                ))}
+            </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
