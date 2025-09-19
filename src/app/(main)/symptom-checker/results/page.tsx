@@ -12,7 +12,7 @@ import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { offlineSymptomData, findOfflineMatch } from '@/lib/offline-symptom-data';
+import { findOfflineMatch } from '@/lib/offline-symptom-data';
 
 const loadingMessages = [
     { text: "AI is thinking...", icon: BrainCircuit },
@@ -126,7 +126,7 @@ function SymptomCheckerResultsContent() {
                             description: 'Displaying general advice. Please try again later for a full analysis.'
                         });
                     } else {
-                        setError('The AI model is busy, and no offline data matched your symptoms. Please try again.');
+                        setError('The AI model is busy, and no general advice matched your symptoms. Please try again.');
                     }
                 } else {
                      // Handle other unexpected errors
