@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -13,6 +14,8 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { findOfflineMatch } from '@/lib/offline-symptom-data';
 import { v4 as uuidv4 } from 'uuid';
+import { db } from '@/lib/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 interface HistoryItem {
     id: string;
@@ -94,20 +97,36 @@ function SymptomCheckerResultsContent() {
     };
   }, []);
 
-  const saveToHistory = (input: AiSymptomCheckerInput, result: AiSymptomCheckerOutput) => {
+  const saveToHistory = async (input: AiSymptomCheckerInput, result: AiSymptomCheckerOutput) => {
+    if (!user || user.isGuest) return;
+
+    const newHistoryItem: HistoryItem = {
+        id: uuidv4(),
+        input,
+        result,
+        timestamp: new Date().toISOString(),
+    };
+    
+    // Save to local storage for offline access
     try {
-        const newHistoryItem: HistoryItem = {
-            id: uuidv4(),
-            input,
-            result,
-            timestamp: new Date().toISOString(),
-        };
         const existingHistoryString = localStorage.getItem('symptomCheckerHistory');
         const existingHistory: HistoryItem[] = existingHistoryString ? JSON.parse(existingHistoryString) : [];
         const updatedHistory = [newHistoryItem, ...existingHistory].slice(0, 10); // Keep last 10
         localStorage.setItem('symptomCheckerHistory', JSON.stringify(updatedHistory));
     } catch (e) {
-        console.error("Failed to save to history:", e);
+        console.error("Failed to save to local history:", e);
+    }
+
+    // Save to Firestore for backend persistence
+    try {
+      await addDoc(collection(db, "symptom_analysis"), {
+          userId: user.id,
+          ...newHistoryItem,
+          createdAt: serverTimestamp() // Use server-side timestamp for consistency
+      });
+    } catch (e) {
+        console.error("Failed to save analysis to Firestore:", e);
+        // This is not a critical error for the user, so we don't show a toast.
     }
   };
   
@@ -149,13 +168,13 @@ function SymptomCheckerResultsContent() {
             try {
                 const aiResult = await aiSymptomChecker(requestPayload);
                 setResult(aiResult);
-                saveToHistory(displayInput, aiResult); // Save on success
+                await saveToHistory(displayInput, aiResult); // Save on success
             } catch (err: any) {
                 if (err.message === 'AI_MODEL_BUSY') {
                     const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);
                     if (offlineResult) {
                         setResult(offlineResult);
-                        saveToHistory(displayInput, offlineResult); // Save on success
+                        await saveToHistory(displayInput, offlineResult); // Save on success
                         toast({
                             variant: 'default',
                             title: 'AI is Busy',
@@ -173,7 +192,7 @@ function SymptomCheckerResultsContent() {
             const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);
             if (offlineResult) {
                 setResult(offlineResult);
-                saveToHistory(displayInput, offlineResult); // Save on success
+                await saveToHistory(displayInput, offlineResult); // Save on success
             } else {
                 setError("You are offline and no direct match was found for your symptoms. Please connect to the internet for a full AI analysis.");
             }
