@@ -15,9 +15,9 @@ let recognition: any;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = false;
-    // By not setting a specific language, we allow the browser to handle language detection,
-    // which often works better for mixed-language (e.g., Hinglish) input.
-    // recognition.lang = 'en-IN'; // REMOVED to allow broader language recognition
+    // Set to a specific language for better accuracy, e.g., Hindi.
+    // The browser can often handle mixed languages (Hinglish) even with this setting.
+    recognition.lang = 'hi-IN';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 }
@@ -36,12 +36,27 @@ const speakText = (text: string) => {
         if ('speechSynthesis' in window && text) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
-            // Simple language detection: if the text contains Devanagari characters, use Hindi. Otherwise, default to English.
-            utterance.lang = /[\u0900-\u097F]/.test(text) ? 'hi-IN' : 'en-US';
             
-             // Find a suitable voice
+            const isHindi = /[\u0900-\u097F]/.test(text);
+            utterance.lang = isHindi ? 'hi-IN' : 'en-US';
+            
+            // Find a better quality voice
             const voices = window.speechSynthesis.getVoices();
-            const selectedVoice = voices.find(voice => voice.lang === utterance.lang);
+            let selectedVoice = null;
+            
+            if (isHindi) {
+                // Prefer Google's Hindi voice if available
+                selectedVoice = voices.find(voice => voice.lang === 'hi-IN' && voice.name.includes('Google'));
+            } else {
+                 // Prefer a high-quality English voice
+                selectedVoice = voices.find(voice => voice.lang === 'en-US' && voice.name.includes('Google'));
+            }
+
+            // Fallback to any voice for that language
+            if (!selectedVoice) {
+                selectedVoice = voices.find(voice => voice.lang === utterance.lang);
+            }
+
             if (selectedVoice) {
                 utterance.voice = selectedVoice;
             }
@@ -64,7 +79,7 @@ const getSimpleResponse = (userText: string): string => {
     const coughKeywords = ['cough', 'khansi', 'khaasi', 'खांसी', 'ಕೆಮ್ಮು', 'இருமல்'];
     const nauseaKeywords = ['nausea', 'vomiting', 'ulti', 'ji machalna', 'उलटी', 'ವಾಂತಿ'];
     const diarrheaKeywords = ['diarrhea', 'dast', 'loose motion', 'दस्त', 'ಭೇದಿ'];
-    const helloKeywords = ['hello', 'hi', 'namaste', 'hey', 'హలో', 'வணக்கம்', 'ನಮಸ್ಕಾರ'];
+    const helloKeywords = ['hello', 'hi', 'namaste', 'hey', 'హలో', 'வணக்கம்', 'ನಮಸ್ಕಾರ', 'नमस्ते'];
     const thanksKeywords = ['thank you', 'thanks', 'dhanyavad', 'shukriya', 'धन्यवाद', 'ధన్యవాదాలు', 'നന്ദി'];
 
     const hasKeyword = (keywords: string[]) => keywords.some(kw => text.includes(kw));
@@ -122,9 +137,11 @@ export function EchoDocContent() {
 
     useEffect(() => {
         setIsMounted(true);
-        // Load voices for TTS
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.getVoices();
+        // Pre-load voices for TTS, important for some browsers
+        if ('speechSynthesis' in window && window.speechSynthesis.getVoices().length === 0) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                // Voices loaded
+            };
         }
         
         speakText(INITIAL_GREETING);
