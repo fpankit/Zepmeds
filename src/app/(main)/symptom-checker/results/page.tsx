@@ -116,7 +116,7 @@ function SymptomCheckerResultsContent() {
   };
   
   useEffect(() => {
-    // This effect should run only once on mount to start the analysis.
+    setError(null);
     const historyItemData = sessionStorage.getItem('symptomCheckerHistoryItem');
     const symptomData = sessionStorage.getItem('symptomCheckerData');
 
@@ -201,12 +201,10 @@ function SymptomCheckerResultsContent() {
             }
         }
         setIsLoading(false);
-        // Clean up session storage after analysis is complete
         sessionStorage.removeItem('symptomCheckerData');
     };
 
     if (historyItemData) {
-        // If we are viewing a history item, just display it.
         try {
             const parsedData: HistoryItem = JSON.parse(historyItemData);
             setInputData(parsedData.input);
@@ -220,7 +218,6 @@ function SymptomCheckerResultsContent() {
              sessionStorage.removeItem('symptomCheckerHistoryItem');
         }
     } else if (symptomData) {
-        // If there's new data, perform analysis.
         try {
             const parsedData = JSON.parse(symptomData);
             performAnalysis(parsedData);
@@ -229,12 +226,11 @@ function SymptomCheckerResultsContent() {
             setIsLoading(false);
         }
     } else {
-        // If no data is found, show an error.
         setError('No symptom data found. Please go back and describe your symptoms.');
         setIsLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only ONCE.
+  }, []);
 
   const ResultCard = ({ title, icon, items }: { title: string, icon: React.ReactNode, items: string[] }) => (
     <Card>
@@ -271,7 +267,7 @@ function SymptomCheckerResultsContent() {
       <main className="flex-1 p-4 md:p-6 space-y-6">
         {isLoading && <EngagingLoader loadingStep={loadingStep} />}
 
-        {error && (
+        {error && !isLoading && (
           <Alert variant="destructive">
              {isOffline ? <WifiOff className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
             <AlertTitle>{isOffline ? "You are Offline" : "Analysis Failed"}</AlertTitle>
@@ -282,7 +278,7 @@ function SymptomCheckerResultsContent() {
           </Alert>
         )}
 
-        {result && inputData && (
+        {!isLoading && !error && result && inputData && (
           <div className="space-y-6">
             {!isOnline && (
                  <Alert variant="default" className="bg-blue-500/10 border-blue-500/50">
