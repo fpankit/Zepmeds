@@ -83,9 +83,8 @@ export async function echoDocFlow(input: EchoDocInput): Promise<EchoDocOutput> {
     // Step 2: Generate a text response using the transcription and conversation history.
     const llmResponse = await ai.generate({
         model: googleAI.model('gemini-1.5-flash'),
-        prompt: CONVERSATION_PROMPT_TEMPLATE,
+        prompt: CONVERSATION_PROMPT_TEMPLATE.replace('{{{prompt}}}', transcribedText), // Inject transcribed text
         input: {
-            prompt: transcribedText,
             history: input.conversationHistory
         },
     });

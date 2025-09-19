@@ -28,15 +28,9 @@ const speakText = (text: string) => {
             utterance.lang = lang;
 
             const voices = window.speechSynthesis.getVoices();
-            if (voices.length > 0) {
-                const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
-                if (selectedVoice) {
-                    utterance.voice = selectedVoice;
-                }
-                window.speechSynthesis.speak(utterance);
-            } else {
-                // Fallback for browsers that load voices asynchronously
-                window.speechSynthesis.onvoiceschanged = () => {
+            // Wait for voices to be loaded if they aren't already
+            if (voices.length === 0) {
+                 window.speechSynthesis.onvoiceschanged = () => {
                      const asyncVoices = window.speechSynthesis.getVoices();
                      const selectedVoice = asyncVoices.find(voice => voice.lang === utterance.lang && voice.default) || asyncVoices.find(voice => voice.lang === utterance.lang);
                      if (selectedVoice) {
@@ -44,6 +38,12 @@ const speakText = (text: string) => {
                      }
                      window.speechSynthesis.speak(utterance);
                 };
+            } else {
+                const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+                window.speechSynthesis.speak(utterance);
             }
         }
     } catch (e) {
@@ -62,9 +62,19 @@ export function EchoDocContent() {
     const [isMounted, setIsMounted] = useState(false);
 
     const audioChunksRef = useRef<Blob[]>([]);
+    const conversationRef = useRef<ConversationTurn[]>([]);
     
+    // Sync conversation state with ref for use in async callbacks
+    useEffect(() => {
+        conversationRef.current = conversation;
+    }, [conversation]);
+
     useEffect(() => {
         setIsMounted(true);
+        // Load voices initially
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+        }
         setConversation([{ role: 'model', text: INITIAL_GREETING }]);
         speakText(INITIAL_GREETING);
         
@@ -76,9 +86,12 @@ export function EchoDocContent() {
     }, []);
 
     const handleStartRecording = async () => {
+        if (isRecording) return;
+        
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel(); 
         }
+        
         audioChunksRef.current = [];
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -93,7 +106,7 @@ export function EchoDocContent() {
 
             recorder.onstop = async () => {
                 if (audioChunksRef.current.length === 0) {
-                     setIsProcessing(false);
+                    setIsProcessing(false);
                     return;
                 }
 
@@ -106,32 +119,37 @@ export function EchoDocContent() {
                     const base64Audio = reader.result as string;
                     
                     try {
-                        const history = conversation.filter(turn => turn.role === 'model' || (turn.role === 'user' && turn.text));
+                         // Use the ref to get the latest conversation history
+                        const history = conversationRef.current.filter(turn => turn.role === 'model' || (turn.role === 'user' && turn.text));
 
                         const result = await echoDocFlow({
                             audioDataUri: base64Audio,
-                            conversationHistory: history.slice(1), // Exclude initial greeting
+                            conversationHistory: history,
                         });
                         
                         const newUserTurn = { role: 'user' as const, text: result.userTranscription };
                         const newModelTurn = { role: 'model' as const, text: result.aiResponseText };
 
-                        if (newUserTurn.text) {
-                            setConversation(prev => [...prev, newUserTurn]);
-                        }
-                        
-                        if (newModelTurn.text) {
-                            speakText(newModelTurn.text);
-                            // Add a slight delay to allow speakText to start before showing the text bubble
-                            setTimeout(() => {
-                                setConversation(prev => [...prev.filter(t => t !== newUserTurn), newUserTurn, newModelTurn]);
-                            }, 100);
-                        } else if (!newUserTurn.text) {
+                        // Update conversation state in a single batch
+                        setConversation(prev => {
+                            let newHistory = [...prev];
+                            if (newUserTurn.text) {
+                                newHistory.push(newUserTurn);
+                            }
+                             if (newModelTurn.text) {
+                                newHistory.push(newModelTurn);
+                                speakText(newModelTurn.text);
+                            }
+                            return newHistory;
+                        });
+
+                        if (!newUserTurn.text && !newModelTurn.text) {
                              toast({ variant: "default", title: "Couldn't hear anything", description: "Could you please speak a bit louder or clearer?" });
                         }
 
                     } catch (error: any) {
                         toast({ variant: 'destructive', title: 'Error', description: 'Could not process audio. ' + error.message });
+                        console.error("Flow error:", error);
                     } finally {
                         setIsProcessing(false);
                         audioChunksRef.current = [];
