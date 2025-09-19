@@ -57,45 +57,44 @@ export async function echoDocFlow(input: EchoDocInput): Promise<EchoDocOutput> {
         throw new Error("No audio was provided to the flow.");
     }
 
-    // Step 1: Transcribe Audio to Text using Gemini 1.5 Flash
-    const transcriptionResponse = await ai.generate({
+    // Step 1: Transcribe Audio and get a response in a single, more efficient call.
+    const combinedResponse = await ai.generate({
         model: 'googleai/gemini-1.5-flash',
-        prompt: [{
+        prompt: `
+            You are an expert transcriber and a helpful AI medical assistant named Echo Doc.
+            First, transcribe the following audio. The user could be speaking in any language.
+            Then, based on the transcription and the conversation history, generate a helpful and empathetic response in the same language as the user. 
+            Never give a definitive diagnosis. Always recommend consulting a real doctor.
+            Provide your response as a JSON object with two keys: "transcription" and "aiResponse".
+
+            Conversation History (for context):
+            ${JSON.stringify(input.conversationHistory)}
+
+            Audio to process:
+        `,
+        input: [{
             media: {
                 url: input.audioDataUri,
                 contentType: 'audio/webm'
             }
-        }, {
-            text: "Transcribe the following audio. The user could be speaking in any language, detect it and provide the transcription."
-        }]
+        }],
+        output: {
+            schema: z.object({
+                transcription: z.string(),
+                aiResponse: z.string(),
+            }),
+        }
     });
-    const transcribedText = transcriptionResponse.text.trim();
-    
-    // If transcription is empty, it means the user didn't say anything. Don't proceed.
-    if (!transcribedText) {
+
+    const { output } = combinedResponse;
+
+    if (!output || !output.transcription) {
         return { userTranscription: '', aiResponseText: '' };
     }
-
-    // Step 2: Generate a text response using the transcription and conversation history.
-    const llmResponse = await ai.generate({
-        model: 'googleai/gemini-1.5-flash',
-        prompt: CONVERSATION_PROMPT_TEMPLATE, 
-        input: {
-            conversationHistory: input.conversationHistory,
-            userTranscription: transcribedText,
-        },
-    });
-    const aiResponseText = llmResponse.text.trim();
-
-    if (!aiResponseText) {
-        return { userTranscription: transcribedText, aiResponseText: '' };
-    }
-    
-    // Step 3 (REMOVED): No more server-side TTS. We return text to the client.
     
     // Return text parts to the client. TTS will be handled by the browser.
     return {
-      aiResponseText: aiResponseText,
-      userTranscription: transcribedText,
+      aiResponseText: output.aiResponse || '',
+      userTranscription: output.transcription,
     };
 }
