@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -117,64 +116,36 @@ function SymptomCheckerResultsContent() {
   };
   
   useEffect(() => {
+    // This effect should run only once on mount to start the analysis.
     const historyItemData = sessionStorage.getItem('symptomCheckerHistoryItem');
+    const symptomData = sessionStorage.getItem('symptomCheckerData');
 
-    if(historyItemData){
-        try {
-            const parsedData: HistoryItem = JSON.parse(historyItemData);
-            setInputData(parsedData.input);
-            setResult(parsedData.result);
-            setIsLoading(false);
-            sessionStorage.removeItem('symptomCheckerHistoryItem'); // Clean up
+    const performAnalysis = async (dataToProcess: any) => {
+        setIsLoading(true);
+        const displayInput: AiSymptomCheckerInput = {
+            symptoms: dataToProcess.symptoms,
+            targetLanguage: dataToProcess.targetLanguage || 'English',
+            photoDataUri: dataToProcess.mediaDataUri || undefined,
+            age: dataToProcess.age,
+            duration: dataToProcess.duration,
+            pastMedications: dataToProcess.pastMedications,
+            allergies: dataToProcess.allergies,
+        };
+        setInputData(displayInput);
+
+        if (!user || user.isGuest) {
+            toast({ variant: 'destructive', title: 'Login Required' });
+            router.replace('/login');
             return;
-        } catch(e) {
-             console.error("Failed to parse history item", e);
-             sessionStorage.removeItem('symptomCheckerHistoryItem');
         }
-    }
 
-    const storedData = sessionStorage.getItem('symptomCheckerData');
-    if (!storedData) {
-      setError('No symptom data found. Please go back and describe your symptoms.');
-      setIsLoading(false);
-      return;
-    }
-    const parsedData: {
-        symptoms: string; 
-        mediaDataUri: string | null; 
-        targetLanguage: string;
-        age?: string;
-        duration?: string;
-        pastMedications?: string;
-        allergies?: string;
-    } = JSON.parse(storedData);
-    
-    const displayInput: AiSymptomCheckerInput = {
-        symptoms: parsedData.symptoms,
-        targetLanguage: parsedData.targetLanguage || 'English',
-        photoDataUri: parsedData.mediaDataUri || undefined,
-        age: parsedData.age,
-        duration: parsedData.duration,
-        pastMedications: parsedData.pastMedications,
-        allergies: parsedData.allergies,
-    };
-    setInputData(displayInput);
-
-    if (!user || user.isGuest) {
-      toast({ variant: 'destructive', title: 'Login Required' });
-      router.replace('/login');
-      return;
-    }
-
-    setIsLoading(true);
-    const performAnalysis = async () => {
         let finalPhotoUrl: string | undefined = undefined;
 
-        if (parsedData.mediaDataUri && isOnline) {
+        if (dataToProcess.mediaDataUri && isOnline) {
             setLoadingStep('uploading');
             try {
                 const uploadResult = await uploadFileFlow({
-                    dataUri: parsedData.mediaDataUri,
+                    dataUri: dataToProcess.mediaDataUri,
                     userId: user.id
                 });
                 finalPhotoUrl = uploadResult.downloadUrl;
@@ -187,28 +158,26 @@ function SymptomCheckerResultsContent() {
         setLoadingStep('analyzing');
 
         const requestPayload: AiSymptomCheckerInput = {
-            symptoms: parsedData.symptoms,
-            targetLanguage: parsedData.targetLanguage || 'English',
+            symptoms: dataToProcess.symptoms,
+            targetLanguage: dataToProcess.targetLanguage || 'English',
             photoUrl: finalPhotoUrl,
-            age: parsedData.age,
-            duration: parsedData.duration,
-            pastMedications: parsedData.pastMedications,
-            allergies: parsedData.allergies,
+            age: dataToProcess.age,
+            duration: dataToProcess.duration,
+            pastMedications: dataToProcess.pastMedications,
+            allergies: dataToProcess.allergies,
         };
 
         if (isOnline) {
             try {
                 const aiResult = await aiSymptomChecker(requestPayload);
                 setResult(aiResult);
-                // CORRECT LOGIC: Save to history ONLY after a successful analysis.
-                saveToHistory(displayInput, aiResult);
+                saveToHistory(displayInput, aiResult); // Save on success
             } catch (err: any) {
                 if (err.message === 'AI_MODEL_BUSY') {
-                    const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
+                    const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);
                     if (offlineResult) {
                         setResult(offlineResult);
-                        // Also save offline results to history for consistency
-                        saveToHistory(displayInput, offlineResult);
+                        saveToHistory(displayInput, offlineResult); // Save on success
                         toast({
                             variant: 'default',
                             title: 'AI is Busy',
@@ -223,22 +192,49 @@ function SymptomCheckerResultsContent() {
                 }
             }
         } else {
-            const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
+            const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);
             if (offlineResult) {
                 setResult(offlineResult);
-                // Also save offline results to history
-                saveToHistory(displayInput, offlineResult);
+                saveToHistory(displayInput, offlineResult); // Save on success
             } else {
                 setError("You are offline and no direct match was found for your symptoms. Please connect to the internet for a full AI analysis.");
             }
         }
         setIsLoading(false);
+        // Clean up session storage after analysis is complete
+        sessionStorage.removeItem('symptomCheckerData');
     };
 
-    performAnalysis();
-    sessionStorage.removeItem('symptomCheckerData');
-
-  }, [user, router, toast, isOnline]);
+    if (historyItemData) {
+        // If we are viewing a history item, just display it.
+        try {
+            const parsedData: HistoryItem = JSON.parse(historyItemData);
+            setInputData(parsedData.input);
+            setResult(parsedData.result);
+            setIsLoading(false);
+            sessionStorage.removeItem('symptomCheckerHistoryItem');
+        } catch(e) {
+             console.error("Failed to parse history item", e);
+             setError("Could not load history item.");
+             setIsLoading(false);
+             sessionStorage.removeItem('symptomCheckerHistoryItem');
+        }
+    } else if (symptomData) {
+        // If there's new data, perform analysis.
+        try {
+            const parsedData = JSON.parse(symptomData);
+            performAnalysis(parsedData);
+        } catch(e) {
+            setError("Could not read symptom data.");
+            setIsLoading(false);
+        }
+    } else {
+        // If no data is found, show an error.
+        setError('No symptom data found. Please go back and describe your symptoms.');
+        setIsLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only ONCE.
 
   const ResultCard = ({ title, icon, items }: { title: string, icon: React.ReactNode, items: string[] }) => (
     <Card>
@@ -381,7 +377,7 @@ function SymptomCheckerResultsContent() {
 
 export default function SymptomCheckerResultsPage() {
     return (
-        <Suspense fallback={<div className="h-screen w-full flex items-center justify-center">Loading results...</div>}>
+        <Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
             <SymptomCheckerResultsContent />
         </Suspense>
     )
