@@ -109,24 +109,29 @@ function SymptomCheckerResultsContent() {
     setIsLoading(true);
     const performAnalysis = async () => {
         if (isOnline) {
-            // ONLINE: Try to call the live AI model
             try {
+                // ONLINE: Try to call the live AI model
                 const aiResult = await aiSymptomChecker(requestPayload);
                 setResult(aiResult);
             } catch (err: any) {
-                console.error(err);
-                // If AI is busy or fails, use the offline fallback
-                const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
-                if (offlineResult) {
-                    setResult(offlineResult);
-                    // Notify user that they are seeing offline data due to an error
-                    toast({
-                        variant: 'default',
-                        title: 'AI is Busy',
-                        description: 'Displaying general advice. Please try again later for a full analysis.'
-                    });
+                // Check if the error is our specific 'AI_MODEL_BUSY' error
+                if (err.message === 'AI_MODEL_BUSY') {
+                    // AI is busy, use the offline fallback
+                    const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
+                    if (offlineResult) {
+                        setResult(offlineResult);
+                        toast({
+                            variant: 'default',
+                            title: 'AI is Busy',
+                            description: 'Displaying general advice. Please try again later for a full analysis.'
+                        });
+                    } else {
+                        setError('The AI model is busy, and no offline data matched your symptoms. Please try again.');
+                    }
                 } else {
-                    setError(err.message || 'An error occurred. Please try again later.');
+                     // Handle other unexpected errors
+                    console.error("An unexpected error occurred during AI analysis:", err);
+                    setError(err.message || 'An unexpected error occurred. Please try again later.');
                 }
             }
         } else {
