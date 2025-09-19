@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -199,12 +200,14 @@ function SymptomCheckerResultsContent() {
             try {
                 const aiResult = await aiSymptomChecker(requestPayload);
                 setResult(aiResult);
+                // CORRECT LOGIC: Save to history ONLY after a successful analysis.
                 saveToHistory(displayInput, aiResult);
             } catch (err: any) {
                 if (err.message === 'AI_MODEL_BUSY') {
                     const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
                     if (offlineResult) {
                         setResult(offlineResult);
+                        // Also save offline results to history for consistency
                         saveToHistory(displayInput, offlineResult);
                         toast({
                             variant: 'default',
@@ -223,6 +226,7 @@ function SymptomCheckerResultsContent() {
             const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
             if (offlineResult) {
                 setResult(offlineResult);
+                // Also save offline results to history
                 saveToHistory(displayInput, offlineResult);
             } else {
                 setError("You are offline and no direct match was found for your symptoms. Please connect to the internet for a full AI analysis.");
