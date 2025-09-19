@@ -28,6 +28,178 @@ const genericPlaceholderAdvice: OfflineAdvice = {
     doctorAdvisory: genericDoctorAdvisory
 };
 
+const consultDoctorAdvisory = "This is not medical advice. Nutritional deficiencies require a proper diagnosis from a healthcare professional. Please consult a doctor for blood tests and an appropriate treatment plan.";
+
+const ironDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Iron-Deficiency Anemia", confidence: "Low", reasoning: "Fatigue, pale skin, shortness of breath, and brittle nails are common signs of iron deficiency, which leads to reduced red blood cell production." }],
+    potentialMedicines: ["Over-the-counter iron supplements can be taken, but only after consulting a doctor to determine the correct dosage.", "Do not self-prescribe iron supplements as overload can be toxic."],
+    precautions: ["Take iron supplements with Vitamin C (like orange juice) to increase absorption.", "Avoid taking iron with milk or calcium supplements, as they can hinder absorption."],
+    diet: ["Eat iron-rich foods like spinach (palak), lentils (dal), chickpeas (chana), tofu, and beetroot."],
+    exercise: ["Light to moderate exercise is okay, but avoid strenuous activity if you feel very weak or breathless."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const vitaminDDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Vitamin D Deficiency", confidence: "Low", reasoning: "Bone pain, muscle weakness, fatigue, and frequent infections can indicate a lack of Vitamin D, which is crucial for bone health and immune function." }],
+    potentialMedicines: ["Vitamin D3 supplements are commonly prescribed.", "The dosage varies greatly depending on the level of deficiency."],
+    precautions: ["Get regular, safe sun exposure (15-20 minutes on arms and legs in the early morning or late afternoon).", "Be careful with high-dose supplements without medical supervision."],
+    diet: ["Include foods like fortified milk, mushrooms, egg yolks, and fatty fish in your diet."],
+    exercise: ["Weight-bearing exercises like walking and light strength training are beneficial for bone health."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const vitaminB12Deficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Vitamin B12 Deficiency", confidence: "Low", reasoning: "Tingling or numbness in hands and feet, fatigue, weakness, mouth ulcers, and memory problems point towards B12 deficiency, which affects nerve function and red blood cell formation." }],
+    potentialMedicines: ["B12 supplements (oral or injections) are the primary treatment."],
+    precautions: ["Especially important for vegetarians and vegans, as B12 is mainly found in animal products.", "Regular check-ups are recommended for at-risk groups."],
+    diet: ["Include dairy products, fortified cereals, and nutritional yeast. Non-vegetarians can eat eggs, meat, and fish."],
+    exercise: ["Regular exercise is fine, but listen to your body if you feel fatigued or have balance issues."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const calciumDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Hypocalcemia (Calcium Deficiency)", confidence: "Low", reasoning: "Muscle cramps, brittle nails, dry skin, and in severe cases, numbness or tingling, can be due to low calcium levels, which are vital for bones, muscles, and nerves." }],
+    potentialMedicines: ["Calcium supplements, often combined with Vitamin D for better absorption."],
+    precautions: ["Avoid excessive intake of caffeine and alcohol, which can interfere with calcium absorption."],
+    diet: ["Consume calcium-rich foods like milk, yogurt, cheese, ragi, spinach, almonds, and sesame seeds."],
+    exercise: ["Weight-bearing exercises like walking, jogging, and dancing help maintain bone density."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const magnesiumDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Magnesium Deficiency", confidence: "Low", reasoning: "Muscle twitches or cramps, fatigue, weakness, and irregular heartbeat can be signs of low magnesium, an essential mineral for muscle and nerve function." }],
+    potentialMedicines: ["Magnesium supplements are available but should be taken under medical guidance."],
+    precautions: ["High levels of stress can deplete magnesium levels.", "Certain medications can affect magnesium absorption."],
+    diet: ["Eat foods rich in magnesium, such as almonds, pumpkin seeds, spinach, bananas, and whole grains."],
+    exercise: ["Moderate exercise is beneficial."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const vitaminCDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Scurvy (Vitamin C Deficiency)", confidence: "Low", reasoning: "Bleeding gums, frequent bruising, slow wound healing, and joint pain are classic signs of a lack of Vitamin C, which is vital for collagen production and immune health." }],
+    potentialMedicines: ["Vitamin C supplements (like Limcee) are effective."],
+    precautions: ["Smoking depletes Vitamin C, so quitting is highly recommended.", "Most people can get enough from their diet."],
+    diet: ["Eat plenty of Vitamin C-rich foods like amla (gooseberry), guava, oranges, lemons, bell peppers (capsicum), and broccoli."],
+    exercise: ["General exercise is fine."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const iodineDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Iodine Deficiency", confidence: "Low", reasoning: "Swelling in the neck (goiter), fatigue, weight gain, and feeling cold are symptoms related to an underactive thyroid, often caused by iodine deficiency." }],
+    potentialMedicines: ["Treatment usually involves using iodized salt or, in some cases, supplements."],
+    precautions: ["This is a serious condition that must be managed by a doctor."],
+    diet: ["Use iodized salt for cooking. Seaweed, fish, and dairy products are also good sources of iodine."],
+    exercise: ["Exercise can help manage symptoms like weight gain, but the underlying deficiency must be treated."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const zincDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Zinc Deficiency", confidence: "Low", reasoning: "Hair loss, slow wound healing, loss of appetite, and frequent infections can suggest a zinc deficiency, as it's important for immunity and cell growth." }],
+    potentialMedicines: ["Zinc supplements may be required if deficiency is confirmed by a blood test."],
+    precautions: ["Excessive zinc can interfere with copper absorption, so do not self-medicate."],
+    diet: ["Include zinc-rich foods like lentils, chickpeas, seeds (pumpkin, sesame), nuts, and whole grains."],
+    exercise: ["General exercise is fine."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const vitaminADeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Vitamin A Deficiency", confidence: "Low", reasoning: "Difficulty seeing in low light (night blindness), dry eyes, and frequent infections are key signs of Vitamin A deficiency." }],
+    potentialMedicines: ["Vitamin A supplements, but high doses can be toxic and must be supervised by a doctor."],
+    precautions: ["Night blindness is a serious symptom that requires immediate medical attention."],
+    diet: ["Eat foods rich in Vitamin A and beta-carotene, such as carrots, sweet potatoes, mangoes, papaya, and leafy green vegetables like spinach."],
+    exercise: ["General exercise is fine."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const vitaminKDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Vitamin K Deficiency", confidence: "Low", reasoning: "Excessive bleeding from wounds, easy bruising, or heavy menstrual periods can be a sign of Vitamin K deficiency, which is crucial for blood clotting." }],
+    potentialMedicines: ["Vitamin K supplements (oral or injection) are given if a deficiency is diagnosed."],
+    precautions: ["This is uncommon in adults but can occur in newborns or people with certain medical conditions."],
+    diet: ["Include green leafy vegetables like spinach, kale, cabbage, and broccoli in your diet."],
+    exercise: ["Be cautious with activities that have a high risk of injury if you know you have a clotting issue."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const vitaminB1Deficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Thiamine (B1) Deficiency", confidence: "Low", reasoning: "Symptoms can include weakness, tingling in limbs, and fatigue. In severe cases (Beriberi), it can affect the heart and nervous system." }],
+    potentialMedicines: ["Thiamine supplements are used for treatment."],
+    diet: ["Eat whole grains, legumes, nuts, and pork."],
+    exercise: ["Listen to your body; avoid overexertion if feeling weak."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const vitaminB2Deficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Riboflavin (B2) Deficiency", confidence: "Low", reasoning: "Cracks at the corners of the mouth, sore throat, and a swollen tongue are common signs." }],
+    potentialMedicines: ["Riboflavin supplements or a multivitamin."],
+    diet: ["Consume dairy products, eggs, lean meats, and green vegetables."],
+    exercise: ["General exercise is fine."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const vitaminB3Deficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Niacin (B3) Deficiency (Pellagra)", confidence: "Low", reasoning: "Severe deficiency can cause dermatitis (skin rash), diarrhea, and dementia." }],
+    potentialMedicines: ["Niacin supplements under medical supervision."],
+    diet: ["Eat meat, fish, eggs, and fortified grains."],
+    exercise: ["General exercise is fine."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const vitaminB6Deficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Vitamin B6 Deficiency", confidence: "Low", reasoning: "Can cause skin rashes, a weakened immune system, and confusion." }],
+    potentialMedicines: ["Vitamin B6 supplements."],
+    diet: ["Include chickpeas, fish, poultry, potatoes, and bananas in your diet."],
+    exercise: ["General exercise is fine."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const folateDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Folate (B9) Deficiency", confidence: "Low", reasoning: "Fatigue, weakness, and mouth sores are common. It's particularly important for pregnant women to prevent birth defects." }],
+    potentialMedicines: ["Folic acid supplements."],
+    diet: ["Eat leafy green vegetables, beans, lentils, and fortified cereals."],
+    exercise: ["General exercise is fine."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const potassiumDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Hypokalemia (Potassium Deficiency)", confidence: "Low", reasoning: "Muscle weakness, cramps, and constipation can occur with low potassium levels." }],
+    potentialMedicines: ["Potassium supplements may be needed in severe cases, often in a hospital setting."],
+    diet: ["Consume potassium-rich foods like bananas, oranges, potatoes, and spinach."],
+    exercise: ["Be cautious, as severe deficiency can affect heart rhythm."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const seleniumDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Selenium Deficiency", confidence: "Low", reasoning: "Can lead to weakened immune function and fatigue." }],
+    potentialMedicines: ["Selenium supplements, but toxicity is a risk, so medical guidance is essential."],
+    diet: ["Brazil nuts are an excellent source. Fish, meat, and eggs also contain selenium."],
+    exercise: ["General exercise is fine."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const omega3Deficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Omega-3 Fatty Acid Deficiency", confidence: "Low", reasoning: "Dry skin, brittle hair, and poor concentration can be linked to a lack of omega-3s." }],
+    potentialMedicines: ["Fish oil or algae-based omega-3 supplements."],
+    diet: ["Eat fatty fish (like salmon), walnuts, flaxseeds, and chia seeds."],
+    exercise: ["General exercise is fine."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const fiberDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Dietary Fiber Deficiency", confidence: "Low", reasoning: "Constipation is the most common symptom of a low-fiber diet." }],
+    potentialMedicines: ["Fiber supplements like Isabgol (psyllium husk)."],
+    diet: ["Gradually increase intake of fruits, vegetables, whole grains, and legumes."],
+    exercise: ["Regular physical activity helps promote regular bowel movements."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
+const proteinDeficiency: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Protein Deficiency", confidence: "Low", reasoning: "Muscle loss, weakness, and swelling (edema) can be signs of inadequate protein intake." }],
+    potentialMedicines: ["Protein powders can supplement the diet if needed."],
+    diet: ["Ensure adequate protein from sources like lentils, beans, tofu, dairy, eggs, and meat."],
+    exercise: ["Strength training is important to maintain muscle mass, but should be paired with adequate protein intake."],
+    doctorAdvisory: consultDoctorAdvisory
+};
+
 
 const commonCold: OfflineAdvice = {
     differentialDiagnosis: [
@@ -607,6 +779,28 @@ const coughAndFever: OfflineAdvice = {
 
 // The main data map
 export const offlineSymptomData: Record<string, { keywords: string[], data: OfflineAdvice }> = {
+    // Nutrition Deficiencies
+    'iron_deficiency': { keywords: ['iron deficiency', 'anemia', 'pale skin', 'brittle nails'], data: ironDeficiency },
+    'vitamin_d_deficiency': { keywords: ['vitamin d deficiency', 'bone pain', 'muscle weakness'], data: vitaminDDeficiency },
+    'vitamin_b12_deficiency': { keywords: ['vitamin b12 deficiency', 'tingling in hands', 'numbness in feet', 'mouth ulcers'], data: vitaminB12Deficiency },
+    'calcium_deficiency': { keywords: ['calcium deficiency', 'muscle cramps', 'dry skin'], data: calciumDeficiency },
+    'magnesium_deficiency': { keywords: ['magnesium deficiency', 'muscle twitches'], data: magnesiumDeficiency },
+    'vitamin_c_deficiency': { keywords: ['vitamin c deficiency', 'bleeding gums', 'scurvy', 'slow wound healing'], data: vitaminCDeficiency },
+    'iodine_deficiency': { keywords: ['iodine deficiency', 'goiter', 'neck swelling'], data: iodineDeficiency },
+    'zinc_deficiency': { keywords: ['zinc deficiency', 'hair loss', 'loss of appetite'], data: zincDeficiency },
+    'vitamin_a_deficiency': { keywords: ['vitamin a deficiency', 'night blindness', 'dry eyes'], data: vitaminADeficiency },
+    'vitamin_k_deficiency': { keywords: ['vitamin k deficiency', 'easy bruising', 'excessive bleeding'], data: vitaminKDeficiency },
+    'vitamin_b1_deficiency': { keywords: ['vitamin b1 deficiency', 'thiamine', 'beriberi'], data: vitaminB1Deficiency },
+    'vitamin_b2_deficiency': { keywords: ['vitamin b2 deficiency', 'riboflavin', 'cracks in mouth'], data: vitaminB2Deficiency },
+    'vitamin_b3_deficiency': { keywords: ['vitamin b3 deficiency', 'niacin', 'pellagra'], data: vitaminB3Deficiency },
+    'vitamin_b6_deficiency': { keywords: ['vitamin b6 deficiency'], data: vitaminB6Deficiency },
+    'folate_deficiency': { keywords: ['folate deficiency', 'folic acid', 'vitamin b9'], data: folateDeficiency },
+    'potassium_deficiency': { keywords: ['potassium deficiency', 'hypokalemia'], data: potassiumDeficiency },
+    'selenium_deficiency': { keywords: ['selenium deficiency'], data: seleniumDeficiency },
+    'omega_3_deficiency': { keywords: ['omega-3 deficiency', 'omega 3'], data: omega3Deficiency },
+    'fiber_deficiency': { keywords: ['fiber deficiency', 'low fiber'], data: fiberDeficiency },
+    'protein_deficiency': { keywords: ['protein deficiency', 'muscle loss'], data: proteinDeficiency },
+
     // Cross-Symptom Entries (Higher Priority)
     'diarrhea_and_vomiting': { keywords: ['diarrhea and vomiting', 'dast aur ulti', 'loose motion and vomiting'], data: diarrheaAndVomiting },
     'cough_and_fever': { keywords: ['cough and fever', 'khasi aur bukhar', 'fever with cough'], data: coughAndFever },

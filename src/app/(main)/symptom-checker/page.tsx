@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, ChangeEvent, useEffect } from 'react';
+import { useState, useRef, ChangeEvent, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, Loader2, Upload, X, Languages, Calendar, Pill, ShieldAlert, User, History, ChevronRight } from 'lucide-react';
+import { BrainCircuit, Loader2, Upload, X, Languages, Calendar, Pill, ShieldAlert, User, History, ChevronRight, Mic, MicOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import Image from 'next/image';
@@ -13,6 +13,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AiSymptomCheckerInput, AiSymptomCheckerOutput } from '@/ai/flows/ai-symptom-checker';
+import { cn } from '@/lib/utils';
+
+// --- Client-side Speech Recognition Setup ---
+const SpeechRecognition =
+  (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+let recognition: any;
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-IN'; // Can be changed dynamically
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+}
+
 
 const languages = [
     { value: 'English', label: 'English' },
@@ -38,6 +52,7 @@ interface HistoryItem {
 export default function SymptomCheckerPage() {
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaDataUri, setMediaDataUri] = useState<string | null>(null);
   const [targetLanguage, setTargetLanguage] = useState('English');
@@ -103,6 +118,33 @@ export default function SymptomCheckerPage() {
             setMediaPreview(compressedDataUri); // Also use it for preview
       }
   }
+  
+  const handleVoiceInput = useCallback(() => {
+    if (!SpeechRecognition) {
+        toast({ variant: 'destructive', title: 'Browser Not Supported', description: 'Speech recognition is not available in your browser.' });
+        return;
+    }
+
+    if (isListening) {
+        recognition.stop();
+        setIsListening(false);
+        return;
+    }
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event: any) => {
+        toast({ variant: 'destructive', title: 'Voice Input Error', description: `Could not process audio. Error: ${event.error}` });
+        setIsListening(false);
+    };
+    recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setSymptoms(prev => prev ? `${prev}. ${transcript}` : transcript);
+    };
+
+    recognition.start();
+
+  }, [isListening, toast]);
 
   const handleAnalyze = () => {
     if (!symptoms.trim()) {
@@ -177,13 +219,23 @@ export default function SymptomCheckerPage() {
         <CardContent className="space-y-6">
            <div className="space-y-2">
             <Label htmlFor="symptoms-text" className="font-medium">Describe your primary symptoms*</Label>
-            <Textarea
-              id="symptoms-text"
-              placeholder="e.g., 'I have a headache, a sore throat, and a slight fever for the last 2 days...'"
-              className="min-h-[120px] text-base"
-              value={symptoms}
-              onChange={(e) => setSymptoms(e.target.value)}
-            />
+            <div className="relative">
+              <Textarea
+                id="symptoms-text"
+                placeholder="e.g., 'I have a headache, a sore throat, and a slight fever for the last 2 days...'"
+                className="min-h-[120px] text-base pr-12"
+                value={symptoms}
+                onChange={(e) => setSymptoms(e.target.value)}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className={cn("absolute top-2 right-2 text-muted-foreground", isListening && "text-destructive animate-pulse")}
+                onClick={handleVoiceInput}
+              >
+                {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
