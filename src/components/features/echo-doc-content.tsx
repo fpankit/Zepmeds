@@ -29,15 +29,19 @@ const speakText = (text: string) => {
 
             const voices = window.speechSynthesis.getVoices();
             if (voices.length > 0) {
-                const selectedVoice = voices.find(voice => voice.lang === utterance.lang);
-                if (selectedVoice) utterance.voice = selectedVoice;
+                const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
                 window.speechSynthesis.speak(utterance);
             } else {
                 // Fallback for browsers that load voices asynchronously
                 window.speechSynthesis.onvoiceschanged = () => {
                      const asyncVoices = window.speechSynthesis.getVoices();
-                     const selectedVoice = asyncVoices.find(voice => voice.lang === utterance.lang);
-                     if (selectedVoice) utterance.voice = selectedVoice;
+                     const selectedVoice = asyncVoices.find(voice => voice.lang === utterance.lang && voice.default) || asyncVoices.find(voice => voice.lang === utterance.lang);
+                     if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                     }
                      window.speechSynthesis.speak(utterance);
                 };
             }
@@ -78,7 +82,7 @@ export function EchoDocContent() {
         audioChunksRef.current = [];
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
+            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             setMediaRecorder(recorder);
 
             recorder.ondataavailable = (event) => {
@@ -118,9 +122,10 @@ export function EchoDocContent() {
                         
                         if (newModelTurn.text) {
                             speakText(newModelTurn.text);
+                            // Add a slight delay to allow speakText to start before showing the text bubble
                             setTimeout(() => {
-                                setConversation(prev => [...prev, newModelTurn]);
-                            }, 100); 
+                                setConversation(prev => [...prev.filter(t => t !== newUserTurn), newUserTurn, newModelTurn]);
+                            }, 100);
                         } else if (!newUserTurn.text) {
                              toast({ variant: "default", title: "Couldn't hear anything", description: "Could you please speak a bit louder or clearer?" });
                         }
