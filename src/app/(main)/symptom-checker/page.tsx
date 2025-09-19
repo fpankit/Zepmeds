@@ -34,6 +34,7 @@ const COMPRESSION_QUALITY = 0.7;
 export default function SymptomCheckerPage() {
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<'analyzing' | 'uploading'>('analyzing');
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaDataUri, setMediaDataUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
@@ -149,13 +150,15 @@ export default function SymptomCheckerPage() {
 
     try {
         if (mediaDataUri) {
-            toast({ title: "Uploading image...", description: "Please wait while we upload your symptom photo." });
-            const storage = getStorage(app); // Correctly initialize storage
+            setLoadingStep('uploading');
+            const storage = getStorage(app);
             const imageRef = storageRef(storage, `symptom-images/${user.id}/${uuidv4()}.jpg`);
             
             const snapshot = await uploadString(imageRef, mediaDataUri, 'data_url');
             photoUrl = await getDownloadURL(snapshot.ref);
         }
+        
+        setLoadingStep('analyzing');
 
         sessionStorage.setItem('symptomCheckerData', JSON.stringify({
             symptoms,
@@ -167,7 +170,8 @@ export default function SymptomCheckerPage() {
     } catch (error) {
         console.error("Failed during analysis prep or upload:", error);
         toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload the image. Please check your connection and try again." });
-        setIsLoading(false); // Stop loading on error
+    } finally {
+        setIsLoading(false); // This will now correctly fire on error or success (after navigation)
     }
   };
   
@@ -388,11 +392,8 @@ export default function SymptomCheckerPage() {
             onClick={handleAnalyze}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            ) : (
-              'Analyze My Symptoms'
-            )}
+            {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+            {isLoading ? (loadingStep === 'uploading' ? 'Uploading Image...' : 'Analyzing...') : 'Analyze My Symptoms'}
           </Button>
         </CardFooter>
       </Card>
