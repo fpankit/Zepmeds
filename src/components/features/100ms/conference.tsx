@@ -4,6 +4,7 @@
 import { Peer } from './peer';
 import { Controls } from './controls';
 import { AnimatePresence, motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export interface Captions {
     original: string;
@@ -11,16 +12,26 @@ export interface Captions {
 }
 
 export function Conference({ peers, captions, setCaptions }: { peers: any[], captions: Captions, setCaptions: (captions: Captions) => void }) {
+  const peerCount = peers.length;
+    
   return (
     <div className="h-screen flex flex-col">
       <div className="flex-1 w-full overflow-hidden relative">
         <div className="absolute inset-0">
-            {peers.length === 0 ? (
+            {peerCount === 0 ? (
                 <div className="absolute inset-0 flex items-center justify-center">
                     <p className="text-white">Waiting for others to join...</p>
                 </div>
             ) : (
-                <div className="w-full h-full grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                <div 
+                    className={cn(
+                        "w-full h-full grid p-2 gap-2",
+                        peerCount === 1 ? "grid-cols-1" :
+                        peerCount === 2 ? "grid-cols-2" :
+                        peerCount <= 4 ? "grid-cols-2 grid-rows-2" :
+                        "grid-cols-3 grid-rows-3" 
+                    )}
+                >
                     {peers.map(peer => (
                         <Peer key={peer.id} peer={peer} />
                     ))}
