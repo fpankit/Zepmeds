@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, ChangeEvent, useEffect } from 'react';
@@ -146,13 +145,12 @@ export default function SymptomCheckerPage() {
     }
 
     setIsLoading(true);
+    let photoUrl: string | undefined = undefined;
 
     try {
-        let photoUrl: string | undefined = undefined;
-
         if (mediaDataUri) {
             toast({ title: "Uploading image...", description: "Please wait while we upload your symptom photo." });
-            const storage = getStorage(app);
+            const storage = getStorage(app); // Correctly initialize storage
             const imageRef = storageRef(storage, `symptom-images/${user.id}/${uuidv4()}.jpg`);
             
             const snapshot = await uploadString(imageRef, mediaDataUri, 'data_url');
@@ -168,8 +166,8 @@ export default function SymptomCheckerPage() {
 
     } catch (error) {
         console.error("Failed during analysis prep or upload:", error);
-        toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload the image. Please try again." });
-        setIsLoading(false);
+        toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload the image. Please check your connection and try again." });
+        setIsLoading(false); // Stop loading on error
     }
   };
   
@@ -401,5 +399,3 @@ export default function SymptomCheckerPage() {
     </div>
   );
 }
-
-    
