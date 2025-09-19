@@ -130,6 +130,10 @@ const getSimpleResponse = (userText: string): string => {
             hi: "मैं समझता हूं कि आप सर्दी और खांसी से जूझ रहे हैं। मैं गर्म नमक के पानी से गरारे करने और भाप लेने की सलाह देता हूं। खांसी के लिए, आप बेनाड्रिल जैसा ओवर-द-काउंटर सिरप आजमा सकते हैं। लेकिन कृपया याद रखें, यह चिकित्सा सलाह का विकल्प नहीं है।",
             en: "I understand you're dealing with a cold and cough. I recommend gargling with warm salt water and taking steam. For the cough, you can try an over-the-counter syrup like Benadryl. But please remember, this is not a substitute for medical advice."
         },
+        stomach_pain: {
+            hi: "पेट दर्द के लिए, आप गर्म पानी की थैली से सेंक कर सकते हैं और अजवाइन का पानी पी सकते हैं। यह गैस या अपच से राहत दिलाने में मदद कर सकता है। डाइजीन जैसी ओवर-द-काउंटर दवा भी मदद कर सकती है। लेकिन अगर दर्द गंभीर है या लगातार बना रहता है, तो डॉक्टर से सलाह लेना बहुत ज़रूरी है।",
+            en: "For stomach pain, you can try a hot water bag and drink carom seed water. This might help with gas or indigestion. An over-the-counter medicine like Digene might also help. But if the pain is severe or persistent, it is very important to consult a doctor."
+        },
         vomiting_diarrhea: {
             hi: "मतली या दस्त के लिए, हाइड्रेटेड रहना महत्वपूर्ण है। खूब पानी या ORS घोल पिएं। घरेलू उपचार के लिए, अदरक मतली में मदद कर सकता है, और केला और चावल का आहार दस्त में मदद कर सकता है। लेकिन अगर लक्षण गंभीर हैं, तो कृपया तुरंत डॉक्टर से मिलें।",
             en: "For nausea or diarrhea, staying hydrated is crucial. Drink plenty of water or ORS solution. For home remedies, ginger can help with nausea, and a diet of bananas and rice can help with diarrhea. But if symptoms are severe, please see a doctor immediately."
@@ -140,7 +144,13 @@ const getSimpleResponse = (userText: string): string => {
         }
     };
 
-    const hasKeyword = (userWords: string, keywordsToCheck: string[]) => keywordsToCheck.some(kw => userWords.includes(kw));
+    // Improved keyword checker for multi-word phrases
+    const hasKeyword = (userWords: string, keywordsToCheck: string[]) => {
+        return keywordsToCheck.some(kw => {
+            const keywordParts = kw.split(' ');
+            return keywordParts.every(part => userWords.includes(part));
+        });
+    }
 
     if (hasKeyword(text, keywords.greetings)) return responses.greetings.hi;
     if (hasKeyword(text, keywords.thanks)) return responses.thanks.hi;
@@ -155,6 +165,7 @@ const getSimpleResponse = (userText: string): string => {
     
     if (hasKeyword(text, keywords.fever)) return responses.fever.hi;
     if (hasKeyword(text, keywords.cold_cough)) return responses.cold_cough.hi;
+    if (hasKeyword(text, keywords.stomach_pain)) return responses.stomach_pain.hi;
     if (hasKeyword(text, keywords.vomiting_diarrhea)) return responses.vomiting_diarrhea.hi;
 
     // Default Fallback
@@ -237,6 +248,8 @@ export function EchoDocContent() {
         setIsProcessing(true); // Prevents re-triggering
         acquireWakeLock();
         
+        // Dynamically set languages to recognize
+        recognition.lang = 'hi-IN'; // Prioritize Hindi
         recognition.onresult = handleRecognitionResult;
         recognition.onerror = handleRecognitionError;
         recognition.start();
