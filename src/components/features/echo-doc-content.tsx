@@ -15,8 +15,9 @@ let recognition: any;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = false;
-    // Set to a specific language for better accuracy, e.g., Hindi.
-    recognition.lang = 'hi-IN'; // Prioritize Hindi
+    // We will let the browser detect the language from the spoken audio.
+    // Setting a specific language like 'hi-IN' can limit recognition of other languages.
+    // recognition.lang = 'hi-IN'; // This is now removed to allow multi-language input
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 }
@@ -28,83 +29,136 @@ type ConversationTurn = {
 
 const INITIAL_GREETING_HI = "नमस्ते, मैं इको डॉक्टर हूँ। आप कैसा महसूस कर रहे हैं?";
 
-// --- Client-side Text-to-Speech ---
+
+// --- Client-side Text-to-Speech with Voice Selection ---
 const speakText = (text: string) => {
     try {
         if ('speechSynthesis' in window && text) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             
+            // Detect language from text
             const isHindi = /[\u0900-\u097F]/.test(text);
-            utterance.lang = isHindi ? 'hi-IN' : 'en-IN';
+            const isPunjabi = /[\u0A00-\u0A7F]/.test(text);
+            const isMarathi = isHindi; // Marathi uses Devanagari script like Hindi
+            const isTelugu = /[\u0C00-\u0C7F]/.test(text);
             
+            let langCode = 'en-IN';
+            let preferredGender = 'male'; // Default to male for English
+
+            if (isHindi || isMarathi) {
+                langCode = 'hi-IN';
+                preferredGender = 'female'; // Female for Hindi/Marathi
+            } else if (isPunjabi) {
+                langCode = 'pa-IN';
+                preferredGender = 'male'; // "Gabru Munda" voice (male for Punjabi)
+            } else if (isTelugu) {
+                langCode = 'te-IN';
+                preferredGender = 'female'; // Default to female for Telugu
+            }
+            
+            utterance.lang = langCode;
+
             const voices = window.speechSynthesis.getVoices();
-            let selectedVoice = null;
-            
-            if (isHindi) {
-                selectedVoice = voices.find(voice => voice.lang === 'hi-IN' && voice.name.includes('Google'));
+            if (voices.length > 0) {
+                 let selectedVoice = voices.find(voice => voice.lang === langCode && voice.name.toLowerCase().includes(preferredGender) && voice.name.includes('Google'));
+                 if (!selectedVoice) selectedVoice = voices.find(voice => voice.lang === langCode && voice.name.toLowerCase().includes(preferredGender));
+                 if (!selectedVoice) selectedVoice = voices.find(voice => voice.lang === langCode);
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                }
+                window.speechSynthesis.speak(utterance);
             } else {
-                selectedVoice = voices.find(voice => voice.lang === 'en-IN' && voice.name.includes('Google'));
-            }
+                 // Fallback if voices are not loaded yet
+                window.speechSynthesis.onvoiceschanged = () => {
+                    const voices = window.speechSynthesis.getVoices();
+                    let selectedVoice = voices.find(voice => voice.lang === langCode && voice.name.toLowerCase().includes(preferredGender) && voice.name.includes('Google'));
+                    if (!selectedVoice) selectedVoice = voices.find(voice => voice.lang === langCode && voice.name.toLowerCase().includes(preferredGender));
+                    if (!selectedVoice) selectedVoice = voices.find(voice => voice.lang === langCode);
 
-            if (!selectedVoice) {
-                selectedVoice = voices.find(voice => voice.lang === utterance.lang);
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+                    window.speechSynthesis.speak(utterance);
+                };
             }
-
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            }
-
-            window.speechSynthesis.speak(utterance);
         }
     } catch (e) {
         console.error("Browser speech synthesis failed.", e);
     }
 };
 
-// --- Improved Client-Side Logic with Hindi Responses ---
+
+// --- Improved Client-Side Logic with Multi-Language Responses ---
 const getSimpleResponse = (userText: string): string => {
     const text = userText.toLowerCase();
 
-    // Hindi Keywords
-    const feverKeywords_hi = ['बुखार', 'ताप'];
-    const headacheKeywords_hi = ['सर दर्द', 'सिर दर्द', 'माथा दर्द', 'दर्द'];
-    const coldKeywords_hi = ['सर्दी', 'जुकाम'];
-    const coughKeywords_hi = ['खांसी'];
-    const nauseaKeywords_hi = ['उल्टी', 'जी मिचलाना'];
-    const diarrheaKeywords_hi = ['दस्त', 'पेट खराब'];
-    const helloKeywords_hi = ['नमस्ते', 'नमस्कार'];
-    const thanksKeywords_hi = ['धन्यवाद', 'शुक्रिया'];
+    // --- Keywords in Multiple Languages ---
+    const keywords = {
+        greetings: ['hello', 'hi', 'hey', 'namaste', 'namaskar', 'sat sri akal', 'vanakkam', 'namaskaram'],
+        thanks: ['thank you', 'thanks', 'dhanyavaad', 'shukriya', 'meharbani', 'nandri'],
+        headache: ['headache', 'head pain', 'migraine', 'sar dard', 'sir dard', 'matha dukhta', 'talai vali', 'tala noppi'],
+        fever: ['fever', 'temperature', 'bukhar', 'taap', 'jwar', 'taapmaan', 'kaichal', 'jwaram'],
+        cold_cough: ['cold', 'sneeze', 'runny nose', 'cough', 'sardi', 'jukaam', 'khansi', 'zukaam', 'irumal', 'daggu'],
+        stomach_pain: ['stomach ache', 'stomach pain', 'pet dard', 'pota dukhta', 'vayiru vali', 'kadupu noppi'],
+        vomiting_diarrhea: ['vomiting', 'nausea', 'diarrhea', 'loose motion', 'ulti', 'dast', 'ji michlana', 'pet kharab', 'vaanti', 'bedhi']
+    };
 
-    // English Keywords
-    const feverKeywords = ['fever', 'temperature'];
-    const headacheKeywords = ['headache', 'head pain', 'migraine'];
-    const coldKeywords = ['cold', 'sneeze', 'runny nose'];
-    const coughKeywords = ['cough'];
-    const nauseaKeywords = ['nausea', 'vomiting'];
-    const diarrheaKeywords = ['diarrhea', 'loose motion'];
-    const helloKeywords = ['hello', 'hi', 'hey'];
-    const thanksKeywords = ['thank you', 'thanks'];
+    // --- Responses in Multiple Languages ---
+    const responses = {
+        greetings: {
+            en: "Hello! I'm Echo Doc. How are you feeling today?",
+            hi: "नमस्ते! मैं इको डॉक्टर हूँ। कृपया बताएं, आज आप कैसा महसूस कर रहे हैं?"
+        },
+        thanks: {
+            en: "You're most welcome! I'm here if you need anything else. Please take care of yourself.",
+            hi: "आपका स्वागत है! अगर आपको किसी और चीज की जरूरत है तो मैं यहां हूं। कृपया अपना ध्यान रखें।"
+        },
+        headache: {
+            en: "For a headache, try resting in a quiet, dark room and apply a cold compress to your forehead. Home remedies like ginger tea can be soothing. Over-the-counter medicine like Paracetamol may help. However, for a proper diagnosis, it's very important to consult a real doctor.",
+            hi: "सिरदर्द के लिए, शांत, अंधेरे कमरे में आराम करने और अपने माथे पर ठंडा सेक लगाने का प्रयास करें। अदरक की चाय जैसे घरेलू उपचार आरामदायक हो सकते हैं। पैरासिटामॉल जैसी ओवर-द-काउंटर दवा मदद कर सकती है। उचित निदान के लिए, असली डॉक्टर से परामर्श करना बहुत महत्वपूर्ण है।",
+            mr: "डोकेदुखीसाठी, शांत, अंधाऱ्या खोलीत आराम करा आणि कपाळावर थंड कॉम्प्रेस लावा. आल्याचा चहासारखे घरगुती उपाय आराम देऊ शकतात. पॅरासिटामॉलसारखे ओव्हर-द-काउंटर औषध मदत करू शकते. योग्य निदानासाठी, डॉक्टरांचा सल्ला घेणे खूप महत्वाचे आहे.",
+            pa: "ਸਿਰ ਦਰਦ ਲਈ, ਇੱਕ ਸ਼ਾਂਤ, ਹਨੇਰੇ ਕਮਰੇ ਵਿੱਚ ਆਰਾਮ ਕਰਨ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰੋ ਅਤੇ ਆਪਣੇ ਮੱਥੇ 'ਤੇ ਠੰਡਾ ਸੇਕ ਲਗਾਓ। ਅਦਰਕ ਦੀ ਚਾਹ ਵਰਗੇ ਘਰੇਲੂ ਉਪਚਾਰ ਆਰਾਮਦਾਇਕ ਹੋ ਸਕਦੇ ਹਨ। ਪੈਰਾਸੀਟਾਮੋਲ ਵਰਗੀ ਓਵਰ-ਦ-ਕਾਊਂਟਰ ਦਵਾਈ ਮਦਦ ਕਰ ਸਕਦੀ ਹੈ। ਸਹੀ ਨਿਦਾਨ ਲਈ, ਅਸਲੀ ਡਾਕਟਰ ਨਾਲ ਸਲਾਹ ਕਰਨਾ ਬਹੁਤ ਜ਼ਰੂਰੀ ਹੈ।",
+            te: "తలనొప్పి కోసం, నిశ్శబ్దమైన, చీకటి గదిలో విశ్రాంతి తీసుకోండి మరియు మీ నుదిటిపై చల్లని కట్టు వేయండి. అల్లం టీ వంటి ఇంటి నివారణలు ఉపశమనం కలిగిస్తాయి. పారాసెటమాల్ వంటి ఓవర్-ది-కౌంటర్ మందులు సహాయపడవచ్చు. సరైన రోగ నిర్ధారణ కోసం, నిజమైన వైద్యుడిని సంప్రదించడం చాలా ముఖ్యం."
+        },
+        fever: {
+            hi: "मुझे समझ में आया कि आपको बुखार है। शरीर के तापमान को कम करने के लिए पैरासिटामॉल ले सकते हैं और माथे पर ठंडे पानी की पट्टियां रख सकते हैं। खूब सारे तरल पदार्थ पिएं और आराम करें। यदि बुखार 3 दिनों से अधिक रहता है, तो कृपया डॉक्टर से मिलें।",
+            en: "It seems you have a fever. You can take Paracetamol to reduce body temperature and place cool water strips on the forehead. Drink plenty of fluids and rest. If the fever persists for more than 3 days, please see a doctor."
+        },
+        cold_cough: {
+            hi: "मैं समझता हूं कि आप सर्दी और खांसी से जूझ रहे हैं। मैं गर्म नमक के पानी से गरारे करने और भाप लेने की सलाह देता हूं। खांसी के लिए, आप बेनाड्रिल जैसा ओवर-द-काउंटर सिरप आजमा सकते हैं। लेकिन कृपया याद रखें, यह चिकित्सा सलाह का विकल्प नहीं है।",
+            en: "I understand you're dealing with a cold and cough. I recommend gargling with warm salt water and taking steam. For the cough, you can try an over-the-counter syrup like Benadryl. But please remember, this is not a substitute for medical advice."
+        },
+        vomiting_diarrhea: {
+            hi: "मतली या दस्त के लिए, हाइड्रेटेड रहना महत्वपूर्ण है। खूब पानी या ORS घोल पिएं। घरेलू उपचार के लिए, अदरक मतली में मदद कर सकता है, और केला और चावल का आहार दस्त में मदद कर सकता है। लेकिन अगर लक्षण गंभीर हैं, तो कृपया तुरंत डॉक्टर से मिलें।",
+            en: "For nausea or diarrhea, staying hydrated is crucial. Drink plenty of water or ORS solution. For home remedies, ginger can help with nausea, and a diet of bananas and rice can help with diarrhea. But if symptoms are severe, please see a doctor immediately."
+        },
+        fallback: {
+            en: "I'm sorry, I can only provide basic information on a few common symptoms. For any serious medical concerns, it is always best to consult a qualified doctor for a proper diagnosis and treatment.",
+            hi: "माफ़ कीजिए, मैं कुछ सामान्य लक्षणों के बारे में ही बुनियादी जानकारी दे सकता हूँ। किसी भी गंभीर चिकित्सा चिंता के लिए, उचित निदान और उपचार के लिए हमेशा एक योग्य डॉक्टर से परामर्श करना सबसे अच्छा होता है।"
+        }
+    };
 
+    const hasKeyword = (userWords: string, keywordsToCheck: string[]) => keywordsToCheck.some(kw => userWords.includes(kw));
 
-    const hasKeyword = (keywords: string[]) => keywords.some(kw => text.includes(kw));
-
-    // Hindi Responses
-    if (hasKeyword(helloKeywords_hi)) return "नमस्ते! मैं आपकी मदद करने के लिए यहाँ हूँ। कृपया बताएं, आज आप कैसा महसूस कर रहे हैं?";
-    if (hasKeyword(headacheKeywords_hi)) return "ऐसा लगता है कि आपको सिरदर्द है। राहत के लिए, अपने माथे पर एक ठंडा कपड़ा रखने और आराम करने की कोशिश करें। अदरक की चाय जैसे घरेलू उपचार आरामदायक हो सकते हैं। पैरासिटामॉल जैसी ओवर-द-काउंटर दवा मदद कर सकती है। उचित निदान के लिए, असली डॉक्टर से परामर्श करना बहुत महत्वपूर्ण है।";
-    if (hasKeyword(feverKeywords_hi)) return "मुझे समझ में आया कि आपको बुखार है। शरीर के तापमान को कम करने के लिए पैरासिटामॉल ले सकते हैं और माथे पर ठंडे पानी की पट्टियां रख सकते हैं। खूब सारे तरल पदार्थ पिएं और आराम करें। यदि बुखार 3 दिनों से अधिक रहता है, तो कृपया डॉक्टर से मिलें।";
-    if (hasKeyword(coldKeywords_hi) || hasKeyword(coughKeywords_hi)) return "मैं समझता हूं कि आप सर्दी और खांसी से जूझ रहे हैं। मैं गर्म नमक के पानी से गरारे करने और भाप लेने की सलाह देता हूं। गर्म पानी में शहद और नींबू जैसे घरेलू उपचार भी मदद कर सकते हैं। खांसी के लिए, आप बेनाड्रिल जैसा ओवर-द-काउंटर सिरप आजमा सकते हैं। लेकिन कृपया याद रखें, यह चिकित्सा सलाह का विकल्प नहीं है।";
-    if (hasKeyword(nauseaKeywords_hi) || hasKeyword(diarrheaKeywords_hi)) return "मतली या दस्त के लिए, हाइड्रेटेड रहना महत्वपूर्ण है। खूब पानी या ORS घोल पिएं। घरेलू उपचार के लिए, अदरक मतली में मदद कर सकता है, और केला और चावल का आहार दस्त में मदद कर सकता है। लेकिन अगर लक्षण गंभीर हैं, तो कृपया तुरंत डॉक्टर से मिलें।";
-    if (hasKeyword(thanksKeywords_hi)) return "आपका स्वागत है! अगर आपको किसी और चीज की जरूरत है तो मैं यहां हूं। कृपया अपना ध्यान रखें।";
+    if (hasKeyword(text, keywords.greetings)) return responses.greetings.hi;
+    if (hasKeyword(text, keywords.thanks)) return responses.thanks.hi;
     
-    // English Responses (as a fallback)
-    if (hasKeyword(helloKeywords)) return "Hello! I'm here to help. How are you feeling today?";
-    if (hasKeyword(feverKeywords) || hasKeyword(headacheKeywords)) return "It sounds like you have a fever and headache. For relief, try placing a cool cloth on your forehead and getting rest. Home remedies like ginger tea can be soothing. Over-the-counter medicine like Paracetamol can help. For a proper diagnosis, it's very important to consult a real doctor.";
-    if (hasKeyword(coldKeywords) || hasKeyword(coughKeywords)) return "I understand you're dealing with a cold and cough. I recommend gargling with warm salt water and taking steam. Home remedies like honey and lemon in warm water can also help. For cough, you can try an over-the-counter syrup like Benadryl. But please remember, this is not a substitute for medical advice. Please see a doctor.";
-    if (hasKeyword(nauseaKeywords) || hasKeyword(diarrheaKeywords)) return "For nausea or diarrhea, it's important to stay hydrated. Drink plenty of water or ORS solution. For home remedies, ginger can help with nausea, and a diet of bananas and rice can help with diarrhea. But if symptoms are severe, please see a doctor immediately.";
-    if (hasKeyword(thanksKeywords)) return "You're most welcome! I'm here if you need anything else. Please take care of yourself.";
+    if (hasKeyword(text, keywords.headache)) {
+        if(hasKeyword(text, ['sar', 'sir', 'matha'])) return responses.headache.hi;
+        if(hasKeyword(text, ['doke'])) return responses.headache.mr;
+        if(hasKeyword(text, ['tala'])) return responses.headache.te;
+        if(hasKeyword(text, ['sir'])) return responses.headache.pa;
+        return responses.headache.en;
+    }
+    
+    if (hasKeyword(text, keywords.fever)) return responses.fever.hi;
+    if (hasKeyword(text, keywords.cold_cough)) return responses.cold_cough.hi;
+    if (hasKeyword(text, keywords.vomiting_diarrhea)) return responses.vomiting_diarrhea.hi;
 
-    return "माफ़ कीजिए, मैं कुछ सामान्य लक्षणों के बारे में ही बुनियादी जानकारी दे सकता हूँ। किसी भी गंभीर चिकित्सा चिंता के लिए, उचित निदान और उपचार के लिए हमेशा एक योग्य डॉक्टर से परामर्श करना सबसे अच्छा होता है।";
+    // Default Fallback
+    return responses.fallback.hi;
 };
 
 
@@ -252,5 +306,3 @@ export function EchoDocContent() {
         </div>
     );
 }
-
-    
