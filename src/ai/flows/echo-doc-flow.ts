@@ -3,16 +3,14 @@
 /**
  * @fileOverview A conversational AI doctor that detects language and responds accordingly.
  *
- * This flow is designed for a voice conversation. It now only handles transcription
- * and text response generation. The text-to-speech (TTS) is handled on the client-side
- * to avoid server-side rate-limiting issues.
+ * NOTE: This flow is currently NOT USED by the EchoDocContent component, which
+ * now uses a client-side only implementation to avoid API rate-limit issues.
+ * This file is kept for future reference.
  */
 
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
-import { googleAI } from '@genkit-ai/googleai';
 
-// Input: The user's voice and the conversation history
 const EchoDocInputSchema = z.object({
   audioDataUri: z.string().describe(
     "A chunk of the user's voice as a data URI. Expected format: 'data:audio/webm;base64,<encoded_data>'."
@@ -24,8 +22,6 @@ const EchoDocInputSchema = z.object({
 });
 export type EchoDocInput = z.infer<typeof EchoDocInputSchema>;
 
-
-// Output: The AI's text response and the user's transcription.
 const EchoDocOutputSchema = z.object({
   aiResponseText: z.string().describe("The text version of the AI's response."),
   userTranscription: z.string().describe("The transcribed text from the user's audio input."),
@@ -46,11 +42,11 @@ Conversation Flow:
 3.  **Provide Guidance**: Based on the symptoms, provide a concise and helpful response.
 4.  **Respond in Same Language**: YOU MUST RESPOND IN THE SAME LANGUAGE THE USER IS SPEAKING.
 
-Current Conversation History (for context only):
-{{#each history}}
+Current Conversation (for context only):
+{{#each conversationHistory}}
 - {{role}}: {{{text}}}
 {{/each}}
-- user: {{{prompt}}}
+- user: {{{userTranscription}}}
 
 Based on the prompt from the user, generate the next appropriate and helpful response for the 'model' role. Keep the response concise for a voice conversation.
 `;
@@ -63,7 +59,7 @@ export async function echoDocFlow(input: EchoDocInput): Promise<EchoDocOutput> {
 
     // Step 1: Transcribe Audio to Text using Gemini 1.5 Flash
     const transcriptionResponse = await ai.generate({
-        model: googleAI.model('gemini-1.5-flash'),
+        model: 'googleai/gemini-1.5-flash',
         prompt: [{
             media: {
                 url: input.audioDataUri,
@@ -82,10 +78,11 @@ export async function echoDocFlow(input: EchoDocInput): Promise<EchoDocOutput> {
 
     // Step 2: Generate a text response using the transcription and conversation history.
     const llmResponse = await ai.generate({
-        model: googleAI.model('gemini-1.5-flash'),
-        prompt: CONVERSATION_PROMPT_TEMPLATE.replace('{{{prompt}}}', transcribedText), // Inject transcribed text
+        model: 'googleai/gemini-1.5-flash',
+        prompt: CONVERSATION_PROMPT_TEMPLATE, 
         input: {
-            history: input.conversationHistory
+            conversationHistory: input.conversationHistory,
+            userTranscription: transcribedText,
         },
     });
     const aiResponseText = llmResponse.text.trim();
