@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { aiSymptomChecker, AiSymptomCheckerOutput, AiSymptomCheckerInput } from '@/ai/flows/ai-symptom-checker';
+import { uploadFileFlow } from '@/ai/flows/upload-file-flow';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -12,29 +13,31 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { findOfflineMatch } from '@/lib/offline-symptom-data';
-import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "firebase/storage";
-import { app } from '@/lib/firebase';
-import { v4 as uuidv4 } from 'uuid';
 
 const loadingMessages = [
-    { text: "AI is thinking...", icon: BrainCircuit },
+    { text: "AI is thinking...", icon: BrainCircuit, state: 'analyzing' },
     { text: "Uploading symptom image...", icon: Loader2, state: 'uploading' },
-    { text: "Cross-referencing symptoms with medical data...", icon: BookOpenCheck },
-    { text: "Finalizing your preliminary analysis...", icon: Sparkles },
+    { text: "Cross-referencing symptoms with medical data...", icon: BookOpenCheck, state: 'analyzing' },
+    { text: "Finalizing your preliminary analysis...", icon: Sparkles, state: 'analyzing' },
 ];
 
 function EngagingLoader({ loadingStep }: { loadingStep: 'uploading' | 'analyzing' }) {
     const [index, setIndex] = useState(0);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setIndex((prev) => (prev + 1) % loadingMessages.length);
-        }, 2500);
+    const relevantMessages = useMemo(() => 
+        loadingMessages.filter(m => m.state === loadingStep), 
+    [loadingStep]);
 
-        return () => clearInterval(interval);
-    }, []);
+    useEffect(() => {
+        if (loadingStep === 'analyzing') {
+            const interval = setInterval(() => {
+                setIndex((prev) => (prev + 1) % relevantMessages.length);
+            }, 2500);
+            return () => clearInterval(interval);
+        }
+    }, [loadingStep, relevantMessages.length]);
     
-    const currentMessage = loadingStep === 'uploading' ? loadingMessages[1] : loadingMessages[index];
+    const currentMessage = loadingStep === 'uploading' ? loadingMessages[1] : relevantMessages[index];
     const Icon = currentMessage.icon;
 
     return (
@@ -48,7 +51,7 @@ function EngagingLoader({ loadingStep }: { loadingStep: 'uploading' | 'analyzing
                     transition={{ duration: 0.5 }}
                     className="flex flex-col items-center justify-center gap-4"
                 >
-                    <Icon className={`h-12 w-12 text-primary ${loadingStep === 'uploading' || Icon === Loader2 ? 'animate-spin' : 'animate-pulse'}`} />
+                    <Icon className={`h-12 w-12 text-primary ${Icon === Loader2 ? 'animate-spin' : 'animate-pulse'}`} />
                     <p className="text-lg font-semibold text-muted-foreground">{currentMessage.text}</p>
                 </motion.div>
             </AnimatePresence>
@@ -96,11 +99,10 @@ function SymptomCheckerResultsContent() {
     }
     const parsedData: {symptoms: string; mediaDataUri: string | null; targetLanguage: string;} = JSON.parse(storedData);
     
-    // Store input data without photoUrl initially for display purposes
     const displayInput: AiSymptomCheckerInput = {
         symptoms: parsedData.symptoms,
         targetLanguage: parsedData.targetLanguage || 'English',
-        photoUrl: parsedData.mediaDataUri || undefined // Use data URI for preview before upload
+        photoUrl: parsedData.mediaDataUri || undefined
     };
     setInputData(displayInput);
 
@@ -110,24 +112,22 @@ function SymptomCheckerResultsContent() {
       return;
     }
 
-    // --- Main Logic ---
     setIsLoading(true);
     const performAnalysis = async () => {
         let finalPhotoUrl: string | undefined = undefined;
 
-        // Step 1: Upload image if it exists and user is online
         if (parsedData.mediaDataUri && isOnline) {
             setLoadingStep('uploading');
             try {
-                const storage = getStorage(app);
-                const imageRef = storageRef(storage, `symptom-images/${user.id}/${uuidv4()}.jpg`);
-                const uploadTask = await uploadString(imageRef, parsedData.mediaDataUri, 'data_url');
-                finalPhotoUrl = await getDownloadURL(uploadTask.ref);
+                const uploadResult = await uploadFileFlow({
+                    dataUri: parsedData.mediaDataUri,
+                    userId: user.id
+                });
+                finalPhotoUrl = uploadResult.downloadUrl;
                 setInputData(prev => prev ? { ...prev, photoUrl: finalPhotoUrl } : null);
             } catch (uploadError) {
                 console.error("Failed during image upload:", uploadError);
-                toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload the image. Proceeding with text-only analysis." });
-                // Continue without the image
+                toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload image. Proceeding with text-only analysis." });
             }
         }
         
@@ -141,13 +141,10 @@ function SymptomCheckerResultsContent() {
 
         if (isOnline) {
             try {
-                // ONLINE: Try to call the live AI model
                 const aiResult = await aiSymptomChecker(requestPayload);
                 setResult(aiResult);
             } catch (err: any) {
-                // Check if the error is our specific 'AI_MODEL_BUSY' error
                 if (err.message === 'AI_MODEL_BUSY') {
-                    // AI is busy, use the offline fallback
                     const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
                     if (offlineResult) {
                         setResult(offlineResult);
@@ -160,13 +157,11 @@ function SymptomCheckerResultsContent() {
                         setError('The AI model is busy, and no general advice matched your symptoms. Please try again.');
                     }
                 } else {
-                     // Handle other unexpected errors
                     console.error("An unexpected error occurred during AI analysis:", err);
                     setError(err.message || 'An unexpected error occurred. Please try again later.');
                 }
             }
         } else {
-            // OFFLINE: Find a match in the local data
             const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
             if (offlineResult) {
                 setResult(offlineResult);
