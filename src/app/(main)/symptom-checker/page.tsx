@@ -34,7 +34,7 @@ const COMPRESSION_QUALITY = 0.7;
 export default function SymptomCheckerPage() {
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState<'analyzing' | 'uploading'>('analyzing');
+  const [loadingStep, setLoadingStep] = useState<'uploading' | 'analyzing'>('analyzing');
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaDataUri, setMediaDataUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
@@ -146,32 +146,47 @@ export default function SymptomCheckerPage() {
     }
 
     setIsLoading(true);
-    let photoUrl: string | undefined = undefined;
 
-    try {
-        if (mediaDataUri) {
-            setLoadingStep('uploading');
-            const storage = getStorage(app);
-            const imageRef = storageRef(storage, `symptom-images/${user.id}/${uuidv4()}.jpg`);
-            
-            const snapshot = await uploadString(imageRef, mediaDataUri, 'data_url');
-            photoUrl = await getDownloadURL(snapshot.ref);
-        }
-        
+    // This function will be called to proceed with navigation
+    const proceedToResults = (photoUrl?: string) => {
         setLoadingStep('analyzing');
-
         sessionStorage.setItem('symptomCheckerData', JSON.stringify({
             symptoms,
             photoUrl: photoUrl,
             targetLanguage: targetLanguage
         }));
         router.push(`/symptom-checker/results`);
+    };
 
-    } catch (error) {
-        console.error("Failed during analysis prep or upload:", error);
-        toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload the image. Please check your connection and try again." });
-    } finally {
-        setIsLoading(false); // This will now correctly fire on error or success (after navigation)
+    if (mediaDataUri) {
+        setLoadingStep('uploading');
+        try {
+            const storage = getStorage(app);
+            const imageRef = storageRef(storage, `symptom-images/${user.id}/${uuidv4()}.jpg`);
+            
+            // Correctly handle the UploadTask using .then() and .catch()
+            uploadString(imageRef, mediaDataUri, 'data_url').then(snapshot => {
+                getDownloadURL(snapshot.ref).then(downloadURL => {
+                    proceedToResults(downloadURL);
+                }).catch(error => {
+                    console.error("Failed to get download URL:", error);
+                    toast({ variant: "destructive", title: "Processing Failed", description: "Could not get the image URL. Please try again." });
+                    setIsLoading(false);
+                });
+            }).catch(error => {
+                console.error("Failed during image upload:", error);
+                toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload the image. Please check your connection and try again." });
+                setIsLoading(false);
+            });
+            
+        } catch (error) {
+            console.error("Outer try-catch error during upload setup:", error);
+            toast({ variant: "destructive", title: "Upload Error", description: "An unexpected error occurred before uploading." });
+            setIsLoading(false);
+        }
+    } else {
+        // No image to upload, proceed directly
+        proceedToResults();
     }
   };
   
