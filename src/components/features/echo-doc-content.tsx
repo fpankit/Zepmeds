@@ -15,7 +15,9 @@ let recognition: any;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = false;
-    recognition.lang = 'en-IN'; // Use Indian English for better recognition of mixed languages
+    // By not setting a specific language, we allow the browser to handle language detection,
+    // which often works better for mixed-language (e.g., Hinglish) input.
+    // recognition.lang = 'en-IN'; // REMOVED to allow broader language recognition
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 }
@@ -58,8 +60,10 @@ const getSimpleResponse = (userText: string): string => {
     // Keywords in different languages
     const feverKeywords = ['fever', 'bukhar', 'taap', 'ज्वर', 'ताप', 'ಜ್ವರ'];
     const headacheKeywords = ['headache', 'sir dard', 'sar dard', 'matha dukhna', 'डोकेदुखी', 'ತಲೆನೋವು', 'தலைவலி'];
-    const coldKeywords = ['cold', 'sardi', 'zukham', 'सर्दी', 'ಶೀತ', 'சளி'];
+    const coldKeywords = ['cold', 'sardi', 'zukham', 'jukaam', 'सर्दी', 'ಶೀತ', 'சளி'];
     const coughKeywords = ['cough', 'khansi', 'khaasi', 'खांसी', 'ಕೆಮ್ಮು', 'இருமல்'];
+    const nauseaKeywords = ['nausea', 'vomiting', 'ulti', 'ji machalna', 'उलटी', 'ವಾಂತಿ'];
+    const diarrheaKeywords = ['diarrhea', 'dast', 'loose motion', 'दस्त', 'ಭೇದಿ'];
     const helloKeywords = ['hello', 'hi', 'namaste', 'hey', 'హలో', 'வணக்கம்', 'ನಮಸ್ಕಾರ'];
     const thanksKeywords = ['thank you', 'thanks', 'dhanyavad', 'shukriya', 'धन्यवाद', 'ధన్యవాదాలు', 'നന്ദി'];
 
@@ -70,11 +74,15 @@ const getSimpleResponse = (userText: string): string => {
     }
 
     if (hasKeyword(feverKeywords) || hasKeyword(headacheKeywords)) {
-        return "It sounds like you have a fever and headache. I'm sorry to hear that. For relief, you can try placing a cool cloth on your forehead and getting plenty of rest. Home remedies like ginger tea can also be soothing. Over-the-counter medicine like Paracetamol can help with the fever. However, for a proper diagnosis, it's very important to consult a real doctor.";
+        return "It sounds like you have a fever and headache. For relief, try placing a cool cloth on your forehead and getting rest. Home remedies like ginger tea can be soothing. Over-the-counter medicine like Paracetamol can help. For a proper diagnosis, it's very important to consult a real doctor.";
     }
 
     if (hasKeyword(coldKeywords) || hasKeyword(coughKeywords)) {
-        return "I understand you're dealing with a cold and cough. That can be very uncomfortable. I recommend gargling with warm salt water and taking steam to soothe your throat. Home remedies like honey and lemon in warm water can also help. For cough, you can try an over-the-counter syrup like Benadryl. But please remember, this is not a substitute for medical advice. Please see a doctor.";
+        return "I understand you're dealing with a cold and cough. I recommend gargling with warm salt water and taking steam. Home remedies like honey and lemon in warm water can also help. For cough, you can try an over-the-counter syrup like Benadryl. But please remember, this is not a substitute for medical advice. Please see a doctor.";
+    }
+
+    if (hasKeyword(nauseaKeywords) || hasKeyword(diarrheaKeywords)) {
+        return "For nausea or diarrhea, it's important to stay hydrated. Drink plenty of water or ORS solution. For home remedies, ginger can help with nausea, and a diet of bananas and rice can help with diarrhea. But if symptoms are severe, please see a doctor immediately.";
     }
 
     if (hasKeyword(thanksKeywords)) {
