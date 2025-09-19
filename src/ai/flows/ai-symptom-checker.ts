@@ -16,6 +16,9 @@ const AiSymptomCheckerInputSchema = z.object({
       "An optional public URL to a photo or a single frame from a video of a visible symptom. This should be a direct link to an image file (e.g., from Firebase Storage)."
     ),
   targetLanguage: z.string().describe("The language in which the AI's response should be translated (e.g., 'Hindi', 'English', 'Punjabi')."),
+  photoDataUri: z.string().optional().describe(
+      "A Base64 encoded data URI of the symptom image. This is used for display purposes on the results page and is not sent to the AI model."
+    ),
 });
 export type AiSymptomCheckerInput = z.infer<typeof AiSymptomCheckerInputSchema>;
 
@@ -36,7 +39,11 @@ export type AiSymptomCheckerOutput = z.infer<typeof AiSymptomCheckerOutputSchema
 
 const prompt = ai.definePrompt({
   name: 'aiSymptomCheckerPrompt',
-  input: { schema: AiSymptomCheckerInputSchema },
+  input: { schema: z.object({
+      symptoms: AiSymptomCheckerInputSchema.shape.symptoms,
+      photoUrl: AiSymptomCheckerInputSchema.shape.photoUrl,
+      targetLanguage: AiSymptomCheckerInputSchema.shape.targetLanguage,
+  }) },
   output: { schema: AiSymptomCheckerOutputSchema },
   prompt: `You are an expert medical AI assistant. Your primary function is to perform a differential diagnosis based on user-provided symptoms and provide safe, helpful, and detailed guidance.
 
@@ -80,7 +87,11 @@ export const aiSymptomChecker = ai.defineFlow(
   },
   async (input) => {
     try {
-      const { output } = await prompt(input);
+      const { output } = await prompt({
+          symptoms: input.symptoms,
+          targetLanguage: input.targetLanguage,
+          photoUrl: input.photoUrl,
+      });
       if (!output) {
         throw new Error('The AI model did not return a valid response. Please try again.');
       }

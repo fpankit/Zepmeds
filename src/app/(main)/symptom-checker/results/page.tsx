@@ -102,7 +102,7 @@ function SymptomCheckerResultsContent() {
     const displayInput: AiSymptomCheckerInput = {
         symptoms: parsedData.symptoms,
         targetLanguage: parsedData.targetLanguage || 'English',
-        photoUrl: parsedData.mediaDataUri || undefined
+        photoDataUri: parsedData.mediaDataUri || undefined
     };
     setInputData(displayInput);
 
@@ -124,7 +124,6 @@ function SymptomCheckerResultsContent() {
                     userId: user.id
                 });
                 finalPhotoUrl = uploadResult.downloadUrl;
-                setInputData(prev => prev ? { ...prev, photoUrl: finalPhotoUrl } : null);
             } catch (uploadError) {
                 console.error("Failed during image upload:", uploadError);
                 toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload image. Proceeding with text-only analysis." });
@@ -239,8 +238,8 @@ function SymptomCheckerResultsContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="font-semibold italic">"{inputData.symptoms}"</p>
-                {inputData.photoUrl && (
-                    <Image src={inputData.photoUrl} alt="Symptom image" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
+                {inputData.photoDataUri && (
+                    <Image src={inputData.photoDataUri} alt="Symptom image" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
                 )}
               </CardContent>
             </Card>
