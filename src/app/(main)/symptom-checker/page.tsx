@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, ChangeEvent, useEffect } from 'react';
@@ -131,35 +130,14 @@ export default function SymptomCheckerPage() {
 
     setIsLoading(true);
 
-    if (mediaType === 'video' && mediaDataUri) {
-        const video = document.createElement('video');
-        video.src = mediaDataUri;
-        const canvas = canvasRef.current;
-        video.onloadeddata = () => {
-            const context = canvas?.getContext('2d');
-            const { width, height } = getResizedDimensions(video.videoWidth, video.videoHeight);
-            if (canvas) {
-              canvas.width = width;
-              canvas.height = height;
-            }
-            context?.drawImage(video, 0, 0, width, height);
-            const frameDataUri = canvas?.toDataURL('image/jpeg', COMPRESSION_QUALITY);
-            
-            sessionStorage.setItem('symptomCheckerData', JSON.stringify({
-              symptoms,
-              photoDataUri: frameDataUri,
-              targetLanguage: targetLanguage
-            }));
-            router.push(`/symptom-checker/results`);
-        }
-    } else {
-        sessionStorage.setItem('symptomCheckerData', JSON.stringify({
-          symptoms,
-          photoDataUri: mediaDataUri,
-          targetLanguage: targetLanguage
-        }));
-        router.push(`/symptom-checker/results`);
-    }
+    // The mediaDataUri already holds the compressed image data, for both photo and video.
+    // No further processing is needed here.
+    sessionStorage.setItem('symptomCheckerData', JSON.stringify({
+      symptoms,
+      photoDataUri: mediaDataUri, // This is always a compressed image data URI
+      targetLanguage: targetLanguage
+    }));
+    router.push(`/symptom-checker/results`);
   };
   
   const getResizedDimensions = (originalWidth: number, originalHeight: number) => {
@@ -218,9 +196,26 @@ export default function SymptomCheckerPage() {
     mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: supportedMimeType });
         const videoUrl = URL.createObjectURL(blob);
-        setMediaDataUri(videoUrl); // Store blob URL for frame extraction later
-        setMediaPreview(videoUrl);
-        setMediaType('video');
+        
+        // **NEW LOGIC**: Extract frame on client-side
+        const videoElement = document.createElement('video');
+        videoElement.src = videoUrl;
+        videoElement.onloadeddata = () => {
+            if (canvasRef.current) {
+                const canvas = canvasRef.current;
+                const context = canvas.getContext('2d');
+                const { width, height } = getResizedDimensions(videoElement.videoWidth, videoElement.videoHeight);
+                canvas.width = width;
+                canvas.height = height;
+                context?.drawImage(videoElement, 0, 0, width, height);
+                const frameDataUri = canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY);
+
+                setMediaPreview(videoUrl); // Show the video in preview
+                setMediaDataUri(frameDataUri); // But store only the compressed frame data to be sent
+                setMediaType('video');
+            }
+        };
+
         stopCamera();
     };
     
