@@ -292,8 +292,8 @@ export default function SymptomCheckerPage() {
                 <TabsContent value="upload" className="mt-4">
                      <div className="space-y-2">
                         {mediaPreview && mediaType === 'image' ? (
-                        <div className="relative group">
-                            <Image src={mediaPreview} alt="Symptom preview" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
+                        <div className="relative group w-full aspect-video">
+                            <Image src={mediaPreview} alt="Symptom preview" fill className="rounded-lg object-cover" />
                             <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={removeMedia}>
                             <X className="h-5 w-5" />
                             </Button>
@@ -329,7 +329,9 @@ export default function SymptomCheckerPage() {
                             <video ref={videoRef} className={cn("w-full h-full object-cover", { 'hidden': !!mediaPreview })} autoPlay muted playsInline />
                             <canvas ref={canvasRef} className="hidden" />
                              {mediaPreview && mediaType === 'image' && (
-                                <Image src={mediaPreview} alt="Symptom capture" layout="fill" className="object-cover" />
+                                <div className="relative w-full h-full">
+                                  <Image src={mediaPreview} alt="Symptom capture" fill className="object-cover" />
+                                </div>
                              )}
                              {mediaPreview && mediaType === 'video' && (
                                 <video src={mediaPreview} className="w-full h-full object-cover" autoPlay controls loop />
