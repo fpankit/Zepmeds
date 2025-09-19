@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -7,21 +6,24 @@ import { aiSymptomChecker, AiSymptomCheckerOutput, AiSymptomCheckerInput } from 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase, BrainCircuit, Sparkles, BookOpenCheck, WifiOff } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase, BrainCircuit, Sparkles, BookOpenCheck, WifiOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { findOfflineMatch } from '@/lib/offline-symptom-data';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "firebase/storage";
+import { app } from '@/lib/firebase';
+import { v4 as uuidv4 } from 'uuid';
 
 const loadingMessages = [
     { text: "AI is thinking...", icon: BrainCircuit },
-    { text: "Wait, AI can't think... that would be dangerous!", icon: AlertTriangle },
+    { text: "Uploading symptom image...", icon: Loader2, state: 'uploading' },
     { text: "Cross-referencing symptoms with medical data...", icon: BookOpenCheck },
     { text: "Finalizing your preliminary analysis...", icon: Sparkles },
 ];
 
-function EngagingLoader() {
+function EngagingLoader({ loadingStep }: { loadingStep: 'uploading' | 'analyzing' }) {
     const [index, setIndex] = useState(0);
 
     useEffect(() => {
@@ -32,21 +34,22 @@ function EngagingLoader() {
         return () => clearInterval(interval);
     }, []);
     
-    const { text, icon: Icon } = loadingMessages[index];
+    const currentMessage = loadingStep === 'uploading' ? loadingMessages[1] : loadingMessages[index];
+    const Icon = currentMessage.icon;
 
     return (
         <div className="flex flex-col items-center justify-center text-center p-8 space-y-6 bg-card/50 rounded-xl">
              <AnimatePresence mode="wait">
                 <motion.div
-                    key={index}
+                    key={loadingStep === 'uploading' ? 'uploading' : index}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.5 }}
                     className="flex flex-col items-center justify-center gap-4"
                 >
-                    <Icon className="h-12 w-12 text-primary animate-pulse" />
-                    <p className="text-lg font-semibold text-muted-foreground">{text}</p>
+                    <Icon className={`h-12 w-12 text-primary ${loadingStep === 'uploading' || Icon === Loader2 ? 'animate-spin' : 'animate-pulse'}`} />
+                    <p className="text-lg font-semibold text-muted-foreground">{currentMessage.text}</p>
                 </motion.div>
             </AnimatePresence>
         </div>
@@ -60,6 +63,7 @@ function SymptomCheckerResultsContent() {
   const [result, setResult] = useState<AiSymptomCheckerOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingStep, setLoadingStep] = useState<'uploading' | 'analyzing'>('analyzing');
   const [isOffline, setIsOffline] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -90,14 +94,15 @@ function SymptomCheckerResultsContent() {
       setIsLoading(false);
       return;
     }
-    const parsedData: {symptoms: string; photoUrl: string | undefined; targetLanguage: string;} = JSON.parse(storedData);
-    const requestPayload: AiSymptomCheckerInput = {
+    const parsedData: {symptoms: string; mediaDataUri: string | null; targetLanguage: string;} = JSON.parse(storedData);
+    
+    // Store input data without photoUrl initially for display purposes
+    const displayInput: AiSymptomCheckerInput = {
         symptoms: parsedData.symptoms,
         targetLanguage: parsedData.targetLanguage || 'English',
-        photoUrl: parsedData.photoUrl || undefined
+        photoUrl: parsedData.mediaDataUri || undefined // Use data URI for preview before upload
     };
-    setInputData(requestPayload);
-
+    setInputData(displayInput);
 
     if (!user || user.isGuest) {
       toast({ variant: 'destructive', title: 'Login Required' });
@@ -108,6 +113,32 @@ function SymptomCheckerResultsContent() {
     // --- Main Logic ---
     setIsLoading(true);
     const performAnalysis = async () => {
+        let finalPhotoUrl: string | undefined = undefined;
+
+        // Step 1: Upload image if it exists and user is online
+        if (parsedData.mediaDataUri && isOnline) {
+            setLoadingStep('uploading');
+            try {
+                const storage = getStorage(app);
+                const imageRef = storageRef(storage, `symptom-images/${user.id}/${uuidv4()}.jpg`);
+                const uploadTask = await uploadString(imageRef, parsedData.mediaDataUri, 'data_url');
+                finalPhotoUrl = await getDownloadURL(uploadTask.ref);
+                setInputData(prev => prev ? { ...prev, photoUrl: finalPhotoUrl } : null);
+            } catch (uploadError) {
+                console.error("Failed during image upload:", uploadError);
+                toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload the image. Proceeding with text-only analysis." });
+                // Continue without the image
+            }
+        }
+        
+        setLoadingStep('analyzing');
+
+        const requestPayload: AiSymptomCheckerInput = {
+            symptoms: parsedData.symptoms,
+            targetLanguage: parsedData.targetLanguage || 'English',
+            photoUrl: finalPhotoUrl,
+        };
+
         if (isOnline) {
             try {
                 // ONLINE: Try to call the live AI model
@@ -183,7 +214,7 @@ function SymptomCheckerResultsContent() {
       </header>
 
       <main className="flex-1 p-4 md:p-6 space-y-6">
-        {isLoading && <EngagingLoader />}
+        {isLoading && <EngagingLoader loadingStep={loadingStep} />}
 
         {error && (
           <Alert variant="destructive">

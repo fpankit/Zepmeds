@@ -13,8 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
-import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "firebase/storage";
-import { app } from '@/lib/firebase';
 import { v4 as uuidv4 } from 'uuid';
 
 const languages = [
@@ -34,7 +32,6 @@ const COMPRESSION_QUALITY = 0.7;
 export default function SymptomCheckerPage() {
   const [symptoms, setSymptoms] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState<'uploading' | 'analyzing'>('analyzing');
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaDataUri, setMediaDataUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
@@ -129,7 +126,7 @@ export default function SymptomCheckerPage() {
       }
   }
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = () => {
     if (!symptoms.trim()) {
       toast({
         variant: 'destructive',
@@ -147,46 +144,13 @@ export default function SymptomCheckerPage() {
 
     setIsLoading(true);
 
-    const proceedToResults = (photoUrl?: string) => {
-        setLoadingStep('analyzing');
-        sessionStorage.setItem('symptomCheckerData', JSON.stringify({
-            symptoms,
-            photoUrl: photoUrl,
-            targetLanguage: targetLanguage
-        }));
-        router.push(`/symptom-checker/results`);
-    };
-
-    if (mediaDataUri) {
-        setLoadingStep('uploading');
-        try {
-            const storage = getStorage(app);
-            const imageRef = storageRef(storage, `symptom-images/${user.id}/${uuidv4()}.jpg`);
-            
-            // Correctly handle the UploadTask using .then() and .catch()
-            uploadString(imageRef, mediaDataUri, 'data_url').then(snapshot => {
-                getDownloadURL(snapshot.ref).then(downloadURL => {
-                    proceedToResults(downloadURL);
-                }).catch(error => {
-                    console.error("Failed to get download URL:", error);
-                    toast({ variant: "destructive", title: "Processing Failed", description: "Could not get the image URL. Please try again." });
-                    setIsLoading(false);
-                });
-            }).catch(error => {
-                console.error("Failed during image upload:", error);
-                toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload the image. Please check your connection and try again." });
-                setIsLoading(false);
-            });
-            
-        } catch (error) {
-            console.error("Outer try-catch error during upload setup:", error);
-            toast({ variant: "destructive", title: "Upload Error", description: "An unexpected error occurred before uploading." });
-            setIsLoading(false);
-        }
-    } else {
-        // No image to upload, proceed directly
-        proceedToResults();
-    }
+    // Save data to session storage and redirect to results page
+    sessionStorage.setItem('symptomCheckerData', JSON.stringify({
+        symptoms,
+        mediaDataUri, // Pass the data URI directly
+        targetLanguage,
+    }));
+    router.push(`/symptom-checker/results`);
   };
   
   const getResizedDimensions = (originalWidth: number, originalHeight: number) => {
@@ -407,7 +371,7 @@ export default function SymptomCheckerPage() {
             disabled={isLoading}
           >
             {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-            {isLoading ? (loadingStep === 'uploading' ? 'Uploading Image...' : 'Analyzing...') : 'Analyze My Symptoms'}
+            {isLoading ? 'Processing...' : 'Analyze My Symptoms'}
           </Button>
         </CardFooter>
       </Card>
