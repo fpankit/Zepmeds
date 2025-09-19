@@ -15,7 +15,7 @@ import { googleAI } from '@genkit-ai/googleai';
 // Input: The user's voice and the conversation history
 const EchoDocInputSchema = z.object({
   audioDataUri: z.string().describe(
-    "A chunk of the user's voice as a data URI. Expected format: 'data:audio/wav;base64,<encoded_data>'."
+    "A chunk of the user's voice as a data URI. Expected format: 'data:audio/webm;base64,<encoded_data>'."
   ),
   conversationHistory: z.array(z.object({
       role: z.enum(['user', 'model']),
@@ -56,13 +56,7 @@ Based on the prompt from the user, generate the next appropriate and helpful res
 `;
 
 
-export const echoDocFlow = ai.defineFlow(
-  {
-    name: 'echoDocFlow',
-    inputSchema: EchoDocInputSchema,
-    outputSchema: EchoDocOutputSchema,
-  },
-  async (input) => {
+export async function echoDocFlow(input: EchoDocInput): Promise<EchoDocOutput> {
     if (!input.audioDataUri) {
         throw new Error("No audio was provided to the flow.");
     }
@@ -73,7 +67,7 @@ export const echoDocFlow = ai.defineFlow(
         prompt: [{
             media: {
                 url: input.audioDataUri,
-                contentType: 'audio/webm' // Corrected content type
+                contentType: 'audio/webm'
             }
         }, {
             text: "Transcribe the following audio. The user could be speaking in any language, detect it and provide the transcription."
@@ -90,8 +84,6 @@ export const echoDocFlow = ai.defineFlow(
     const llmResponse = await ai.generate({
         model: googleAI.model('gemini-1.5-flash'),
         prompt: CONVERSATION_PROMPT_TEMPLATE,
-        // The CORRECT way: Pass both history and new prompt in the 'input' object
-        // so the Handlebars template can access them.
         input: {
             prompt: transcribedText,
             history: input.conversationHistory
@@ -110,5 +102,4 @@ export const echoDocFlow = ai.defineFlow(
       aiResponseText: aiResponseText,
       userTranscription: transcribedText,
     };
-  }
-);
+}

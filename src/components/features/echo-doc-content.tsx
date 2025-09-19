@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Bot, Mic, MicOff, Loader2, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -20,38 +20,26 @@ const INITIAL_GREETING = "Hello, I am Echo Doc, your personal AI health assistan
 const speakText = (text: string) => {
     try {
         if ('speechSynthesis' in window) {
-            // Cancel any previous speech
             window.speechSynthesis.cancel();
-            
             const utterance = new SpeechSynthesisUtterance(text);
             
-            // Basic language detection for voice selection
-            if (/[\u0900-\u097F]/.test(text)) { // Devanagari script (Hindi, etc.)
-                utterance.lang = 'hi-IN';
-            } else {
-                utterance.lang = 'en-US';
-            }
+            // Basic language detection to hint at the voice
+            const lang = /[\u0900-\u097F]/.test(text) ? 'hi-IN' : 'en-US';
+            utterance.lang = lang;
 
-            // Ensure voices are loaded before speaking
             const voices = window.speechSynthesis.getVoices();
             if (voices.length > 0) {
-                const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
-                if (selectedVoice) {
-                    utterance.voice = selectedVoice;
-                }
+                const selectedVoice = voices.find(voice => voice.lang === utterance.lang);
+                if (selectedVoice) utterance.voice = selectedVoice;
                 window.speechSynthesis.speak(utterance);
             } else {
-                // Fallback if voices are not loaded yet
+                // Fallback for browsers that load voices asynchronously
                 window.speechSynthesis.onvoiceschanged = () => {
-                     const voices = window.speechSynthesis.getVoices();
-                     const selectedVoice = voices.find(voice => voice.lang === utterance.lang && voice.default) || voices.find(voice => voice.lang === utterance.lang);
-                     if (selectedVoice) {
-                        utterance.voice = selectedVoice;
-                    }
-                    window.speechSynthesis.speak(utterance);
+                     const asyncVoices = window.speechSynthesis.getVoices();
+                     const selectedVoice = asyncVoices.find(voice => voice.lang === utterance.lang);
+                     if (selectedVoice) utterance.voice = selectedVoice;
+                     window.speechSynthesis.speak(utterance);
                 };
-                // Fallback for browsers that don't fire onvoiceschanged
-                setTimeout(() => window.speechSynthesis.speak(utterance), 50);
             }
         }
     } catch (e) {
@@ -73,29 +61,24 @@ export function EchoDocContent() {
     
     useEffect(() => {
         setIsMounted(true);
-        // Set the initial greeting text
         setConversation([{ role: 'model', text: INITIAL_GREETING }]);
-        
-        // Play the initial greeting using browser's built-in speech synthesis
         speakText(INITIAL_GREETING);
         
-        // Cleanup speech on unmount
         return () => {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
             }
         };
-
     }, []);
 
     const handleStartRecording = async () => {
         if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel(); // Stop any ongoing speech
+            window.speechSynthesis.cancel(); 
         }
         audioChunksRef.current = [];
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            const recorder = new MediaRecorder(stream);
             setMediaRecorder(recorder);
 
             recorder.ondataavailable = (event) => {
@@ -119,26 +102,22 @@ export function EchoDocContent() {
                     const base64Audio = reader.result as string;
                     
                     try {
-                        const history = conversation.length > 1 ? conversation.slice(1) : [];
+                        const history = conversation.filter(turn => turn.role === 'model' || (turn.role === 'user' && turn.text));
 
                         const result = await echoDocFlow({
                             audioDataUri: base64Audio,
-                            conversationHistory: history,
+                            conversationHistory: history.slice(1), // Exclude initial greeting
                         });
                         
                         const newUserTurn = { role: 'user' as const, text: result.userTranscription };
                         const newModelTurn = { role: 'model' as const, text: result.aiResponseText };
 
-                        // Add user's transcribed text to conversation
                         if (newUserTurn.text) {
                             setConversation(prev => [...prev, newUserTurn]);
                         }
                         
-                        // Play the AI's audio response using the browser's TTS
                         if (newModelTurn.text) {
                             speakText(newModelTurn.text);
-                            
-                            // Add AI's response text to conversation after a short delay
                             setTimeout(() => {
                                 setConversation(prev => [...prev, newModelTurn]);
                             }, 100); 
