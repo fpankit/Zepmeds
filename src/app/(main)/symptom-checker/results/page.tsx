@@ -90,11 +90,11 @@ function SymptomCheckerResultsContent() {
       setIsLoading(false);
       return;
     }
-    const parsedData: {symptoms: string; photoDataUri: string | null; targetLanguage: string;} = JSON.parse(storedData);
+    const parsedData: {symptoms: string; photoUrl: string | undefined; targetLanguage: string;} = JSON.parse(storedData);
     const requestPayload: AiSymptomCheckerInput = {
         symptoms: parsedData.symptoms,
         targetLanguage: parsedData.targetLanguage || 'English',
-        photoDataUri: parsedData.photoDataUri || undefined
+        photoUrl: parsedData.photoUrl || undefined
     };
     setInputData(requestPayload);
 
@@ -213,8 +213,8 @@ function SymptomCheckerResultsContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="font-semibold italic">"{inputData.symptoms}"</p>
-                {inputData.photoDataUri && (
-                    <Image src={inputData.photoDataUri} alt="Symptom image" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
+                {inputData.photoUrl && (
+                    <Image src={inputData.photoUrl} alt="Symptom image" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />
                 )}
               </CardContent>
             </Card>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, ChangeEvent, useEffect } from 'react';
@@ -13,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "firebase/storage";
+import { app } from '@/lib/firebase';
+import { v4 as uuidv4 } from 'uuid';
 
 const languages = [
     { value: 'English', label: 'English' },
@@ -23,9 +27,9 @@ const languages = [
     { value: 'Telugu', label: 'Telugu (తెలుగు)' },
 ];
 
-const MAX_WIDTH = 800;
-const MAX_HEIGHT = 600;
-const COMPRESSION_QUALITY = 0.8; // 80% quality
+const MAX_WIDTH = 600;
+const MAX_HEIGHT = 450;
+const COMPRESSION_QUALITY = 0.7; // Lowered quality for smaller file size
 
 
 export default function SymptomCheckerPage() {
@@ -58,6 +62,13 @@ export default function SymptomCheckerPage() {
       videoRef.current.srcObject = null;
     }
   };
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
   
   const getCameraPermission = async (mode: 'user' | 'environment') => {
     stopCamera(); // Stop any existing stream
@@ -66,7 +77,7 @@ export default function SymptomCheckerPage() {
       setHasCameraPermission(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(e => console.error("Video play failed:", e));
+        await videoRef.current.play().catch(e => console.error("Video play failed:", e));
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
@@ -85,30 +96,39 @@ export default function SymptomCheckerPage() {
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const processImageFile = (file: File) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const image = document.createElement('img');
         image.src = reader.result as string;
         image.onload = () => {
-            const canvas = canvasRef.current;
-            if (canvas) {
-                const context = canvas.getContext('2d');
-                const { width, height } = getResizedDimensions(image.width, image.height);
-                canvas.width = width;
-                canvas.height = height;
-                context?.drawImage(image, 0, 0, width, height);
-                const compressedDataUri = canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY);
-                setMediaPreview(compressedDataUri);
-                setMediaDataUri(compressedDataUri);
-                setMediaType('image');
-            }
+            compressAndSetImage(image);
         };
       };
       reader.readAsDataURL(file);
-    }
-  };
+  }
 
-  const handleAnalyze = () => {
+  const compressAndSetImage = (imageSource: HTMLImageElement | HTMLVideoElement) => {
+      if (canvasRef.current) {
+            const canvas = canvasRef.current;
+            const context = canvas.getContext('2d');
+            const { width, height } = getResizedDimensions(
+                imageSource instanceof HTMLImageElement ? imageSource.width : imageSource.videoWidth,
+                imageSource instanceof HTMLImageElement ? imageSource.height : imageSource.videoHeight
+            );
+            canvas.width = width;
+            canvas.height = height;
+            context?.drawImage(imageSource, 0, 0, width, height);
+            const compressedDataUri = canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY);
+            setMediaDataUri(compressedDataUri); // This holds the data for upload
+      }
+  }
+
+  const handleAnalyze = async () => {
     if (!symptoms.trim()) {
       toast({
         variant: 'destructive',
@@ -119,25 +139,38 @@ export default function SymptomCheckerPage() {
     }
 
     if (!user || user.isGuest) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Required',
-        description: 'Please log in to use the AI Symptom Checker.',
-      });
+      toast({ variant: 'destructive', title: 'Login Required' });
       router.push('/login');
       return;
     }
 
     setIsLoading(true);
 
-    // The mediaDataUri already holds the compressed image data, for both photo and video.
-    // No further processing is needed here.
-    sessionStorage.setItem('symptomCheckerData', JSON.stringify({
-      symptoms,
-      photoDataUri: mediaDataUri, // This is always a compressed image data URI
-      targetLanguage: targetLanguage
-    }));
-    router.push(`/symptom-checker/results`);
+    try {
+        let photoUrl: string | undefined = undefined;
+
+        if (mediaDataUri) {
+            toast({ title: "Uploading image...", description: "Please wait while we upload your symptom photo." });
+            const storage = getStorage(app);
+            const imageRef = storageRef(storage, `symptom-images/${user.id}/${uuidv4()}.jpg`);
+            
+            // uploadString expects 'data_url' which is what mediaDataUri is.
+            const snapshot = await uploadString(imageRef, mediaDataUri, 'data_url');
+            photoUrl = await getDownloadURL(snapshot.ref);
+        }
+
+        sessionStorage.setItem('symptomCheckerData', JSON.stringify({
+            symptoms,
+            photoUrl: photoUrl,
+            targetLanguage: targetLanguage
+        }));
+        router.push(`/symptom-checker/results`);
+
+    } catch (error) {
+        console.error("Failed during analysis prep or upload:", error);
+        toast({ variant: 'destructive', title: "Upload Failed", description: "Could not upload the image. Please try again." });
+        setIsLoading(false);
+    }
   };
   
   const getResizedDimensions = (originalWidth: number, originalHeight: number) => {
@@ -159,17 +192,9 @@ export default function SymptomCheckerPage() {
   }
 
   const takePicture = () => {
-    if (videoRef.current && canvasRef.current) {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const { width, height } = getResizedDimensions(video.videoWidth, video.videoHeight);
-        canvas.width = width;
-        canvas.height = height;
-        const context = canvas.getContext('2d');
-        context?.drawImage(video, 0, 0, width, height);
-        const dataUri = canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY);
-        setMediaPreview(dataUri);
-        setMediaDataUri(dataUri);
+    if (videoRef.current) {
+        compressAndSetImage(videoRef.current);
+        setMediaPreview(videoRef.current.srcObject ? canvasRef.current?.toDataURL('image/jpeg', COMPRESSION_QUALITY) || null : null);
         setMediaType('image');
         stopCamera();
     }
@@ -181,7 +206,6 @@ export default function SymptomCheckerPage() {
     setCountdown(3);
     recordedChunksRef.current = [];
     
-    // Find a supported mime type
     const options = { mimeType: 'video/webm; codecs=vp9' };
     let supportedMimeType = MediaRecorder.isTypeSupported(options.mimeType) ? options.mimeType : 'video/webm';
 
@@ -197,25 +221,13 @@ export default function SymptomCheckerPage() {
         const blob = new Blob(recordedChunksRef.current, { type: supportedMimeType });
         const videoUrl = URL.createObjectURL(blob);
         
-        // **NEW LOGIC**: Extract frame on client-side
         const videoElement = document.createElement('video');
         videoElement.src = videoUrl;
         videoElement.onloadeddata = () => {
-            if (canvasRef.current) {
-                const canvas = canvasRef.current;
-                const context = canvas.getContext('2d');
-                const { width, height } = getResizedDimensions(videoElement.videoWidth, videoElement.videoHeight);
-                canvas.width = width;
-                canvas.height = height;
-                context?.drawImage(videoElement, 0, 0, width, height);
-                const frameDataUri = canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY);
-
-                setMediaPreview(videoUrl); // Show the video in preview
-                setMediaDataUri(frameDataUri); // But store only the compressed frame data to be sent
-                setMediaType('video');
-            }
+            compressAndSetImage(videoElement); // Extract frame and set for upload
+            setMediaPreview(videoUrl); // Show the full video in preview
+            setMediaType('video');
         };
-
         stopCamera();
     };
     

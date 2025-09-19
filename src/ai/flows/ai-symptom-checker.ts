@@ -13,8 +13,8 @@ import { z } from 'zod';
 
 const AiSymptomCheckerInputSchema = z.object({
   symptoms: z.string().describe("A description of the user's symptoms."),
-  photoDataUri: z.string().optional().describe(
-      "An optional photo or a single frame from a video of a visible symptom, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+  photoUrl: z.string().optional().describe(
+      "An optional public URL to a photo or a single frame from a video of a visible symptom. This should be a direct link to an image file (e.g., from Firebase Storage)."
     ),
   targetLanguage: z.string().describe("The language in which the AI's response should be translated (e.g., 'Hindi', 'English', 'Punjabi')."),
 });
@@ -45,9 +45,9 @@ const prompt = ai.definePrompt({
 
   User Symptoms:
   {{{symptoms}}}
-  {{#if photoDataUri}}
-  Symptom Photo/Video Frame (as Base64 data URI):
-  {{media url=photoDataUri}}
+  {{#if photoUrl}}
+  Symptom Photo (URL):
+  {{media url=photoUrl}}
   {{/if}}
 
   Follow these steps sequentially:
