@@ -7,34 +7,10 @@
  * CORS restrictions.
  */
 
-import { config } from 'dotenv';
-config({ path: '.env' });
-
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 import { v4 as uuidv4 } from 'uuid';
-
-// Initialize Firebase Admin SDK
-// This should only run once.
-try {
-  if (!getApps().length) {
-    if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-      throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
-    }
-    if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
-        throw new Error('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable is not set.');
-    }
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-    initializeApp({
-      credential: cert(serviceAccount),
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    });
-  }
-} catch (e) {
-  console.error('Firebase Admin SDK initialization failed:', e);
-}
 
 
 const UploadFileInputSchema = z.object({
