@@ -107,26 +107,41 @@ function SymptomCheckerResultsContent() {
 
     // --- Main Logic ---
     setIsLoading(true);
-    if (isOnline) {
-      // ONLINE: Call the live AI model
-      aiSymptomChecker(requestPayload)
-        .then(setResult)
-        .catch((err) => {
-          console.error(err);
-          const errorMessage = err.message || 'An error occurred while analyzing your symptoms. Please try again later.';
-          setError(errorMessage);
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      // OFFLINE: Try to find a match in the local data
-      const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
-      if (offlineResult) {
-        setResult(offlineResult);
-      } else {
-        setError("You are offline and no direct match was found for your symptoms. Please connect to the internet for a full AI analysis.");
-      }
-      setIsLoading(false);
-    }
+    const performAnalysis = async () => {
+        if (isOnline) {
+            // ONLINE: Try to call the live AI model
+            try {
+                const aiResult = await aiSymptomChecker(requestPayload);
+                setResult(aiResult);
+            } catch (err: any) {
+                console.error(err);
+                // If AI is busy or fails, use the offline fallback
+                const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
+                if (offlineResult) {
+                    setResult(offlineResult);
+                    // Notify user that they are seeing offline data due to an error
+                    toast({
+                        variant: 'default',
+                        title: 'AI is Busy',
+                        description: 'Displaying general advice. Please try again later for a full analysis.'
+                    });
+                } else {
+                    setError(err.message || 'An error occurred. Please try again later.');
+                }
+            }
+        } else {
+            // OFFLINE: Find a match in the local data
+            const offlineResult = findOfflineMatch(parsedData.symptoms, parsedData.targetLanguage);
+            if (offlineResult) {
+                setResult(offlineResult);
+            } else {
+                setError("You are offline and no direct match was found for your symptoms. Please connect to the internet for a full AI analysis.");
+            }
+        }
+        setIsLoading(false);
+    };
+
+    performAnalysis();
 
   }, [user, router, toast, isOnline]);
 
