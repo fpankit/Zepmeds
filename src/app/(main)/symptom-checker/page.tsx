@@ -147,7 +147,6 @@ export default function SymptomCheckerPage() {
 
     setIsLoading(true);
 
-    // This function will be called to proceed with navigation
     const proceedToResults = (photoUrl?: string) => {
         setLoadingStep('analyzing');
         sessionStorage.setItem('symptomCheckerData', JSON.stringify({
