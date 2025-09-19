@@ -27,9 +27,9 @@ const languages = [
     { value: 'Telugu', label: 'Telugu (తెలుగు)' },
 ];
 
-const MAX_WIDTH = 600;
-const MAX_HEIGHT = 450;
-const COMPRESSION_QUALITY = 0.7; // Lowered quality for smaller file size
+const MAX_WIDTH = 800;
+const MAX_HEIGHT = 600;
+const COMPRESSION_QUALITY = 0.7;
 
 
 export default function SymptomCheckerPage() {
@@ -125,6 +125,7 @@ export default function SymptomCheckerPage() {
             context?.drawImage(imageSource, 0, 0, width, height);
             const compressedDataUri = canvas.toDataURL('image/jpeg', COMPRESSION_QUALITY);
             setMediaDataUri(compressedDataUri); // This holds the data for upload
+            setMediaPreview(compressedDataUri); // Also use it for preview
       }
   }
 
@@ -154,7 +155,6 @@ export default function SymptomCheckerPage() {
             const storage = getStorage(app);
             const imageRef = storageRef(storage, `symptom-images/${user.id}/${uuidv4()}.jpg`);
             
-            // uploadString expects 'data_url' which is what mediaDataUri is.
             const snapshot = await uploadString(imageRef, mediaDataUri, 'data_url');
             photoUrl = await getDownloadURL(snapshot.ref);
         }
@@ -168,7 +168,7 @@ export default function SymptomCheckerPage() {
 
     } catch (error) {
         console.error("Failed during analysis prep or upload:", error);
-        toast({ variant: 'destructive', title: "Upload Failed", description: "Could not upload the image. Please try again." });
+        toast({ variant: "destructive", title: "Upload Failed", description: "Could not upload the image. Please try again." });
         setIsLoading(false);
     }
   };
@@ -194,7 +194,6 @@ export default function SymptomCheckerPage() {
   const takePicture = () => {
     if (videoRef.current) {
         compressAndSetImage(videoRef.current);
-        setMediaPreview(videoRef.current.srcObject ? canvasRef.current?.toDataURL('image/jpeg', COMPRESSION_QUALITY) || null : null);
         setMediaType('image');
         stopCamera();
     }
@@ -225,9 +224,10 @@ export default function SymptomCheckerPage() {
         videoElement.src = videoUrl;
         videoElement.onloadeddata = () => {
             compressAndSetImage(videoElement); // Extract frame and set for upload
-            setMediaPreview(videoUrl); // Show the full video in preview
             setMediaType('video');
         };
+        // For preview, we show the actual video
+        setMediaPreview(videoUrl);
         stopCamera();
     };
     
@@ -303,7 +303,7 @@ export default function SymptomCheckerPage() {
                 </TabsList>
                 <TabsContent value="upload" className="mt-4">
                      <div className="space-y-2">
-                        {mediaPreview && mediaType === 'image' ? (
+                        {mediaPreview && (mediaType === 'image' || mediaType === 'video') ? (
                         <div className="relative group w-full aspect-video">
                             <Image src={mediaPreview} alt="Symptom preview" fill className="rounded-lg object-cover" />
                             <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={removeMedia}>
@@ -401,3 +401,5 @@ export default function SymptomCheckerPage() {
     </div>
   );
 }
+
+    
