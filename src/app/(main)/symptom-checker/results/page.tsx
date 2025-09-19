@@ -97,12 +97,24 @@ function SymptomCheckerResultsContent() {
       setIsLoading(false);
       return;
     }
-    const parsedData: {symptoms: string; mediaDataUri: string | null; targetLanguage: string;} = JSON.parse(storedData);
+    const parsedData: {
+        symptoms: string; 
+        mediaDataUri: string | null; 
+        targetLanguage: string;
+        age?: string;
+        duration?: string;
+        pastMedications?: string;
+        allergies?: string;
+    } = JSON.parse(storedData);
     
     const displayInput: AiSymptomCheckerInput = {
         symptoms: parsedData.symptoms,
         targetLanguage: parsedData.targetLanguage || 'English',
-        photoDataUri: parsedData.mediaDataUri || undefined
+        photoDataUri: parsedData.mediaDataUri || undefined,
+        age: parsedData.age,
+        duration: parsedData.duration,
+        pastMedications: parsedData.pastMedications,
+        allergies: parsedData.allergies,
     };
     setInputData(displayInput);
 
@@ -136,6 +148,10 @@ function SymptomCheckerResultsContent() {
             symptoms: parsedData.symptoms,
             targetLanguage: parsedData.targetLanguage || 'English',
             photoUrl: finalPhotoUrl,
+            age: parsedData.age,
+            duration: parsedData.duration,
+            pastMedications: parsedData.pastMedications,
+            allergies: parsedData.allergies,
         };
 
         if (isOnline) {
@@ -234,9 +250,15 @@ function SymptomCheckerResultsContent() {
             )}
             <Card>
               <CardHeader>
-                <CardTitle>Your Symptoms</CardTitle>
+                <CardTitle>Your Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                 <div className="text-sm">
+                    <p><strong className="text-muted-foreground">Age:</strong> {inputData.age || 'N/A'}</p>
+                    <p><strong className="text-muted-foreground">Duration:</strong> {inputData.duration || 'N/A'}</p>
+                    <p><strong className="text-muted-foreground">Medications:</strong> {inputData.pastMedications || 'None'}</p>
+                    <p><strong className="text-muted-foreground">Allergies:</strong> {inputData.allergies || 'None'}</p>
+                </div>
                 <p className="font-semibold italic">"{inputData.symptoms}"</p>
                 {inputData.photoDataUri && (
                     <Image src={inputData.photoDataUri} alt="Symptom image" width={500} height={300} className="rounded-lg object-cover w-full aspect-video" />

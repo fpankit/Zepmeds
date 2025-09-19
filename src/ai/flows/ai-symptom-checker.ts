@@ -12,6 +12,10 @@ import { z } from 'zod';
 
 const AiSymptomCheckerInputSchema = z.object({
   symptoms: z.string().describe("A description of the user's symptoms."),
+  age: z.string().optional().describe("The user's age."),
+  duration: z.string().optional().describe("How long the user has been experiencing the symptoms."),
+  pastMedications: z.string().optional().describe("Any medications the user has taken recently."),
+  allergies: z.string().optional().describe("Any known allergies the user has."),
   photoUrl: z.string().optional().describe(
       "An optional public URL to a photo or a single frame from a video of a visible symptom. This should be a direct link to an image file (e.g., from Firebase Storage)."
     ),
@@ -26,7 +30,7 @@ const AiSymptomCheckerOutputSchema = z.object({
   differentialDiagnosis: z.array(z.object({
     condition: z.string().describe("The name of the possible medical condition."),
     confidence: z.enum(["High", "Medium", "Low"]).describe("The confidence level (High, Medium, or Low) for this diagnosis."),
-    reasoning: z.string().describe("A brief explanation for why this condition is suspected based on the provided symptoms."),
+    reasoning: z.string().describe("A brief explanation for why this condition is suspected based on the provided symptoms and patient details."),
   })).describe("A list of possible diseases with confidence scores and reasoning."),
   potentialMedicines: z.array(z.string()).describe('A list of suggested home remedies followed by over-the-counter medicines.'),
   precautions: z.array(z.string()).describe('A detailed list of 3-4 precautions to take.'),
@@ -41,6 +45,10 @@ const prompt = ai.definePrompt({
   name: 'aiSymptomCheckerPrompt',
   input: { schema: z.object({
       symptoms: AiSymptomCheckerInputSchema.shape.symptoms,
+      age: AiSymptomCheckerInputSchema.shape.age,
+      duration: AiSymptomCheckerInputSchema.shape.duration,
+      pastMedications: AiSymptomCheckerInputSchema.shape.pastMedications,
+      allergies: AiSymptomCheckerInputSchema.shape.allergies,
       photoUrl: AiSymptomCheckerInputSchema.shape.photoUrl,
       targetLanguage: AiSymptomCheckerInputSchema.shape.targetLanguage,
   }) },
@@ -48,6 +56,12 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert medical AI assistant. Your primary function is to perform a differential diagnosis based on user-provided symptoms and provide safe, helpful, and detailed guidance.
 
   IMPORTANT: The user has requested the response in '{{{targetLanguage}}}'. You MUST provide your entire response, including all fields in the output schema, in this language.
+
+  Patient Details:
+  - Age: {{#if age}}{{{age}}}{{else}}Not provided{{/if}}
+  - Symptom Duration: {{#if duration}}{{{duration}}}{{else}}Not provided{{/if}}
+  - Recent Medications: {{#if pastMedications}}{{{pastMedications}}}{{else}}None{{/if}}
+  - Known Allergies: {{#if allergies}}{{{allergies}}}{{else}}None{{/if}}
 
   User Symptoms:
   {{{symptoms}}}
@@ -59,10 +73,10 @@ const prompt = ai.definePrompt({
   Follow these steps sequentially:
   
   Step 1: **Differential Diagnosis**.
-  Based on the symptoms, identify 2-3 potential medical conditions. For each condition, provide:
+  Based on all the patient details and symptoms, identify 2-3 potential medical conditions. For each condition, provide:
       -   condition: The name of the condition.
-      -   confidence: A confidence score ('High', 'Medium', 'Low').
-      -   reasoning: Explain *why* you suspect this condition based on the specific symptoms provided. This is crucial for explainability.
+      -   confidence: A confidence score ('High', 'Medium', 'Low'). Consider all factors like age and duration.
+      -   reasoning: Explain *why* you suspect this condition based on the specific symptoms and patient details provided. This is crucial for explainability.
 
   Step 2: **General Guidance & Doctor Advisory**.
   Based *only* on the diagnosis from Step 1, provide comprehensive and safe recommendations.
@@ -91,6 +105,10 @@ export const aiSymptomChecker = ai.defineFlow(
           symptoms: input.symptoms,
           targetLanguage: input.targetLanguage,
           photoUrl: input.photoUrl,
+          age: input.age,
+          duration: input.duration,
+          pastMedications: input.pastMedications,
+          allergies: input.allergies,
       });
       if (!output) {
         throw new Error('The AI model did not return a valid response. Please try again.');

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef, ChangeEvent } from 'react';
@@ -6,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, Loader2, Upload, X, Languages } from 'lucide-react';
+import { BrainCircuit, Loader2, Upload, X, Languages, Calendar, Pill, ShieldAlert, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const languages = [
     { value: 'English', label: 'English' },
@@ -32,6 +33,10 @@ export default function SymptomCheckerPage() {
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaDataUri, setMediaDataUri] = useState<string | null>(null);
   const [targetLanguage, setTargetLanguage] = useState('English');
+  const [age, setAge] = useState('');
+  const [duration, setDuration] = useState('');
+  const [pastMedications, setPastMedications] = useState('');
+  const [allergies, setAllergies] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -100,6 +105,10 @@ export default function SymptomCheckerPage() {
         symptoms,
         mediaDataUri, // Pass the data URI directly
         targetLanguage,
+        age,
+        duration,
+        pastMedications,
+        allergies,
     }));
     router.push(`/symptom-checker/results`);
   };
@@ -138,7 +147,51 @@ export default function SymptomCheckerPage() {
           <CardTitle className="text-3xl font-bold">AI Symptom Checker</CardTitle>
           <CardDescription>Describe your symptoms, and our AI will provide initial guidance. This is not a substitute for professional medical advice.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+           <div className="space-y-2">
+            <Label htmlFor="symptoms-text" className="font-medium">Describe your primary symptoms*</Label>
+            <Textarea
+              id="symptoms-text"
+              placeholder="e.g., 'I have a headache, a sore throat, and a slight fever for the last 2 days...'"
+              className="min-h-[120px] text-base"
+              value={symptoms}
+              onChange={(e) => setSymptoms(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="age" className="flex items-center gap-2"><User className="h-4 w-4"/>Age*</Label>
+                <Input id="age" type="number" placeholder="e.g., 25" value={age} onChange={(e) => setAge(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                 <Label htmlFor="duration" className="flex items-center gap-2"><Calendar className="h-4 w-4"/>Symptom Duration*</Label>
+                 <Input id="duration" placeholder="e.g., 3 days" value={duration} onChange={(e) => setDuration(e.target.value)} />
+              </div>
+          </div>
+          
+           <div className="space-y-2">
+            <Label htmlFor="medications" className="flex items-center gap-2"><Pill className="h-4 w-4"/>Past Medications</Label>
+            <Textarea
+              id="medications"
+              placeholder="Any current or recent medications? (e.g., 'Took Paracetamol 4 hours ago')"
+              className="min-h-[60px]"
+              value={pastMedications}
+              onChange={(e) => setPastMedications(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="allergies" className="flex items-center gap-2"><ShieldAlert className="h-4 w-4"/>Allergies</Label>
+            <Textarea
+              id="allergies"
+              placeholder="Do you have any known allergies? (e.g., 'Allergic to Penicillin, dust')"
+              className="min-h-[60px]"
+              value={allergies}
+              onChange={(e) => setAllergies(e.target.value)}
+            />
+          </div>
+
           <div className="space-y-2">
             <div className="font-medium text-sm flex items-center gap-2">
               <Languages className="h-4 w-4"/> Select Language
@@ -153,15 +206,6 @@ export default function SymptomCheckerPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          
-          <div className="space-y-2">
-            <Textarea
-              placeholder="e.g., 'I have a headache, a sore throat, and a slight fever for the last 2 days...'"
-              className="min-h-[150px] text-base"
-              value={symptoms}
-              onChange={(e) => setSymptoms(e.target.value)}
-            />
           </div>
           
           <div className="space-y-2">
