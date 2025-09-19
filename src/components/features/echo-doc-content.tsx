@@ -56,12 +56,12 @@ const getSimpleResponse = (userText: string): string => {
     const text = userText.toLowerCase();
 
     // Keywords in different languages
-    const feverKeywords = ['fever', 'bukhar', 'taap', 'ज्वर', 'ताप'];
-    const headacheKeywords = ['headache', 'sir dard', 'sar dard', 'matha dukhna', 'डोकेदुखी', 'ತಲೆನೋವು'];
-    const coldKeywords = ['cold', 'sardi', 'zukham', 'सर्दी', 'ಶೀತ'];
-    const coughKeywords = ['cough', 'khansi', 'khaasi', 'खांसी', 'ಕೆಮ್ಮು'];
-    const helloKeywords = ['hello', 'hi', 'namaste', 'hey', 'హలో', 'வணக்கம்'];
-    const thanksKeywords = ['thank you', 'thanks', 'dhanyavad', 'shukriya', 'धन्यवाद'];
+    const feverKeywords = ['fever', 'bukhar', 'taap', 'ज्वर', 'ताप', 'ಜ್ವರ'];
+    const headacheKeywords = ['headache', 'sir dard', 'sar dard', 'matha dukhna', 'डोकेदुखी', 'ತಲೆನೋವು', 'தலைவலி'];
+    const coldKeywords = ['cold', 'sardi', 'zukham', 'सर्दी', 'ಶೀತ', 'சளி'];
+    const coughKeywords = ['cough', 'khansi', 'khaasi', 'खांसी', 'ಕೆಮ್ಮು', 'இருமல்'];
+    const helloKeywords = ['hello', 'hi', 'namaste', 'hey', 'హలో', 'வணக்கம்', 'ನಮಸ್ಕಾರ'];
+    const thanksKeywords = ['thank you', 'thanks', 'dhanyavad', 'shukriya', 'धन्यवाद', 'ధన్యవాదాలు', 'നന്ദി'];
 
     const hasKeyword = (keywords: string[]) => keywords.some(kw => text.includes(kw));
 
@@ -100,7 +100,7 @@ export function EchoDocContent() {
             try {
                 wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
             } catch (err) {
-                console.error(`Failed to acquire wake lock: ${err}`);
+                // The error is not critical, so we just ignore it.
             }
         }
     }, []);
