@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -7,7 +6,7 @@ import { aiSymptomChecker, AiSymptomCheckerOutput, AiSymptomCheckerInput } from 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase, BrainCircuit, Sparkles, BookOpenCheck, WifiOff, Loader2 } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Pill, Shield, Utensils, Dumbbell, Stethoscope, Briefcase, BrainCircuit, Sparkles, BookOpenCheck, WifiOff, Loader2, Camera, Info } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -204,6 +203,7 @@ function SymptomCheckerResultsContent() {
     if (historyItemData) {
         try {
             const parsedData: HistoryItem = JSON.parse(historyItemData);
+            setError(null);
             setInputData(parsedData.input);
             setResult(parsedData.result);
             setIsLoading(false);
@@ -303,6 +303,25 @@ function SymptomCheckerResultsContent() {
                 )}
               </CardContent>
             </Card>
+
+            {result.imageAnalysis && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                           <Camera className="text-primary"/> Image Analysis
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                         <Alert variant={result.imageAnalysis.isRelevant ? "default" : "destructive"}>
+                            <Info className="h-4 w-4" />
+                            <AlertTitle>{result.imageAnalysis.isRelevant ? "Image is Relevant" : "Image Not Medically Relevant"}</AlertTitle>
+                            <AlertDescription>
+                                {result.imageAnalysis.description}
+                            </AlertDescription>
+                        </Alert>
+                    </CardContent>
+                </Card>
+            )}
             
             <Alert>
               <Stethoscope className="h-4 w-4" />
