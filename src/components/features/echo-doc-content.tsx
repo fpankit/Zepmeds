@@ -46,12 +46,12 @@ const speakText = (text: string) => {
             let langCode = 'en-IN';
             let preferredGender = 'male'; // Default to male for English
 
-            if (isHindi || isMarathi) {
-                langCode = 'hi-IN';
-                preferredGender = 'female'; // Female for Hindi/Marathi
-            } else if (isPunjabi) {
+            if (isPunjabi) {
                 langCode = 'pa-IN';
                 preferredGender = 'male'; // "Gabru Munda" voice (male for Punjabi)
+            } else if (isHindi || isMarathi) {
+                langCode = 'hi-IN';
+                preferredGender = 'female'; // Female for Hindi/Marathi
             } else if (isTelugu) {
                 langCode = 'te-IN';
                 preferredGender = 'female'; // Default to female for Telugu
@@ -98,7 +98,7 @@ const getSimpleResponse = (userText: string): string => {
     const keywords = {
         greetings: ['hello', 'hi', 'hey', 'namaste', 'namaskar', 'sat sri akal', 'vanakkam', 'namaskaram'],
         thanks: ['thank you', 'thanks', 'dhanyavaad', 'shukriya', 'meharbani', 'nandri'],
-        headache: ['headache', 'head pain', 'migraine', 'sar dard', 'sir dard', 'matha dukhta', 'talai vali', 'tala noppi'],
+        headache: ['headache', 'head pain', 'migraine', 'sar dard', 'sir dard', 'matha dukhta', 'talai vali', 'tala noppi', 'sir pida', 'sir dukhda'],
         fever: ['fever', 'temperature', 'bukhar', 'taap', 'jwar', 'taapmaan', 'kaichal', 'jwaram'],
         cold_cough: ['cold', 'sneeze', 'runny nose', 'cough', 'sardi', 'jukaam', 'khansi', 'zukaam', 'irumal', 'daggu'],
         stomach_pain: ['stomach ache', 'stomach pain', 'pet dard', 'pota dukhta', 'vayiru vali', 'kadupu noppi'],
@@ -146,10 +146,10 @@ const getSimpleResponse = (userText: string): string => {
     if (hasKeyword(text, keywords.thanks)) return responses.thanks.hi;
     
     if (hasKeyword(text, keywords.headache)) {
+        if(hasKeyword(text, ['sir pida', 'sir dukhda'])) return responses.headache.pa;
         if(hasKeyword(text, ['sar', 'sir', 'matha'])) return responses.headache.hi;
         if(hasKeyword(text, ['doke'])) return responses.headache.mr;
         if(hasKeyword(text, ['tala'])) return responses.headache.te;
-        if(hasKeyword(text, ['sir'])) return responses.headache.pa;
         return responses.headache.en;
     }
     
