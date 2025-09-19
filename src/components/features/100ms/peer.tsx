@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useVideo } from '@100mslive/react-sdk';
@@ -9,7 +10,7 @@ export function Peer({ peer }: { peer: any }) {
   });
 
   return (
-    <div className="relative bg-black rounded-lg overflow-hidden">
+    <div className="relative bg-black rounded-lg overflow-hidden w-full h-full">
       {peer.videoTrack ? (
         <video
           ref={videoRef}

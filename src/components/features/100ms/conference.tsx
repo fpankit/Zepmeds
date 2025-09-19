@@ -25,11 +25,11 @@ export function Conference({ peers, captions, setCaptions }: { peers: any[], cap
             ) : (
                 <div 
                     className={cn(
-                        "w-full h-full grid p-2 gap-2",
-                        peerCount === 1 ? "grid-cols-1" :
-                        peerCount === 2 ? "grid-cols-2" :
-                        peerCount <= 4 ? "grid-cols-2 grid-rows-2" :
-                        "grid-cols-3 grid-rows-3" 
+                        "w-full h-full p-2 gap-2",
+                        peerCount === 1 ? "grid grid-cols-1" :
+                        peerCount === 2 ? "flex flex-col" : // Use flex-col for 2 peers for better vertical stacking
+                        peerCount <= 4 ? "grid grid-cols-2 grid-rows-2" :
+                        "grid grid-cols-3 grid-rows-3" 
                     )}
                 >
                     {peers.map(peer => (
