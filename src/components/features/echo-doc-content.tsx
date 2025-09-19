@@ -15,7 +15,7 @@ let recognition: any;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = false;
-    recognition.lang = 'en-US';
+    recognition.lang = 'en-IN'; // Use Indian English for better recognition of mixed languages
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 }
@@ -34,7 +34,16 @@ const speakText = (text: string) => {
         if ('speechSynthesis' in window && text) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
+            // Simple language detection: if the text contains Devanagari characters, use Hindi. Otherwise, default to English.
             utterance.lang = /[\u0900-\u097F]/.test(text) ? 'hi-IN' : 'en-US';
+            
+             // Find a suitable voice
+            const voices = window.speechSynthesis.getVoices();
+            const selectedVoice = voices.find(voice => voice.lang === utterance.lang);
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
             window.speechSynthesis.speak(utterance);
         }
     } catch (e) {
@@ -42,15 +51,39 @@ const speakText = (text: string) => {
     }
 };
 
-// --- Simple Client-Side Logic ---
+// --- Improved Client-Side Logic ---
 const getSimpleResponse = (userText: string): string => {
     const text = userText.toLowerCase();
-    if (text.includes("hello") || text.includes("hi")) return "Hello! How are you feeling?";
-    if (text.includes("fever") || text.includes("headache")) return "I understand you have a fever and headache. It's important to rest and drink plenty of fluids. For a proper diagnosis, please consult a real doctor.";
-    if (text.includes("cold") || text.includes("cough")) return "A cold and cough can be uncomfortable. I recommend gargling with warm salt water and taking steam. However, this is not medical advice. Please see a doctor.";
-    if (text.includes("thank you") || text.includes("thanks")) return "You're welcome! Is there anything else I can help you with?";
-    return "I'm sorry, I can only provide very basic information. For any real medical concerns, please consult a qualified doctor.";
+
+    // Keywords in different languages
+    const feverKeywords = ['fever', 'bukhar', 'taap', 'ज्वर', 'ताप'];
+    const headacheKeywords = ['headache', 'sir dard', 'sar dard', 'matha dukhna', 'डोकेदुखी', 'ತಲೆನೋವು'];
+    const coldKeywords = ['cold', 'sardi', 'zukham', 'सर्दी', 'ಶೀತ'];
+    const coughKeywords = ['cough', 'khansi', 'khaasi', 'खांसी', 'ಕೆಮ್ಮು'];
+    const helloKeywords = ['hello', 'hi', 'namaste', 'hey', 'హలో', 'வணக்கம்'];
+    const thanksKeywords = ['thank you', 'thanks', 'dhanyavad', 'shukriya', 'धन्यवाद'];
+
+    const hasKeyword = (keywords: string[]) => keywords.some(kw => text.includes(kw));
+
+    if (hasKeyword(helloKeywords)) {
+        return "Hello! I'm here to help. How are you feeling today?";
+    }
+
+    if (hasKeyword(feverKeywords) || hasKeyword(headacheKeywords)) {
+        return "It sounds like you have a fever and headache. I'm sorry to hear that. For relief, you can try placing a cool cloth on your forehead and getting plenty of rest. Home remedies like ginger tea can also be soothing. Over-the-counter medicine like Paracetamol can help with the fever. However, for a proper diagnosis, it's very important to consult a real doctor.";
+    }
+
+    if (hasKeyword(coldKeywords) || hasKeyword(coughKeywords)) {
+        return "I understand you're dealing with a cold and cough. That can be very uncomfortable. I recommend gargling with warm salt water and taking steam to soothe your throat. Home remedies like honey and lemon in warm water can also help. For cough, you can try an over-the-counter syrup like Benadryl. But please remember, this is not a substitute for medical advice. Please see a doctor.";
+    }
+
+    if (hasKeyword(thanksKeywords)) {
+        return "You're most welcome! I'm here if you need anything else. Please take care of yourself.";
+    }
+
+    return "I'm sorry, I can only provide basic information on a few common symptoms. For any real medical concerns, it is always best to consult a qualified doctor for a proper diagnosis and treatment.";
 };
+
 
 export function EchoDocContent() {
     const router = useRouter();
@@ -81,6 +114,11 @@ export function EchoDocContent() {
 
     useEffect(() => {
         setIsMounted(true);
+        // Load voices for TTS
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+        }
+        
         speakText(INITIAL_GREETING);
         setConversation([{ role: 'model', text: INITIAL_GREETING }]);
         
