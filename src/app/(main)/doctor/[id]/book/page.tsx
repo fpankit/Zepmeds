@@ -104,7 +104,7 @@ export default function BookAppointmentPage() {
                 patientName: `${user.firstName} ${user.lastName}`,
                 doctorId: doctor.id,
                 doctorName: doctor.displayName,
-                doctorSpecialty: doctor.specialty,
+                doctorSpecialty: doctor.specialty || 'General Physician',
                 appointmentDate: format(selectedDate, 'yyyy-MM-dd'),
                 appointmentTime: selectedTime,
                 status: 'pending', // pending, confirmed, cancelled
@@ -160,7 +160,7 @@ export default function BookAppointmentPage() {
                         </Avatar>
                         <div>
                             <CardTitle>Dr. {doctor.displayName}</CardTitle>
-                            <CardDescription>{doctor.specialty}</CardDescription>
+                            <CardDescription>{doctor.specialty || 'General Physician'}</CardDescription>
                         </div>
                     </CardHeader>
                 </Card>
