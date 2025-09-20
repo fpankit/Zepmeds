@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -21,6 +22,7 @@ interface HistoryItem {
     input: AiSymptomCheckerInput;
     result: AiSymptomCheckerOutput;
     timestamp: string;
+    firestoreId?: string; // To keep track of the document in Firestore
 }
 
 const loadingMessages = [
@@ -106,26 +108,32 @@ function SymptomCheckerResultsContent() {
         timestamp: new Date().toISOString(),
     };
     
-    // Save to local storage for offline access
+    let firestoreDocId: string | undefined = undefined;
+
+    // Save to Firestore for backend persistence
+    if (isOnline) {
+      try {
+        const docRef = await addDoc(collection(db, "symptom_analysis"), {
+            userId: user.id,
+            ...newHistoryItem,
+            createdAt: serverTimestamp() // Use server-side timestamp for consistency
+        });
+        firestoreDocId = docRef.id;
+      } catch (e) {
+          console.error("Failed to save analysis to Firestore:", e);
+          // This is not a critical error for the user, so we don't show a toast.
+      }
+    }
+
+    // Save to local storage for offline access, now including the Firestore ID
     try {
+        const itemToStore: HistoryItem = { ...newHistoryItem, firestoreId: firestoreDocId };
         const existingHistoryString = localStorage.getItem('symptomCheckerHistory');
         const existingHistory: HistoryItem[] = existingHistoryString ? JSON.parse(existingHistoryString) : [];
-        const updatedHistory = [newHistoryItem, ...existingHistory].slice(0, 10); // Keep last 10
+        const updatedHistory = [itemToStore, ...existingHistory].slice(0, 10); // Keep last 10
         localStorage.setItem('symptomCheckerHistory', JSON.stringify(updatedHistory));
     } catch (e) {
         console.error("Failed to save to local history:", e);
-    }
-
-    // Save to Firestore for backend persistence
-    try {
-      await addDoc(collection(db, "symptom_analysis"), {
-          userId: user.id,
-          ...newHistoryItem,
-          createdAt: serverTimestamp() // Use server-side timestamp for consistency
-      });
-    } catch (e) {
-        console.error("Failed to save analysis to Firestore:", e);
-        // This is not a critical error for the user, so we don't show a toast.
     }
   };
   

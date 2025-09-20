@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, ChangeEvent, useEffect, useCallback } from 'react';
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, Loader2, Upload, X, Languages, Calendar, Pill, ShieldAlert, User, History, ChevronRight, Mic, MicOff } from 'lucide-react';
+import { BrainCircuit, Loader2, Upload, X, Languages, Calendar, Pill, ShieldAlert, User, History, ChevronRight, Mic, MicOff, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import Image from 'next/image';
@@ -14,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AiSymptomCheckerInput, AiSymptomCheckerOutput } from '@/ai/flows/ai-symptom-checker';
 import { cn } from '@/lib/utils';
+import { db } from '@/lib/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
 
 // --- Client-side Speech Recognition Setup ---
 const SpeechRecognition =
@@ -46,6 +49,7 @@ interface HistoryItem {
     input: AiSymptomCheckerInput;
     result: AiSymptomCheckerOutput;
     timestamp: string;
+    firestoreId?: string; // Add this to track the doc ID in Firestore
 }
 
 
@@ -208,6 +212,31 @@ export default function SymptomCheckerPage() {
       router.push('/symptom-checker/results');
   }
 
+  const handleDeleteHistoryItem = async (e: React.MouseEvent, firestoreId: string | undefined, localId: string) => {
+    e.stopPropagation(); // Prevent navigating to the results page
+
+    // Optimistically update UI
+    const updatedHistory = history.filter(item => item.id !== localId);
+    setHistory(updatedHistory);
+    localStorage.setItem('symptomCheckerHistory', JSON.stringify(updatedHistory));
+
+    // Delete from Firestore if the ID exists
+    if (firestoreId) {
+        try {
+            await deleteDoc(doc(db, "symptom_analysis", firestoreId));
+            toast({ title: "History item deleted." });
+        } catch (error) {
+            console.error("Failed to delete history from Firestore:", error);
+            toast({ variant: "destructive", title: "Sync Error", description: "Could not delete from backend." });
+            // Optionally, revert the UI change if the backend delete fails
+            // This would require more complex state management
+        }
+    } else {
+         toast({ title: "Local history item deleted." });
+    }
+  };
+
+
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
       <Card className="max-w-2xl mx-auto">
@@ -336,11 +365,16 @@ export default function SymptomCheckerPage() {
             <CardContent className="space-y-3">
                 {history.map(item => (
                     <div key={item.id} className="p-4 rounded-lg bg-card/50 border flex items-center justify-between cursor-pointer hover:bg-card/80" onClick={() => viewHistoryItem(item)}>
-                        <div>
+                        <div className="flex-1 overflow-hidden">
                             <p className="font-semibold truncate max-w-xs">{item.input.symptoms}</p>
                             <p className="text-xs text-muted-foreground">{new Date(item.timestamp).toLocaleString()}</p>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground"/>
+                        <div className="flex items-center">
+                            <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={(e) => handleDeleteHistoryItem(e, item.firestoreId, item.id)}>
+                                <Trash2 className="h-5 w-5" />
+                            </Button>
+                            <ChevronRight className="h-5 w-5 text-muted-foreground"/>
+                        </div>
                     </div>
                 ))}
             </CardContent>
@@ -349,3 +383,4 @@ export default function SymptomCheckerPage() {
     </div>
   );
 }
+
