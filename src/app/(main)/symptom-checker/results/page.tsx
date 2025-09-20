@@ -139,7 +139,7 @@ function SymptomCheckerResultsContent() {
         const displayInput: AiSymptomCheckerInput = {
             symptoms: dataToProcess.symptoms,
             targetLanguage: dataToProcess.targetLanguage || 'English',
-            photoDataUri: dataToProcess.mediaDataUri || undefined,
+            photoDataUri: dataToProcess.mediaDataUri || null,
             age: dataToProcess.age,
             duration: dataToProcess.duration,
             pastMedications: dataToProcess.pastMedications,
