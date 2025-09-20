@@ -5,19 +5,21 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageSquare, AlertTriangle, Calendar, User as UserIcon, Loader2, Check, X } from 'lucide-react';
+import { ArrowLeft, Video, AlertTriangle, Calendar, Clock, User, Loader2, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Appointment {
     id: string;
-    patientId: string;
-    patientName: string;
+    doctorId: string;
+    doctorName: string;
+    doctorSpecialty: string;
     appointmentDate: string;
     appointmentTime: string;
     createdAt: Timestamp;
@@ -26,30 +28,31 @@ interface Appointment {
 
 const AppointmentSkeleton = () => (
     <div className="space-y-4">
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
     </div>
 );
 
 
-export default function ConsultationsPage() {
+export default function AppointmentsPage() {
     const { user, loading: authLoading } = useAuth();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [filter, setFilter] = useState('upcoming');
     const router = useRouter();
     const { toast } = useToast();
 
     useEffect(() => {
         if (authLoading) return;
-        if (!user || !user.isDoctor) {
-          setIsLoading(false);
-          return;
+        if (!user || user.isGuest) {
+            setIsLoading(false);
+            return;
         }
 
         const q = query(
             collection(db, 'appointments'),
-            where('doctorId', '==', user.id),
+            where('patientId', '==', user.id),
             orderBy('createdAt', 'desc')
         );
 
@@ -68,14 +71,14 @@ export default function ConsultationsPage() {
         return () => unsubscribe();
     }, [user, authLoading]);
     
-    const handleStatusUpdate = async (appointmentId: string, newStatus: 'confirmed' | 'cancelled') => {
+    const handleCancelAppointment = async (appointmentId: string) => {
         const appointmentRef = doc(db, 'appointments', appointmentId);
         try {
-            await updateDoc(appointmentRef, { status: newStatus });
-            toast({ title: `Appointment ${newStatus}` });
+            await updateDoc(appointmentRef, { status: 'cancelled' });
+            toast({ title: "Appointment Cancelled" });
         } catch (error) {
-            console.error("Failed to update status:", error);
-            toast({ variant: 'destructive', title: 'Update Failed' });
+            console.error("Failed to cancel appointment:", error);
+            toast({ variant: 'destructive', title: 'Cancellation Failed' });
         }
     }
 
@@ -92,24 +95,32 @@ export default function ConsultationsPage() {
         }
     }
 
+    const filteredAppointments = appointments.filter(appt => {
+        const isPast = new Date(appt.appointmentDate) < new Date();
+        if (filter === 'upcoming') return !isPast && (appt.status === 'pending' || appt.status === 'confirmed');
+        if (filter === 'past') return isPast || appt.status === 'completed' || appt.status === 'cancelled';
+        return true;
+    });
+
 
     if(authLoading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
-
-    if (!user?.isDoctor) {
+    
+    if (user?.isGuest) {
         return (
             <div className="flex flex-col h-screen bg-background">
               <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background border-b">
                 <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-6 w-6" /></Button>
-                <h1 className="text-xl font-bold">Appointments</h1>
+                <h1 className="text-xl font-bold">My Appointments</h1>
                 <div className="w-8" />
               </header>
               <main className="flex-1 flex items-center justify-center p-4">
                   <Card className="text-center p-10">
                       <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500" />
-                      <h3 className="text-xl font-semibold mt-4">Access Denied</h3>
-                      <p className="text-muted-foreground">This page is only available for doctors.</p>
+                      <h3 className="text-xl font-semibold mt-4">Login Required</h3>
+                      <p className="text-muted-foreground">Please log in to see your appointments.</p>
+                      <Button asChild className="mt-4"><a href="/login">Login</a></Button>
                   </Card>
               </main>
           </div>
@@ -122,50 +133,52 @@ export default function ConsultationsPage() {
                 <Button variant="ghost" size="icon" onClick={() => router.back()}>
                 <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <h1 className="text-xl font-bold">Patient Appointments</h1>
+                <h1 className="text-xl font-bold">My Appointments</h1>
                 <div className="w-8" />
             </header>
             <main className="flex-1 overflow-y-auto p-4 space-y-4">
+                 <Tabs value={filter} onValueChange={setFilter}>
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                        <TabsTrigger value="past">Past & Cancelled</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+
                 {isLoading ? (
                     <AppointmentSkeleton />
-                ) : appointments.length === 0 ? (
+                ) : filteredAppointments.length === 0 ? (
                     <Card className="text-center p-10 mt-6">
-                        <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                        <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                         <h3 className="text-xl font-semibold">No Appointments Found</h3>
-                        <p className="text-muted-foreground">You have no pending or past appointments.</p>
+                        <p className="text-muted-foreground">You have no {filter} appointments.</p>
                     </Card>
                 ) : (
                     <div className="space-y-4">
-                        {appointments.map(appt => (
+                        {filteredAppointments.map(appt => (
                             <Card key={appt.id}>
                                 <CardContent className="p-4 space-y-4">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <div className="flex items-center gap-2">
-                                                <UserIcon className="h-4 w-4 text-muted-foreground" />
-                                                <p className="font-bold text-lg">{appt.patientName}</p>
-                                            </div>
-                                             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                            <p className="font-bold text-lg">Dr. {appt.doctorName}</p>
+                                            <p className="text-sm text-primary">{appt.doctorSpecialty}</p>
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                                                 <Calendar className="h-4 w-4" />
-                                                <p>{format(new Date(appt.appointmentDate), 'PPP')} at {appt.appointmentTime}</p>
+                                                <span>{format(new Date(appt.appointmentDate), 'PPP')}</span>
+                                                <Clock className="h-4 w-4" />
+                                                <span>{appt.appointmentTime}</span>
                                             </div>
                                         </div>
                                         {getStatusBadge(appt.status)}
                                     </div>
 
-                                    {appt.status === 'pending' && (
-                                        <div className="flex gap-2">
-                                            <Button size="sm" className="w-full bg-green-600 hover:bg-green-700" onClick={() => handleStatusUpdate(appt.id, 'confirmed')}>
-                                                <Check className="mr-2 h-4 w-4" /> Confirm
-                                            </Button>
-                                            <Button size="sm" variant="destructive" className="w-full" onClick={() => handleStatusUpdate(appt.id, 'cancelled')}>
-                                                <X className="mr-2 h-4 w-4" /> Cancel
-                                            </Button>
-                                        </div>
+                                    {appt.status === 'confirmed' && (
+                                        <Button className="w-full" onClick={() => router.push(`/call/${appt.id}`)}>
+                                            <Video className="mr-2 h-4 w-4"/> Join Call
+                                        </Button>
                                     )}
-                                     {appt.status === 'confirmed' && (
-                                         <Button className="w-full" onClick={() => router.push(`/call/${appt.id}`)}>
-                                            Join Call
+                                    {appt.status === 'pending' && (
+                                        <Button variant="destructive" className="w-full" onClick={() => handleCancelAppointment(appt.id)}>
+                                            <X className="mr-2 h-4 w-4" /> Cancel Appointment
                                         </Button>
                                     )}
                                 </CardContent>
