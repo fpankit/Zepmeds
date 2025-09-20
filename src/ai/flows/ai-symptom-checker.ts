@@ -98,15 +98,10 @@ export const aiSymptomChecker = ai.defineFlow(
     outputSchema: AiSymptomCheckerOutputSchema,
   },
   async (input) => {
-    try {
-      const { output } = await prompt(input);
-      if (!output) {
-        throw new Error('The AI model did not return a valid response. Please try again.');
-      }
-      return output;
-    } catch (error: any) {
-      console.error('AI Symptom Checker error:', error);
-      throw new Error('An unexpected error occurred while analyzing your symptoms. Please try again later.');
+    const { output } = await prompt(input);
+    if (!output) {
+      throw new Error('The AI model did not return a valid response. Please try again.');
     }
+    return output;
   }
 );
