@@ -16,7 +16,7 @@ const AiSymptomCheckerInputSchema = z.object({
   duration: z.string().optional().describe("How long the user has been experiencing the symptoms."),
   pastMedications: z.string().optional().describe("Any medications the user has taken recently."),
   allergies: z.string().optional().describe("Any known allergies the user has."),
-  photoDataUri: z.string().optional().describe(
+  photoDataUri: z.string().nullable().optional().describe(
       "A Base64 encoded data URI of a photo or a single frame from a video of a visible symptom. This should be a direct data URI string."
     ),
   targetLanguage: z.string().describe("The language in which the AI's response should be translated (e.g., 'Hindi', 'English', 'Punjabi')."),
