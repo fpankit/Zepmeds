@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Star, Calendar } from "lucide-react";
+import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Star, Calendar, Clock } from "lucide-react";
 import { useEffect, useState, useMemo, Suspense, useCallback } from "react";
 import { collection, query, onSnapshot, doc, setDoc, getDocs, where, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -28,6 +28,12 @@ const specialties = [
     { name: "Neurologist", key: "neurologist" },
 ];
 
+
+interface Appointment {
+    id: string;
+    doctorId: string;
+    status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+}
 
 const DoctorCardSkeleton = () => (
     <Card className="overflow-hidden">
@@ -52,11 +58,12 @@ const DoctorCardSkeleton = () => (
 
 function DoctorPageContent() {
   const [doctors, setDoctors] = useState<AuthUser[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('all');
 
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const specialtyFilter = searchParams.get('specialty');
@@ -83,9 +90,9 @@ function DoctorPageContent() {
   
   useEffect(() => {
     setIsLoading(true);
-    const doctorsQuery = query(collection(db, "doctors"), where("isOnline", "in", [true, false]));
+    const doctorsQuery = query(collection(db, "doctors"));
     
-    const unsubscribe = onSnapshot(doctorsQuery, (querySnapshot) => {
+    const unsubscribeDoctors = onSnapshot(doctorsQuery, (querySnapshot) => {
         const fetchedDoctors = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return { 
@@ -93,18 +100,11 @@ function DoctorPageContent() {
                 displayName: data.displayName || `${data.firstName} ${data.lastName}`, 
                 name: data.displayName || `${data.firstName} ${data.lastName}`,
                 specialty: data.specialty || "General Physician",
-                experience: data.experience || 5, // Default experience
-                rating: data.rating || 4.5, // Default rating
+                experience: data.experience || 5,
+                rating: data.rating || 4.5,
                 image: data.photoURL || "",
                 dataAiHint: "doctor portrait",
                 isOnline: data.isOnline || false,
-                firstName: data.firstName || '',
-                lastName: data.lastName || '',
-                email: data.email || '',
-                phone: data.phone || '',
-                age: data.age || 0,
-                addresses: data.addresses || [],
-                isDoctor: true,
              } as AuthUser
         });
         
@@ -122,8 +122,20 @@ function DoctorPageContent() {
         setIsLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [toast]);
+    let unsubscribeAppointments = () => {};
+    if (user && !user.isGuest) {
+        const appointmentsQuery = query(collection(db, "appointments"), where("patientId", "==", user.id));
+        unsubscribeAppointments = onSnapshot(appointmentsQuery, (snapshot) => {
+            const fetchedAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+            setAppointments(fetchedAppointments);
+        });
+    }
+
+    return () => {
+        unsubscribeDoctors();
+        unsubscribeAppointments();
+    };
+  }, [toast, user]);
   
   const filteredDoctors = useMemo(() => {
       return doctors.filter(doctor => {
@@ -160,6 +172,49 @@ function DoctorPageContent() {
         <span className="text-sm font-semibold text-muted-foreground">{rating.toFixed(1)}</span>
     </div>
   )
+  
+  const getAppointmentButton = (doctor: AuthUser) => {
+      if (!user || user.isGuest) {
+          return (
+              <Button className="w-full" onClick={() => handleBookAppointment(doctor.id)}>
+                  <Calendar className="mr-2 h-4 w-4" /> 
+                  Book Appointment
+              </Button>
+          )
+      }
+
+      const appointment = appointments.find(appt => appt.doctorId === doctor.id && (appt.status === 'pending' || appt.status === 'confirmed'));
+
+      if (appointment) {
+          if (appointment.status === 'pending') {
+              return (
+                  <Button className="w-full" disabled variant="outline">
+                      <Clock className="mr-2 h-4 w-4 animate-spin" /> 
+                      Pending Confirmation
+                  </Button>
+              )
+          }
+          if (appointment.status === 'confirmed') {
+              return (
+                  <Button className="w-full" onClick={() => router.push(`/call/${appointment.id}`)}>
+                      <Video className="mr-2 h-4 w-4" /> 
+                      Start Video Call
+                  </Button>
+              )
+          }
+      }
+      
+      return (
+           <Button className="w-full" onClick={() => handleBookAppointment(doctor.id)}>
+                <Calendar className="mr-2 h-4 w-4" /> 
+                Book Appointment
+            </Button>
+      )
+  }
+
+  if (authLoading) {
+    return <div className="h-screen w-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
@@ -238,13 +293,7 @@ function DoctorPageContent() {
                         </div>
                     </div>
                     <div className="flex gap-2 mt-4">
-                        <Button 
-                            className="w-full"
-                            onClick={() => handleBookAppointment(doctor.id)}
-                        >
-                            <Calendar className="mr-2 h-4 w-4" /> 
-                            Book Appointment
-                        </Button>
+                        {getAppointmentButton(doctor)}
                     </div>
                     </CardContent>
                 </Card>

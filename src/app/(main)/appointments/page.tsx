@@ -90,6 +90,8 @@ export default function AppointmentsPage() {
                 return <Badge variant="destructive">Cancelled</Badge>;
             case 'pending':
                 return <Badge variant="secondary" className="bg-yellow-500">Pending</Badge>;
+            case 'completed':
+                 return <Badge variant="outline">Completed</Badge>;
             default:
                 return <Badge variant="outline">{status}</Badge>;
         }
