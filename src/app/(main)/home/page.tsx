@@ -220,7 +220,7 @@ export default function HomePage() {
                     <offer.icon className={cn("h-6 w-6", offer.iconClass)} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm text-white">{offer.title}</h3>
+                    <h3 className="font-semibold text-sm text-foreground">{offer.title}</h3>
                     <p className="text-xs text-muted-foreground">{offer.description}</p>
                   </div>
                 </div>
