@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -177,23 +176,8 @@ function SymptomCheckerResultsContent() {
                 setResult(aiResult);
                 await saveToHistory(displayInput, aiResult); // Save on success
             } catch (err: any) {
-                if (err.message === 'AI_MODEL_BUSY') {
-                    const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);
-                    if (offlineResult) {
-                        setResult(offlineResult);
-                        await saveToHistory(displayInput, offlineResult); // Save on success
-                        toast({
-                            variant: 'default',
-                            title: 'AI is Busy',
-                            description: 'Displaying general advice. Please try again later for a full analysis.'
-                        });
-                    } else {
-                        setError('The AI model is busy, and no general advice matched your symptoms. Please try again.');
-                    }
-                } else {
-                    console.error("An unexpected error occurred during AI analysis:", err);
-                    setError(err.message || 'An unexpected error occurred. Please try again later.');
-                }
+                console.error("An unexpected error occurred during AI analysis:", err);
+                setError(err.message || 'An unexpected error occurred. Please try again later.');
             }
         } else {
             const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);

@@ -106,11 +106,6 @@ export const aiSymptomChecker = ai.defineFlow(
       return output;
     } catch (error: any) {
       console.error('AI Symptom Checker error:', error);
-      const errorMessage = error.message || '';
-      if (errorMessage.includes('503') || errorMessage.includes('overloaded') || errorMessage.toLowerCase().includes('quota')) {
-        // Throw a specific, recognizable error for busy/overloaded state
-        throw new Error('AI_MODEL_BUSY');
-      }
       throw new Error('An unexpected error occurred while analyzing your symptoms. Please try again later.');
     }
   }
