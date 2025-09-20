@@ -177,7 +177,23 @@ function SymptomCheckerResultsContent() {
                 await saveToHistory(displayInput, aiResult); // Save on success
             } catch (err: any) {
                 console.error("An unexpected error occurred during AI analysis:", err);
-                setError(err.message || 'An unexpected error occurred. Please try again later.');
+                // Check for rate limit error and fallback to offline data
+                const errorMessage = err.message || '';
+                if (errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota")) {
+                    const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);
+                    if (offlineResult) {
+                        setResult(offlineResult);
+                        await saveToHistory(displayInput, offlineResult);
+                        toast({
+                            title: 'AI is busy, showing general advice.',
+                            description: 'You have exceeded the free limit for today. Please try again tomorrow.',
+                        });
+                    } else {
+                        setError("AI is currently busy, and no offline data was found for your symptoms. Please try again later.");
+                    }
+                } else {
+                    setError(err.message || 'An unexpected error occurred. Please try again later.');
+                }
             }
         } else {
             const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);
