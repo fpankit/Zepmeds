@@ -3,38 +3,38 @@
 
 This guide explains two ways to get the Zepmeds app on your phone.
 
-1.  **PWA Installation (Recommended for most users):** Install the web app directly to your home screen. It's fast, lightweight, and always up-to-date.
+1.  **PWA Installation (Recommended for most users):** Install the web app directly to your home screen. It's fast, lightweight, always up-to-date, and works offline.
 2.  **Native APK/IPA Build (For developers):** Convert the web app into a native Android (.apk) or iOS (.ipa) package using Capacitor.
 
 ---
 
 ## Method 1: PWA Installation (Directly from Browser)
 
-This method makes the web app work just like a native app and is the easiest way to install.
+This is the easiest and recommended method. It makes the web app work just like a native app and supports offline functionality. This method will work perfectly when you deploy the app to a hosting service like Vercel.
 
 ### For Android Users (Using Google Chrome)
-1.  **Open the Website:** Launch Google Chrome and navigate to the Zepmeds website URL.
+1.  **Open the Website:** Launch Google Chrome and navigate to your deployed Zepmeds URL (e.g., `https://your-app.vercel.app`).
 2.  **Look for the Install Prompt:**
-    *   Chrome will often automatically show a pop-up banner: **"Add Zepmeds to Home Screen"**.
-    *   Simply tap this banner.
-3.  **Manual Installation (If no prompt):**
-    *   Tap the **three-dot menu icon** in the top-right corner.
-    *   Look for the **"Install app"** or **"Add to Home screen"** option and tap it.
-4.  **Confirm Installation:** Tap **"Install"** or **"Add"**.
-5.  **Done!** The Zepmeds icon will now be on your home screen.
+    *   Chrome often automatically shows a pop-up banner: **"Add Zepmeds to Home Screen"**.
+    *   Simply tap this banner and then **"Install"**.
+3.  **Manual Installation (If no pop-up appears):**
+    *   Tap the **three-dot menu icon** (⋮) in the top-right corner of Chrome.
+    *   Look for the **"Install app"** or **"Add to Home screen"** option in the menu and tap it.
+    *   Confirm by tapping **"Install"**.
+4.  **Done!** The Zepmeds icon will now be on your phone's home screen and in your app drawer, ready for offline use.
 
 ### For iOS Users (iPhone/iPad using Safari)
-1.  **Open the Website:** Launch Safari and navigate to the Zepmeds website URL.
-2.  **Tap the Share Icon:** This is the square icon with an arrow pointing upwards.
-3.  **Find "Add to Home Screen":** Scroll down and tap on **"Add to Home Screen"**.
-4.  **Confirm the Name:** Tap **"Add"** in the top-right corner.
-5.  **Done!** The Zepmeds app icon will appear on your home screen.
+1.  **Open the Website:** Launch Safari and navigate to your deployed Zepmeds URL.
+2.  **Tap the Share Icon:** This is the square icon with an arrow pointing upwards, located at the bottom of the screen.
+3.  **Find "Add to Home Screen":** Scroll down the share menu and tap on **"Add to Home Screen"**.
+4.  **Confirm the Name:** You can edit the app name if you wish, then tap **"Add"** in the top-right corner.
+5.  **Done!** The Zepmeds app icon will appear on your home screen, just like any other app.
 
 ---
 
 ## Method 2: Native Build with Capacitor (For Developers)
 
-If you need a native `.apk` (Android) or `.ipa` (iOS) file, you can wrap the existing PWA-enabled web app using Capacitor.
+If you specifically need a native `.apk` (Android) or `.ipa` (iOS) file, you can wrap the existing PWA-enabled web app using Capacitor.
 
 ### Prerequisites
 
