@@ -156,7 +156,7 @@ function SymptomCheckerResultsContent() {
         const requestPayload: AiSymptomCheckerInput = {
             symptoms: dataToProcess.symptoms,
             targetLanguage: dataToProcess.targetLanguage || 'English',
-            photoDataUri: dataToProcess.mediaDataUri,
+            photoDataUri: dataToProcess.mediaDataUri || null,
             age: dataToProcess.age,
             duration: dataToProcess.duration,
             pastMedications: dataToProcess.pastMedications,
