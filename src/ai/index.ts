@@ -4,6 +4,6 @@
 
 import './flows/ai-symptom-checker';
 import './flows/health-report-flow';
-import './flows/echo-doc-flow';
 import './flows/simplify-first-aid-flow';
 import './flows/live-translate-flow';
+import './flows/urgent-medicine-flow';
