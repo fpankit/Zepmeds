@@ -24,6 +24,9 @@ import {
   Check,
   ChevronRight,
   BadgeCent,
+  Store,
+  Phone,
+  Navigation,
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import {
@@ -38,9 +41,30 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
 const nearbyChemists = [
-  { id: 'ch001', name: 'Apollo Pharmacy', distance: '1.2 km' },
-  { id: 'ch002', name: 'Wellness Forever', distance: '2.5 km' },
-  { id: 'ch003', name: 'MedPlus Pharmacy', distance: '3.8 km' },
+  { 
+      id: 'ch001', 
+      name: 'Apollo Pharmacy', 
+      address: 'Shop 12, Main Market, Sector 14', 
+      distance: '1.2 km', 
+      phone: '9876543210', 
+      coords: { lat: 28.4744, lng: 77.0169 } 
+  },
+  { 
+      id: 'ch002', 
+      name: 'Wellness Forever', 
+      address: 'Galleria Market, DLF Phase IV', 
+      distance: '2.5 km', 
+      phone: '9988776655', 
+      coords: { lat: 28.4677, lng: 77.0818 } 
+  },
+  { 
+      id: 'ch003', 
+      name: 'MedPlus Pharmacy', 
+      address: 'Good Earth City Center, Sector 50', 
+      distance: '3.8 km', 
+      phone: '9012345678', 
+      coords: { lat: 28.4128, lng: 77.0420 } 
+  },
 ];
 
 export default function UrgentMedicinePage() {
@@ -53,7 +77,6 @@ export default function UrgentMedicinePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] =
     useState<UrgentMedicineOutput | null>(null);
-  const [selectedChemist, setSelectedChemist] = useState<string | null>(null);
 
   const handleMedicineChange = (index: number, value: string) => {
     const newMedicines = [...medicines];
@@ -104,14 +127,13 @@ export default function UrgentMedicinePage() {
     }
   };
 
-  const handleOrderFromChemist = () => {
-    if (!analysisResult || !selectedChemist) return;
+  const handleOrderFromChemist = (chemistId: string) => {
+    if (!analysisResult) return;
 
-    // Add all valid, non-prescription medicines to cart
     analysisResult.validatedMedicines.forEach((med: ValidatedMedicine) => {
       if (med.isValid) {
         addToCart({
-          id: `urgent-${med.name.replace(/\s+/g, '-')}`, // Create a temporary ID
+          id: `urgent-${med.name.replace(/\s+/g, '-')}-${chemistId}`, 
           name: med.name,
           price: med.estimatedPrice,
           quantity: 1,
@@ -125,11 +147,13 @@ export default function UrgentMedicinePage() {
       description: 'Proceed to checkout to complete your urgent order.',
     });
 
-    router.push('/checkout');
+    router.push('/cart');
   };
+  
+  const handleNavigate = (lat: number, lng: number) => {
+    window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
+  }
 
-  const allMedicinesValid =
-    analysisResult?.validatedMedicines.every((m) => m.isValid) ?? false;
   const atLeastOneValid =
     analysisResult?.validatedMedicines.some((m) => m.isValid) ?? false;
 
@@ -264,57 +288,49 @@ export default function UrgentMedicinePage() {
             {atLeastOneValid && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Nearby Certified Chemists (5km)</CardTitle>
+                  <CardTitle>Available at these chemists:</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-4">
                   {nearbyChemists.map((chemist) => (
-                    <Card
-                      key={chemist.id}
-                      className={cn(
-                        'p-4 cursor-pointer transition-all hover:bg-card/80',
-                        selectedChemist === chemist.id &&
-                          'ring-2 ring-primary bg-primary/10'
-                      )}
-                      onClick={() => setSelectedChemist(chemist.id)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <MapPin className="h-5 w-5 text-primary" />
-                          <div>
-                            <p className="font-bold">{chemist.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {chemist.distance}
-                            </p>
-                          </div>
+                    <Card key={chemist.id} className="p-4 space-y-4 bg-card/50">
+                        <div className="flex items-start gap-3">
+                           <Store className="h-6 w-6 text-primary mt-1" />
+                           <div>
+                                <p className="font-bold text-lg">{chemist.name}</p>
+                                <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                                   <div className='flex items-center gap-2'>
+                                     <MapPin className="h-4 w-4" />
+                                     <p>{chemist.address} ({chemist.distance})</p>
+                                   </div>
+                                   <div className='flex items-center gap-2'>
+                                      <Phone className="h-4 w-4" />
+                                      <a href={`tel:${chemist.phone}`} className="text-primary hover:underline">{chemist.phone}</a>
+                                   </div>
+                                </div>
+                           </div>
                         </div>
-                        {selectedChemist === chemist.id ? (
-                          <Check className="h-6 w-6 text-primary" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
+                        <div className="grid grid-cols-2 gap-2">
+                             <Button variant="outline" onClick={() => handleNavigate(chemist.coords.lat, chemist.coords.lng)}>
+                                 <Navigation className="mr-2 h-4 w-4"/>
+                                 Navigate
+                            </Button>
+                            <Button onClick={() => handleOrderFromChemist(chemist.id)}>
+                                Order From Here
+                            </Button>
+                        </div>
                     </Card>
                   ))}
                 </CardContent>
               </Card>
             )}
 
-            <div className="space-y-2">
-              <Button
-                className="w-full"
-                onClick={handleOrderFromChemist}
-                disabled={!selectedChemist}
-              >
-                Add to Cart & Proceed
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setAnalysisResult(null)}
-              >
-                Go Back & Edit
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setAnalysisResult(null)}
+            >
+              Go Back & Edit
+            </Button>
           </div>
         )}
       </main>
