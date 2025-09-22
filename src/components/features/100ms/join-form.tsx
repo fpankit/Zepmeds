@@ -8,11 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import { useParams } from 'next/navigation'; // Import useParams
 
-// The correct, static Room ID from the 100ms dashboard.
-const HMS_ROOM_ID = '68c3b6cea48ca61c46479a3a';
-
-export function JoinForm({ user }: { user: User }) {
+// This component now takes the appointmentId as a prop
+export function JoinForm({ user, appointmentId }: { user: User, appointmentId: string }) {
   const hmsActions = useHMSActions();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -23,12 +22,13 @@ export function JoinForm({ user }: { user: User }) {
     const userRole = user.isDoctor ? 'host' : 'guest';
 
     try {
+        // The room ID is now the appointment ID to create a unique room per appointment
         const response = await fetch('/api/100ms/get-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
-                room_id: HMS_ROOM_ID, 
+                room_id: appointmentId, // Use the dynamic appointmentId as the room_id
                 role: userRole,
             }),
         });
@@ -38,10 +38,17 @@ export function JoinForm({ user }: { user: User }) {
             throw new Error(err.error || 'Failed to get auth token.');
         }
         const { token } = await response.json();
-
+        
+        // Pass the appointmentId in the room name to be able to retrieve it later
         await hmsActions.join({
             userName: user.isGuest ? 'Guest' : `${user.firstName} ${user.lastName}`,
             authToken: token,
+            settings: {
+                isAudioOn: true,
+                isVideoOn: true,
+            },
+            initEndpoint: process.env.NEXT_PUBLIC_HMS_INIT_ENDPOINT,
+            roomName: appointmentId, // Pass appointmentId here
         });
 
     } catch (e: any) {

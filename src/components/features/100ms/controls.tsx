@@ -167,18 +167,21 @@ export function Controls({ setCaptions }: { setCaptions: (captions: Captions) =>
   const [peerLanguage, setPeerLanguage] = useState('hi');
 
   const leaveRoom = async () => {
-    if (room && room.name && user && !user.isDoctor) {
+    // room.name contains the appointment ID
+    if (room && room.name) {
       try {
-        const callId = room.name;
-        const callDocRef = doc(db, 'video_calls', callId);
-        await updateDoc(callDocRef, { status: 'completed' });
+        const appointmentId = room.name;
+        const appointmentDocRef = doc(db, 'appointments', appointmentId);
+        // Set the status of the appointment to 'completed'
+        await updateDoc(appointmentDocRef, { status: 'completed' });
       } catch (error) {
-        console.warn("Could not update call status to completed:", error);
+        console.warn("Could not update appointment status to completed:", error);
       }
     }
     
     await hmsActions.leave();
-    router.push('/home');
+    // Redirect to appointments page after leaving
+    router.push('/appointments');
   };
 
   return (

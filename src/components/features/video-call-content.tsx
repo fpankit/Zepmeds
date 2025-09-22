@@ -3,23 +3,22 @@
 
 import { useEffect, useState } from 'react';
 import {
-  useHMSActions,
   useHMSStore,
   selectIsConnectedToRoom,
-  selectPeers,
   HMSRoomProvider,
 } from '@100mslive/react-sdk';
 import { Conference, Captions } from '@/components/features/100ms/conference';
 import { JoinForm } from '@/components/features/100ms/join-form';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
+import { useParams } from 'next/navigation'; // Import useParams
 
 // This is the inner component that uses the hooks
 function VideoCallInnerContent() {
   const isConnected = useHMSStore(selectIsConnectedToRoom);
-  const hmsActions = useHMSActions();
-  const peers = useHMSStore(selectPeers);
   const { user, loading: authLoading } = useAuth();
+  const params = useParams(); // Get the dynamic route parameter
+  const appointmentId = params.id as string; // Extract the appointment ID
   
   const [captions, setCaptions] = useState<Captions>({ original: '', translated: '' });
 
@@ -34,14 +33,6 @@ function VideoCallInnerContent() {
     return () => clearTimeout(timer);
   }, [captions]);
 
-  useEffect(() => {
-    return () => {
-      // Ensure we leave the room when the component unmounts
-      if (isConnected) {
-        hmsActions.leave();
-      }
-    };
-  }, [hmsActions, isConnected]);
 
   if (authLoading || !user) {
     return (
@@ -55,9 +46,10 @@ function VideoCallInnerContent() {
   return (
     <div className="h-screen bg-black flex items-center justify-center">
       {isConnected ? (
-        <Conference peers={peers} captions={captions} setCaptions={setCaptions} />
+        <Conference captions={captions} setCaptions={setCaptions} />
       ) : (
-        <JoinForm user={user} />
+        // Pass the appointmentId to the JoinForm
+        <JoinForm user={user} appointmentId={appointmentId} />
       )}
     </div>
   );
