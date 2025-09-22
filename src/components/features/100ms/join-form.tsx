@@ -22,6 +22,7 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
     const userRole = user.isDoctor ? 'host' : 'guest';
 
     try {
+        // The API call no longer needs to send a room_id, as the backend will use the template ID.
         const response = await fetch('/api/100ms/get-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -37,6 +38,8 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
         }
         const { token } = await response.json();
         
+        // The unique appointmentId is passed as `name`. This identifies the call instance
+        // without needing a separate room for each call.
         await hmsActions.join({
             userName: user.isGuest ? 'Guest' : `${user.firstName} ${user.lastName}`,
             authToken: token,

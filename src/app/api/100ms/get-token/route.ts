@@ -28,9 +28,11 @@ export async function POST(req: NextRequest) {
         );
     }
     
+    // The payload now consistently uses the static template ID from environment variables.
+    // The dynamic appointment ID will be passed as `name` in the join call on the client.
     const payload = {
       access_key: HMS_ACCESS_KEY,
-      room_id: HMS_TEMPLATE_ID, // Always use the static template ID
+      room_id: HMS_TEMPLATE_ID, 
       user_id,
       role,
       type: 'app',
