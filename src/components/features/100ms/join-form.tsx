@@ -47,7 +47,6 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
                 isAudioOn: true,
                 isVideoOn: true,
             },
-            initEndpoint: process.env.NEXT_PUBLIC_HMS_INIT_ENDPOINT,
             roomName: appointmentId, // Pass appointmentId here to identify the call
         });
 
