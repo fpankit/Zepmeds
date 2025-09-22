@@ -9,7 +9,7 @@ import { Button } from '../ui/button';
 import { Phone, PhoneOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-interface VideoCall {
+interface AppointmentCall {
   id: string;
   patientName: string;
 }
@@ -19,23 +19,24 @@ export function IncomingCallManager() {
   const { toast, dismiss } = useToast();
   const router = useRouter();
 
-  const handleAccept = (call: VideoCall) => {
-    // Navigate to the Jitsi call room
-    router.push(`/call/${call.id}`);
+  const handleAccept = (call: AppointmentCall) => {
+    // Update the status to 'confirmed' (or 'answered') to stop the ringing notification
+    const callDocRef = doc(db, 'appointments', call.id);
+    updateDoc(callDocRef, { status: 'confirmed' });
     
-    // Update the call status to 'answered'
-    const callDocRef = doc(db, 'video_calls', call.id);
-    updateDoc(callDocRef, { status: 'answered' });
+    // Navigate to the call room
+    router.push(`/call/${call.id}`);
     dismiss();
   };
 
   const handleDecline = (callId: string) => {
-    const callDocRef = doc(db, 'video_calls', callId);
-    updateDoc(callDocRef, { status: 'declined' });
+    const callDocRef = doc(db, 'appointments', callId);
+    // Reset status to 'confirmed' so the patient can try calling again.
+    updateDoc(callDocRef, { status: 'confirmed' });
     dismiss();
   };
 
-  const showCallNotification = useCallback((call: VideoCall) => {
+  const showCallNotification = useCallback((call: AppointmentCall) => {
     toast({
       title: `Incoming Call from ${call.patientName}`,
       description: 'A patient is trying to reach you for a video consultation.',
@@ -60,15 +61,15 @@ export function IncomingCallManager() {
     }
 
     const q = query(
-      collection(db, 'video_calls'),
+      collection(db, 'appointments'), // Corrected: Listen to 'appointments' collection
       where('doctorId', '==', user.id),
-      where('status', '==', 'ringing')
+      where('status', '==', 'ringing') // Listen for the 'ringing' status
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added') {
-          const callData = { id: change.doc.id, ...change.doc.data() } as VideoCall;
+        if (change.type === 'added' || change.type === 'modified') {
+          const callData = { id: change.doc.id, ...change.doc.data() } as AppointmentCall;
           showCallNotification(callData);
         }
       });

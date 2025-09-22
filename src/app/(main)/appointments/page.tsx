@@ -23,7 +23,7 @@ interface Appointment {
     appointmentDate: string;
     appointmentTime: string;
     createdAt: Timestamp;
-    status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+    status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'ringing';
 }
 
 const AppointmentSkeleton = () => (
@@ -71,6 +71,20 @@ export default function AppointmentsPage() {
         return () => unsubscribe();
     }, [user, authLoading]);
     
+    const handleJoinCall = async (appointmentId: string) => {
+        const appointmentRef = doc(db, 'appointments', appointmentId);
+        try {
+            // Set status to 'ringing' to notify the doctor
+            await updateDoc(appointmentRef, { status: 'ringing' });
+            toast({ title: "Ringing Doctor...", description: "Please wait while we connect you." });
+            // Navigate to the call page
+            router.push(`/call/${appointmentId}`);
+        } catch (error) {
+            console.error("Failed to start call:", error);
+            toast({ variant: 'destructive', title: 'Call Failed', description: 'Could not connect to the doctor.' });
+        }
+    };
+    
     const handleCancelAppointment = async (appointmentId: string) => {
         const appointmentRef = doc(db, 'appointments', appointmentId);
         try {
@@ -86,6 +100,8 @@ export default function AppointmentsPage() {
         switch(status) {
             case 'confirmed':
                 return <Badge variant="default" className="bg-green-500">Confirmed</Badge>;
+            case 'ringing':
+                 return <Badge variant="default" className="bg-yellow-500 animate-pulse">Ringing...</Badge>;
             case 'cancelled':
                 return <Badge variant="destructive">Cancelled</Badge>;
             case 'pending':
@@ -99,7 +115,7 @@ export default function AppointmentsPage() {
 
     const filteredAppointments = appointments.filter(appt => {
         const isPast = new Date(appt.appointmentDate) < new Date();
-        if (filter === 'upcoming') return !isPast && (appt.status === 'pending' || appt.status === 'confirmed');
+        if (filter === 'upcoming') return !isPast && (appt.status === 'pending' || appt.status === 'confirmed' || appt.status === 'ringing');
         if (filter === 'past') return isPast || appt.status === 'completed' || appt.status === 'cancelled';
         return true;
     });
@@ -173,9 +189,9 @@ export default function AppointmentsPage() {
                                         {getStatusBadge(appt.status)}
                                     </div>
 
-                                    {appt.status === 'confirmed' && (
-                                        <Button className="w-full" onClick={() => router.push(`/call/${appt.id}`)}>
-                                            <Video className="mr-2 h-4 w-4"/> Join Call
+                                    {(appt.status === 'confirmed' || appt.status === 'ringing') && (
+                                        <Button className="w-full" onClick={() => handleJoinCall(appt.id)} disabled={appt.status === 'ringing'}>
+                                            <Video className="mr-2 h-4 w-4"/> {appt.status === 'ringing' ? 'Connecting...' : 'Join Call'}
                                         </Button>
                                     )}
                                     {appt.status === 'pending' && (
