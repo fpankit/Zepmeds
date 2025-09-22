@@ -9,7 +9,8 @@ import { v4 as uuidv4 } from 'uuid';
 export async function POST(req: NextRequest) {
   const HMS_ACCESS_KEY = process.env.HMS_ACCESS_KEY;
   const HMS_SECRET = process.env.HMS_SECRET;
-  const HMS_ROOM_ID = process.env.HMS_ROOM_ID; // Use the static Room ID from .env
+  // **THE FIX**: Use the publicly available Room ID that matches the account, not the old one.
+  const HMS_ROOM_ID = process.env.NEXT_PUBLIC_HMS_ROOM_ID; 
 
   if (!HMS_ACCESS_KEY || !HMS_SECRET || !HMS_ROOM_ID) {
     return NextResponse.json(
