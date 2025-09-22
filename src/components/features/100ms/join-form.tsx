@@ -8,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
-import { useParams } from 'next/navigation'; // Import useParams
 
-// This component now takes the appointmentId as a prop
-export function JoinForm({ user, appointmentId }: { user: User, appointmentId: string }) {
+// The correct, static Room ID from the 100ms dashboard.
+const HMS_ROOM_ID = '68c3adbda5ba8326e6eb82df';
+
+export function JoinForm({ user }: { user: User }) {
   const hmsActions = useHMSActions();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -19,15 +20,16 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
   const joinRoom = async () => {
     setIsLoading(true);
     
+    // Determine the role based on the user type, matching the 100ms dashboard roles.
     const userRole = user.isDoctor ? 'host' : 'guest';
 
     try {
-        // The API call no longer needs to send a room_id, as the backend will use the template ID.
         const response = await fetch('/api/100ms/get-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
+                room_id: HMS_ROOM_ID, 
                 role: userRole,
             }),
         });
@@ -37,17 +39,10 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
             throw new Error(err.error || 'Failed to get auth token.');
         }
         const { token } = await response.json();
-        
-        // The unique appointmentId is passed as `name`. This identifies the call instance
-        // without needing a separate room for each call.
+
         await hmsActions.join({
             userName: user.isGuest ? 'Guest' : `${user.firstName} ${user.lastName}`,
             authToken: token,
-            settings: {
-                isAudioOn: true,
-                isVideoOn: true,
-            },
-            name: appointmentId, 
         });
 
     } catch (e: any) {
@@ -59,6 +54,7 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
       })
       setIsLoading(false);
     }
+    // Don't set isLoading to false on success, as the component will unmount.
   };
 
   return (
