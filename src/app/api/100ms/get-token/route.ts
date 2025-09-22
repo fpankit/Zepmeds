@@ -6,15 +6,38 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
+async function getOrCreateRoom(roomId: string, managementToken: string) {
+    const response = await fetch(`https://api.100ms.live/v2/rooms/${roomId}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${managementToken}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            // You can add room configurations here if needed
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        // If the room already exists, the API might return an error that we can ignore
+        if (response.status !== 409) { // 409 is conflict, means room exists
+            throw new Error(error.message || 'Failed to get or create room.');
+        }
+    }
+    // If successful or room exists, we can proceed. The function's purpose is to ensure the room exists.
+    return roomId;
+}
+
+
 export async function POST(req: NextRequest) {
-  // The MANAGEMENT_TOKEN is no longer needed for this simplified approach.
-  const TEMPLATE_ID = process.env.NEXT_PUBLIC_HMS_TEMPLATE_ID;
+  const MANAGEMENT_TOKEN = process.env.HMS_MANAGEMENT_TOKEN;
   const HMS_ACCESS_KEY = process.env.HMS_ACCESS_KEY;
   const HMS_SECRET = process.env.HMS_SECRET;
 
-  if (!TEMPLATE_ID || !HMS_ACCESS_KEY || !HMS_SECRET) {
+  if (!HMS_ACCESS_KEY || !HMS_SECRET || !MANAGEMENT_TOKEN) {
     return NextResponse.json(
-      { error: '100ms credentials (template, access key, or secret) are not configured.' },
+      { error: '100ms credentials are not fully configured.' },
       { status: 500 }
     );
   }
@@ -29,13 +52,12 @@ export async function POST(req: NextRequest) {
         );
     }
     
-    // We will use the static TEMPLATE_ID as the room_id for all calls
-    // to avoid dynamic room creation and the need for a management token.
-    const hmsRoomId = TEMPLATE_ID;
+    // Ensure the room exists before generating a token for it
+    await getOrCreateRoom(requestedRoomId, MANAGEMENT_TOKEN);
     
     const payload = {
       access_key: HMS_ACCESS_KEY,
-      room_id: hmsRoomId, // Use the static template ID as the room ID
+      room_id: requestedRoomId, // Use the ID from the request
       user_id,
       role,
       type: 'app',
