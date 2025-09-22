@@ -27,7 +27,7 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
             body: JSON.stringify({
                 user_id: user.id,
                 role: userRole,
-                room_id: appointmentId, // Pass the dynamic appointment/call ID as the room_id
+                // We no longer need to pass room_id, as the backend will use the static one.
             }),
         });
 

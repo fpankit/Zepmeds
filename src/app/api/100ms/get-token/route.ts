@@ -9,8 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 export async function POST(req: NextRequest) {
   const HMS_ACCESS_KEY = process.env.HMS_ACCESS_KEY;
   const HMS_SECRET = process.env.HMS_SECRET;
+  const HMS_ROOM_ID = process.env.HMS_ROOM_ID; // Use the static Room ID from .env
 
-  if (!HMS_ACCESS_KEY || !HMS_SECRET) {
+  if (!HMS_ACCESS_KEY || !HMS_SECRET || !HMS_ROOM_ID) {
     return NextResponse.json(
       { error: '100ms credentials are not fully configured.' },
       { status: 500 }
@@ -18,19 +19,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { user_id, role, room_id } = await req.json();
+    const { user_id, role } = await req.json();
 
-    if (!user_id || !role || !room_id) {
+    if (!user_id || !role) {
         return NextResponse.json(
-            { error: 'user_id, role, and room_id are required.' },
+            { error: 'user_id and role are required.' },
             { status: 400 }
         );
     }
     
-    // The payload now consistently uses the room_id passed from the client.
+    // The payload now consistently uses the static room_id from the .env file.
     const payload = {
       access_key: HMS_ACCESS_KEY,
-      room_id: room_id, 
+      room_id: HMS_ROOM_ID, 
       user_id,
       role,
       type: 'app',
