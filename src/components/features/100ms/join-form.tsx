@@ -47,7 +47,10 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
                 isAudioOn: true,
                 isVideoOn: true,
             },
-            roomName: appointmentId, // Pass appointmentId here to identify the call
+            initEndpoint: process.env.NEXT_PUBLIC_HMS_INIT_ENDPOINT,
+            // The `name` property is used to identify the call instance, separate from the room_id.
+            // This is useful for logging, billing, or identifying calls in webhooks.
+            name: appointmentId, 
         });
 
     } catch (e: any) {

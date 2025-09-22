@@ -6,6 +6,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
+// This function is no longer needed as we'll use a static template ID.
+// It is kept here commented out for reference but is not used.
+/*
 async function getOrCreateRoom(roomId: string, managementToken: string) {
     const response = await fetch(`https://api.100ms.live/v2/rooms/${roomId}`, {
         method: 'POST',
@@ -25,17 +28,16 @@ async function getOrCreateRoom(roomId: string, managementToken: string) {
             throw new Error(error.message || 'Failed to get or create room.');
         }
     }
-    // If successful or room exists, we can proceed. The function's purpose is to ensure the room exists.
     return roomId;
 }
-
+*/
 
 export async function POST(req: NextRequest) {
-  const MANAGEMENT_TOKEN = process.env.HMS_MANAGEMENT_TOKEN;
+  // We no longer need the management token for this simplified approach.
   const HMS_ACCESS_KEY = process.env.HMS_ACCESS_KEY;
   const HMS_SECRET = process.env.HMS_SECRET;
 
-  if (!HMS_ACCESS_KEY || !HMS_SECRET || !MANAGEMENT_TOKEN) {
+  if (!HMS_ACCESS_KEY || !HMS_SECRET) {
     return NextResponse.json(
       { error: '100ms credentials are not fully configured.' },
       { status: 500 }
@@ -43,6 +45,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // We get room_id from the request, which will be the template_id passed from the client.
     const { room_id: requestedRoomId, user_id, role } = await req.json();
 
     if (!requestedRoomId || !user_id || !role) {
@@ -52,12 +55,11 @@ export async function POST(req: NextRequest) {
         );
     }
     
-    // Ensure the room exists before generating a token for it
-    await getOrCreateRoom(requestedRoomId, MANAGEMENT_TOKEN);
+    // The room creation/validation logic is removed to avoid using the management token.
     
     const payload = {
       access_key: HMS_ACCESS_KEY,
-      room_id: requestedRoomId, // Use the ID from the request
+      room_id: requestedRoomId, // Use the ID from the request (which should be the template ID)
       user_id,
       role,
       type: 'app',
