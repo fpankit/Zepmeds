@@ -22,13 +22,11 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
     const userRole = user.isDoctor ? 'host' : 'guest';
 
     try {
-        // The room ID is now the static template ID to avoid management token issues
         const response = await fetch('/api/100ms/get-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
-                room_id: process.env.NEXT_PUBLIC_HMS_TEMPLATE_ID, // Use the static template ID
                 role: userRole,
             }),
         });
@@ -39,7 +37,6 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
         }
         const { token } = await response.json();
         
-        // Pass the appointmentId in the room name to be able to retrieve it later
         await hmsActions.join({
             userName: user.isGuest ? 'Guest' : `${user.firstName} ${user.lastName}`,
             authToken: token,
@@ -47,9 +44,6 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
                 isAudioOn: true,
                 isVideoOn: true,
             },
-            initEndpoint: process.env.NEXT_PUBLIC_HMS_INIT_ENDPOINT,
-            // The `name` property is used to identify the call instance, separate from the room_id.
-            // This is useful for logging, billing, or identifying calls in webhooks.
             name: appointmentId, 
         });
 
