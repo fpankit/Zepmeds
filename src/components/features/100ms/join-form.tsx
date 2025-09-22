@@ -22,13 +22,13 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
     const userRole = user.isDoctor ? 'host' : 'guest';
 
     try {
-        // The room ID is now the appointment ID to create a unique room per appointment
+        // The room ID is now the static template ID to avoid management token issues
         const response = await fetch('/api/100ms/get-token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
-                room_id: appointmentId, // Use the dynamic appointmentId as the room_id
+                room_id: process.env.NEXT_PUBLIC_HMS_TEMPLATE_ID, // Use the static template ID
                 role: userRole,
             }),
         });
@@ -48,7 +48,7 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
                 isVideoOn: true,
             },
             initEndpoint: process.env.NEXT_PUBLIC_HMS_INIT_ENDPOINT,
-            roomName: appointmentId, // Pass appointmentId here
+            roomName: appointmentId, // Pass appointmentId here to identify the call
         });
 
     } catch (e: any) {
