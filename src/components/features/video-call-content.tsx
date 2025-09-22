@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,6 +5,7 @@ import {
   useHMSStore,
   selectIsConnectedToRoom,
   HMSRoomProvider,
+  useHMSActions,
 } from '@100mslive/react-sdk';
 import { Conference, Captions } from '@/components/features/100ms/conference';
 import { JoinForm } from '@/components/features/100ms/join-form';
@@ -18,7 +18,7 @@ function VideoCallInnerContent() {
   const isConnected = useHMSStore(selectIsConnectedToRoom);
   const { user, loading: authLoading } = useAuth();
   const params = useParams(); // Get the dynamic route parameter
-  const appointmentId = params.id as string; // Extract the appointment ID
+  const callId = params.id as string; // Extract the call ID from the route
   
   const [captions, setCaptions] = useState<Captions>({ original: '', translated: '' });
 
@@ -48,8 +48,8 @@ function VideoCallInnerContent() {
       {isConnected ? (
         <Conference captions={captions} setCaptions={setCaptions} />
       ) : (
-        // Pass the appointmentId to the JoinForm
-        <JoinForm user={user} appointmentId={appointmentId} />
+        // Pass the callId to the JoinForm, which it will use as the room_id
+        <JoinForm user={user} appointmentId={callId} />
       )}
     </div>
   );

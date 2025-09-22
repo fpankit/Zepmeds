@@ -20,9 +20,9 @@ export function IncomingCallManager() {
   const router = useRouter();
 
   const handleAccept = (call: AppointmentCall) => {
-    // Update the status to 'confirmed' (or 'answered') to stop the ringing notification
-    const callDocRef = doc(db, 'appointments', call.id);
-    updateDoc(callDocRef, { status: 'confirmed' });
+    // Update the status to 'accepted' to stop the ringing notification for other devices
+    const callDocRef = doc(db, 'zep_calls', call.id);
+    updateDoc(callDocRef, { status: 'accepted' });
     
     // Navigate to the call room
     router.push(`/call/${call.id}`);
@@ -30,9 +30,9 @@ export function IncomingCallManager() {
   };
 
   const handleDecline = (callId: string) => {
-    const callDocRef = doc(db, 'appointments', callId);
-    // Reset status to 'confirmed' so the patient can try calling again.
-    updateDoc(callDocRef, { status: 'confirmed' });
+    const callDocRef = doc(db, 'zep_calls', callId);
+    // Set status to 'declined'
+    updateDoc(callDocRef, { status: 'declined' });
     dismiss();
   };
 
@@ -61,14 +61,14 @@ export function IncomingCallManager() {
     }
 
     const q = query(
-      collection(db, 'appointments'), // Corrected: Listen to 'appointments' collection
+      collection(db, 'zep_calls'),
       where('doctorId', '==', user.id),
-      where('status', '==', 'ringing') // Listen for the 'ringing' status
+      where('status', '==', 'ringing')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added' || change.type === 'modified') {
+        if (change.type === 'added') { // Only react to new calls
           const callData = { id: change.doc.id, ...change.doc.data() } as AppointmentCall;
           showCallNotification(callData);
         }

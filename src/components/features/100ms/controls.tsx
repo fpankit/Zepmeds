@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -8,12 +7,13 @@ import {
   selectRoom,
   selectRemotePeers,
   selectAudioTrackByPeerID,
+  selectLocalPeer,
   useAVToggle,
 } from '@100mslive/react-sdk';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Languages } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -159,6 +159,7 @@ export function Controls({ setCaptions }: { setCaptions: (captions: Captions) =>
   const hmsActions = useHMSActions();
   const router = useRouter();
   const room = useHMSStore(selectRoom);
+  const localPeer = useHMSStore(selectLocalPeer);
   const { user } = useAuth();
   const { isLocalAudioEnabled, isLocalVideoEnabled, toggleAudio, toggleVideo } = useAVToggle();
   
@@ -167,15 +168,18 @@ export function Controls({ setCaptions }: { setCaptions: (captions: Captions) =>
   const [peerLanguage, setPeerLanguage] = useState('hi');
 
   const leaveRoom = async () => {
-    // room.name contains the appointment ID
-    if (room && room.name) {
+    // The call ID is the room name we passed during join
+    const callId = room?.name;
+    if (callId) {
       try {
-        const appointmentId = room.name;
-        const appointmentDocRef = doc(db, 'appointments', appointmentId);
-        // Set the status of the appointment to 'completed'
-        await updateDoc(appointmentDocRef, { status: 'completed' });
+        const callDocRef = doc(db, 'zep_calls', callId);
+        // Set the status of the call to 'completed'
+        await updateDoc(callDocRef, { 
+            status: 'completed',
+            endedAt: serverTimestamp()
+        });
       } catch (error) {
-        console.warn("Could not update appointment status to completed:", error);
+        console.warn("Could not update call status to completed:", error);
       }
     }
     

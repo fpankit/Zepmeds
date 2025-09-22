@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -71,14 +70,28 @@ export default function AppointmentsPage() {
         return () => unsubscribe();
     }, [user, authLoading]);
     
-    const handleJoinCall = async (appointmentId: string) => {
-        const appointmentRef = doc(db, 'appointments', appointmentId);
+    const handleJoinCall = async (appointment: Appointment) => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'Login required' });
+            return;
+        }
+        
         try {
-            // Set status to 'ringing' to notify the doctor
-            await updateDoc(appointmentRef, { status: 'ringing' });
+            // Create a new call document in `zep_calls` to notify the doctor
+            const callDocRef = await addDoc(collection(db, 'zep_calls'), {
+                appointmentId: appointment.id,
+                doctorId: appointment.doctorId,
+                doctorName: appointment.doctorName,
+                patientId: user.id,
+                patientName: `${user.firstName} ${user.lastName}`,
+                status: 'ringing',
+                createdAt: serverTimestamp(),
+            });
+            
             toast({ title: "Ringing Doctor...", description: "Please wait while we connect you." });
-            // Navigate to the call page
-            router.push(`/call/${appointmentId}`);
+            
+            // Navigate to the call page with the *new call document ID*
+            router.push(`/call/${callDocRef.id}`);
         } catch (error) {
             console.error("Failed to start call:", error);
             toast({ variant: 'destructive', title: 'Call Failed', description: 'Could not connect to the doctor.' });
@@ -189,9 +202,9 @@ export default function AppointmentsPage() {
                                         {getStatusBadge(appt.status)}
                                     </div>
 
-                                    {(appt.status === 'confirmed' || appt.status === 'ringing') && (
-                                        <Button className="w-full" onClick={() => handleJoinCall(appt.id)} disabled={appt.status === 'ringing'}>
-                                            <Video className="mr-2 h-4 w-4"/> {appt.status === 'ringing' ? 'Connecting...' : 'Join Call'}
+                                    {appt.status === 'confirmed' && (
+                                        <Button className="w-full" onClick={() => handleJoinCall(appt)}>
+                                            <Video className="mr-2 h-4 w-4"/> Join Call
                                         </Button>
                                     )}
                                     {appt.status === 'pending' && (
