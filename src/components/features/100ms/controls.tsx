@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -172,6 +173,7 @@ export function Controls({ setCaptions }: { setCaptions: (captions: Captions) =>
     const callId = room?.name;
     if (callId) {
       try {
+        // **FIX**: The document to update is in 'zep_calls', not 'appointments'.
         const callDocRef = doc(db, 'zep_calls', callId);
         // Set the status of the call to 'completed'
         await updateDoc(callDocRef, { 

@@ -27,6 +27,7 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
             body: JSON.stringify({
                 user_id: user.id,
                 role: userRole,
+                room_id: appointmentId, // Pass the dynamic appointment/call ID as the room_id
             }),
         });
 
@@ -44,7 +45,7 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
                 isVideoMuted: false,
             },
             // Use the unique appointment ID as the room name for identification
-            // This does not create a new room, but labels the session within the room.
+            // This also helps in the leaveRoom logic to find the right document.
             roomName: appointmentId, 
         });
 
