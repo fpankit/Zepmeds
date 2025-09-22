@@ -9,9 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 export async function POST(req: NextRequest) {
   const HMS_ACCESS_KEY = process.env.HMS_ACCESS_KEY;
   const HMS_SECRET = process.env.HMS_SECRET;
-  const HMS_TEMPLATE_ID = process.env.NEXT_PUBLIC_HMS_TEMPLATE_ID;
+  const HMS_ROOM_ID = process.env.HMS_ROOM_ID; // Use the correct Room ID from env
 
-  if (!HMS_ACCESS_KEY || !HMS_SECRET || !HMS_TEMPLATE_ID) {
+  if (!HMS_ACCESS_KEY || !HMS_SECRET || !HMS_ROOM_ID) {
     return NextResponse.json(
       { error: '100ms credentials are not fully configured.' },
       { status: 500 }
@@ -23,16 +23,15 @@ export async function POST(req: NextRequest) {
 
     if (!user_id || !role) {
         return NextResponse.json(
-            { error: 'user_id, and role are required.' },
+            { error: 'user_id and role are required.' },
             { status: 400 }
         );
     }
     
-    // The payload now consistently uses the static template ID from environment variables.
-    // The dynamic appointment ID will be passed as `name` in the join call on the client.
+    // The payload now consistently uses the static Room ID from environment variables.
     const payload = {
       access_key: HMS_ACCESS_KEY,
-      room_id: HMS_TEMPLATE_ID, 
+      room_id: HMS_ROOM_ID, 
       user_id,
       role,
       type: 'app',
