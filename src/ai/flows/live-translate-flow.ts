@@ -43,7 +43,7 @@ export const liveTranslateFlow = ai.defineFlow(
     const transcriptionResponse = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
       prompt: [
-        { media: { url: input.audioDataUri, contentType: 'audio/webm' } },
+        { media: { url: input.audioDataUri, contentType: 'audio/wav' } },
         { text: `Transcribe the audio. The language is ${input.sourceLanguage}.` }
       ]
     });
@@ -69,3 +69,4 @@ export const liveTranslateFlow = ai.defineFlow(
     };
   }
 );
+
