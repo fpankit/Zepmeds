@@ -57,7 +57,7 @@ export const liveTranslateFlow = ai.defineFlow(
     // Step 2: Translate the transcribed text to the target language
     const translationResponse = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
-      prompt: `Translate the following text from ${input.sourceLanguage} to ${targetLanguage}: "${transcribedText}"`,
+      prompt: `Translate the following text from ${input.sourceLanguage} to ${input.targetLanguage}: "${transcribedText}"`,
     });
     const translatedText = translationResponse.text.trim();
     
