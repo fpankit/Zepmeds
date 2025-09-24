@@ -14,11 +14,6 @@ export const metadata: Metadata = {
   title: 'Zepmeds: Online Medicine Delivery',
   description: 'Your trusted partner for online medicine delivery.',
   manifest: '/manifest.ts',
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
-  }
 };
 
 export const viewport: Viewport = {
