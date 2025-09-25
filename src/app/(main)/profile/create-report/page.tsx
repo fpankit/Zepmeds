@@ -102,7 +102,7 @@ function CreateReportPageContent() {
       await addDoc(collection(db, 'reports'), {
         patientId: data.patient.id,
         patientName: data.patient.name,
-        doctorId: doctorUser.id,
+        doctorId: doctorUser.id, // Corrected from doctorUser.uid to doctorUser.id
         doctorName: `${doctorUser.firstName} ${doctorUser.lastName}`,
         doctorSpecialty: doctorUser.specialty || 'General Physician',
         createdAt: serverTimestamp(),
@@ -356,3 +356,5 @@ export default function CreateReportPage() {
         </Suspense>
     )
 }
+
+    
