@@ -26,18 +26,15 @@ const reportSchema = z.object({
     name: z.string(),
   }),
   chiefComplaint: z.string().min(10, 'Please provide a brief chief complaint.'),
-  diagnosis: z.string().min(3, 'Diagnosis is required.'),
-  notes: z.string().optional(),
+  officialDiagnosis: z.string().min(3, 'Diagnosis is required.'),
+  doctorNotes: z.string().optional(),
   medications: z.array(z.object({
     name: z.string().min(1, 'Medicine name is required.'),
     dosage: z.string().min(1, 'Dosage is required.'),
     frequency: z.string().min(1, 'Frequency is required.'),
   })).optional(),
-  tests: z.array(z.object({
-    name: z.string().min(1, 'Test name is required.'),
-    notes: z.string().optional(),
-  })).optional(),
-  followUp: z.string().optional(),
+  recommendedTests: z.string().optional(),
+  followUpAdvice: z.string().optional(),
 });
 
 type ReportFormValues = z.infer<typeof reportSchema>;
@@ -57,11 +54,11 @@ function CreateReportPageContent() {
     defaultValues: {
       patient: { id: '', name: '' },
       chiefComplaint: '',
-      diagnosis: '',
-      notes: '',
+      officialDiagnosis: '',
+      doctorNotes: '',
       medications: [],
-      tests: [],
-      followUp: '',
+      recommendedTests: '',
+      followUpAdvice: '',
     },
   });
 
@@ -70,10 +67,6 @@ function CreateReportPageContent() {
     name: 'medications',
   });
 
-  const { fields: testFields, append: appendTest, remove: removeTest } = useFieldArray({
-    control: form.control,
-    name: 'tests',
-  });
   
   useEffect(() => {
     if (!authLoading && (!doctorUser || !doctorUser.isDoctor)) {
@@ -107,18 +100,18 @@ function CreateReportPageContent() {
 
     try {
       await addDoc(collection(db, 'reports'), {
-        patientId: data.patient.id, // THE FIX: This was missing
+        patientId: data.patient.id,
         patientName: data.patient.name,
         doctorId: doctorUser.id,
         doctorName: `${doctorUser.firstName} ${doctorUser.lastName}`,
         doctorSpecialty: doctorUser.specialty || 'General Physician',
         createdAt: serverTimestamp(),
         chiefComplaint: data.chiefComplaint,
-        diagnosis: data.diagnosis,
-        notes: data.notes,
+        officialDiagnosis: data.officialDiagnosis,
+        doctorNotes: data.doctorNotes,
         medications: data.medications,
-        tests: data.tests,
-        followUp: data.followUp,
+        recommendedTests: data.recommendedTests,
+        followUpAdvice: data.followUpAdvice,
       });
 
       toast({
@@ -235,7 +228,7 @@ function CreateReportPageContent() {
                 />
                  <FormField
                   control={form.control}
-                  name="diagnosis"
+                  name="officialDiagnosis"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Official Diagnosis</FormLabel>
@@ -292,64 +285,51 @@ function CreateReportPageContent() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Recommended Tests</CardTitle>
+                    <CardTitle>Recommended Tests & Follow-up</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                     {testFields.map((field, index) => (
-                        <div key={field.id} className="p-4 border rounded-lg space-y-4 relative">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                               <FormField
-                                control={form.control}
-                                name={`tests.${index}.name`}
-                                render={({ field }) => (
-                                    <FormItem><FormLabel>Test Name</FormLabel><FormControl><Input placeholder="e.g., Complete Blood Count (CBC)" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}
-                                />
-                               <FormField
-                                control={form.control}
-                                name={`tests.${index}.notes`}
-                                render={({ field }) => (
-                                    <FormItem><FormLabel>Notes (Optional)</FormLabel><FormControl><Input placeholder="e.g., Fasting required" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}
-                                />
-                            </div>
-                            <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeTest(index)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                        </div>
-                     ))}
-                     <Button type="button" variant="outline" onClick={() => appendTest({ name: '', notes: '' })}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Test
-                     </Button>
+                <CardContent className="space-y-6">
+                     <FormField
+                        control={form.control}
+                        name="recommendedTests"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Tests</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g., CBC, Lipid Profile" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                     <FormField
+                        control={form.control}
+                        name="followUpAdvice"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Follow-up</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g., Follow up in 2 weeks" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                        />
                 </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Notes & Follow-up</CardTitle>
+                <CardTitle>Doctor's Notes</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                  <FormField
                   control={form.control}
-                  name="notes"
+                  name="doctorNotes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Doctor's Notes (Optional)</FormLabel>
+                      <FormLabel>Notes (Optional)</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Additional observations..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="followUp"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Follow-up Advice (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Follow up in 2 weeks" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
