@@ -53,11 +53,9 @@ export default function DiagnosticReportsPage() {
       return;
     }
 
-    const queryField = user.isDoctor ? "doctorId" : "patientId";
-
+    // THE FIX: Removed all 'where' clauses to fetch ALL documents from the collection.
     const q = query(
-      collection(db, "reports"), 
-      where(queryField, "==", user.id),
+      collection(db, "reports"),
       orderBy("createdAt", "desc") 
     );
 
@@ -202,7 +200,7 @@ export default function DiagnosticReportsPage() {
           <Card className="text-center p-10 mt-6">
             <ClipboardList className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold">No Reports Found</h3>
-            <p className="text-muted-foreground">{user.isDoctor ? "You have not created any reports yet." : "Your doctor has not uploaded any reports yet."}</p>
+            <p className="text-muted-foreground">There are no reports in the database yet.</p>
           </Card>
         ) : (
           <Accordion type="single" collapsible className="w-full space-y-3">
@@ -213,13 +211,10 @@ export default function DiagnosticReportsPage() {
                         <div className="flex-1">
                             <div className="flex justify-between items-center">
                                 <p className="font-bold text-base">Diagnosis: {report.officialDiagnosis}</p>
-                                <Badge variant="secondary">{format(report.createdAt.toDate(), 'PPP')}</Badge>
+                                {report.createdAt && <Badge variant="secondary">{format(report.createdAt.toDate(), 'PPP')}</Badge>}
                             </div>
-                            {user.isDoctor ? (
-                                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2"><User className="h-3 w-3" />Patient: {report.patientName}</p>
-                            ): (
-                                <p className="text-sm text-muted-foreground mt-1">Dr. {report.doctorName} - {report.doctorSpecialty || 'Physician'}</p>
-                            )}
+                            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2"><User className="h-3 w-3" />Patient: {report.patientName}</p>
+                            <p className="text-sm text-muted-foreground mt-1">Dr. {report.doctorName} - {report.doctorSpecialty || 'Physician'}</p>
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
