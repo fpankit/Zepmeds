@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ConsultationSidebar } from './consultation-sidebar';
 import { useAuth, User as AuthUser } from '@/context/auth-context';
-import { useHMSStore, selectPeers, selectRemotePeers } from '@100mslive/react-sdk';
+import { useHMSStore, selectRemotePeers } from '@100mslive/react-sdk';
 
 export interface Captions {
     original: string;
@@ -15,14 +15,14 @@ export interface Captions {
 }
 
 export function Conference({ captions, setCaptions }: { captions: Captions, setCaptions: (captions: Captions) => void }) {
-  const allPeers = useHMSStore(selectPeers);
-  const remotePeers = useHMSStore(selectRemotePeers);
+  // **THE FIX**: Instead of all peers, we only select remote peers.
+  // This avoids race conditions with the local peer's tracks not being ready on initial render.
+  const peers = useHMSStore(selectRemotePeers);
   const { user } = useAuth();
-  const peerCount = allPeers.length;
+  const peerCount = peers.length;
   
-  // Find the patient. In a 2-person call, it's the remote peer.
-  // This logic assumes a simple 1-on-1 call for the sidebar.
-  const patientPeer = remotePeers.length > 0 ? remotePeers[0] : null;
+  // The patient is the first (and likely only) remote peer.
+  const patientPeer = peerCount > 0 ? peers[0] : null;
   
   const isDoctorView = user?.isDoctor;
 
@@ -38,8 +38,8 @@ export function Conference({ captions, setCaptions }: { captions: Captions, setC
                                   <p className="text-white">Waiting for the patient to join...</p>
                               </div>
                           ) : (
-                              <div className={cn("w-full h-full p-2 gap-2 grid", peerCount <= 2 ? "grid-rows-2" : "grid-cols-2 grid-rows-2")}>
-                                  {allPeers.map(peer => (
+                              <div className={cn("w-full h-full p-2 gap-2 grid", peerCount === 1 ? "grid-rows-1" : "grid-cols-2 grid-rows-2")}>
+                                  {peers.map(peer => (
                                       <Peer key={peer.id} peer={peer} />
                                   ))}
                               </div>
@@ -91,14 +91,13 @@ export function Conference({ captions, setCaptions }: { captions: Captions, setC
             ) : (
                  <div 
                     className={cn(
-                        "w-full h-full p-2 gap-2",
-                        peerCount === 1 ? "grid grid-cols-1" :
-                        peerCount === 2 ? "flex flex-col" : // Vertical stack for 2 peers on mobile
-                        peerCount <= 4 ? "grid grid-cols-2 grid-rows-2" :
+                        "w-full h-full p-2 gap-2 grid",
+                        peerCount === 1 ? "grid-cols-1" :
+                        peerCount <= 4 ? "grid-cols-2 grid-rows-2" :
                         "grid grid-cols-3 grid-rows-3" 
                     )}
                 >
-                    {allPeers.map(peer => (
+                    {peers.map(peer => (
                         <Peer key={peer.id} peer={peer} />
                     ))}
                 </div>
