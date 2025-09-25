@@ -1,5 +1,4 @@
 import { ImageResponse } from 'next/og'
-import { Logo } from '@/components/icons/logo';
 
 // Route segment config
 export const runtime = 'edge'
@@ -19,7 +18,7 @@ export default function Icon() {
       <div
         style={{
           fontSize: 24,
-          background: '#09090b', // dark background
+          background: '#09090b', // dark background for contrast
           width: '100%',
           height: '100%',
           display: 'flex',
