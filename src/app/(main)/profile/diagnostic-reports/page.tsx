@@ -23,12 +23,12 @@ interface Report {
   doctorName: string;
   doctorSpecialty: string;
   createdAt: Timestamp; 
-  officialDiagnosis: string; // Corrected from diagnosis
+  officialDiagnosis: string;
   chiefComplaint: string;
-  doctorNotes?: string; // Corrected from notes
+  doctorNotes?: string;
   medications?: { name: string; dosage: string; frequency: string }[];
-  recommendedTests?: string; // Corrected from tests
-  followUpAdvice?: string; // Corrected from followUp
+  recommendedTests?: string;
+  followUpAdvice?: string;
 }
 
 const ReportSkeleton = () => (
