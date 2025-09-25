@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
+import { googleAI } from '@genkit-ai/googleai';
 
 const SimplifyFirstAidInputSchema = z.object({
   topic: z.string().describe('The title of the first-aid topic, e.g., "Snake Bite".'),
@@ -27,6 +28,7 @@ export type SimplifyFirstAidOutput = z.infer<typeof SimplifyFirstAidOutputSchema
 
 const prompt = ai.definePrompt({
   name: 'simplifyFirstAidPrompt',
+  model: 'googleai/first-aid', // Use the dedicated model
   input: { schema: SimplifyFirstAidInputSchema },
   output: { schema: SimplifyFirstAidOutputSchema },
   prompt: `You are an expert at simplifying complex medical instructions for a general audience who may be panicking.

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A symptom checker AI agent.
@@ -9,6 +10,7 @@
 
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
+import { googleAI } from '@genkit-ai/googleai';
 
 const AiSymptomCheckerInputSchema = z.object({
   symptoms: z.string().describe("A description of the user's symptoms."),
@@ -44,6 +46,7 @@ export type AiSymptomCheckerOutput = z.infer<typeof AiSymptomCheckerOutputSchema
 
 const prompt = ai.definePrompt({
   name: 'aiSymptomCheckerPrompt',
+  model: 'googleai/symptom-checker', // Use the dedicated model
   input: { schema: AiSymptomCheckerInputSchema },
   output: { schema: AiSymptomCheckerOutputSchema },
   prompt: `You are an expert medical AI assistant. Your primary function is to perform a differential diagnosis based on user-provided symptoms and provide safe, helpful, and detailed guidance.

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent for validating medicine names for urgent delivery.
@@ -9,6 +10,7 @@
 
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
+import { googleAI } from '@genkit-ai/googleai';
 
 const UrgentMedicineInputSchema = z.object({
   medicineNames: z
@@ -44,6 +46,7 @@ export type UrgentMedicineOutput = z.infer<typeof UrgentMedicineOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'urgentMedicinePrompt',
+  model: 'googleai/medicine-validation', // Use the dedicated model
   input: { schema: UrgentMedicineInputSchema },
   output: { schema: UrgentMedicineOutputSchema },
   prompt: `You are an expert pharmacist AI for an Indian medicine delivery app called Zepmeds.
