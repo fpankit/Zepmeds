@@ -137,7 +137,7 @@ export default function DiagnosticReportsPage() {
     };
 
     lastY = addSection('Chief Complaint', report.chiefComplaint, lastY);
-    lastY = addSection('Diagnosis', report.officialDiagnosis, lastY);
+    lastY = addSection('Official Diagnosis', report.officialDiagnosis, lastY);
     lastY = addSection("Doctor's Notes", report.doctorNotes, lastY);
 
     if (report.medications && report.medications.length > 0) {
