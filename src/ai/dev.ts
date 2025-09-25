@@ -7,10 +7,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Define named models for each AI feature, allowing for separate API keys.
-const symptomCheckerModel = googleAI.model('gemini-1.5-flash', {
-    name: 'symptom-checker',
-    config: { apiKey: process.env.GOOGLE_GENAI_API_KEY_CHECKER || process.env.GOOGLE_GENAI_API_KEY }
-});
 const healthReportModel = googleAI.model('gemini-1.5-flash', {
     name: 'health-report',
     config: { apiKey: process.env.GOOGLE_GENAI_API_KEY_REPORT || process.env.GOOGLE_GENAI_API_KEY }
