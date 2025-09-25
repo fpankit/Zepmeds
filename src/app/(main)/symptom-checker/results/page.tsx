@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -177,16 +178,20 @@ function SymptomCheckerResultsContent() {
                 await saveToHistory(displayInput, aiResult); // Save on success
             } catch (err: any) {
                 console.error("An unexpected error occurred during AI analysis:", err);
-                // Check for rate limit error and fallback to offline data
+                
                 const errorMessage = err.message || '';
-                if (errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota")) {
+                const isOverloaded = errorMessage.includes("503") || errorMessage.toLowerCase().includes("overloaded");
+                const isRateLimited = errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota");
+
+                // If the model is overloaded or rate-limited, fall back to offline data
+                if (isOverloaded || isRateLimited) {
                     const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);
                     if (offlineResult) {
                         setResult(offlineResult);
                         await saveToHistory(displayInput, offlineResult);
                         toast({
                             title: 'AI is busy, showing general advice.',
-                            description: 'You have exceeded the free limit for today. Please try again tomorrow.',
+                            description: isRateLimited ? 'You have exceeded the free limit for today. Please try again tomorrow.' : 'The AI model is currently overloaded. Please try again later for a full analysis.',
                         });
                     } else {
                         setError("AI is currently busy, and no offline data was found for your symptoms. Please try again later.");
@@ -235,7 +240,7 @@ function SymptomCheckerResultsContent() {
         setIsLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isOnline]); // Rerun effect if online status changes
 
   const ResultCard = ({ title, icon, items }: { title: string, icon: React.ReactNode, items: string[] }) => (
     <Card>
