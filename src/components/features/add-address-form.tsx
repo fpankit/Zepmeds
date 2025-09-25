@@ -19,16 +19,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Home, Briefcase, MapPin, Plus, LocateFixed, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Address } from "@/context/auth-context";
-import dynamic from "next/dynamic";
+import { DynamicMap } from "@/components/features/dynamic-map";
 import { Skeleton } from "../ui/skeleton";
-
-const DynamicMap = dynamic(
-  () => import("@/components/features/dynamic-map").then((mod) => mod.DynamicMap),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-48 w-full" />,
-  }
-);
 
 type Position = {
   lat: number;
@@ -175,7 +167,7 @@ export function AddAddressForm({ onAddAddress }: AddAddressFormProps) {
                 : "Use Current Location"}
             </Button>
 
-            {position && <DynamicMap position={position} />}
+            {position ? <DynamicMap position={position} /> : (isFetchingLocation && <Skeleton className="h-48 w-full" />)}
 
             <div className="space-y-2">
               <Label>Address Type</Label>
