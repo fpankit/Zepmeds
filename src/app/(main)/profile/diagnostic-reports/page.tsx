@@ -7,7 +7,7 @@ import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'fireba
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { ArrowLeft, ClipboardList, FileDown, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ClipboardList, FileDown, AlertTriangle, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
@@ -23,8 +23,8 @@ interface Report {
   doctorName: string;
   doctorSpecialty: string;
   createdAt: Timestamp; 
-  chiefComplaint: string;
   diagnosis: string;
+  chiefComplaint: string;
   notes?: string;
   medications?: { name: string; dosage: string; frequency: string }[];
   tests?: { name: string, notes?: string }[];
@@ -53,9 +53,12 @@ export default function DiagnosticReportsPage() {
       return;
     }
 
+    // THE FIX: Choose the query field based on user type (doctor or patient)
+    const queryField = user.isDoctor ? "doctorId" : "patientId";
+
     const q = query(
       collection(db, "reports"), 
-      where("patientId", "==", user.id),
+      where(queryField, "==", user.id),
       orderBy("createdAt", "desc") 
     );
 
@@ -212,7 +215,7 @@ export default function DiagnosticReportsPage() {
           <Card className="text-center p-10 mt-6">
             <ClipboardList className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold">No Reports Found</h3>
-            <p className="text-muted-foreground">Your doctor has not uploaded any reports yet.</p>
+            <p className="text-muted-foreground">{user.isDoctor ? "You have not created any reports yet." : "Your doctor has not uploaded any reports yet."}</p>
           </Card>
         ) : (
           <Accordion type="single" collapsible className="w-full space-y-3">
@@ -225,7 +228,11 @@ export default function DiagnosticReportsPage() {
                                 <p className="font-bold text-base">Diagnosis: {report.diagnosis}</p>
                                 <Badge variant="secondary">{format(report.createdAt.toDate(), 'PPP')}</Badge>
                             </div>
-                            <p className="text-sm text-muted-foreground mt-1">Dr. {report.doctorName} - {report.doctorSpecialty || 'Physician'}</p>
+                            {user.isDoctor ? (
+                                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2"><User className="h-3 w-3" />Patient: {report.patientName}</p>
+                            ): (
+                                <p className="text-sm text-muted-foreground mt-1">Dr. {report.doctorName} - {report.doctorSpecialty || 'Physician'}</p>
+                            )}
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
