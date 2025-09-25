@@ -90,7 +90,6 @@ function CreateReportPageContent() {
       const patientList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
       setPatients(patientList);
 
-      // Pre-select patient if ID is in URL
       const patientIdFromUrl = searchParams.get('patientId');
       const patientNameFromUrl = searchParams.get('patientName');
       if (patientIdFromUrl && patientNameFromUrl) {
