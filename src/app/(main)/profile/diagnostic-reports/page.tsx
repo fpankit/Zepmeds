@@ -24,9 +24,9 @@ interface Report {
   doctorSpecialty: string;
   createdAt: Timestamp; 
   chiefComplaint: string;
-  diagnosis?: string;
+  diagnosis: string;
   notes?: string;
-  medications: { name: string; dosage: string; frequency: string }[];
+  medications?: { name: string; dosage: string; frequency: string }[];
   tests?: { name: string, notes?: string }[];
   followUp?: string;
 }

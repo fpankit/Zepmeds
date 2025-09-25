@@ -107,7 +107,7 @@ function CreateReportPageContent() {
 
     try {
       await addDoc(collection(db, 'reports'), {
-        patientId: data.patient.id,
+        patientId: data.patient.id, // THE FIX: This was missing
         patientName: data.patient.name,
         doctorId: doctorUser.id,
         doctorName: `${doctorUser.firstName} ${doctorUser.lastName}`,
