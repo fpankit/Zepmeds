@@ -15,7 +15,6 @@ export interface Captions {
 }
 
 export function Conference({ captions, setCaptions }: { captions: Captions, setCaptions: (captions: Captions) => void }) {
-  // **THE FIX**: Fetch both local and remote peers separately.
   const localPeer = useHMSStore(selectLocalPeer);
   const remotePeers = useHMSStore(selectRemotePeers);
   
@@ -24,14 +23,14 @@ export function Conference({ captions, setCaptions }: { captions: Captions, setC
 
   const { user } = useAuth();
   
-  // The patient is the first remote peer.
   const patientPeer = remotePeers.length > 0 ? remotePeers[0] : null;
   
   const isDoctorView = user?.isDoctor;
 
   const getGridClass = (count: number) => {
     if (count <= 1) return "grid-cols-1 grid-rows-1";
-    if (count === 2) return "grid-cols-2 grid-rows-1";
+    // THE FIX: For 2 participants, stack them vertically to make them larger
+    if (count === 2) return "grid-cols-1 grid-rows-2"; 
     if (count <= 4) return "grid-cols-2 grid-rows-2";
     if (count <= 6) return "grid-cols-3 grid-rows-2";
     if (count <= 9) return "grid-cols-3 grid-rows-3";
