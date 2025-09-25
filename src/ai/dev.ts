@@ -6,24 +6,6 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Define named models for each AI feature, allowing for separate API keys.
-const healthReportModel = googleAI.model('gemini-1.5-flash', {
-    name: 'health-report',
-    config: { apiKey: process.env.GOOGLE_GENAI_API_KEY_REPORT || process.env.GOOGLE_GENAI_API_KEY }
-});
-const firstAidModel = googleAI.model('gemini-1.5-flash', {
-    name: 'first-aid',
-    config: { apiKey: process.env.GOOGLE_GENAI_API_KEY_FIRSTAID || process.env.GOOGLE_GENAI_API_KEY }
-});
-const translationModel = googleAI.model('gemini-1.5-flash', {
-    name: 'translation',
-    config: { apiKey: process.env.GOOGLE_GENAI_API_KEY_TRANSLATE || process.env.GOOGLE_GENAI_API_KEY }
-});
-const medicineValidationModel = googleAI.model('gemini-1.5-flash', {
-    name: 'medicine-validation',
-    config: { apiKey: process.env.GOOGLE_GENAI_API_KEY_MEDICINE || process.env.GOOGLE_GENAI_API_KEY }
-});
-
 
 // Genkit configuration
 export const ai = genkit({

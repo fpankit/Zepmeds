@@ -46,7 +46,7 @@ export type UrgentMedicineOutput = z.infer<typeof UrgentMedicineOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'urgentMedicinePrompt',
-  model: 'googleai/medicine-validation', // Use the dedicated model
+  model: 'googleai/gemini-1.5-flash', // Use the correct model name with prefix
   input: { schema: UrgentMedicineInputSchema },
   output: { schema: UrgentMedicineOutputSchema },
   prompt: `You are an expert pharmacist AI for an Indian medicine delivery app called Zepmeds.
