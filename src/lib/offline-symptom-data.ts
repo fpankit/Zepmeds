@@ -28,6 +28,44 @@ const genericPlaceholderAdvice: OfflineAdvice = {
     doctorAdvisory: genericDoctorAdvisory
 };
 
+// =============================================
+// MENTAL HEALTH & EMERGENCY SECTION
+// =============================================
+
+const urgeToDie: OfflineAdvice = {
+    differentialDiagnosis: [
+        { condition: "Mental Health Crisis", confidence: "High", reasoning: "Expressing an urge to die is a sign of a serious mental health crisis that requires immediate professional help. The reasons can be complex, including depression, anxiety, or other underlying issues." }
+    ],
+    potentialMedicines: [
+        "Do NOT self-medicate. This is a medical emergency.",
+        "Please reach out for help immediately. You are not alone."
+    ],
+    precautions: [
+        "Talk to someone you trust right now - a friend, family member, or a helpline professional.",
+        "Remove any means of self-harm from your immediate surroundings.",
+        "Do not be alone. Find someone to be with you until help arrives."
+    ],
+    diet: ["Your immediate safety is the priority. Nutritional advice is secondary."],
+    exercise: ["Physical activity is not the immediate priority. Please seek help first."],
+    doctorAdvisory: "This is a medical emergency. Please do not wait. Call a helpline or go to the nearest hospital. Your life is valuable and help is available. Kiran Helpline (1800-599-0019), Ambulance (102/108), Police (112/100)."
+};
+
+const sexualHealthConcerns: OfflineAdvice = {
+    differentialDiagnosis: [
+        { condition: "High Libido or Sexual Health Question", confidence: "Low", reasoning: "A strong urge for sex can be a normal part of human sexuality. However, if it is causing distress, interfering with daily life, or involves unsafe practices, it's a good idea to speak with a professional." }
+    ],
+    potentialMedicines: ["There is no 'medicine' for a high sex drive, as it's not typically an illness. Focus on understanding and managing it in a healthy way."],
+    precautions: [
+        "Ensure all sexual activity is consensual and uses protection (like condoms) to prevent STDs and unintended pregnancy.",
+        "Channel energy into other activities like exercise, hobbies, or creative pursuits.",
+        "If these urges are causing problems in your life, relationships, or work, it is a valid reason to seek help."
+    ],
+    diet: ["A balanced diet contributes to overall well-being, including hormonal balance."],
+    exercise: ["Regular exercise is a healthy way to manage stress and physical energy."],
+    doctorAdvisory: "This is not medical advice. If your sexual urges feel out of control, cause you distress, or lead to risky behavior, please consult a doctor, a sexologist, or a mental health therapist. They can provide a safe, non-judgmental space to discuss your concerns."
+};
+
+
 const consultDoctorAdvisory = "This is not medical advice. Nutritional deficiencies require a proper diagnosis from a healthcare professional. Please consult a doctor for blood tests and an appropriate treatment plan.";
 
 const ironDeficiency: OfflineAdvice = {
@@ -777,8 +815,58 @@ const coughAndFever: OfflineAdvice = {
 };
 
 
+const hypertension: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Hypertension (High Blood Pressure)", confidence: "Low", reasoning: "Hypertension is often asymptomatic ('the silent killer'). Symptoms like headaches or dizziness only occur when it's very high. A diagnosis can only be made with a BP monitor." }],
+    potentialMedicines: ["Do NOT self-medicate. BP medicines like Amlodipine or Telmisartan must be prescribed and monitored by a doctor."],
+    precautions: ["Regularly monitor your blood pressure.", "Reduce stress through yoga and meditation.", "Quit smoking and limit alcohol intake."],
+    diet: ["Reduce salt (sodium) intake significantly. Avoid pickles, papad, and processed foods.", "Eat more fruits, vegetables, and whole grains (DASH diet)."],
+    exercise: ["Engage in at least 30 minutes of moderate aerobic exercise (like brisk walking, jogging, or cycling) most days of the week."],
+    doctorAdvisory: "This is not medical advice. High blood pressure is a serious condition that requires management by a doctor. Please consult a physician for a proper diagnosis and treatment plan."
+};
+
+const diabetes: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Diabetes Mellitus", confidence: "Low", reasoning: "Symptoms like frequent urination, excessive thirst, unexplained weight loss, and fatigue can indicate high blood sugar. A blood test is required for diagnosis." }],
+    potentialMedicines: ["Do NOT self-medicate. Diabetes medication (like Metformin or Insulin) is prescribed and adjusted by a doctor based on your blood sugar levels."],
+    precautions: ["Regularly monitor your blood sugar levels as advised by your doctor.", "Take proper care of your feet; inspect them daily for any cuts or sores.", "Carry a source of sugar in case of hypoglycemia (low blood sugar)."],
+    diet: ["Avoid sugar, sweets, and refined carbohydrates (maida, white bread).", "Eat a balanced diet with controlled portions of whole grains, proteins, and vegetables.", "Distribute meals throughout the day to avoid sugar spikes."],
+    exercise: ["Regular physical activity (at least 150 minutes per week) is crucial for managing blood sugar.", "Both aerobic exercise and strength training are beneficial."],
+    doctorAdvisory: "This is not medical advice. Diabetes requires lifelong management under the guidance of a doctor (General Physician or Endocrinologist). Please consult one for accurate diagnosis and treatment."
+};
+
+const uti: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Urinary Tract Infection (UTI)", confidence: "Medium", reasoning: "A burning sensation during urination, frequent urge to urinate, and cloudy or strong-smelling urine are classic signs of a UTI, a bacterial infection of the urinary system." }],
+    potentialMedicines: ["UTIs require antibiotics prescribed by a doctor. Do not self-medicate.", "Over-the-counter urine alkalizers (like Cital) can help relieve burning but do not cure the infection."],
+    precautions: ["Drink plenty of water (2-3 liters a day) to help flush out bacteria.", "Do not hold your urine; go to the bathroom as soon as you feel the urge.", "Wipe from front to back after using the toilet."],
+    diet: ["Cranberry juice (unsweetened) may help prevent UTIs, but is not a cure.", "Avoid caffeine and alcohol as they can irritate the bladder."],
+    exercise: ["General exercise is fine, but ensure you stay well-hydrated."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. It is important to see a doctor for a UTI to get the right antibiotics. An untreated UTI can lead to a serious kidney infection. Call Ambulance (102/108) if you have a high fever, back pain, or are vomiting."
+};
+
+const dehydration: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Dehydration", confidence: "Medium", reasoning: "Symptoms like thirst, dark yellow urine, dizziness, fatigue, and a dry mouth indicate dehydration, which occurs when you lose more fluid than you take in." }],
+    potentialMedicines: ["Oral Rehydration Solution (ORS) is the best way to rehydrate. It contains the right balance of salt, sugar, and water."],
+    precautions: ["Drink fluids proactively, even before you feel thirsty, especially in hot weather or during exercise.", "Monitor the color of your urine; it should be a pale, straw-like color."],
+    diet: ["Drink plenty of water.", "Eat water-rich fruits and vegetables like watermelon, cucumber, and oranges.", "Avoid caffeine and alcohol, which can increase fluid loss."],
+    exercise: ["Avoid strenuous exercise, especially in the heat, until you are fully rehydrated.", "Drink water before, during, and after exercise."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. Seek immediate medical help (Call Ambulance - 102/108) for severe dehydration, which can cause confusion, fainting, or lack of urination. It is a medical emergency."
+};
+
+const sunburn: OfflineAdvice = {
+    differentialDiagnosis: [{ condition: "Sunburn", confidence: "High", reasoning: "Red, painful skin that feels hot to the touch after sun exposure is a clear sign of sunburn." }],
+    potentialMedicines: ["Apply cool compresses or take a cool bath to soothe the skin.", "Apply aloe vera gel or a gentle, fragrance-free moisturizer.", "Over-the-counter pain relievers like Ibuprofen can help with pain and inflammation."],
+    precautions: ["Avoid further sun exposure until the skin has healed.", "Do not peel the skin or break any blisters, as this can lead to infection.", "Wear loose, soft clothing that covers the sunburned skin."],
+    diet: ["Drink extra water to prevent dehydration, which can occur with sunburn."],
+    exercise: ["Avoid exercise that causes friction or sweating on the sunburned area."],
+    doctorAdvisory: "This is not a substitute for professional medical advice. See a doctor if the sunburn is severe, covers a large area, has extensive blistering, or is accompanied by fever or chills. Call Ambulance (102/108) for signs of heatstroke."
+};
+
+
 // The main data map
 export const offlineSymptomData: Record<string, { keywords: string[], data: OfflineAdvice }> = {
+    // MENTAL HEALTH (HIGH PRIORITY)
+    'urge_to_die': { keywords: ['urge to die', 'suicide', 'kill myself', 'end my life', 'marne ka mann', 'jeena nahi'], data: urgeToDie },
+    'sexual_health_concerns': { keywords: ['sex', 'sexual', 'libido'], data: sexualHealthConcerns },
+
     // Nutrition Deficiencies
     'iron_deficiency': { keywords: ['iron deficiency', 'anemia', 'pale skin', 'brittle nails'], data: ironDeficiency },
     'vitamin_d_deficiency': { keywords: ['vitamin d deficiency', 'bone pain', 'muscle weakness'], data: vitaminDDeficiency },
@@ -793,7 +881,7 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
     'vitamin_b1_deficiency': { keywords: ['vitamin b1 deficiency', 'thiamine', 'beriberi'], data: vitaminB1Deficiency },
     'vitamin_b2_deficiency': { keywords: ['vitamin b2 deficiency', 'riboflavin', 'cracks in mouth'], data: vitaminB2Deficiency },
     'vitamin_b3_deficiency': { keywords: ['vitamin b3 deficiency', 'niacin', 'pellagra'], data: vitaminB3Deficiency },
-    'vitamin_b6_deficiency': { keywords: ['vitamin b6 deficiency'], data: vitaminB6Deficiency },
+    'vitamin_b6_deficiency': { keywords: ['vitamin b66 deficiency'], data: vitaminB6Deficiency },
     'folate_deficiency': { keywords: ['folate deficiency', 'folic acid', 'vitamin b9'], data: folateDeficiency },
     'potassium_deficiency': { keywords: ['potassium deficiency', 'hypokalemia'], data: potassiumDeficiency },
     'selenium_deficiency': { keywords: ['selenium deficiency'], data: seleniumDeficiency },
@@ -877,6 +965,13 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
     },
     'toothache': { keywords: ['toothache', 'daant me dard', 'tooth pain'], data: toothache },
 
+    // New Entries
+    'hypertension': { keywords: ['hypertension', 'high blood pressure', 'high bp', 'bp high'], data: hypertension },
+    'diabetes': { keywords: ['diabetes', 'sugar', 'madhumeh'], data: diabetes },
+    'uti': { keywords: ['urinary tract infection', 'uti', 'urine infection', 'peshab me jalan'], data: uti },
+    'dehydration': { keywords: ['dehydration', 'paani ki kami'], data: dehydration },
+    'sunburn': { keywords: ['sunburn', 'dhoop se jalna'], data: sunburn },
+
     // Mapped to existing advice for wider coverage
     'allergic_rhinitis': { keywords: ['allergic rhinitis', 'hay fever', 'seasonal allergies', 'naak behna'], data: commonCold },
     'allergies': { keywords: ['allergies', 'allergy'], data: skinRash },
@@ -957,7 +1052,6 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
     'cystic_fibrosis': { keywords: ['cystic fibrosis'], data: genericPlaceholderAdvice },
     'cystitis': { keywords: ['cystitis'], data: genericPlaceholderAdvice },
     'deep_vein_thrombosis': { keywords: ['deep vein thrombosis', 'dvt'], data: genericPlaceholderAdvice },
-    'dehydration': { keywords: ['dehydration'], data: genericPlaceholderAdvice },
     'delirium': { keywords: ['delirium'], data: genericPlaceholderAdvice },
     'dementia': { keywords: ['dementia'], data: genericPlaceholderAdvice },
     'dental_abscess': { keywords: ['dental abscess', 'tooth infection'], data: genericPlaceholderAdvice },
@@ -998,7 +1092,6 @@ export const offlineSymptomData: Record<string, { keywords: string[], data: Offl
     'heart_failure': { keywords: ['heart failure'], data: genericPlaceholderAdvice },
     'hepatitis': { keywords: ['hepatitis'], data: genericPlaceholderAdvice },
     'hiatus_hernia': { keywords: ['hiatus hernia'], data: genericPlaceholderAdvice },
-    'high_blood_pressure': { keywords: ['high blood pressure', 'hypertension'], data: genericPlaceholderAdvice },
     'high_cholesterol': { keywords: ['high cholesterol'], data: genericPlaceholderAdvice },
     'hiv': { keywords: ['hiv'], data: genericPlaceholderAdvice },
     'hodgkin_lymphoma': { keywords: ['hodgkin lymphoma'], data: genericPlaceholderAdvice },
@@ -1069,3 +1162,4 @@ export function findOfflineMatch(symptoms: string, targetLanguage: string): AiSy
     // No match found
     return null;
 }
+
