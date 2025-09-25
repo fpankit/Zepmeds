@@ -107,13 +107,13 @@ function CreateReportPageContent() {
     setIsSubmitting(true);
 
     try {
-      await addDoc(collection(db, 'diagnostic_reports'), {
+      await addDoc(collection(db, 'reports'), {
         patientId: data.patient.id,
         patientName: data.patient.name,
         doctorId: doctorUser.id,
         doctorName: `${doctorUser.firstName} ${doctorUser.lastName}`,
         doctorSpecialty: doctorUser.specialty || 'General Physician',
-        reportDate: serverTimestamp(),
+        createdAt: serverTimestamp(),
         chiefComplaint: data.chiefComplaint,
         diagnosis: data.diagnosis,
         notes: data.notes,
