@@ -9,7 +9,6 @@
 
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
-import { googleAI } from '@genkit-ai/googleai';
 
 const AiSymptomCheckerInputSchema = z.object({
   symptoms: z.string().describe("A description of the user's symptoms."),

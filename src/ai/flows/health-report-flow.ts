@@ -9,7 +9,6 @@
 
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
-import { googleAI } from '@genkit-ai/googleai';
 
 const HealthReportInputSchema = z.object({
   dailySteps: z.string().describe("User's daily steps count."),

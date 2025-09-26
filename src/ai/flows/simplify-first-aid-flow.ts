@@ -9,7 +9,6 @@
 
 import { ai } from '@/ai/dev';
 import { z } from 'zod';
-import { googleAI } from '@genkit-ai/googleai';
 
 const SimplifyFirstAidInputSchema = z.object({
   topic: z.string().describe('The title of the first-aid topic, e.g., "Snake Bite".'),
