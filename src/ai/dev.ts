@@ -11,8 +11,24 @@ import * as path from 'path';
 export const ai = genkit({
   plugins: [
     googleAI({
-        // This default key will be used if a feature-specific key is not set.
-        apiKey: process.env.GOOGLE_GENAI_API_KEY,
+        // This function dynamically selects the API key based on the tool being used.
+        apiKey: async (tool) => {
+            switch (tool?.name) {
+                case 'aiSymptomCheckerPrompt':
+                    return process.env.GOOGLE_GENAI_API_KEY_CHECKER || process.env.GOOGLE_GENAI_API_KEY;
+                case 'healthReportPrompt':
+                     return process.env.GOOGLE_GENAI_API_KEY_REPORT || process.env.GOOGLE_GENAI_API_KEY;
+                case 'simplifyFirstAidPrompt':
+                     return process.env.GOOGLE_GENAI_API_KEY_FIRSTAID || process.env.GOOGLE_GENAI_API_KEY;
+                case 'liveTranslateFlow': // Note: This matches the flow name, not prompt name
+                     return process.env.GOOGLE_GENAI_API_KEY_TRANSLATE || process.env.GOOGLE_GENAI_API_KEY;
+                case 'urgentMedicinePrompt':
+                     return process.env.GOOGLE_GENAI_API_KEY_MEDICINE || process.env.GOOGLE_GENAI_API_KEY;
+                default:
+                    // Fallback to the default key for any other case
+                    return process.env.GOOGLE_GENAI_API_KEY;
+            }
+        },
     }),
   ],
   telemetry: {
