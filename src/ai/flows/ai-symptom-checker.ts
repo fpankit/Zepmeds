@@ -45,7 +45,10 @@ export type AiSymptomCheckerOutput = z.infer<typeof AiSymptomCheckerOutputSchema
 
 const prompt = ai.definePrompt({
   name: 'aiSymptomCheckerPrompt',
-  model: 'googleai/gemini-1.5-pro-latest',
+  // **THE FIX**: Define the model and its specific API key directly here.
+  model: googleAI.model('gemini-1.5-pro-latest', {
+    apiKey: process.env.GOOGLE_GENAI_API_KEY_CHECKER || process.env.GOOGLE_GENAI_API_KEY,
+  }),
   input: { schema: AiSymptomCheckerInputSchema },
   output: { schema: AiSymptomCheckerOutputSchema },
   prompt: `You are an expert medical AI assistant. Your primary function is to perform a differential diagnosis based on user-provided symptoms and provide safe, helpful, and detailed guidance.
