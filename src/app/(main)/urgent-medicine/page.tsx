@@ -19,25 +19,15 @@ import {
   PlusCircle,
   Trash2,
   Ambulance,
-  Sparkles,
   MapPin,
-  Check,
   ChevronRight,
-  BadgeCent,
   Store,
   Phone,
   Navigation,
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
-import {
-  validateUrgentMedicine,
-  UrgentMedicineInput,
-  UrgentMedicineOutput,
-  ValidatedMedicine,
-} from '@/ai/flows/urgent-medicine-flow';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/cart-context';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
 const nearbyChemists = [
@@ -75,8 +65,7 @@ export default function UrgentMedicinePage() {
 
   const [medicines, setMedicines] = useState(['']);
   const [isLoading, setIsLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] =
-    useState<UrgentMedicineOutput | null>(null);
+  const [showChemists, setShowChemists] = useState(false);
 
   const handleMedicineChange = (index: number, value: string) => {
     const newMedicines = [...medicines];
@@ -97,54 +86,38 @@ export default function UrgentMedicinePage() {
     }
   };
 
-  const handleAnalyze = async () => {
+  const handleFindChemists = () => {
     if (medicines.some((m) => !m.trim())) {
       toast({
         variant: 'destructive',
         title: 'Empty Fields',
-        description: 'Please fill out all medicine names before analyzing.',
+        description: 'Please enter at least one medicine name.',
       });
       return;
     }
     setIsLoading(true);
-    setAnalysisResult(null);
-
-    try {
-      const result = await validateUrgentMedicine({
-        medicineNames: medicines.filter((m) => m.trim()),
-      });
-      setAnalysisResult(result);
-    } catch (error) {
-      console.error('Failed to validate medicines:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Analysis Failed',
-        description:
-          'Could not validate medicines. Please check your connection and try again.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    // Simulate a quick network call
+    setTimeout(() => {
+        setShowChemists(true);
+        setIsLoading(false);
+    }, 500);
   };
 
   const handleOrderFromChemist = (chemistId: string) => {
-    if (!analysisResult) return;
-
-    analysisResult.validatedMedicines.forEach((med: ValidatedMedicine) => {
-      if (med.isValid) {
+    // Add all entered valid medicines to cart
+    medicines.filter(m => m.trim()).forEach(medName => {
         addToCart({
-          id: `urgent-${med.name.replace(/\s+/g, '-')}-${chemistId}`, 
-          name: med.name,
-          price: med.estimatedPrice,
-          quantity: 1,
-          isRx: med.requiresPrescription,
+            id: `urgent-${medName.replace(/\s+/g, '-')}-${chemistId}`, 
+            name: medName,
+            price: 0, // Price is unknown, to be confirmed by chemist
+            quantity: 1,
+            isRx: true, // Assume prescription might be needed
         });
-      }
     });
 
     toast({
       title: 'Medicines Added to Cart',
-      description: 'Proceed to checkout to complete your urgent order.',
+      description: 'The chemist will confirm availability and price. Proceed to checkout to place your urgent request.',
     });
 
     router.push('/cart');
@@ -153,9 +126,6 @@ export default function UrgentMedicinePage() {
   const handleNavigate = (lat: number, lng: number) => {
     window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
   }
-
-  const atLeastOneValid =
-    analysisResult?.validatedMedicines.some((m) => m.isValid) ?? false;
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -167,7 +137,7 @@ export default function UrgentMedicinePage() {
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 space-y-6">
-        {!analysisResult ? (
+        {!showChemists ? (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -175,8 +145,8 @@ export default function UrgentMedicinePage() {
                 Urgent Medicine Request
               </CardTitle>
               <CardDescription>
-                Need a medicine in a hurry? Enter the names and find it at a
-                nearby certified chemist. We'll arrange delivery within 1 hour.
+                Need a medicine in a hurry? Enter the name and find it at a
+                nearby certified chemist.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -220,15 +190,15 @@ export default function UrgentMedicinePage() {
               <Separator />
               <Button
                 className="w-full"
-                onClick={handleAnalyze}
+                onClick={handleFindChemists}
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <MapPin className="mr-2 h-4 w-4" />
                 )}
-                {isLoading ? 'Analyzing...' : 'Analyze & Find Chemists'}
+                {isLoading ? 'Finding...' : 'Find Chemists'}
               </Button>
             </CardContent>
           </Card>
@@ -236,100 +206,50 @@ export default function UrgentMedicinePage() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>AI Analysis Results</CardTitle>
+                <CardTitle>Available at these chemists:</CardTitle>
+                 <CardDescription>
+                    Please call the chemist to confirm stock before visiting.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {analysisResult.validatedMedicines.map((med, index) => (
-                  <Card
-                    key={index}
-                    className={cn(
-                      'p-3',
-                      !med.isValid
-                        ? 'bg-destructive/10 border-destructive'
-                        : 'bg-green-500/10 border-green-500'
-                    )}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold">{med.name}</p>
-                        <p
-                          className={cn(
-                            'text-sm',
-                            !med.isValid
-                              ? 'text-destructive'
-                              : 'text-green-700 dark:text-green-400'
-                          )}
-                        >
-                          {med.reason}
-                        </p>
+              <CardContent className="space-y-4">
+                {nearbyChemists.map((chemist) => (
+                  <Card key={chemist.id} className="p-4 space-y-4 bg-card/50">
+                      <div className="flex items-start gap-3">
+                         <Store className="h-6 w-6 text-primary mt-1" />
+                         <div>
+                              <p className="font-bold text-lg">{chemist.name}</p>
+                              <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                                 <div className='flex items-center gap-2'>
+                                   <MapPin className="h-4 w-4" />
+                                   <p>{chemist.address} ({chemist.distance})</p>
+                                 </div>
+                                 <div className='flex items-center gap-2'>
+                                    <Phone className="h-4 w-4" />
+                                    <a href={`tel:${chemist.phone}`} className="text-primary hover:underline">{chemist.phone}</a>
+                                 </div>
+                              </div>
+                         </div>
                       </div>
-                      {med.isValid ? (
-                        <Check className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <Ambulance className="h-5 w-5 text-destructive" />
-                      )}
-                    </div>
-                    {med.requiresPrescription && (
-                      <Badge variant="destructive" className="mt-2">
-                        Rx Required
-                      </Badge>
-                    )}
-                     {med.estimatedPrice > 0 && (
-                        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                            <BadgeCent className="h-3 w-3"/>
-                            <span>Est. Price: ₹{med.estimatedPrice}</span>
-                        </div>
-                    )}
+                      <div className="grid grid-cols-2 gap-2">
+                           <Button variant="outline" onClick={() => handleNavigate(chemist.coords.lat, chemist.coords.lng)}>
+                               <Navigation className="mr-2 h-4 w-4"/>
+                               Navigate
+                          </Button>
+                          <Button onClick={() => handleOrderFromChemist(chemist.id)}>
+                              Request Pickup
+                          </Button>
+                      </div>
                   </Card>
                 ))}
               </CardContent>
             </Card>
 
-            {atLeastOneValid && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Available at these chemists:</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {nearbyChemists.map((chemist) => (
-                    <Card key={chemist.id} className="p-4 space-y-4 bg-card/50">
-                        <div className="flex items-start gap-3">
-                           <Store className="h-6 w-6 text-primary mt-1" />
-                           <div>
-                                <p className="font-bold text-lg">{chemist.name}</p>
-                                <div className="text-sm text-muted-foreground mt-1 space-y-1">
-                                   <div className='flex items-center gap-2'>
-                                     <MapPin className="h-4 w-4" />
-                                     <p>{chemist.address} ({chemist.distance})</p>
-                                   </div>
-                                   <div className='flex items-center gap-2'>
-                                      <Phone className="h-4 w-4" />
-                                      <a href={`tel:${chemist.phone}`} className="text-primary hover:underline">{chemist.phone}</a>
-                                   </div>
-                                </div>
-                           </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                             <Button variant="outline" onClick={() => handleNavigate(chemist.coords.lat, chemist.coords.lng)}>
-                                 <Navigation className="mr-2 h-4 w-4"/>
-                                 Navigate
-                            </Button>
-                            <Button onClick={() => handleOrderFromChemist(chemist.id)}>
-                                Order From Here
-                            </Button>
-                        </div>
-                    </Card>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => setAnalysisResult(null)}
+              onClick={() => setShowChemists(false)}
             >
-              Go Back & Edit
+              Go Back & Edit Search
             </Button>
           </div>
         )}
