@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Central AI configuration for Genkit.
  *
@@ -42,20 +43,8 @@ try {
             console.log("Firebase Admin SDK initialized successfully from service account file.");
         }
 
-    } else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-        // Fallback to environment variable if the file doesn't exist
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-        if (!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) {
-            console.warn('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable is not set. Firebase Storage features will be disabled.');
-        } else {
-            initializeApp({
-              credential: cert(serviceAccount),
-              storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-            });
-            console.log("Firebase Admin SDK initialized successfully from environment variable.");
-        }
     } else {
-        console.warn('Could not find Firebase service account file or environment variable. Firebase Admin features will be disabled.');
+        console.warn('Could not find Firebase service account file (zepmeds-admin-panel-firebase-adminsdk.json). Firebase Admin features will be disabled.');
     }
   }
 } catch (e) {
