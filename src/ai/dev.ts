@@ -1,5 +1,14 @@
+'use server';
+/**
+ * @fileOverview Central AI configuration for Genkit.
+ *
+ * This file initializes the AI plugin with a single, default API key and
+ * implements a global error handler to gracefully manage API quota issues.
+ * This centralized approach ensures that all AI features use the same configuration
+ * and provides a consistent, user-friendly error message when rate limits are hit.
+ */
 
-import { genkit, ToolDefinition } from 'genkit';
+import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { enableFirebaseTelemetry } from '@genkit-ai/firebase';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
@@ -11,8 +20,7 @@ import * as path from 'path';
 export const ai = genkit({
   plugins: [
     googleAI({
-      // Reverted to a single API key to prevent header errors.
-      // The error handling below will manage quota issues gracefully.
+      // Use a single default API key from environment variables.
       apiKey: process.env.GOOGLE_GENAI_API_KEY,
       telemetry: {
         instrumentation: {
