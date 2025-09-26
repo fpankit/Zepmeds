@@ -12,6 +12,30 @@ export const ai = genkit({
   plugins: [
     googleAI({
       apiKey: process.env.GOOGLE_GENAI_API_KEY,
+      telemetry: {
+        instrumentation: {
+          // This is a global error handler for all AI calls made with this plugin
+          async run(span, fn) {
+            try {
+              return await fn();
+            } catch (err: any) {
+              const errorMessage = err.message || '';
+              const isQuotaError = errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota');
+
+              if (isQuotaError) {
+                // Intercept the quota error and throw a more user-friendly one.
+                // This will be caught by the UI and displayed in a toast.
+                throw new Error(
+                  'AI service is busy due to high traffic. Please try again after some time.'
+                );
+              }
+              
+              // For any other error, re-throw it as is.
+              throw err;
+            }
+          },
+        },
+      }
     }),
   ],
 });
