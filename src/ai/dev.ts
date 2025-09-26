@@ -1,5 +1,5 @@
 
-import { genkit } from 'genkit';
+import { genkit, ToolDefinition } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { enableFirebaseTelemetry } from '@genkit-ai/firebase';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
@@ -11,7 +11,23 @@ import * as path from 'path';
 export const ai = genkit({
   plugins: [
     googleAI({
-      apiKey: process.env.GOOGLE_GENAI_API_KEY,
+      // This dynamic API key resolver is the FIX.
+      // It checks which AI tool (prompt) is being run and returns the appropriate API key.
+      apiKey: async (tool?: ToolDefinition): Promise<string | undefined> => {
+        switch (tool?.name) {
+          case 'aiSymptomCheckerPrompt':
+            return process.env.GOOGLE_GENAI_API_KEY_CHECKER || process.env.GOOGLE_GENAI_API_KEY;
+          case 'healthReportPrompt':
+            return process.env.GOOGLE_GENAI_API_KEY_REPORT || process.env.GOOGLE_GENAI_API_KEY;
+          case 'simplifyFirstAidPrompt':
+            return process.env.GOOGLE_GENAI_API_KEY_FIRSTAID || process.env.GOOGLE_GENAI_API_KEY;
+          case 'liveTranslateFlow': // Note: Matches the flow name, might need adjustment if prompt name is different
+            return process.env.GOOGLE_GENAI_API_KEY_TRANSLATE || process.env.GOOGLE_GENAI_API_KEY;
+          default:
+            // Fallback to the default key for any other case (e.g., Urgent Medicine, etc.)
+            return process.env.GOOGLE_GENAI_API_KEY;
+        }
+      },
       telemetry: {
         instrumentation: {
           // This is a global error handler for all AI calls made with this plugin
