@@ -11,13 +11,25 @@ import * as path from 'path';
 export const ai = genkit({
   plugins: [
     googleAI({
-        // Use the default API key from environment variables.
-        // Specific keys will be handled within each flow's prompt definition.
-        apiKey: process.env.GOOGLE_GENAI_API_KEY,
+      apiKey: process.env.GOOGLE_GENAI_API_KEY,
     }),
   ],
   telemetry: {
-    // Basic telemetry, no complex retry logic.
+    instrumentation: {
+      // This is a powerful hook to intercept and handle errors globally.
+      startSpan: (span) => (result) => {
+        // Check if the operation failed and has an error status
+        if (result.status.code !== 0 && result.status.message) {
+          const errorMessage = result.status.message.toLowerCase();
+          // Specifically look for quota-related error codes or messages.
+          if (errorMessage.includes('429') || errorMessage.includes('quota')) {
+            // Overwrite the technical error with a user-friendly message.
+            // This message will be propagated to the UI's catch block.
+            result.status.message = 'AI service is busy due to high traffic. Please try again after some time.';
+          }
+        }
+      },
+    },
   },
 });
 
