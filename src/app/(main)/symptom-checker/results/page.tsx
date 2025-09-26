@@ -180,21 +180,19 @@ function SymptomCheckerResultsContent() {
                 console.error("An unexpected error occurred during AI analysis:", err);
                 
                 const errorMessage = err.message || '';
-                const isOverloaded = errorMessage.includes("503") || errorMessage.toLowerCase().includes("overloaded");
-                const isRateLimited = errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota");
+                const isQuotaError = errorMessage.includes("429") || errorMessage.toLowerCase().includes("quota");
 
-                // If the model is overloaded or rate-limited, fall back to offline data
-                if (isOverloaded || isRateLimited) {
+                if (isQuotaError) {
                     const offlineResult = findOfflineMatch(dataToProcess.symptoms, dataToProcess.targetLanguage);
                     if (offlineResult) {
                         setResult(offlineResult);
                         await saveToHistory(displayInput, offlineResult);
                         toast({
                             title: 'AI is busy, showing general advice.',
-                            description: isRateLimited ? 'You have exceeded the free limit for today. Please try again tomorrow.' : 'The AI model is currently overloaded. Please try again later for a full analysis.',
+                            description: 'You have reached the free limit for today. Please try again tomorrow.',
                         });
                     } else {
-                        setError("AI is currently busy, and no offline data was found for your symptoms. Please try again later.");
+                        setError("AI services are currently unavailable, and no offline data was found for your symptoms. Please try again later.");
                     }
                 } else {
                     setError(err.message || 'An unexpected error occurred. Please try again later.');
@@ -407,3 +405,5 @@ export default function SymptomCheckerResultsPage() {
         </Suspense>
     )
 }
+
+    
