@@ -1,10 +1,9 @@
 /**
  * @fileOverview Central AI configuration for Genkit.
  *
- * This file initializes the AI plugin with a single, default API key and
- * implements a global error handler to gracefully manage API quota issues.
- * This centralized approach ensures that all AI features use the same configuration
- * and provides a consistent, user-friendly error message when rate limits are hit.
+ * This file initializes the AI plugin with a single, default API key.
+ * Feature-specific error handling, such as fallbacks for quota issues,
+ * is managed within the individual feature components that call the AI flows.
  */
 
 import { genkit } from 'genkit';
@@ -14,38 +13,13 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import * as fs from 'fs';
 import * as path from 'path';
 
-
 // Genkit configuration
 export const ai = genkit({
   plugins: [
     googleAI({
       // Use a single default API key from environment variables.
+      // This key is used for all AI calls unless overridden in a specific flow.
       apiKey: process.env.GOOGLE_GENAI_API_KEY,
-      telemetry: {
-        instrumentation: {
-          // This is a global error handler for all AI calls made with this plugin.
-          // It intercepts errors and provides user-friendly messages for common issues like quota limits.
-          async run(span, fn) {
-            try {
-              return await fn();
-            } catch (err: any) {
-              const errorMessage = err.message || '';
-              const isQuotaError = errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota');
-
-              if (isQuotaError) {
-                // Intercept the quota error and throw a more user-friendly one.
-                // This will be caught by the UI and displayed in a toast.
-                throw new Error(
-                  'AI service is busy due to high traffic. Please try again after some time.'
-                );
-              }
-              
-              // For any other error, re-throw it as is.
-              throw err;
-            }
-          },
-        },
-      }
     }),
   ],
 });
