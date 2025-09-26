@@ -9,7 +9,10 @@ import { Loader2 } from 'lucide-react';
 import { User } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
-export function JoinForm({ user, appointmentId }: { user: User, appointmentId: string }) {
+// The correct, static Room ID from the 100ms dashboard.
+const HMS_ROOM_ID = '68c3adbda5ba8326e6eb82df';
+
+export function JoinForm({ user }: { user: User }) {
   const hmsActions = useHMSActions();
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -26,8 +29,8 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: user.id,
+                room_id: HMS_ROOM_ID, 
                 role: userRole,
-                // We no longer need to pass room_id, as the backend will use the static one.
             }),
         });
 
@@ -40,13 +43,6 @@ export function JoinForm({ user, appointmentId }: { user: User, appointmentId: s
         await hmsActions.join({
             userName: user.isGuest ? 'Guest' : `${user.firstName} ${user.lastName}`,
             authToken: token,
-            settings: {
-                isAudioMuted: false,
-                isVideoMuted: false,
-            },
-            // Use the unique appointment ID as the room name for identification
-            // This also helps in the leaveRoom logic to find the right document.
-            roomName: appointmentId, 
         });
 
     } catch (e: any) {
