@@ -3,9 +3,13 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
-  Sheet,
-  SheetContent,
-} from "@/components/ui/sheet";
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandInput,
+  CommandList,
+} from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { Mic, Loader2, Bot, MapPin, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -214,14 +218,14 @@ export function VoiceOrderSheet() {
       switch (state) {
           case 'idle':
               return {
-                  icon: <Bot className="h-16 w-16 text-primary" />,
+                  icon: <Bot className="h-12 w-12 text-primary" />,
                   title: "Voice Order",
                   description: "Tap the mic, say the medicines you need, and we'll place an urgent order for you instantly.",
                   footer: <Button className="w-full" onClick={startListening}><Mic className="mr-2 h-4 w-4" /> Start Listening</Button>
               };
           case 'permission':
               return {
-                  icon: <Loader2 className="h-16 w-16 text-primary animate-spin" />,
+                  icon: <Loader2 className="h-12 w-12 text-primary animate-spin" />,
                   title: "Getting Ready...",
                   description: "Please allow microphone access. We'll use your default address for delivery.",
                   footer: null
@@ -281,7 +285,7 @@ export function VoiceOrderSheet() {
                 )
             };
         default: return {
-            icon: <Loader2 className="h-16 w-16 text-primary animate-spin" />,
+            icon: <Loader2 className="h-12 w-12 text-primary animate-spin" />,
             title: "Processing...",
             description: "Finding your medicines in our database.",
             footer: null
@@ -299,10 +303,9 @@ export function VoiceOrderSheet() {
         </Button>
       </div>
 
-      <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent side="bottom" className="rounded-t-2xl h-auto md:max-h-[90vh] bg-black/95 backdrop-blur-xl border-t border-white/10 text-white">
-          <div className="flex flex-col h-full text-center p-4">
-              <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-8">
+      <CommandDialog open={isOpen} onOpenChange={handleOpenChange}>
+         <div className="flex flex-col h-full text-center p-6 bg-background">
+              <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-8 min-h-[300px]">
                   <AnimatePresence mode="wait">
                      <motion.div
                         key={state}
@@ -313,12 +316,12 @@ export function VoiceOrderSheet() {
                      >
                         {content?.icon}
                         {content?.title && <h2 className="text-2xl font-bold">{content.title}</h2>}
-                        {content?.description && <p className="text-gray-400 max-w-sm">{content.description}</p>}
+                        {content?.description && <p className="text-muted-foreground max-w-sm">{content.description}</p>}
                         {content?.customBody}
                      </motion.div>
                   </AnimatePresence>
                   {state === 'listening' && transcript && (
-                      <p className="text-lg italic text-gray-300 mt-4">"{transcript}"</p>
+                      <p className="text-lg italic text-muted-foreground mt-4">"{transcript}"</p>
                   )}
               </div>
               
@@ -328,8 +331,9 @@ export function VoiceOrderSheet() {
                   </div>
               )}
           </div>
-        </SheetContent>
-      </Sheet>
+      </CommandDialog>
     </>
   );
 }
+
+  
