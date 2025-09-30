@@ -4,11 +4,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandInput,
-  CommandList,
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { Mic, Loader2, Bot, MapPin, CheckCircle, MicOff } from "lucide-react";
@@ -67,7 +62,7 @@ export function VoiceOrderSheet() {
   }, [resetState]);
 
   const startListening = useCallback(() => {
-    if (state === 'listening') return; // THE FIX: Prevent starting if already listening
+    if (state === 'listening' || isProcessingRef.current) return;
 
     if (!SpeechRecognition) {
       toast({ variant: 'destructive', title: 'Browser Not Supported', description: 'Your browser does not support Speech Recognition.' });
@@ -101,7 +96,7 @@ export function VoiceOrderSheet() {
       }
       setTranscript(prev => prev + interim);
       if(final) {
-        setFinalTranscript(prev => prev + final + ". ");
+        setFinalTranscript(prev => prev + final);
       }
       if(timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
@@ -208,7 +203,7 @@ export function VoiceOrderSheet() {
         toast({
           variant: "destructive",
           title: "Medicine Not Found",
-          description: `We couldn't find any items for: "${finalTranscript}". Please try again.`,
+          description: `We couldn't find any items for: "${finalTranscript.trim()}". Please try again.`,
         });
         handleOpenChange(false);
       }
@@ -233,13 +228,18 @@ export function VoiceOrderSheet() {
                 title: "Listening...",
                 description: "Tell me the names of the medicines you need...",
                 customBody: (
-                    <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                        className="my-8"
-                    >
-                        <Mic className="h-20 w-20 text-fuchsia-500" />
-                    </motion.div>
+                     <div className="flex flex-col items-center justify-center h-full">
+                        <motion.div
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                            className="my-8"
+                        >
+                            <Mic className="h-20 w-20 text-fuchsia-500" />
+                        </motion.div>
+                         {transcript && (
+                            <p className="text-lg italic text-muted-foreground mt-4 text-center">"{transcript}"</p>
+                        )}
+                    </div>
                 ),
                 footer: null
             };
@@ -259,7 +259,7 @@ export function VoiceOrderSheet() {
                             {foundMedicines.map((med, i) => (
                                 <div key={i} className="flex justify-between items-center text-sm">
                                     <span className="font-medium text-foreground">{med.name}</span>
-                                    <span className="font-mono">₹{med.price.toFixed(2)}</span>
+                                    <span className="font-mono text-right">₹{med.price.toFixed(2)}</span>
                                 </div>
                             ))}
                         </div>
@@ -282,10 +282,11 @@ export function VoiceOrderSheet() {
                 )
             };
         default: return {
-            icon: <Loader2 className="h-12 w-12 text-primary animate-spin" />,
-            title: "Processing...",
-            description: "Please wait...",
-            footer: null
+            icon: <Bot className="h-12 w-12 text-teal-500" />,
+            title: "Voice Order",
+            description: "Click the button and tell me which medicines you need.",
+            customBody: null,
+            footer: <Button onClick={startListening}>Start Listening</Button>
         };
       }
   }
@@ -302,7 +303,7 @@ export function VoiceOrderSheet() {
 
       <CommandDialog open={isOpen} onOpenChange={handleOpenChange}>
          <div className="flex flex-col h-full text-center p-6 bg-background">
-              <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-8 min-h-[300px]">
+              <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-8 min-h-[350px]">
                   <AnimatePresence mode="wait">
                      <motion.div
                         key={state}
@@ -317,9 +318,6 @@ export function VoiceOrderSheet() {
                         {content?.customBody}
                      </motion.div>
                   </AnimatePresence>
-                  {state === 'listening' && transcript && (
-                      <p className="text-lg italic text-muted-foreground mt-4">"{transcript}"</p>
-                  )}
               </div>
               
               {content?.footer && (
@@ -332,4 +330,3 @@ export function VoiceOrderSheet() {
     </>
   );
 }
-
