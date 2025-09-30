@@ -125,10 +125,10 @@ export function VoiceOrderSheet() {
   
   // Effect to start listening immediately when the dialog opens
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && state === 'idle') { // Only start if idle
         startListening();
     }
-  }, [isOpen, startListening]);
+  }, [isOpen, state, startListening]);
 
   const placeOrder = useCallback(async () => {
     if (foundMedicines.length === 0) return;
@@ -183,7 +183,7 @@ export function VoiceOrderSheet() {
 
   useEffect(() => {
     if (state === 'processing' && finalTranscript) {
-      const cleanedTranscript = finalTranscript.replace(/\./g, '').trim();
+      const cleanedTranscript = finalTranscript.trim();
       const words = cleanedTranscript.toLowerCase().replace(/and/g, ',').split(',').map(s => s.trim()).filter(Boolean);
       
       const found: FoundMedicine[] = [];
@@ -289,7 +289,7 @@ export function VoiceOrderSheet() {
         default: return {
             icon: <Bot className="h-12 w-12 text-teal-500" />,
             title: "Voice Order",
-            description: "Click the button and tell me which medicines you need.",
+            description: "Click the button to start.",
             customBody: null,
             footer: <Button onClick={startListening}>Start Listening</Button>
         };
