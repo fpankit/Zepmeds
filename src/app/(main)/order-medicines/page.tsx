@@ -209,13 +209,7 @@ export default function OrderMedicinesPage() {
                         <CardContent className="p-0 flex-1 flex flex-col">
                            <Link href={`/product/${product.id}`} className="block">
                                 <div className="aspect-square w-full relative">
-                                    <Image
-                                        src={product.imageUrl || `https://picsum.photos/seed/${product.id}/200`}
-                                        alt={product.name}
-                                        fill
-                                        className="object-cover"
-                                        data-ai-hint={product.dataAiHint || 'medicine product'}
-                                    />
+                                    <div className="h-full w-full bg-muted" />
                                 </div>
                                 <div className="p-3">
                                     {product.isRx && <Badge variant="destructive" className="mb-2">Rx</Badge>}
@@ -273,5 +267,3 @@ export default function OrderMedicinesPage() {
     </div>
   );
 }
-
-    
