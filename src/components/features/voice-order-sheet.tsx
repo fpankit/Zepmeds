@@ -32,7 +32,7 @@ if (SpeechRecognition) {
   recognition.lang = 'en-IN'; // Prioritize Indian English
 }
 
-type VoiceSheetState = 'idle' | 'permission' | 'listening' | 'processing' | 'confirming';
+type VoiceSheetState = 'idle' | 'permission' | 'listening' | 'processing' | 'confirming' | 'ordering';
 type FoundMedicine = Product & { quantity: number };
 
 export function VoiceOrderSheet() {
@@ -48,12 +48,14 @@ export function VoiceOrderSheet() {
   const { user } = useAuth();
   const router = useRouter();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isProcessingRef = useRef(false);
 
   const resetState = useCallback(() => {
     setState('idle');
     setTranscript("");
     setFinalTranscript("");
     setFoundMedicines([]);
+    isProcessingRef.current = false;
   }, []);
 
   const handleOpenChange = (open: boolean) => {
@@ -67,18 +69,15 @@ export function VoiceOrderSheet() {
   const startListening = useCallback(() => {
     if (!SpeechRecognition) {
       toast({ variant: 'destructive', title: 'Browser Not Supported', description: 'Your browser does not support Speech Recognition.' });
-      handleOpenChange(false);
       return;
     }
     if (!user || user.isGuest) {
       toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to place a voice order.' });
-      handleOpenChange(false);
       router.push('/login');
       return;
     }
 
     setState('permission');
-
     const defaultAddress = user.addresses?.[0]?.address || "Default Address not set";
     setLocation(defaultAddress);
 
@@ -104,39 +103,41 @@ export function VoiceOrderSheet() {
       if(timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
          recognition.stop();
-      }, 2500); // Stop after 2.5 seconds of silence
+      }, 2500);
     };
 
     recognition.onend = () => {
-      if (state !== 'processing' && state !== 'confirming') {
-         setState(prev => (prev === 'listening' ? 'processing' : prev));
-      }
+       if (isProcessingRef.current) return;
+       isProcessingRef.current = true;
+       setState('processing');
     };
     
     recognition.onerror = (event: any) => {
         toast({ variant: 'destructive', title: 'Speech Error', description: `Could not process audio. Error: ${event.error}` });
         handleOpenChange(false);
-        resetState();
     };
 
-  }, [toast, state, user, router, handleOpenChange, resetState]);
+  }, [toast, user, router, handleOpenChange]);
   
-  const placeOrder = useCallback(async (medicinesToOrder: FoundMedicine[]) => {
+  const placeOrder = useCallback(async () => {
+    if (state !== 'confirming' || foundMedicines.length === 0) return;
+    
+    setState('ordering');
+
     if (!user || user.isGuest || !location) {
       toast({ variant: 'destructive', title: 'Cannot place order', description: 'User or location is missing.' });
       handleOpenChange(false);
-      resetState();
       return;
     }
 
-    const subtotal = medicinesToOrder.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const subtotal = foundMedicines.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const deliveryFee = 50;
     const total = subtotal + deliveryFee;
 
     try {
         const orderData = {
             userId: user.id,
-            cart: medicinesToOrder.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
+            cart: foundMedicines.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
             total,
             subtotal,
             deliveryFee,
@@ -166,9 +167,8 @@ export function VoiceOrderSheet() {
         console.error("Failed to place order:", error);
         toast({ variant: 'destructive', title: 'Order Failed', description: 'There was a problem placing your order.' });
         handleOpenChange(false);
-        resetState();
     }
-  }, [user, location, toast, router, handleOpenChange, resetState]);
+  }, [user, location, toast, router, handleOpenChange, foundMedicines, state]);
 
   useEffect(() => {
     if (state === 'processing' && finalTranscript) {
@@ -199,20 +199,19 @@ export function VoiceOrderSheet() {
           description: `Could not find any items for: "${finalTranscript}". Please try again.`,
         });
         handleOpenChange(false);
-        resetState();
       }
     }
-  }, [state, finalTranscript, productMap, toast, handleOpenChange, resetState]);
+  }, [state, finalTranscript, productMap, toast, handleOpenChange]);
 
   useEffect(() => {
-    if (state === 'confirming' && foundMedicines.length > 0) {
+    if (state === 'confirming') {
         const timer = setTimeout(() => {
-            placeOrder(foundMedicines);
-        }, 3000); // Wait 3 seconds before placing order
+            placeOrder();
+        }, 3000);
 
         return () => clearTimeout(timer);
     }
-  }, [state, foundMedicines, placeOrder]);
+  }, [state, placeOrder]);
 
   const getStateContent = () => {
       switch (state) {
@@ -247,6 +246,7 @@ export function VoiceOrderSheet() {
                 footer: null
             };
         case 'confirming':
+        case 'ordering':
             const subtotal = foundMedicines.reduce((acc, item) => acc + (item.price * item.quantity), 0);
             return {
                 icon: (
@@ -332,6 +332,5 @@ export function VoiceOrderSheet() {
     </>
   );
 }
-
 
     
