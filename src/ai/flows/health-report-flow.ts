@@ -54,7 +54,7 @@ export type HealthReportOutput = z.infer<typeof HealthReportOutputSchema>;
 
 const prompt = ai.definePrompt({
   name: 'healthReportPrompt',
-  model: googleAI.model('gemini-pro'),
+  model: googleAI.model('gemini-pro'), // THE FIX: Use a stable and available model.
   input: { schema: HealthReportInputSchema },
   output: { schema: HealthReportOutputSchema },
   prompt: `You are an expert health and wellness AI. Based on the following user health data, generate a comprehensive health report.
