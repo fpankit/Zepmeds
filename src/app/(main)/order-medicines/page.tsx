@@ -207,22 +207,33 @@ export default function OrderMedicinesPage() {
                 <DelayedSkeleton key={product.id} isLoading={false} skeleton={<ProductCardSkeleton />}>
                     <Card className="overflow-hidden group flex flex-col">
                         <CardContent className="p-0 flex-1 flex flex-col">
-                           <Link href={`/product/${product.id}`} className="block p-3">
-                                {product.isRx && <Badge variant="destructive" className="mb-2">Rx</Badge>}
-                                <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
-                                <p className="text-xs text-muted-foreground truncate">{product.uses}</p>
-                                <div className="mt-2">
-                                    <div className="flex items-baseline gap-2">
-                                        <p className="font-bold text-base text-primary">₹{product.price.toFixed(2)}</p>
-                                        {hasDiscount && <p className="text-xs text-muted-foreground line-through">₹{product.mrp.toFixed(2)}</p>}
-                                    </div>
-                                     {hasDiscount && (
-                                        <p className="text-xs font-bold text-green-500 mt-1">You save {discount}%</p>
-                                    )}
+                           <Link href={`/product/${product.id}`} className="block">
+                                <div className="aspect-square w-full relative">
+                                    <Image
+                                        src={product.imageUrl || `https://picsum.photos/seed/${product.id}/200`}
+                                        alt={product.name}
+                                        fill
+                                        className="object-cover"
+                                        data-ai-hint={product.dataAiHint || 'medicine product'}
+                                    />
                                 </div>
-                                <p className={cn("text-xs font-bold mt-1", fewLeft ? "text-red-500" : "text-green-500")}>
-                                  {fewLeft ? 'A few left' : 'In Stock'}
-                                </p>
+                                <div className="p-3">
+                                    {product.isRx && <Badge variant="destructive" className="mb-2">Rx</Badge>}
+                                    <h3 className="font-semibold text-sm leading-tight truncate">{product.name}</h3>
+                                    <p className="text-xs text-muted-foreground truncate">{product.uses}</p>
+                                    <div className="mt-2">
+                                        <div className="flex items-baseline gap-2">
+                                            <p className="font-bold text-base text-primary">₹{product.price.toFixed(2)}</p>
+                                            {hasDiscount && <p className="text-xs text-muted-foreground line-through">₹{product.mrp.toFixed(2)}</p>}
+                                        </div>
+                                         {hasDiscount && (
+                                            <p className="text-xs font-bold text-green-500 mt-1">You save {discount}%</p>
+                                        )}
+                                    </div>
+                                    <p className={cn("text-xs font-bold mt-1", fewLeft ? "text-red-500" : "text-green-500")}>
+                                      {fewLeft ? 'A few left' : 'In Stock'}
+                                    </p>
+                                </div>
                             </Link>
                             <div className="p-3 pt-0 mt-auto">
                                 {cartItem ? (
@@ -262,3 +273,5 @@ export default function OrderMedicinesPage() {
     </div>
   );
 }
+
+    

@@ -148,6 +148,18 @@ export default function ProductDetailPage() {
             </header>
 
             <main className="flex-1 overflow-y-auto pb-24">
+                <div className="p-4 bg-card/50">
+                   <div className="aspect-square w-full relative rounded-lg overflow-hidden">
+                        <Image
+                            src={product.imageUrl || `https://picsum.photos/seed/${product.id}/400`}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                            data-ai-hint={product.dataAiHint || 'medicine product'}
+                        />
+                   </div>
+                </div>
+
                 <div className="px-4">
                     <div className="p-4 pt-6 space-y-6">
                         <div>
@@ -206,6 +218,15 @@ export default function ProductDetailPage() {
                                     {relatedProducts.map(related => (
                                         <Link href={`/product/${related.id}`} key={related.id}>
                                             <Card className="overflow-hidden h-full flex flex-col">
+                                                 <div className="aspect-[4/3] w-full relative">
+                                                    <Image
+                                                        src={related.imageUrl || `https://picsum.photos/seed/${related.id}/200`}
+                                                        alt={related.name}
+                                                        fill
+                                                        className="object-cover"
+                                                        data-ai-hint={related.dataAiHint || 'medicine product'}
+                                                    />
+                                                 </div>
                                                 <CardContent className="p-3 flex-1 flex flex-col">
                                                     <div className="flex-1 flex flex-col">
                                                         <h4 className="font-semibold text-sm truncate">{related.name}</h4>
@@ -246,3 +267,5 @@ export default function ProductDetailPage() {
         </div>
     );
 }
+
+    
