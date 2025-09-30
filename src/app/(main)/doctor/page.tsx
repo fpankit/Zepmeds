@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Star, Calendar, Clock, MessageSquare } from "lucide-react";
 import { useEffect, useState, useMemo, Suspense, useCallback } from "react";
-import { collection, query, onSnapshot, doc, setDoc, getDocs, where, deleteDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, onSnapshot, doc, setDoc, getDocs, where, deleteDoc, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter, useSearchParams } from "next/navigation";
