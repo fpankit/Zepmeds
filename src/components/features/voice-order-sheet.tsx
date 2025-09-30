@@ -37,6 +37,7 @@ export function VoiceOrderSheet() {
   const [finalTranscript, setFinalTranscript] = useState("");
   const [foundMedicines, setFoundMedicines] = useState<FoundMedicine[]>([]);
   const [location, setLocation] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
   
   const { toast } = useToast();
   const { productMap } = useCart();
@@ -50,6 +51,7 @@ export function VoiceOrderSheet() {
     setTranscript("");
     setFinalTranscript("");
     setFoundMedicines([]);
+    setIsListening(false);
     isProcessingRef.current = false;
   }, []);
 
@@ -62,7 +64,7 @@ export function VoiceOrderSheet() {
   }, [resetState]);
 
   const startListening = useCallback(() => {
-    if (state === 'listening' || isProcessingRef.current) return;
+    if (isListening || isProcessingRef.current) return;
 
     if (!SpeechRecognition) {
       toast({ variant: 'destructive', title: 'Browser Not Supported', description: 'Your browser does not support Speech Recognition.' });
@@ -81,6 +83,7 @@ export function VoiceOrderSheet() {
 
     setTranscript("");
     setFinalTranscript("");
+    setIsListening(true);
     setState('listening');
     recognition.start();
 
@@ -96,7 +99,7 @@ export function VoiceOrderSheet() {
       }
       setTranscript(prev => prev + interim);
       if(final) {
-        setFinalTranscript(prev => prev + final);
+        setFinalTranscript(prev => prev + " " + final);
       }
       if(timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
@@ -106,18 +109,19 @@ export function VoiceOrderSheet() {
 
     recognition.onend = () => {
        if (isProcessingRef.current) return;
+       setIsListening(false);
        isProcessingRef.current = true;
        setState('processing');
     };
     
     recognition.onerror = (event: any) => {
-        if (event.error !== 'aborted') { // Don't show toast if we manually stop it
+        if (event.error !== 'aborted' && event.error !== 'no-speech') {
             toast({ variant: 'destructive', title: 'Speech Error', description: `Could not process audio. Error: ${event.error}` });
         }
         handleOpenChange(false);
     };
 
-  }, [toast, user, router, handleOpenChange, state]);
+  }, [isListening, toast, user, router, handleOpenChange]);
   
   // Effect to start listening immediately when the dialog opens
   useEffect(() => {
@@ -179,7 +183,8 @@ export function VoiceOrderSheet() {
 
   useEffect(() => {
     if (state === 'processing' && finalTranscript) {
-      const words = finalTranscript.toLowerCase().replace(/and/g, ',').split(',').map(s => s.trim()).filter(Boolean);
+      const cleanedTranscript = finalTranscript.replace(/\./g, '').trim();
+      const words = cleanedTranscript.toLowerCase().replace(/and/g, ',').split(',').map(s => s.trim()).filter(Boolean);
       
       const found: FoundMedicine[] = [];
       const productNames = Array.from(productMap.keys()).map(k => k.toLowerCase());
@@ -203,7 +208,7 @@ export function VoiceOrderSheet() {
         toast({
           variant: "destructive",
           title: "Medicine Not Found",
-          description: `We couldn't find any items for: "${finalTranscript.trim()}". Please try again.`,
+          description: `We couldn't find any items for: ${cleanedTranscript}. Please try again.`,
         });
         handleOpenChange(false);
       }
