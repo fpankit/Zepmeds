@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent for simplifying and translating first-aid instructions.
