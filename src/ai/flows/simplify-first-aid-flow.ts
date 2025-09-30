@@ -27,7 +27,7 @@ export type SimplifyFirstAidOutput = z.infer<typeof SimplifyFirstAidOutputSchema
 
 const prompt = ai.definePrompt({
   name: 'simplifyFirstAidPrompt',
-  model: 'googleai/gemini-pro',
+  model: googleAI.model('gemini-pro'),
   input: { schema: SimplifyFirstAidInputSchema },
   output: { schema: SimplifyFirstAidOutputSchema },
   prompt: `You are an expert at simplifying complex medical instructions for a general audience who may be panicking.
