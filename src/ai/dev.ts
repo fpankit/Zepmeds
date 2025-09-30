@@ -21,6 +21,7 @@ export const ai = genkit({
       // Use a single default API key from environment variables.
       // This key is used for all AI calls unless overridden in a specific flow.
       apiKey: process.env.GOOGLE_GENAI_API_KEY,
+      apiVersion: 'v1', // THE FIX: Force the use of the v1 API
     }),
   ],
 });
