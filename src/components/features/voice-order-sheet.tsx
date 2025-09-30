@@ -32,7 +32,7 @@ if (SpeechRecognition) {
   recognition.lang = 'en-IN'; // Prioritize Indian English
 }
 
-type VoiceSheetState = 'idle' | 'permission' | 'listening' | 'processing' | 'confirming' | 'error';
+type VoiceSheetState = 'idle' | 'permission' | 'listening' | 'processing' | 'confirming';
 type FoundMedicine = Product & { quantity: number };
 
 export function VoiceOrderSheet() {
@@ -67,7 +67,7 @@ export function VoiceOrderSheet() {
   const startListening = useCallback(() => {
     if (!SpeechRecognition) {
       toast({ variant: 'destructive', title: 'Browser Not Supported', description: 'Your browser does not support Speech Recognition.' });
-      setState('error');
+      handleOpenChange(false);
       return;
     }
     if (!user || user.isGuest) {
@@ -82,7 +82,6 @@ export function VoiceOrderSheet() {
     const defaultAddress = user.addresses?.[0]?.address || "Default Address not set";
     setLocation(defaultAddress);
 
-    // Start recognition after getting location
     setTranscript("");
     setFinalTranscript("");
     setState('listening');
@@ -102,11 +101,10 @@ export function VoiceOrderSheet() {
       if(final) {
         setFinalTranscript(prev => prev + final + ". ");
       }
-      // Reset timeout on new speech
       if(timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
          recognition.stop();
-      }, 3000); // Stop after 3s of silence
+      }, 3000);
     };
 
     recognition.onend = () => {
@@ -117,15 +115,17 @@ export function VoiceOrderSheet() {
     
     recognition.onerror = (event: any) => {
         toast({ variant: 'destructive', title: 'Speech Error', description: `Could not process audio. Error: ${event.error}` });
-        setState('error');
+        handleOpenChange(false);
+        resetState();
     };
 
-  }, [toast, state, user, router]);
+  }, [toast, state, user, router, handleOpenChange, resetState]);
   
   const placeOrder = useCallback(async (medicinesToOrder: FoundMedicine[]) => {
     if (!user || user.isGuest || !location) {
       toast({ variant: 'destructive', title: 'Cannot place order', description: 'User or location is missing.' });
-      setState('error');
+      handleOpenChange(false);
+      resetState();
       return;
     }
 
@@ -141,7 +141,7 @@ export function VoiceOrderSheet() {
             subtotal,
             deliveryFee,
             deliveryOption: 'express',
-            paymentMethod: 'cod', // Defaulting to Cash on Delivery for speed
+            paymentMethod: 'cod',
             customerDetails: {
                 name: `${user.firstName} ${user.lastName}`,
                 email: user.email,
@@ -159,16 +159,16 @@ export function VoiceOrderSheet() {
             description: "Redirecting to your order status...",
         });
 
-        // Redirect to order status page
         router.push(`/order-status?orderId=${docRef.id}`);
-        handleOpenChange(false); // Close the sheet
+        handleOpenChange(false);
 
     } catch (error) {
         console.error("Failed to place order:", error);
         toast({ variant: 'destructive', title: 'Order Failed', description: 'There was a problem placing your order.' });
-        setState('error');
+        handleOpenChange(false);
+        resetState();
     }
-  }, [user, location, toast, router]);
+  }, [user, location, toast, router, handleOpenChange, resetState]);
 
   useEffect(() => {
     if (state === 'processing' && finalTranscript) {
@@ -194,16 +194,17 @@ export function VoiceOrderSheet() {
         setState('confirming');
       } else {
         toast({ variant: 'destructive', title: 'No Medicines Found', description: `Could not find any items for: "${finalTranscript}". Please try again.`});
-        setState('error');
+        handleOpenChange(false);
+        resetState();
       }
     }
-  }, [state, finalTranscript, productMap, toast]);
+  }, [state, finalTranscript, productMap, toast, handleOpenChange, resetState]);
 
   useEffect(() => {
     if (state === 'confirming' && foundMedicines.length > 0) {
         const timer = setTimeout(() => {
             placeOrder(foundMedicines);
-        }, 1500); // Wait 1.5 seconds on the confirmation screen before ordering
+        }, 1500);
 
         return () => clearTimeout(timer);
     }
@@ -279,13 +280,6 @@ export function VoiceOrderSheet() {
                     </div>
                 ),
                 footer: null
-            };
-        case 'error':
-             return {
-                icon: <Bot className="h-16 w-16 text-destructive" />,
-                title: "Something went wrong",
-                description: "We couldn't process your request. Please try again or use the search bar.",
-                footer: <Button className="w-full" onClick={startListening}>Try Again</Button>
             };
         default: return null;
       }
