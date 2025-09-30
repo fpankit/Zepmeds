@@ -11,11 +11,15 @@ import {
   SheetFooter
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Mic, Loader2, Bot, MapPin, Search } from "lucide-react";
+import { Mic, Loader2, Bot, MapPin, CheckCircle, PackageCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/context/auth-context";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { Product } from "@/lib/types";
 
 // --- Client-side Speech Recognition Setup ---
 const SpeechRecognition =
@@ -28,18 +32,20 @@ if (SpeechRecognition) {
   recognition.lang = 'en-IN'; // Prioritize Indian English
 }
 
-type VoiceSheetState = 'idle' | 'permission' | 'listening' | 'processing' | 'results' | 'error';
+type VoiceSheetState = 'idle' | 'permission' | 'listening' | 'processing' | 'confirming' | 'error';
+type FoundMedicine = Product & { quantity: number };
 
 export function VoiceOrderSheet() {
   const [isOpen, setIsOpen] = useState(false);
   const [state, setState] = useState<VoiceSheetState>('idle');
   const [transcript, setTranscript] = useState("");
   const [finalTranscript, setFinalTranscript] = useState("");
-  const [medicines, setMedicines] = useState<string[]>([]);
+  const [foundMedicines, setFoundMedicines] = useState<FoundMedicine[]>([]);
   const [location, setLocation] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const { addToCart, productMap } = useCart();
+  const { productMap } = useCart();
+  const { user } = useAuth();
   const router = useRouter();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -47,7 +53,7 @@ export function VoiceOrderSheet() {
     setState('idle');
     setTranscript("");
     setFinalTranscript("");
-    setMedicines([]);
+    setFoundMedicines([]);
   }, []);
 
   const handleOpenChange = (open: boolean) => {
@@ -64,36 +70,23 @@ export function VoiceOrderSheet() {
       setState('error');
       return;
     }
+    if (!user || user.isGuest) {
+      toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to place a voice order.' });
+      handleOpenChange(false);
+      router.push('/login');
+      return;
+    }
 
     setState('permission');
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
-          if (response.ok) {
-            const data = await response.json();
-            setLocation(data.display_name || 'Current Location');
-          } else {
-             setLocation('Current Location (Details unavailable)');
-          }
-        } catch {
-             setLocation('Current Location (Details unavailable)');
-        }
-        
-        // Start recognition after location is fetched
-        setTranscript("");
-        setFinalTranscript("");
-        setState('listening');
-        recognition.start();
+    const defaultAddress = user.addresses?.[0]?.address || "Default Address not set";
+    setLocation(defaultAddress);
 
-      },
-      (error) => {
-        toast({ variant: 'destructive', title: 'Location Access Denied', description: 'Please enable location to order medicines.' });
-        setState('error');
-      }
-    );
+    // Start recognition after getting location
+    setTranscript("");
+    setFinalTranscript("");
+    setState('listening');
+    recognition.start();
 
     recognition.onresult = (event: any) => {
       let interim = "";
@@ -117,7 +110,7 @@ export function VoiceOrderSheet() {
     };
 
     recognition.onend = () => {
-      if (state !== 'processing') {
+      if (state !== 'processing' && state !== 'confirming') {
          setState(prev => (prev === 'listening' ? 'processing' : prev));
       }
     };
@@ -127,42 +120,94 @@ export function VoiceOrderSheet() {
         setState('error');
     };
 
-  }, [toast, state]);
+  }, [toast, state, user, router]);
+  
+  const placeOrder = useCallback(async (medicinesToOrder: FoundMedicine[]) => {
+    if (!user || user.isGuest || !location) {
+      toast({ variant: 'destructive', title: 'Cannot place order', description: 'User or location is missing.' });
+      setState('error');
+      return;
+    }
+
+    const subtotal = medicinesToOrder.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const deliveryFee = 50;
+    const total = subtotal + deliveryFee;
+
+    try {
+        const orderData = {
+            userId: user.id,
+            cart: medicinesToOrder.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
+            total,
+            subtotal,
+            deliveryFee,
+            deliveryOption: 'express',
+            paymentMethod: 'cod', // Defaulting to Cash on Delivery for speed
+            customerDetails: {
+                name: `${user.firstName} ${user.lastName}`,
+                email: user.email,
+                address: location,
+                phone: user.phone,
+            },
+            status: "Order Confirmed",
+            orderDate: serverTimestamp(),
+        };
+
+        const docRef = await addDoc(collection(db, "orders"), orderData);
+        
+        toast({
+            title: "Order Placed Successfully!",
+            description: "Redirecting to your order status...",
+        });
+
+        // Redirect to order status page
+        router.push(`/order-status?orderId=${docRef.id}`);
+        handleOpenChange(false); // Close the sheet
+
+    } catch (error) {
+        console.error("Failed to place order:", error);
+        toast({ variant: 'destructive', title: 'Order Failed', description: 'There was a problem placing your order.' });
+        setState('error');
+    }
+  }, [user, location, toast, router]);
 
   useEffect(() => {
     if (state === 'processing' && finalTranscript) {
-      // Basic NLP: Split by "and" or common separators, look for keywords
       const words = finalTranscript.toLowerCase().replace(/and/g, ',').split(',').map(s => s.trim()).filter(Boolean);
       
-      const foundMedicines: string[] = [];
+      const found: FoundMedicine[] = [];
       const productNames = Array.from(productMap.keys()).map(k => k.toLowerCase());
 
       words.forEach(word => {
           productNames.forEach(productName => {
-              if (productName.includes(word) || word.includes(productName)) {
-                  const product = productMap.get(Array.from(productMap.keys()).find(k => k.toLowerCase() === productName)!)!;
-                  if(!foundMedicines.includes(product.name)) {
-                      foundMedicines.push(product.name);
-                      addToCart({ ...product, quantity: 1, isRx: true });
+              if ((productName.includes(word) || word.includes(productName)) && word.length > 2) {
+                  const productKey = Array.from(productMap.keys()).find(k => k.toLowerCase() === productName)!;
+                  const product = productMap.get(productKey)!;
+                  if (!found.some(f => f.id === product.id)) {
+                      found.push({ ...product, quantity: 1 });
                   }
               }
           })
       });
 
-      if (foundMedicines.length === 0 && words.length > 0) {
-        // If no matches, add the raw recognized words as urgent items
-        words.forEach(word => {
-            if (!foundMedicines.includes(word)) {
-                foundMedicines.push(word);
-                addToCart({ id: `urgent-${word.replace(/\s+/g, '-')}`, name: word, price: 0, quantity: 1, isRx: true });
-            }
-        });
+      if (found.length > 0) {
+        setFoundMedicines(found);
+        setState('confirming');
+      } else {
+        toast({ variant: 'destructive', title: 'No Medicines Found', description: `Could not find any items for: "${finalTranscript}". Please try again.`});
+        setState('error');
       }
-      
-      setMedicines(foundMedicines);
-      setState('results');
     }
-  }, [state, finalTranscript, addToCart, productMap]);
+  }, [state, finalTranscript, productMap, toast]);
+
+  useEffect(() => {
+    if (state === 'confirming' && foundMedicines.length > 0) {
+        const timer = setTimeout(() => {
+            placeOrder(foundMedicines);
+        }, 1500); // Wait 1.5 seconds on the confirmation screen before ordering
+
+        return () => clearTimeout(timer);
+    }
+  }, [state, foundMedicines, placeOrder]);
 
   const getStateContent = () => {
       switch (state) {
@@ -170,14 +215,14 @@ export function VoiceOrderSheet() {
               return {
                   icon: <Bot className="h-16 w-16 text-primary" />,
                   title: "Voice Order",
-                  description: "Tap the mic and say the medicines you need. We'll find them and add them to your cart for an urgent delivery.",
+                  description: "Tap the mic, say the medicines you need, and we'll place an urgent order for you instantly.",
                   footer: <Button className="w-full" onClick={startListening}>Start Listening</Button>
               };
           case 'permission':
               return {
                   icon: <Loader2 className="h-16 w-16 text-primary animate-spin" />,
                   title: "Getting Ready...",
-                  description: "Please allow microphone and location access. Fetching your location for faster delivery.",
+                  description: "Please allow microphone access. We'll use your default address for delivery.",
                   footer: null
               }
         case 'listening':
@@ -198,20 +243,42 @@ export function VoiceOrderSheet() {
             return {
                 icon: <Loader2 className="h-16 w-16 text-primary animate-spin" />,
                 title: "Processing your request...",
-                description: "Finding the medicines you asked for. Please wait a moment.",
+                description: "Finding the medicines you asked for. Please wait.",
                 footer: null
             };
-        case 'results':
+        case 'confirming':
+            const subtotal = foundMedicines.reduce((acc, item) => acc + (item.price * item.quantity), 0);
             return {
-                icon: <Search className="h-16 w-16 text-green-500" />,
-                title: "Medicines Added to Cart",
-                description: `We've added ${medicines.length} item(s) to your cart for an urgent order. Please review your cart to complete the purchase.`,
-                footer: (
-                    <div className="w-full space-y-2">
-                        <Button className="w-full" onClick={() => router.push('/cart')}>Go to Cart</Button>
-                        <Button variant="outline" className="w-full" onClick={resetState}>Order More</Button>
+                icon: <CheckCircle className="h-16 w-16 text-green-500" />,
+                title: "Items Found!",
+                description: null,
+                customBody: (
+                    <div className="w-full max-w-sm text-left space-y-4">
+                        <div className="bg-muted p-3 rounded-md space-y-2">
+                            {foundMedicines.map((med, i) => (
+                                <div key={i} className="flex justify-between items-center">
+                                    <span className="font-medium">{med.name}</span>
+                                    <span className="font-mono">₹{med.price.toFixed(2)}</span>
+                                </div>
+                            ))}
+                             <div className="flex justify-between items-center border-t pt-2 font-bold">
+                                <span>Total</span>
+                                <span className="font-mono">₹{subtotal.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        {location && (
+                          <div className="text-sm text-muted-foreground flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-primary" />
+                              <span className="truncate">Delivering To: {location}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-center gap-2 pt-2">
+                           <Loader2 className="h-4 w-4 animate-spin"/>
+                           <p className="text-sm text-muted-foreground">Placing your order now...</p>
+                        </div>
                     </div>
-                )
+                ),
+                footer: null
             };
         case 'error':
              return {
@@ -235,7 +302,7 @@ export function VoiceOrderSheet() {
       </div>
 
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh]">
+        <SheetContent side="bottom" className="rounded-t-2xl h-full md:h-auto md:max-h-[90vh]">
           <div className="flex flex-col h-full text-center p-4">
               <div className="flex-1 flex flex-col items-center justify-center space-y-4">
                   <AnimatePresence mode="wait">
@@ -247,31 +314,17 @@ export function VoiceOrderSheet() {
                         className="flex flex-col items-center justify-center space-y-4"
                      >
                         {content?.icon}
-                        <h2 className="text-2xl font-bold">{content?.title}</h2>
-                        <p className="text-muted-foreground">{content?.description}</p>
+                        {content?.title && <h2 className="text-2xl font-bold">{content.title}</h2>}
+                        {content?.description && <p className="text-muted-foreground">{content.description}</p>}
+                        {content?.customBody}
                      </motion.div>
                   </AnimatePresence>
 
                   {state === 'listening' && transcript && (
                       <p className="text-lg italic text-foreground mt-4">"{transcript}"</p>
                   )}
-                  {state === 'results' && medicines.length > 0 && (
-                      <div className="w-full max-w-sm pt-4">
-                        <ul className="list-disc list-inside text-left bg-muted p-3 rounded-md">
-                            {medicines.map((med, i) => <li key={i}>{med}</li>)}
-                        </ul>
-                      </div>
-                  )}
-
               </div>
               
-              {location && (
-                  <div className="text-xs text-muted-foreground flex items-center justify-center gap-2 border-t pt-4">
-                      <MapPin className="h-4 w-4" />
-                      <span className="truncate">Delivering to: {location}</span>
-                  </div>
-              )}
-
               {content?.footer && (
                   <div className="mt-6 w-full max-w-sm mx-auto">
                      {content.footer}
@@ -283,5 +336,3 @@ export function VoiceOrderSheet() {
     </>
   );
 }
-
-    
