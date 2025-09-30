@@ -63,7 +63,11 @@ export default function ProductDetailPage() {
                 const productDocSnap = await getDoc(productDocRef);
 
                 if (productDocSnap.exists()) {
-                    const productData = { id: productDocSnap.id, ...productDocSnap.data() } as Product;
+                    const productData = { 
+                        id: productDocSnap.id, 
+                        ...productDocSnap.data(),
+                        imageUrl: `https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fproducts%2F${productDocSnap.id}.png?alt=media`
+                    } as Product;
                     setProduct(productData);
 
                     // Fetch related products
@@ -75,7 +79,11 @@ export default function ProductDetailPage() {
                             limit(4)
                         );
                         const relatedSnapshot = await getDocs(relatedQuery);
-                        const related = relatedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+                        const related = relatedSnapshot.docs.map(doc => ({ 
+                            id: doc.id, 
+                            ...doc.data(),
+                            imageUrl: `https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fproducts%2F${doc.id}.png?alt=media`
+                        } as Product));
                         setRelatedProducts(related);
                     }
 
@@ -150,6 +158,7 @@ export default function ProductDetailPage() {
             <main className="flex-1 overflow-y-auto pb-24">
                 <div className="p-4 bg-card/50">
                    <div className="aspect-square w-full relative rounded-lg overflow-hidden bg-muted">
+                        <Image src={product.imageUrl || ''} alt={product.name} fill className="object-cover" data-ai-hint={product.dataAiHint}/>
                    </div>
                 </div>
 
@@ -212,6 +221,7 @@ export default function ProductDetailPage() {
                                         <Link href={`/product/${related.id}`} key={related.id}>
                                             <Card className="overflow-hidden h-full flex flex-col">
                                                  <div className="aspect-[4/3] w-full relative bg-muted">
+                                                    <Image src={related.imageUrl || ''} alt={related.name} fill className="object-cover" data-ai-hint={related.dataAiHint}/>
                                                  </div>
                                                 <CardContent className="p-3 flex-1 flex flex-col">
                                                     <div className="flex-1 flex flex-col">

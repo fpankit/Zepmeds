@@ -321,7 +321,7 @@ export default function EmergencyPage() {
                     <CardContent className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                              <Avatar className="h-12 w-12 border-2 border-yellow-400">
-                                <AvatarImage src="https://picsum.photos/200/200?random=35" alt="Driver" data-ai-hint="person portrait"/>
+                                <AvatarImage src="https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Friders%2Frider-1.png?alt=media" alt="Driver" data-ai-hint="person portrait"/>
                                 <AvatarFallback>DL</AvatarFallback>
                             </Avatar>
                             <div>
@@ -360,5 +360,3 @@ export default function EmergencyPage() {
     </div>
   );
 }
-
-    

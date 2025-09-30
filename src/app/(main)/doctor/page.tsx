@@ -104,6 +104,7 @@ function DoctorPageContent() {
                 experience: data.experience || 5,
                 rating: data.rating || 4.5,
                 image: data.photoURL || "",
+                photoURL: data.photoURL || `https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fdoctors%2F${doc.id}.png?alt=media`,
                 dataAiHint: "doctor portrait",
                 isOnline: data.isOnline || false,
              } as AuthUser

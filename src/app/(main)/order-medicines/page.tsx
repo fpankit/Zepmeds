@@ -112,7 +112,11 @@ export default function OrderMedicinesPage() {
       productsQuery = query(productsQuery, limit(PRODUCTS_PER_PAGE));
       
       const querySnapshot = await getDocs(productsQuery);
-      const newProducts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+      const newProducts = querySnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          imageUrl: `https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fproducts%2F${doc.id}.png?alt=media`
+      } as Product));
 
       const currentProducts = lastVisibleDoc ? [...products, ...newProducts] : newProducts;
       
@@ -209,7 +213,7 @@ export default function OrderMedicinesPage() {
                         <CardContent className="p-0 flex-1 flex flex-col">
                            <Link href={`/product/${product.id}`} className="block">
                                 <div className="aspect-square w-full relative">
-                                    <div className="h-full w-full bg-muted" />
+                                    <Image src={product.imageUrl || ''} alt={product.name} fill className="object-cover bg-muted" data-ai-hint={product.dataAiHint}/>
                                 </div>
                                 <div className="p-3">
                                     {product.isRx && <Badge variant="destructive" className="mb-2">Rx</Badge>}

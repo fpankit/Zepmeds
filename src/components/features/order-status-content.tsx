@@ -30,7 +30,7 @@ const riderDetails = {
     name: "Rohan Sharma",
     rating: 4.8,
     phone: "+91 1234567890",
-    image: "https://picsum.photos/200/200?random=31",
+    image: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Friders%2Frider-1.png?alt=media",
     dataAiHint: "person portrait",
 }
 
@@ -361,5 +361,3 @@ export function OrderStatusContent() {
     </div>
   );
 }
-
-    
