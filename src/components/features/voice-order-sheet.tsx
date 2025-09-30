@@ -11,7 +11,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
-import { Mic, Loader2, Bot, MapPin, CheckCircle } from "lucide-react";
+import { Mic, Loader2, Bot, MapPin, CheckCircle, MicOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
 import { useRouter } from "next/navigation";
@@ -58,15 +58,17 @@ export function VoiceOrderSheet() {
     isProcessingRef.current = false;
   }, []);
 
-  const handleOpenChange = (open: boolean) => {
+  const handleOpenChange = useCallback((open: boolean) => {
     setIsOpen(open);
     if (!open) {
       if(recognition) recognition.stop();
       resetState();
     }
-  };
+  }, [resetState]);
 
   const startListening = useCallback(() => {
+    if (state === 'listening') return; // THE FIX: Prevent starting if already listening
+
     if (!SpeechRecognition) {
       toast({ variant: 'destructive', title: 'Browser Not Supported', description: 'Your browser does not support Speech Recognition.' });
       return;
@@ -120,7 +122,7 @@ export function VoiceOrderSheet() {
         handleOpenChange(false);
     };
 
-  }, [toast, user, router, handleOpenChange]);
+  }, [toast, user, router, handleOpenChange, state]);
   
   // Effect to start listening immediately when the dialog opens
   useEffect(() => {
@@ -331,4 +333,3 @@ export function VoiceOrderSheet() {
   );
 }
 
-    
