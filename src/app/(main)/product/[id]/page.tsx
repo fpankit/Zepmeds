@@ -148,31 +148,11 @@ export default function ProductDetailPage() {
             </header>
 
             <main className="flex-1 overflow-y-auto pb-24">
-                <div className="p-4">
-                    <Carousel className="w-full max-w-xs mx-auto">
-                        <CarouselContent>
-                            {Array.from({ length: 3 }).map((_, index) => (
-                                <CarouselItem key={index}>
-                                    <Image 
-                                        src={product.imageUrl || `https://picsum.photos/seed/${product.id}-${index}/600/600`}
-                                        alt={product.name}
-                                        width={600}
-                                        height={600}
-                                        className="w-full aspect-square object-cover rounded-lg"
-                                        data-ai-hint={product.dataAiHint}
-                                    />
-                                </CarouselItem>
-                            ))}
-                        </CarouselContent>
-                        {/* Optional: Add Previous/Next if multiple images are supported */}
-                    </Carousel>
-                </div>
-                
                 <div className="px-4">
-                    <div className="p-4 pt-0 space-y-6">
+                    <div className="p-4 pt-6 space-y-6">
                         <div>
                             {product.isRx && <Badge variant="destructive" className="mb-2">Rx Prescription Required</Badge>}
-                            <h2 className="text-xl font-bold">{product.name}</h2>
+                            <h2 className="text-2xl font-bold">{product.name}</h2>
                             <p className="text-muted-foreground mt-1">{packageInfo}</p>
                             <p className={cn("text-sm font-bold mt-2", fewLeft ? "text-red-500" : "text-green-500")}>
                                 {stock > 0 ? (fewLeft ? 'A few left' : 'In Stock') : 'Out of Stock'}
@@ -226,15 +206,8 @@ export default function ProductDetailPage() {
                                     {relatedProducts.map(related => (
                                         <Link href={`/product/${related.id}`} key={related.id}>
                                             <Card className="overflow-hidden h-full flex flex-col">
-                                                <CardContent className="p-0 flex-1 flex flex-col">
-                                                    <Image 
-                                                        src={related.imageUrl || `https://picsum.photos/seed/${related.id}/200/200`}
-                                                        alt={related.name}
-                                                        width={200}
-                                                        height={200}
-                                                        className="w-full h-24 object-cover"
-                                                    />
-                                                    <div className="p-3 flex-1 flex flex-col">
+                                                <CardContent className="p-3 flex-1 flex flex-col">
+                                                    <div className="flex-1 flex flex-col">
                                                         <h4 className="font-semibold text-sm truncate">{related.name}</h4>
                                                         <p className="text-xs text-muted-foreground">1 Strip of 15</p>
                                                         <p className="font-bold text-base mt-auto pt-2">₹{related.price.toFixed(2)}</p>
@@ -273,5 +246,3 @@ export default function ProductDetailPage() {
         </div>
     );
 }
-
-    
