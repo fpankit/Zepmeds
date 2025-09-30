@@ -5,10 +5,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Mic, Loader2, Bot, MapPin, CheckCircle } from "lucide-react";
@@ -74,11 +70,12 @@ export function VoiceOrderSheet() {
     if (!user || user.isGuest) {
       toast({ variant: 'destructive', title: 'Login Required', description: 'Please log in to place a voice order.' });
       router.push('/login');
+      handleOpenChange(false);
       return;
     }
 
     setState('permission');
-    const defaultAddress = user.addresses?.[0]?.address || "Default Address not set";
+    const defaultAddress = user.addresses?.[0]?.address || "No address saved. Please add one.";
     setLocation(defaultAddress);
 
     setTranscript("");
@@ -102,8 +99,8 @@ export function VoiceOrderSheet() {
       }
       if(timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
-         recognition.stop();
-      }, 2500);
+         if (recognition) recognition.stop();
+      }, 2500); // Stop after 2.5s of silence
     };
 
     recognition.onend = () => {
@@ -120,11 +117,11 @@ export function VoiceOrderSheet() {
   }, [toast, user, router, handleOpenChange]);
   
   const placeOrder = useCallback(async () => {
-    if (state !== 'confirming' || foundMedicines.length === 0) return;
+    if (foundMedicines.length === 0) return;
     
     setState('ordering');
 
-    if (!user || user.isGuest || !location) {
+    if (!user || user.isGuest || !location || location.includes("No address")) {
       toast({ variant: 'destructive', title: 'Cannot place order', description: 'User or location is missing.' });
       handleOpenChange(false);
       return;
@@ -168,7 +165,7 @@ export function VoiceOrderSheet() {
         toast({ variant: 'destructive', title: 'Order Failed', description: 'There was a problem placing your order.' });
         handleOpenChange(false);
     }
-  }, [user, location, toast, router, handleOpenChange, foundMedicines, state]);
+  }, [user, location, toast, router, handleOpenChange, foundMedicines]);
 
   useEffect(() => {
     if (state === 'processing' && finalTranscript) {
@@ -195,8 +192,8 @@ export function VoiceOrderSheet() {
       } else {
         toast({
           variant: "destructive",
-          title: "No Medicines Found",
-          description: `Could not find any items for: "${finalTranscript}". Please try again.`,
+          title: "Medicine Not Found",
+          description: `We couldn't find any items for: "${finalTranscript}". Please try again.`,
         });
         handleOpenChange(false);
       }
@@ -207,7 +204,7 @@ export function VoiceOrderSheet() {
     if (state === 'confirming') {
         const timer = setTimeout(() => {
             placeOrder();
-        }, 3000);
+        }, 3500); // Wait 3.5 seconds before placing order
 
         return () => clearTimeout(timer);
     }
@@ -240,24 +237,23 @@ export function VoiceOrderSheet() {
                         transition={{ duration: 1, repeat: Infinity }}
                         className="my-8"
                     >
-                        <Mic className="h-16 w-16 text-red-500" />
+                        <Mic className="h-20 w-20 text-fuchsia-500" />
                     </motion.div>
                 ),
                 footer: null
             };
         case 'confirming':
         case 'ordering':
-            const subtotal = foundMedicines.reduce((acc, item) => acc + (item.price * item.quantity), 0);
             return {
                 icon: (
-                  <div className="bg-green-500 rounded-full p-2">
+                  <div className="bg-green-500 rounded-full p-2 animate-pulse">
                     <CheckCircle className="h-10 w-10 text-white" />
                   </div>
                 ),
                 title: "Items Found!",
                 description: null,
                 customBody: (
-                    <div className="w-full max-w-sm text-left space-y-4 my-6">
+                    <div className="w-full max-w-sm text-left space-y-6 my-6">
                         <div className="bg-muted/50 p-4 rounded-md space-y-3">
                             {foundMedicines.map((med, i) => (
                                 <div key={i} className="flex justify-between items-center text-sm">
@@ -268,22 +264,28 @@ export function VoiceOrderSheet() {
                         </div>
                         {location && (
                           <div className="text-sm text-muted-foreground flex items-start gap-3">
-                              <MapPin className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                              <MapPin className="h-4 w-4 text-blue-400 mt-1 flex-shrink-0" />
                               <div>
                                 <span className="font-semibold text-foreground">Delivering To:</span>
                                 <p>{location}</p>
                               </div>
                           </div>
                         )}
-                        <div className="flex items-center justify-center gap-2 pt-4">
-                           <Loader2 className="h-4 w-4 animate-spin"/>
-                           <p className="text-sm text-muted-foreground">Placing your order now...</p>
-                        </div>
                     </div>
                 ),
-                footer: null
+                footer: (
+                    <div className="flex items-center justify-center gap-2 pt-4">
+                        <Loader2 className="h-4 w-4 animate-spin"/>
+                        <p className="text-sm text-muted-foreground">Placing your order now...</p>
+                    </div>
+                )
             };
-        default: return null;
+        default: return {
+            icon: <Loader2 className="h-16 w-16 text-primary animate-spin" />,
+            title: "Processing...",
+            description: "Finding your medicines in our database.",
+            footer: null
+        };
       }
   }
 
@@ -292,32 +294,31 @@ export function VoiceOrderSheet() {
   return (
     <>
       <div className="fixed bottom-6 right-6 z-50">
-        <Button size="icon" className="h-16 w-16 rounded-full shadow-lg" onClick={() => handleOpenChange(true)}>
+        <Button size="icon" className="h-16 w-16 rounded-full shadow-lg bg-gradient-to-br from-fuchsia-600 to-purple-700" onClick={() => handleOpenChange(true)}>
             <Mic className="h-8 w-8"/>
         </Button>
       </div>
 
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent side="bottom" className="rounded-t-2xl h-[90vh] md:h-auto md:max-h-[90vh]">
+        <SheetContent side="bottom" className="rounded-t-2xl h-auto md:max-h-[90vh] bg-black/95 backdrop-blur-xl border-t border-white/10 text-white">
           <div className="flex flex-col h-full text-center p-4">
-              <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+              <div className="flex-1 flex flex-col items-center justify-center space-y-4 py-8">
                   <AnimatePresence mode="wait">
                      <motion.div
                         key={state}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="flex flex-col items-center justify-center space-y-4"
+                        className="flex flex-col items-center justify-center space-y-4 w-full"
                      >
                         {content?.icon}
                         {content?.title && <h2 className="text-2xl font-bold">{content.title}</h2>}
-                        {content?.description && <p className="text-muted-foreground max-w-sm">{content.description}</p>}
+                        {content?.description && <p className="text-gray-400 max-w-sm">{content.description}</p>}
                         {content?.customBody}
                      </motion.div>
                   </AnimatePresence>
-
                   {state === 'listening' && transcript && (
-                      <p className="text-lg italic text-foreground mt-4">"{transcript}"</p>
+                      <p className="text-lg italic text-gray-300 mt-4">"{transcript}"</p>
                   )}
               </div>
               
@@ -332,5 +333,3 @@ export function VoiceOrderSheet() {
     </>
   );
 }
-
-    
