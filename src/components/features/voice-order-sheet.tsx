@@ -193,10 +193,10 @@ export function VoiceOrderSheet() {
         setFoundMedicines(found);
         setState('confirming');
       } else {
-        toast({ 
-            variant: 'destructive', 
-            title: 'No Medicines Found', 
-            description: `Could not find any items for: "${finalTranscript}". Please try again.`
+        toast({
+          variant: "destructive",
+          title: "No Medicines Found",
+          description: `Could not find any items for: "${finalTranscript}". Please try again.`,
         });
         handleOpenChange(false);
         resetState();
