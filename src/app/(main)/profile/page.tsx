@@ -5,7 +5,7 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, ShoppingCart, ChevronRight, Edit, Camera, Languages } from "lucide-react";
+import { ArrowLeft, Bell, ShoppingCart, ChevronRight, Edit, Camera, Languages, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/context/cart-context";
@@ -108,4 +108,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
 
