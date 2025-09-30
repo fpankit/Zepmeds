@@ -11,7 +11,7 @@ import {
   SheetFooter
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Mic, Loader2, Bot, MapPin, CheckCircle, PackageCheck } from "lucide-react";
+import { Mic, Loader2, Bot, MapPin, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
 import { useRouter } from "next/navigation";
@@ -104,7 +104,7 @@ export function VoiceOrderSheet() {
       if(timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
          recognition.stop();
-      }, 3000);
+      }, 2500); // Stop after 2.5 seconds of silence
     };
 
     recognition.onend = () => {
@@ -208,7 +208,7 @@ export function VoiceOrderSheet() {
     if (state === 'confirming' && foundMedicines.length > 0) {
         const timer = setTimeout(() => {
             placeOrder(foundMedicines);
-        }, 1500);
+        }, 3000); // Wait 3 seconds before placing order
 
         return () => clearTimeout(timer);
     }
@@ -221,7 +221,7 @@ export function VoiceOrderSheet() {
                   icon: <Bot className="h-16 w-16 text-primary" />,
                   title: "Voice Order",
                   description: "Tap the mic, say the medicines you need, and we'll place an urgent order for you instantly.",
-                  footer: <Button className="w-full" onClick={startListening}>Start Listening</Button>
+                  footer: <Button className="w-full" onClick={startListening}><Mic className="mr-2 h-4 w-4" /> Start Listening</Button>
               };
           case 'permission':
               return {
@@ -232,52 +232,50 @@ export function VoiceOrderSheet() {
               }
         case 'listening':
             return {
-                icon: (
+                icon: null,
+                title: "Listening...",
+                description: "Tell me the names of the medicines you need...",
+                customBody: (
                     <motion.div
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 1, repeat: Infinity }}
+                        className="my-8"
                     >
                         <Mic className="h-16 w-16 text-red-500" />
                     </motion.div>
                 ),
-                title: "Listening...",
-                description: "Tell me the names of the medicines you need. For example, 'Paracetamol and a Crocin'.",
-                footer: null
-            };
-        case 'processing':
-            return {
-                icon: <Loader2 className="h-16 w-16 text-primary animate-spin" />,
-                title: "Processing your request...",
-                description: "Finding the medicines you asked for. Please wait.",
                 footer: null
             };
         case 'confirming':
             const subtotal = foundMedicines.reduce((acc, item) => acc + (item.price * item.quantity), 0);
             return {
-                icon: <CheckCircle className="h-16 w-16 text-green-500" />,
+                icon: (
+                  <div className="bg-green-500 rounded-full p-2">
+                    <CheckCircle className="h-10 w-10 text-white" />
+                  </div>
+                ),
                 title: "Items Found!",
                 description: null,
                 customBody: (
-                    <div className="w-full max-w-sm text-left space-y-4">
-                        <div className="bg-muted p-3 rounded-md space-y-2">
+                    <div className="w-full max-w-sm text-left space-y-4 my-6">
+                        <div className="bg-muted/50 p-4 rounded-md space-y-3">
                             {foundMedicines.map((med, i) => (
-                                <div key={i} className="flex justify-between items-center">
-                                    <span className="font-medium">{med.name}</span>
+                                <div key={i} className="flex justify-between items-center text-sm">
+                                    <span className="font-medium text-foreground">{med.name}</span>
                                     <span className="font-mono">₹{med.price.toFixed(2)}</span>
                                 </div>
                             ))}
-                             <div className="flex justify-between items-center border-t pt-2 font-bold">
-                                <span>Total</span>
-                                <span className="font-mono">₹{subtotal.toFixed(2)}</span>
-                            </div>
                         </div>
                         {location && (
-                          <div className="text-sm text-muted-foreground flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-primary" />
-                              <span className="truncate">Delivering To: {location}</span>
+                          <div className="text-sm text-muted-foreground flex items-start gap-3">
+                              <MapPin className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                              <div>
+                                <span className="font-semibold text-foreground">Delivering To:</span>
+                                <p>{location}</p>
+                              </div>
                           </div>
                         )}
-                        <div className="flex items-center justify-center gap-2 pt-2">
+                        <div className="flex items-center justify-center gap-2 pt-4">
                            <Loader2 className="h-4 w-4 animate-spin"/>
                            <p className="text-sm text-muted-foreground">Placing your order now...</p>
                         </div>
@@ -300,7 +298,7 @@ export function VoiceOrderSheet() {
       </div>
 
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent side="bottom" className="rounded-t-2xl h-full md:h-auto md:max-h-[90vh]">
+        <SheetContent side="bottom" className="rounded-t-2xl h-[90vh] md:h-auto md:max-h-[90vh]">
           <div className="flex flex-col h-full text-center p-4">
               <div className="flex-1 flex flex-col items-center justify-center space-y-4">
                   <AnimatePresence mode="wait">
@@ -313,7 +311,7 @@ export function VoiceOrderSheet() {
                      >
                         {content?.icon}
                         {content?.title && <h2 className="text-2xl font-bold">{content.title}</h2>}
-                        {content?.description && <p className="text-muted-foreground">{content.description}</p>}
+                        {content?.description && <p className="text-muted-foreground max-w-sm">{content.description}</p>}
                         {content?.customBody}
                      </motion.div>
                   </AnimatePresence>
@@ -334,3 +332,6 @@ export function VoiceOrderSheet() {
     </>
   );
 }
+
+
+    
