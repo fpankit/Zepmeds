@@ -45,7 +45,7 @@ export type AiSymptomCheckerOutput = z.infer<typeof AiSymptomCheckerOutputSchema
 
 const prompt = ai.definePrompt({
   name: 'aiSymptomCheckerPrompt',
-  model: googleAI.model('gemini-1.5-flash'),
+  model: googleAI.model('gemini-1.5-flash-latest'),
   input: { schema: AiSymptomCheckerInputSchema },
   output: { schema: AiSymptomCheckerOutputSchema },
   prompt: `You are an expert medical AI assistant. Your primary function is to perform a differential diagnosis based on user-provided symptoms and provide safe, helpful, and detailed guidance.

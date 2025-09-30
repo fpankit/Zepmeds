@@ -41,7 +41,7 @@ export const liveTranslateFlow = ai.defineFlow(
   async (input) => {
     // Step 1: Transcribe audio to text using the dedicated translation model
     const transcriptionResponse = await ai.generate({
-      model: googleAI.model('gemini-1.5-flash'),
+      model: googleAI.model('gemini-1.5-flash-latest'),
       prompt: [
         { media: { url: input.audioDataUri, contentType: 'audio/wav' } },
         { text: `Transcribe the audio. The language is ${input.sourceLanguage}.` }
@@ -56,7 +56,7 @@ export const liveTranslateFlow = ai.defineFlow(
 
     // Step 2: Translate the transcribed text to the target language
     const translationResponse = await ai.generate({
-      model: googleAI.model('gemini-1.5-flash'),
+      model: googleAI.model('gemini-1.5-flash-latest'),
       prompt: `Translate the following text from ${input.sourceLanguage} to ${input.targetLanguage}: "${transcribedText}"`,
     });
     const translatedText = translationResponse.text.trim();
