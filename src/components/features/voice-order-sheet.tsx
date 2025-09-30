@@ -208,8 +208,9 @@ export function VoiceOrderSheet() {
 
   useEffect(() => {
     if (state === 'processing' && finalTranscript) {
-      // **THE FIX**: Trim trailing spaces and dots from the final transcript
-      const cleanedTranscript = finalTranscript.trim().replace(/\.$/, '').trim();
+      // **THE FIX**: Trim trailing spaces and punctuation from the final transcript
+      const cleanedTranscript = finalTranscript.trim().replace(/[.,]$/, '').trim();
+      
       if (!cleanedTranscript) {
           handleOpenChange(false);
           return;
