@@ -27,8 +27,31 @@ if (SpeechRecognition) {
   recognition.lang = 'en-IN'; // Prioritize Indian English
 }
 
-type VoiceSheetState = 'idle' | 'permission' | 'listening' | 'processing' | 'confirming' | 'ordering';
+type VoiceSheetState = 'idle' | 'permission' | 'listening' | 'processing' | 'suggesting' | 'confirming' | 'ordering';
 type FoundMedicine = Product & { quantity: number };
+
+// Levenshtein distance function for fuzzy search
+const levenshtein = (s1: string, s2: string): number => {
+    if (s1.length > s2.length) {
+        [s1, s2] = [s2, s1];
+    }
+    const distances = Array(s1.length + 1).fill(0).map((_, i) => i);
+    for (let j = 0; j < s2.length; j++) {
+        let prev = distances[0];
+        distances[0]++;
+        for (let i = 0; i < s1.length; i++) {
+            const temp = distances[i + 1];
+            distances[i + 1] = Math.min(
+                temp + 1,
+                distances[i] + 1,
+                prev + (s1[i] === s2[j] ? 0 : 1)
+            );
+            prev = temp;
+        }
+    }
+    return distances[s1.length];
+};
+
 
 export function VoiceOrderSheet() {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +59,7 @@ export function VoiceOrderSheet() {
   const [transcript, setTranscript] = useState("");
   const [finalTranscript, setFinalTranscript] = useState("");
   const [foundMedicines, setFoundMedicines] = useState<FoundMedicine[]>([]);
+  const [suggestedMedicine, setSuggestedMedicine] = useState<FoundMedicine | null>(null);
   const [location, setLocation] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   
@@ -51,6 +75,7 @@ export function VoiceOrderSheet() {
     setTranscript("");
     setFinalTranscript("");
     setFoundMedicines([]);
+    setSuggestedMedicine(null);
     setIsListening(false);
     isProcessingRef.current = false;
   }, []);
@@ -123,15 +148,15 @@ export function VoiceOrderSheet() {
 
   }, [isListening, toast, user, router, handleOpenChange]);
   
-  // Effect to start listening immediately when the dialog opens
   useEffect(() => {
-    if (isOpen && state === 'idle') { // Only start if idle
+    if (isOpen && state === 'idle') {
         startListening();
     }
   }, [isOpen, state, startListening]);
 
   const placeOrder = useCallback(async () => {
-    if (foundMedicines.length === 0) return;
+    const medsToOrder = foundMedicines.length > 0 ? foundMedicines : suggestedMedicine ? [suggestedMedicine] : [];
+    if (medsToOrder.length === 0) return;
     
     setState('ordering');
 
@@ -141,14 +166,14 @@ export function VoiceOrderSheet() {
       return;
     }
 
-    const subtotal = foundMedicines.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const subtotal = medsToOrder.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const deliveryFee = 50;
     const total = subtotal + deliveryFee;
 
     try {
         const orderData = {
             userId: user.id,
-            cart: foundMedicines.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
+            cart: medsToOrder.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
             total,
             subtotal,
             deliveryFee,
@@ -179,31 +204,56 @@ export function VoiceOrderSheet() {
         toast({ variant: 'destructive', title: 'Order Failed', description: 'There was a problem placing your order.' });
         handleOpenChange(false);
     }
-  }, [user, location, toast, router, handleOpenChange, foundMedicines]);
+  }, [user, location, toast, router, handleOpenChange, foundMedicines, suggestedMedicine]);
 
   useEffect(() => {
     if (state === 'processing' && finalTranscript) {
-      const cleanedTranscript = finalTranscript.trim();
-      const words = cleanedTranscript.toLowerCase().replace(/and/g, ',').split(',').map(s => s.trim()).filter(Boolean);
+      // **THE FIX**: Trim trailing spaces and dots from the final transcript
+      const cleanedTranscript = finalTranscript.trim().replace(/\.$/, '').trim();
+      if (!cleanedTranscript) {
+          handleOpenChange(false);
+          return;
+      }
+      
+      const words = cleanedTranscript.toLowerCase().split(/\s*,\s*|\s+and\s+/).map(s => s.trim()).filter(Boolean);
       
       const found: FoundMedicine[] = [];
-      const productNames = Array.from(productMap.keys()).map(k => k.toLowerCase());
+      let bestMatch: { product: Product, distance: number } | null = null;
 
       words.forEach(word => {
-          productNames.forEach(productName => {
-              if ((productName.includes(word) || word.includes(productName)) && word.length > 2) {
-                  const productKey = Array.from(productMap.keys()).find(k => k.toLowerCase() === productName)!;
-                  const product = productMap.get(productKey)!;
-                  if (!found.some(f => f.id === product.id)) {
-                      found.push({ ...product, quantity: 1 });
-                  }
+          let minDistance = Infinity;
+          let closestProduct: Product | null = null;
+          
+          productMap.forEach(product => {
+              const distance = levenshtein(word, product.name.toLowerCase());
+              if (distance < minDistance) {
+                  minDistance = distance;
+                  closestProduct = product;
               }
-          })
-      });
+          });
 
+          // If a very close match is found (e.g., Levenshtein distance <= 2)
+          if (closestProduct && minDistance <= 2) {
+              // Exact match or very close spelling
+              if (minDistance === 0) {
+                  if (!found.some(f => f.id === closestProduct!.id)) {
+                      found.push({ ...closestProduct, quantity: 1 });
+                  }
+              } else {
+                // Potential misspelling, save it for suggestion
+                if (!bestMatch || minDistance < bestMatch.distance) {
+                    bestMatch = { product: closestProduct, distance: minDistance };
+                }
+              }
+          }
+      });
+      
       if (found.length > 0) {
         setFoundMedicines(found);
         setState('confirming');
+      } else if (bestMatch) {
+          setSuggestedMedicine({ ...bestMatch.product, quantity: 1 });
+          setState('suggesting');
       } else {
         toast({
           variant: "destructive",
@@ -224,6 +274,13 @@ export function VoiceOrderSheet() {
         return () => clearTimeout(timer);
     }
   }, [state, placeOrder]);
+
+  const handleSuggestionConfirm = () => {
+    if (suggestedMedicine) {
+      setFoundMedicines([suggestedMedicine]);
+      setState('confirming');
+    }
+  }
 
   const getStateContent = () => {
       switch (state) {
@@ -248,8 +305,22 @@ export function VoiceOrderSheet() {
                 ),
                 footer: null
             };
+        case 'suggesting':
+             return {
+                icon: <Bot className="h-12 w-12 text-teal-500" />,
+                title: `Did you mean ${suggestedMedicine?.name}?`,
+                description: `You said: "${finalTranscript.trim()}"`,
+                customBody: null,
+                footer: (
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                        <Button variant="outline" onClick={() => handleOpenChange(false)}>No, Cancel</Button>
+                        <Button onClick={handleSuggestionConfirm}>Yes, Order</Button>
+                    </div>
+                )
+             }
         case 'confirming':
         case 'ordering':
+            const medsToShow = foundMedicines.length > 0 ? foundMedicines : suggestedMedicine ? [suggestedMedicine] : [];
             return {
                 icon: (
                   <div className="bg-green-500 rounded-full p-2 animate-pulse">
@@ -261,7 +332,7 @@ export function VoiceOrderSheet() {
                 customBody: (
                     <div className="w-full max-w-sm text-left space-y-6 my-6">
                         <div className="bg-muted/50 p-4 rounded-md space-y-3">
-                            {foundMedicines.map((med, i) => (
+                            {medsToShow.map((med, i) => (
                                 <div key={i} className="flex justify-between items-center text-sm">
                                     <span className="font-medium text-foreground">{med.name}</span>
                                     <span className="font-mono text-right">₹{med.price.toFixed(2)}</span>
@@ -300,7 +371,7 @@ export function VoiceOrderSheet() {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-20 right-4 z-50">
         <Button size="icon" className="h-16 w-16 rounded-full shadow-lg bg-gradient-to-br from-fuchsia-600 to-purple-700" onClick={() => handleOpenChange(true)}>
             <Mic className="h-8 w-8"/>
         </Button>
