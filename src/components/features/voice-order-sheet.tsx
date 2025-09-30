@@ -114,12 +114,21 @@ export function VoiceOrderSheet() {
     };
     
     recognition.onerror = (event: any) => {
-        toast({ variant: 'destructive', title: 'Speech Error', description: `Could not process audio. Error: ${event.error}` });
+        if (event.error !== 'aborted') { // Don't show toast if we manually stop it
+            toast({ variant: 'destructive', title: 'Speech Error', description: `Could not process audio. Error: ${event.error}` });
+        }
         handleOpenChange(false);
     };
 
   }, [toast, user, router, handleOpenChange]);
   
+  // Effect to start listening immediately when the dialog opens
+  useEffect(() => {
+    if (isOpen) {
+        startListening();
+    }
+  }, [isOpen, startListening]);
+
   const placeOrder = useCallback(async () => {
     if (foundMedicines.length === 0) return;
     
@@ -216,20 +225,6 @@ export function VoiceOrderSheet() {
 
   const getStateContent = () => {
       switch (state) {
-          case 'idle':
-              return {
-                  icon: <Bot className="h-12 w-12 text-primary" />,
-                  title: "Voice Order",
-                  description: "Tap the mic, say the medicines you need, and we'll place an urgent order for you instantly.",
-                  footer: <Button className="w-full" onClick={startListening}><Mic className="mr-2 h-4 w-4" /> Start Listening</Button>
-              };
-          case 'permission':
-              return {
-                  icon: <Loader2 className="h-12 w-12 text-primary animate-spin" />,
-                  title: "Getting Ready...",
-                  description: "Please allow microphone access. We'll use your default address for delivery.",
-                  footer: null
-              }
         case 'listening':
             return {
                 icon: null,
@@ -287,7 +282,7 @@ export function VoiceOrderSheet() {
         default: return {
             icon: <Loader2 className="h-12 w-12 text-primary animate-spin" />,
             title: "Processing...",
-            description: "Finding your medicines in our database.",
+            description: "Please wait...",
             footer: null
         };
       }
@@ -336,4 +331,4 @@ export function VoiceOrderSheet() {
   );
 }
 
-  
+    
