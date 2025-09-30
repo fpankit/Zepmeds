@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Star, Calendar, Clock } from "lucide-react";
+import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Star, Calendar, Clock, MessageSquare } from "lucide-react";
 import { useEffect, useState, useMemo, Suspense, useCallback } from "react";
 import { collection, query, onSnapshot, doc, setDoc, getDocs, where, deleteDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -167,6 +167,42 @@ function DoctorPageContent() {
     router.push(`/doctor/${doctorId}/book`);
   }
 
+  const handleStartChat = async (doctor: AuthUser) => {
+    if (!user || user.isGuest) {
+        toast({ variant: 'destructive', title: 'Please login to start a chat.' });
+        router.push('/login');
+        return;
+    }
+
+    const chatId = [user.id, doctor.id].sort().join('_');
+    const chatDocRef = doc(db, 'chats', chatId);
+
+    try {
+        const chatDoc = await getDoc(chatDocRef);
+        if (!chatDoc.exists()) {
+            await setDoc(chatDocRef, {
+                participants: [user.id, doctor.id],
+                participantDetails: {
+                    [user.id]: {
+                        name: `${user.firstName} ${user.lastName}`,
+                        photoURL: user.photoURL || null,
+                    },
+                    [doctor.id]: {
+                        name: doctor.displayName,
+                        photoURL: doctor.photoURL || null,
+                    }
+                },
+                lastMessage: '',
+                lastMessageTimestamp: serverTimestamp(),
+            });
+        }
+        router.push(`/chat/${chatId}`);
+    } catch (error) {
+        console.error("Error creating or getting chat:", error);
+        toast({ variant: 'destructive', title: 'Could not start chat.' });
+    }
+  }
+
     const handleJoinCallFromDoctorPage = async (appointment: Appointment) => {
         if (!user) {
             toast({ variant: 'destructive', title: 'Login required' });
@@ -203,16 +239,7 @@ function DoctorPageContent() {
   )
   
   const getAppointmentButton = (doctor: AuthUser) => {
-      if (!user || user.isGuest) {
-          return (
-              <Button className="w-full" onClick={() => handleBookAppointment(doctor.id)}>
-                  <Calendar className="mr-2 h-4 w-4" /> 
-                  Book Appointment
-              </Button>
-          )
-      }
-
-      const appointment = appointments.find(appt => appt.doctorId === doctor.id && (appt.status === 'pending' || appt.status === 'confirmed'));
+      const appointment = user && !user.isGuest ? appointments.find(appt => appt.doctorId === doctor.id && (appt.status === 'pending' || appt.status === 'confirmed')) : null;
 
       if (appointment) {
           if (appointment.status === 'pending') {
@@ -322,6 +349,10 @@ function DoctorPageContent() {
                         </div>
                     </div>
                     <div className="flex gap-2 mt-4">
+                        <Button variant="outline" className="w-full" onClick={() => handleStartChat(doctor)}>
+                            <MessageSquare className="mr-2 h-4 w-4" />
+                            Chat
+                        </Button>
                         {getAppointmentButton(doctor)}
                     </div>
                     </CardContent>

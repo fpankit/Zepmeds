@@ -7,6 +7,7 @@ export const profileLinks = [
     { icon: MapPin, textKey: "profile.manageAddresses", href: "/profile/addresses", color: "text-red-400" },
     { icon: History, textKey: "profile.orderHistory", href: "/orders", color: "text-orange-400" },
     { icon: Calendar, textKey: "profile.myAppointments", href: "/appointments", color: "text-blue-400" },
+    { icon: MessageSquare, textKey: "profile.myChats", href: "/chats", color: "text-green-400" },
     { icon: MessageSquare, textKey: "profile.myConsultations", href: "/profile/consultations", color: "text-blue-400", doctorOnly: true },
     { icon: FilePlus2, textKey: "profile.createReport", href: "/profile/create-report", color: "text-teal-400", doctorOnly: true },
     { icon: Pill, textKey: "profile.pastMedicines", href: "#", color: "text-green-400" },
@@ -22,6 +23,7 @@ export const profileLinks = [
       // This can be merged or kept separate if needed elsewhere.
       // For the new profile page, these are not directly used.
   ];
+
 
 
 

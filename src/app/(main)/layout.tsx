@@ -13,7 +13,7 @@ export default function MainLayout({
 }) {
   const pathname = usePathname();
   const noHeaderRoutes: string[] = [];
-  const noLayoutRoutes = ["/checkout", "/symptom-checker/results", "/first-aid/", "/verify-medicine", "/scan-package", "/activity", "/call/", "/health-report", "/profile/", "/product/"];
+  const noLayoutRoutes = ["/checkout", "/symptom-checker/results", "/first-aid/", "/verify-medicine", "/scan-package", "/activity", "/call/", "/health-report", "/profile/", "/product/", "/chat/"];
   
   const isLayoutVisible = !noLayoutRoutes.some(route => {
     if (route.endsWith('/')) {
@@ -28,7 +28,7 @@ export default function MainLayout({
 
   if (!isLayoutVisible) {
     // A special check for profile sub-pages which should not have the main layout
-    if (pathname.startsWith('/profile/') || pathname.startsWith('/product/') || pathname.startsWith('/urgent-medicine') || pathname.startsWith('/health-report')) {
+    if (pathname.startsWith('/profile/') || pathname.startsWith('/product/') || pathname.startsWith('/urgent-medicine') || pathname.startsWith('/health-report') || pathname.startsWith('/chat/')) {
         return <main>{children}</main>;
     }
     return <main>{children}</main>;
