@@ -37,7 +37,6 @@ import { DelayedSkeleton } from '@/components/features/delayed-skeleton';
 import Link from 'next/link';
 import { useTranslation } from '@/context/language-context';
 import { SearchDialog } from '@/components/features/search-dialog';
-import { VoiceOrderSheet } from '@/components/features/voice-order-sheet';
 
 const PRODUCTS_PER_PAGE = 8;
 
@@ -265,8 +264,6 @@ export default function OrderMedicinesPage() {
             </div>
          )}
       </div>
-
-      <VoiceOrderSheet />
     </div>
   );
 }

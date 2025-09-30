@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from '@/context/language-context';
 import { SearchDialog } from '@/components/features/search-dialog';
+import { VoiceOrderSheet } from '@/components/features/voice-order-sheet';
 
 const featureCards = [
   {
@@ -381,6 +382,7 @@ export default function HomePage() {
           ))}
         </div>
       </div>
+      <VoiceOrderSheet />
     </div>
   );
 }
