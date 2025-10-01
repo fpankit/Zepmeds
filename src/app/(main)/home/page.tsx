@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,7 @@ import {
   PackageSearch,
   HeartPulse,
   QrCode,
-  BrainCircuit,
+  Baby,
   Clock,
   Truck,
   Ambulance,
@@ -56,10 +55,10 @@ const featureCards = [
     color: 'bg-green-500',
   },
   {
-    title: 'AI Symptom Checker',
-    description: 'Check your symptoms',
-    icon: BrainCircuit,
-    href: '/symptom-checker',
+    title: 'Community Health',
+    description: 'ASHA & Child Health',
+    icon: Baby,
+    href: '/asha',
     color: 'bg-purple-500',
   },
   {
