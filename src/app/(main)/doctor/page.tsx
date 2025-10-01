@@ -1,378 +1,248 @@
 
+'use client';
 
-"use client";
+import { Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
+import {
+  Bell,
+  Search,
+  Video,
+  Calendar,
+  Clock,
+  Star,
+  Bookmark,
+  Loader2,
+  Mic,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Search, Stethoscope, Video, CheckCircle, XCircle, Loader2, Star, Calendar, Clock, MessageSquare } from "lucide-react";
-import { useEffect, useState, useMemo, Suspense, useCallback } from "react";
-import { collection, query, onSnapshot, doc, setDoc, getDocs, where, deleteDoc, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth, User as AuthUser } from "@/context/auth-context";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+// Mock data based on the design
+const upcomingAppointment = {
+  doctor: {
+    name: 'Dr. Ali Khan',
+    specialty: 'Cardiology',
+    image:
+      'https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fdoctors%2Fdoc-ai-2.png?alt=media',
+  },
+  date: '18 Nov, Monday',
+  time: '8pm - 8:30 pm',
+};
 
-const specialties = [
-    { name: "All", key: "all" },
-    { name: "Dermatologist", key: "dermatologist" },
-    { name: "Pediatrician", key: "pediatrician" },
-    { name: "General Physician", key: "general physician" },
-    { name: "Dietician", key: "dietician" },
-    { name: "Urologist", key: "urologist" },
-    { name: "Cardiologist", key: "cardiologist" },
-    { name: "Neurologist", key: "neurologist" },
+const popularDoctors = [
+  {
+    id: 'doc1',
+    name: 'Dr. Ali Khan',
+    specialty: 'Cardiology',
+    rating: 4.9,
+    reviews: 190,
+    image:
+      'https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fdoctors%2Fdoc-ai-2.png?alt=media',
+  },
+  {
+    id: 'doc2',
+    name: 'Dr. Priya Mehta',
+    specialty: 'Dermatology',
+    rating: 4.8,
+    reviews: 150,
+    image:
+      'https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fdoctors%2Fdoc-ai-3.png?alt=media',
+  },
 ];
 
-
-interface Appointment {
-    id: string;
-    doctorId: string;
-    doctorName: string;
-    status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-}
-
-const DoctorCardSkeleton = () => (
-    <Card className="overflow-hidden">
-        <CardContent className="p-4">
-        <div className="flex items-start gap-4">
-            <Skeleton className="h-20 w-20 rounded-full" />
-            <div className="space-y-2 flex-1">
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <div className="flex gap-4 pt-1">
-                    <Skeleton className="h-4 w-1/4" />
-                    <Skeleton className="h-4 w-1/4" />
-                </div>
-            </div>
-        </div>
-        <div className="flex gap-2 mt-4">
-            <Skeleton className="h-10 w-full" />
-        </div>
-        </CardContent>
-    </Card>
-);
+const specialties = ['All', 'Cardiology', 'Dermatology', 'Pediatrician'];
 
 function DoctorPageContent() {
-  const [doctors, setDoctors] = useState<AuthUser[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
-
-  const { user, updateUser, loading: authLoading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const specialtyFilter = searchParams.get('specialty');
-  const { toast } = useToast();
 
-  useEffect(() => {
-    if(specialtyFilter) {
-      setSearchQuery(specialtyFilter);
-      const matchingSpecialty = specialties.find(s => s.name.toLowerCase() === specialtyFilter.toLowerCase());
-      if (matchingSpecialty) {
-          setSelectedSpecialty(matchingSpecialty.key);
-      }
-    }
-  }, [specialtyFilter]);
-
-  const handleToggleOnline = async () => {
-      if (!user || !user.isDoctor) return;
-      
-      const newStatus = !user.isOnline;
-      await updateUser({ isOnline: newStatus });
-
-      toast({ title: `You are now ${newStatus ? 'online' : 'offline'}.` });
-  };
-  
-  useEffect(() => {
-    setIsLoading(true);
-    const doctorsQuery = query(collection(db, "doctors"));
-    
-    const unsubscribeDoctors = onSnapshot(doctorsQuery, (querySnapshot) => {
-        const fetchedDoctors = querySnapshot.docs.map(doc => {
-            const data = doc.data();
-            return { 
-                id: data.uid || doc.id,
-                displayName: data.displayName || `${data.firstName} ${data.lastName}`, 
-                name: data.displayName || `${data.firstName} ${data.lastName}`,
-                specialty: data.specialty || "General Physician",
-                experience: data.experience || 5,
-                rating: data.rating || 4.5,
-                image: data.photoURL || "",
-                photoURL: data.photoURL || `https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fdoctors%2F${doc.id}.png?alt=media`,
-                dataAiHint: "doctor portrait",
-                isOnline: data.isOnline || false,
-             } as AuthUser
-        });
-        
-        fetchedDoctors.sort((a, b) => {
-            if (a.isOnline && !b.isOnline) return -1;
-            if (!a.isOnline && b.isOnline) return 1;
-            return (a.displayName || '').localeCompare(b.displayName || '');
-        });
-
-        setDoctors(fetchedDoctors);
-        setIsLoading(false);
-    }, (error) => {
-        console.error("Error fetching doctors in real-time: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch doctors.' });
-        setIsLoading(false);
-    });
-
-    let unsubscribeAppointments = () => {};
-    if (user && !user.isGuest) {
-        const appointmentsQuery = query(collection(db, "appointments"), where("patientId", "==", user.id));
-        unsubscribeAppointments = onSnapshot(appointmentsQuery, (snapshot) => {
-            const fetchedAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-            setAppointments(fetchedAppointments);
-        });
-    }
-
-    return () => {
-        unsubscribeDoctors();
-        unsubscribeAppointments();
-    };
-  }, [toast, user]);
-  
-  const filteredDoctors = useMemo(() => {
-      return doctors.filter(doctor => {
-        const matchesSearch = (doctor.displayName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                              (doctor.specialty || '').toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesSpecialty = selectedSpecialty === 'all' || (doctor.specialty || '').toLowerCase() === selectedSpecialty;
-
-        return matchesSearch && matchesSpecialty;
-      });
-  }, [doctors, searchQuery, selectedSpecialty]);
-
-
-  const getInitials = (name: string) => {
-    if (!name) return 'Dr';
-    const parts = name.split(' ');
-    if(parts.length > 1) {
-        return `${parts[0][0]}${parts[parts.length - 1][0]}`;
-    }
-    return name.substring(0,2);
-  }
-
-  const handleBookAppointment = (doctorId: string) => {
-    if (!user || user.isGuest) {
-        toast({ variant: "destructive", title: "Please login to book an appointment." });
-        router.push('/login');
-        return;
-    }
-    router.push(`/doctor/${doctorId}/book`);
-  }
-
-  const handleStartChat = async (doctor: AuthUser) => {
-    if (!user || user.isGuest) {
-        toast({ variant: 'destructive', title: 'Please login to start a chat.' });
-        router.push('/login');
-        return;
-    }
-
-    const chatId = [user.id, doctor.id].sort().join('_');
-    const chatDocRef = doc(db, 'chats', chatId);
-
-    try {
-        const chatDoc = await getDoc(chatDocRef);
-        if (!chatDoc.exists()) {
-            await setDoc(chatDocRef, {
-                participants: [user.id, doctor.id],
-                participantDetails: {
-                    [user.id]: {
-                        name: `${user.firstName} ${user.lastName}`,
-                        photoURL: user.photoURL || null,
-                    },
-                    [doctor.id]: {
-                        name: doctor.displayName,
-                        photoURL: doctor.photoURL || null,
-                    }
-                },
-                lastMessage: '',
-                lastMessageTimestamp: serverTimestamp(),
-            });
-        }
-        router.push(`/chat/${chatId}`);
-    } catch (error) {
-        console.error("Error creating or getting chat:", error);
-        toast({ variant: 'destructive', title: 'Could not start chat.' });
-    }
-  }
-
-    const handleJoinCallFromDoctorPage = async (appointment: Appointment) => {
-        if (!user) {
-            toast({ variant: 'destructive', title: 'Login required' });
-            return;
-        }
-        
-        try {
-            // Create a new call document in `zep_calls` to notify the doctor
-            const callDocRef = await addDoc(collection(db, 'zep_calls'), {
-                appointmentId: appointment.id,
-                doctorId: appointment.doctorId,
-                doctorName: appointment.doctorName,
-                patientId: user.id,
-                patientName: `${user.firstName} ${user.lastName}`,
-                status: 'ringing',
-                createdAt: serverTimestamp(),
-            });
-            
-            toast({ title: "Ringing Doctor...", description: "Please wait while we connect you." });
-            
-            // Navigate to the call page with the *new call document ID*
-            router.push(`/call/${callDocRef.id}`);
-        } catch (error) {
-            console.error("Failed to start call:", error);
-            toast({ variant: 'destructive', title: 'Call Failed', description: 'Could not connect to the doctor.' });
-        }
-    };
-  
-  const StarRating = ({ rating }: { rating: number }) => (
-    <div className="flex items-center gap-1 text-yellow-500">
-        <Star className="w-4 h-4 fill-current" />
-        <span className="text-sm font-semibold text-muted-foreground">{rating.toFixed(1)}</span>
-    </div>
-  )
-  
-  const getAppointmentButton = (doctor: AuthUser) => {
-      const appointment = user && !user.isGuest ? appointments.find(appt => appt.doctorId === doctor.id && (appt.status === 'pending' || appt.status === 'confirmed')) : null;
-
-      if (appointment) {
-          if (appointment.status === 'pending') {
-              return (
-                  <Button className="w-full" disabled variant="outline">
-                      <Clock className="mr-2 h-4 w-4 animate-spin" /> 
-                      Pending Confirmation
-                  </Button>
-              )
-          }
-          if (appointment.status === 'confirmed') {
-              return (
-                  <Button className="w-full" onClick={() => handleJoinCallFromDoctorPage(appointment)}>
-                      <Video className="mr-2 h-4 w-4" /> 
-                      Start Video Call
-                  </Button>
-              )
-          }
-      }
-      
-      return (
-           <Button className="w-full" onClick={() => handleBookAppointment(doctor.id)}>
-                <Calendar className="mr-2 h-4 w-4" /> 
-                Book Appointment
-            </Button>
-      )
-  }
-
-  if (authLoading) {
-    return <div className="h-screen w-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
-      <div className="flex flex-col items-center text-center space-y-2">
-        <Stethoscope className="h-12 w-12 text-primary" />
-        <h1 className="text-3xl font-bold">Consult a Doctor</h1>
-        <p className="text-muted-foreground">
-          Book an appointment or start a video call with our top-rated doctors.
-        </p>
-      </div>
+    <div className="bg-slate-50 min-h-screen">
+      <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
+        {/* Header */}
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={user?.photoURL} alt={user?.firstName} />
+              <AvatarFallback>
+                {user?.firstName?.[0]}
+                {user?.lastName?.[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm text-muted-foreground">Good morning!</p>
+              <p className="font-bold text-lg">
+                {user?.firstName} {user?.lastName}
+              </p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon">
+            <Bell className="h-6 w-6" />
+          </Button>
+        </header>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-        <Input 
-          placeholder="Search by doctor name..." 
-          className="pl-10"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          How are you feeling
+          <br />
+          today?
+        </h1>
 
-       <ScrollArea className="w-full whitespace-nowrap rounded-md">
-          <div className="flex w-max space-x-3">
-            {specialties.map((specialty) => (
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Mic className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search a doctor, medicins, etc..."
+            className="w-full h-14 pl-12 pr-12 rounded-full border border-border bg-white"
+          />
+        </div>
+
+        {/* Upcoming Appointments */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">Upcoming Appointments</h2>
+            <Link
+              href="/appointments"
+              className="text-sm font-semibold text-primary"
+            >
+              View All
+            </Link>
+          </div>
+          <Card className="bg-primary text-primary-foreground p-4">
+            <CardContent className="p-0 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12 border-2 border-white">
+                    <AvatarImage src={upcomingAppointment.doctor.image} />
+                    <AvatarFallback>
+                      {upcomingAppointment.doctor.name.charAt(4)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-bold">{upcomingAppointment.doctor.name}</p>
+                    <p className="text-sm opacity-80">
+                      {upcomingAppointment.doctor.specialty}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="bg-white/20 rounded-full h-10 w-10 hover:bg-white/30"
+                >
+                  <Video className="h-5 w-5" />
+                </Button>
+              </div>
+              <div className="flex items-center justify-between text-sm bg-primary-foreground/10 p-3 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>{upcomingAppointment.date}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span>{upcomingAppointment.time}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="secondary" className="bg-white/90 text-primary">
+                  Re-Schedule
+                </Button>
+                <Button variant="outline" className="bg-transparent border-white/50 hover:bg-white/20 hover:text-white">
+                  View Profile
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Popular Doctors */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">Popular Doctors</h2>
+            <Link href="/doctor" className="text-sm font-semibold text-primary">
+              View All
+            </Link>
+          </div>
+
+          <div className="flex gap-2">
+            {specialties.map((s, i) => (
               <Button
-                key={specialty.key}
-                variant={selectedSpecialty === specialty.key ? 'default' : 'outline'}
-                onClick={() => setSelectedSpecialty(specialty.key)}
+                key={s}
+                variant={i === 0 ? 'default' : 'secondary'}
                 className="rounded-full"
               >
-                {specialty.name}
+                {s}
               </Button>
             ))}
           </div>
-          <ScrollBar orientation="horizontal" className="h-2" />
-        </ScrollArea>
 
-      {user?.isDoctor && (
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <h3 className="font-bold">Doctor Mode</h3>
-            <p className="text-sm text-muted-foreground">You are currently {user.isOnline ? 'online' : 'offline'}.</p>
-          </div>
-          <Button onClick={handleToggleOnline} variant={user.isOnline ? "destructive" : "default"}>
-            {user.isOnline ? 'Go Offline' : 'Go Online'}
-          </Button>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
-            Array.from({ length: 6 }).map((_, index) => <DoctorCardSkeleton key={index} />)
-        ) : filteredDoctors.length > 0 ? (
-            filteredDoctors.map((doctor) => (
-                <Card key={doctor.id} className="overflow-hidden">
-                    <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                        <Avatar className="h-20 w-20 border-4" style={{ borderColor: doctor.isOnline ? 'hsl(var(--primary))' : 'hsl(var(--muted))' }}>
-                            <AvatarImage src={doctor.photoURL} alt={doctor.displayName} data-ai-hint={doctor.dataAiHint} />
-                            <AvatarFallback>{getInitials(doctor.displayName || '')}</AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-1 flex-1">
-                            <h3 className="font-bold text-lg">{doctor.displayName}</h3>
-                            <p className="text-primary font-medium">{doctor.specialty}</p>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <StarRating rating={doctor.rating || 0} />
-                                <span>{doctor.experience}+ yrs exp.</span>
-                            </div>
-                             <div className={cn(
-                                "flex items-center gap-1 text-xs font-semibold pt-1",
-                                doctor.isOnline ? "text-green-500" : "text-red-500"
-                            )}>
-                                {doctor.isOnline ? <CheckCircle className="h-3 w-3"/> : <XCircle className="h-3 w-3"/>}
-                                {doctor.isOnline ? "Online" : "Offline"}
-                            </div>
+          <div className="space-y-3">
+            {popularDoctors.map((doc) => (
+              <Card
+                key={doc.id}
+                className="p-4 bg-white"
+                onClick={() => router.push(`/doctor/${doc.id}/book`)}
+              >
+                <CardContent className="p-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-16 w-16">
+                        <AvatarImage src={doc.image} />
+                        <AvatarFallback>
+                          {doc.name.charAt(4)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-bold text-lg">{doc.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {doc.specialty}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                          <span className="text-sm font-bold">{doc.rating}</span>
+                          <span className="text-sm text-muted-foreground">
+                            ({doc.reviews} Reviews)
+                          </span>
                         </div>
+                      </div>
                     </div>
-                    <div className="flex gap-2 mt-4">
-                        <Button variant="outline" className="w-full" onClick={() => handleStartChat(doctor)}>
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Chat
-                        </Button>
-                        {getAppointmentButton(doctor)}
-                    </div>
-                    </CardContent>
-                </Card>
-            ))
-        ) : (
-            !isLoading && <div className="col-span-full text-center py-10">
-                <p className="text-muted-foreground">No doctors found matching your criteria. Please check back later or broaden your search.</p>
-            </div>
-        )}
+                    <Button variant="ghost" size="icon">
+                      <Bookmark className="h-5 w-5 text-muted-foreground" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 export default function DoctorPage() {
-    return (
-        <Suspense fallback={<div className="h-screen w-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-            <DoctorPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-full flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      }
+    >
+      <DoctorPageContent />
+    </Suspense>
+  );
 }
