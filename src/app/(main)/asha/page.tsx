@@ -8,8 +8,8 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Bell, Plus, User, Syringe } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, Bell, Plus, User, Syringe, Baby, BarChart3, ClipboardList, Calendar } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +23,15 @@ interface Beneficiary {
     dataAiHint: string;
     status?: string;
 }
+
+const quickActions = [
+    { title: 'Child Care', icon: Baby, href: '/asha/member-2', color: 'text-pink-400' },
+    { title: 'Vaccination', icon: Syringe, href: '/asha/member-2', color: 'text-blue-400' },
+    { title: 'Appointments', icon: Calendar, href: '/appointments', color: 'text-teal-400' },
+    { title: 'Growth Report', icon: BarChart3, href: '/asha/member-2', color: 'text-orange-400' },
+    { title: 'Health Reports', icon: ClipboardList, href: '/profile/diagnostic-reports', color: 'text-purple-400' },
+];
+
 
 const FamilyMemberSkeleton = () => (
     <div className="space-y-3">
@@ -87,7 +96,7 @@ export default function MyFamilyDashboardPage() {
             <main className="p-4 space-y-6">
                 
                 <div className="space-y-3">
-                    <h2 className="text-lg font-semibold text-muted-foreground">My Family</h2>
+                    <h2 className="text-lg font-semibold text-muted-foreground">Family Members</h2>
                     {isLoading ? (
                         <FamilyMemberSkeleton />
                     ) : familyMembers.length > 0 ? (
@@ -131,6 +140,20 @@ export default function MyFamilyDashboardPage() {
                     <Button variant="outline" className="w-full">
                         <Plus className="h-5 w-5 mr-2" /> Add New Member
                     </Button>
+                </div>
+
+                <div className="space-y-3">
+                    <h2 className="text-lg font-semibold text-muted-foreground">Quick Actions</h2>
+                     <div className="grid grid-cols-2 gap-4">
+                        {quickActions.map(action => (
+                            <Link href={action.href} key={action.title}>
+                                <Card className="hover:border-primary transition-colors aspect-square flex flex-col items-center justify-center p-4 text-center">
+                                    <action.icon className={`h-8 w-8 mb-2 ${action.color}`} />
+                                    <p className="font-semibold text-sm">{action.title}</p>
+                                </Card>
+                            </Link>
+                        ))}
+                    </div>
                 </div>
 
             </main>
