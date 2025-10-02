@@ -1,29 +1,73 @@
-
 'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Bell, ClipboardList, History, Plus, Users, Syringe } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { ArrowRight, Bell, ClipboardList, History, Plus, Users, Syringe, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from '@/components/ui/skeleton';
 
-const quickLinks = [
-    { title: "My Appointments", description: "View upcoming & past bookings", icon: History, href: "/appointments" },
-    { title: "My Order History", description: "Track your past medicine orders", icon: ClipboardList, href: "/orders" },
-    { title: "Diagnostic Reports", description: "Access all your medical reports", icon: ClipboardList, href: "/profile/diagnostic-reports" },
-];
+interface Beneficiary {
+    id: string;
+    name: string;
+    relation: string;
+    age: string;
+    avatar: string;
+    dataAiHint: string;
+    status?: string;
+}
 
-const familyMembers = [
-    { id: 'member-1', name: "Sita Shah", relation: "Wife", age: "32 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Fhousewife.png?alt=media", dataAiHint: "indian woman", status: "ANC Checkup Due" },
-    { id: 'member-2', name: "Rohan Shah", relation: "Son", age: "5 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Findian-kid.png?alt=media", dataAiHint: "indian child", status: "Polio Vaccine Due" },
-];
+const FamilyMemberSkeleton = () => (
+    <div className="space-y-3">
+        <Card><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
+        <Card><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
+    </div>
+);
 
 
 export default function MyFamilyDashboardPage() {
     const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
+    const [familyMembers, setFamilyMembers] = useState<Beneficiary[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     
+    useEffect(() => {
+        if (authLoading) return;
+        if (!user || user.isGuest) {
+            setIsLoading(false);
+            return;
+        }
+
+        const familyId = user.id; // Assuming the logged-in user's ID is the family ID
+        
+        const q = query(
+            collection(db, 'zep_beneficiaries'), 
+            where('familyId', '==', familyId),
+            orderBy('name', 'asc')
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedMembers = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Beneficiary));
+            setFamilyMembers(fetchedMembers);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching family members:", error);
+            setIsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [user, authLoading]);
+
     return (
         <div className="bg-background min-h-screen font-sans">
             {/* Header */}
@@ -44,8 +88,11 @@ export default function MyFamilyDashboardPage() {
                  {/* Family Members */}
                 <div className="space-y-3">
                     <h2 className="text-lg font-semibold text-muted-foreground">My Family</h2>
-                    {familyMembers.map((member) => (
-                         <Link href={`/asha/${member.id}`} key={member.name}>
+                    {isLoading ? (
+                        <FamilyMemberSkeleton />
+                    ) : familyMembers.length > 0 ? (
+                        familyMembers.map((member) => (
+                         <Link href={`/asha/${member.id}`} key={member.id}>
                             <Card className="hover:border-primary transition-colors">
                                 <CardContent className="p-4">
                                     <div className="flex items-center justify-between">
@@ -72,35 +119,20 @@ export default function MyFamilyDashboardPage() {
                                 </CardContent>
                             </Card>
                         </Link>
-                    ))}
+                    ))) : (
+                        <Card>
+                            <CardContent className="p-6 text-center text-muted-foreground">
+                                <User className="mx-auto h-12 w-12 mb-4" />
+                                <h3 className="font-semibold text-lg">No Family Members Found</h3>
+                                <p className="text-sm">An ASHA worker can add your family members to view their health records here.</p>
+                            </CardContent>
+                        </Card>
+                    )}
                     <Button variant="outline" className="w-full h-16">
                         <Plus className="h-5 w-5 mr-2" /> Add New Member
                     </Button>
                 </div>
 
-
-                {/* Quick Links */}
-                <div className="space-y-3">
-                     <h2 className="text-lg font-semibold text-muted-foreground">Quick Links</h2>
-                    {quickLinks.map((card) => (
-                        <Link href={card.href} key={card.title}>
-                             <Card className="hover:border-primary transition-colors">
-                                <CardContent className="p-4 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className={`p-3 rounded-lg bg-primary/10`}>
-                                            <card.icon className={`h-6 w-6 text-primary`} />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold">{card.title}</h3>
-                                            <p className="text-sm text-muted-foreground">{card.description}</p>
-                                        </div>
-                                    </div>
-                                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                                </CardContent>
-                            </Card>
-                        </Link>
-                    ))}
-                </div>
             </main>
         </div>
     );
