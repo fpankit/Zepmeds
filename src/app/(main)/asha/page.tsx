@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, Bell, ClipboardList, History, Plus, Users, Syringe, Loader2, User } from "lucide-react";
+import { ArrowRight, Bell, Plus, User, Syringe } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -45,9 +45,8 @@ export default function MyFamilyDashboardPage() {
             return;
         }
 
-        const familyId = user.id; // Assuming the logged-in user's ID is the family ID
+        const familyId = user.id; 
         
-        // FIX: Removed `orderBy` to prevent needing a composite index. Sorting is now done on the client.
         const q = query(
             collection(db, 'zep_beneficiaries'), 
             where('familyId', '==', familyId)
@@ -58,7 +57,7 @@ export default function MyFamilyDashboardPage() {
                 id: doc.id,
                 ...doc.data()
             } as Beneficiary));
-            // Sort the members by name on the client side.
+            
             fetchedMembers.sort((a, b) => a.name.localeCompare(b.name));
             setFamilyMembers(fetchedMembers);
             setIsLoading(false);
@@ -87,7 +86,6 @@ export default function MyFamilyDashboardPage() {
 
             <main className="p-4 space-y-6">
                 
-                 {/* Family Members */}
                 <div className="space-y-3">
                     <h2 className="text-lg font-semibold text-muted-foreground">My Family</h2>
                     {isLoading ? (
@@ -130,7 +128,7 @@ export default function MyFamilyDashboardPage() {
                             </CardContent>
                         </Card>
                     )}
-                    <Button variant="outline" className="w-full h-16">
+                    <Button variant="outline" className="w-full">
                         <Plus className="h-5 w-5 mr-2" /> Add New Member
                     </Button>
                 </div>
