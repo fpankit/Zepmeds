@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     
     const phone = newUserDetails?.phone || identifier;
-    const userId = sanitizeForId(phone); // Use a consistent variable name
+    const userId = sanitizeForId(phone);
     const userDocRef = doc(db, "users", userId);
     
     try {
@@ -122,11 +122,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         let finalUser: User;
 
         if (userDocSnap.exists()) {
-            finalUser = { id: userDocSnap.id, ...userDocSnap.data() } as User;
-             // **THE FIX**: If an existing user doesn't have a familyId, assign their own ID as the familyId.
-            if (!finalUser.familyId) {
-                finalUser.familyId = finalUser.id;
-            }
+            const existingUserData = userDocSnap.data();
+            finalUser = { 
+                id: userDocSnap.id, 
+                ...existingUserData,
+                // **THE FIX**: If an existing user doesn't have a familyId, assign their own ID as the familyId.
+                familyId: existingUserData.familyId || userDocSnap.id 
+            } as User;
         } else {
             if (!newUserDetails) {
                 throw new Error("User not found. Please sign up.");
