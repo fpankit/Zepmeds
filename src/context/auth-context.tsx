@@ -34,8 +34,8 @@ export interface User {
   age: number;
   referralCode?: string;
   addresses: Address[];
-  isGuest?: boolean;
   healthData?: HealthData;
+  isGuest?: boolean;
   // Doctor specific fields
   isDoctor?: boolean;
   isOnline?: boolean;
@@ -87,25 +87,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    let userToSet: User | null = null;
     if (storedUser) {
         try {
             const parsedUser = JSON.parse(storedUser);
-            // Ensure guest users get a unique, valid ID on each session load
-            if (parsedUser.isGuest) {
-                userToSet = createGuestUser();
-            } else {
-                userToSet = parsedUser;
+            if (parsedUser) {
+                setUser(parsedUser);
             }
         } catch (e) {
-            userToSet = createGuestUser();
+            // If parsing fails, create a new guest
+            setUser(createGuestUser());
         }
     } else {
-        userToSet = createGuestUser();
-    }
-    setUser(userToSet);
-    if(userToSet) {
-       localStorage.setItem('user', JSON.stringify(userToSet));
+        // No user found, create a guest
+        setUser(createGuestUser());
     }
     setLoading(false);
   }, []);
