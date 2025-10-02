@@ -129,17 +129,16 @@ export default function MyFamilyDashboardPage() {
     const [fetchTrigger, setFetchTrigger] = useState(0); // State to trigger re-fetch
 
     const fetchBeneficiaries = async () => {
-        if (!user || user.isGuest || !user.id) {
+        if (!user || user.isGuest) {
             setIsLoading(false);
             return;
         }
 
         setIsLoading(true);
         try {
+            // Fetch all documents from the collection without any filter to debug
             const beneficiariesCol = collection(db, 'zep_beneficiaries');
-            
-            // The corrected, reliable query using the ASHA worker's own ID to find their assigned family members.
-            const q = query(beneficiariesCol, where('familyId', '==', user.id));
+            const q = query(beneficiariesCol);
             
             const querySnapshot = await getDocs(q);
             
