@@ -1,4 +1,3 @@
-
 export const growthData = {
     weight: [
         { age: '6m', weight: 7.9 },
