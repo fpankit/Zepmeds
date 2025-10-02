@@ -112,8 +112,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     
     const phone = newUserDetails?.phone || identifier;
-    const uid = sanitizeForId(phone);
-    const userDocRef = doc(db, "users", uid);
+    const userId = sanitizeForId(phone); // Use a consistent variable name
+    const userDocRef = doc(db, "users", userId);
     
     try {
         const userDocSnap = await getDoc(userDocRef);
@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 address: 'A-123, Main Street, Gurugram, Haryana, 122001'
             };
             finalUser = {
-                id: uid,
+                id: userId, // Use the sanitized ID here
                 ...newUserDetails,
                 addresses: [defaultAddress],
                 healthData: {},
