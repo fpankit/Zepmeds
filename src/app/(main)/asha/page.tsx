@@ -29,7 +29,7 @@ interface Beneficiary {
 const quickActions = [
     { title: 'Child Care', icon: Baby, href: '/asha/member-2', color: 'text-pink-400' },
     { title: 'Vaccination', icon: Syringe, href: '/asha/member-2', color: 'text-blue-400' },
-    { title: 'Appointments', icon: '/appointments', color: 'text-teal-400' },
+    { title: 'Appointments', icon: Calendar, href: '/appointments', color: 'text-teal-400' },
     { title: 'Growth Report', icon: BarChart3, href: '/asha/member-2', color: 'text-orange-400' },
     { title: 'Health Reports', icon: ClipboardList, href: '/profile/diagnostic-reports', color: 'text-purple-400' },
 ];
@@ -69,6 +69,7 @@ export default function MyFamilyDashboardPage() {
                 ...doc.data()
             } as Beneficiary));
             
+            // Client-side sorting
             fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
 
             setFamilyMembers(fetchedMembers);
