@@ -26,11 +26,6 @@ interface Beneficiary {
     familyId?: string;
 }
 
-const mockFamilyMembers: Beneficiary[] = [
-    { id: 'member-1', patientName: "Sita Shah", relation: "Wife", age: "32 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Fhousewife.png?alt=media", dataAiHint: "indian woman", status: "ANC checkup due" },
-    { id: 'member-2', patientName: "Rohan Shah", relation: "Son", age: "5 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Findian-kid.png?alt=media", dataAiHint: "indian child", status: "Vaccination missed" },
-];
-
 const quickActions = [
     { title: 'Child Care', icon: Baby, href: '/asha/member-2', color: 'text-pink-400' },
     { title: 'Vaccination', icon: Syringe, href: '/asha/member-2', color: 'text-blue-400' },
@@ -49,7 +44,7 @@ const FamilyMemberSkeleton = () => (
 export default function MyFamilyDashboardPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const [familyMembers, setFamilyMembers] = useState<Beneficiary[]>(mockFamilyMembers);
+    const [familyMembers, setFamilyMembers] = useState<Beneficiary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
@@ -61,31 +56,25 @@ export default function MyFamilyDashboardPage() {
 
         setIsLoading(true);
         
-        // This is the correct query. It finds all beneficiaries assigned to the logged-in ASHA worker.
-        // Ensure that your 'zep_beneficiaries' documents have an 'ashaWorkerId' field containing the ASHA worker's user ID.
         const q = query(
             collection(db, 'zep_beneficiaries'), 
             where('ashaWorkerId', '==', user.id)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            if (!snapshot.empty) {
-                const fetchedMembers: Beneficiary[] = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                } as Beneficiary));
-                
-                fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
+            const fetchedMembers: Beneficiary[] = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Beneficiary));
+            
+            // Client-side sorting after fetching
+            fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
 
-                setFamilyMembers(fetchedMembers);
-            } else {
-                // If no live data is found, we keep showing the mock data.
-                // You can change this to show an empty state if you prefer.
-            }
+            setFamilyMembers(fetchedMembers);
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching family members:", error);
-            setIsLoading(false); // Still show mock data on error
+            setIsLoading(false);
         });
 
         return () => unsubscribe();
