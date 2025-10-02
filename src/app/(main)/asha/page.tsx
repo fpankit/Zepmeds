@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -56,28 +56,42 @@ export default function MyFamilyDashboardPage() {
 
         setIsLoading(true);
         
-        const q = query(
-            collection(db, 'zep_beneficiaries'), 
-            where('ashaWorkerId', '==', user.id)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedMembers: Beneficiary[] = snapshot.docs.map(doc => ({
+        // This is a robust query that first tries to find beneficiaries by `ashaWorkerId`.
+        // If that returns no results, it falls back to querying by `familyId` for backward compatibility.
+        const fetchBeneficiaries = async () => {
+            const beneficiariesCol = collection(db, 'zep_beneficiaries');
+            
+            // Primary query (ideal structure)
+            let q = query(beneficiariesCol, where('ashaWorkerId', '==', user.id));
+            let querySnapshot = await getDocs(q);
+            
+            let fetchedMembers: Beneficiary[] = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as Beneficiary));
-            
+
+            // Fallback query if the primary one returns nothing
+            if (fetchedMembers.length === 0) {
+                 q = query(beneficiariesCol, where('familyId', '==', user.id));
+                 querySnapshot = await getDocs(q);
+                 fetchedMembers = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                } as Beneficiary));
+            }
+
             // Client-side sorting after fetching
             fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
 
             setFamilyMembers(fetchedMembers);
             setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching family members:", error);
-            setIsLoading(false);
+        };
+
+        fetchBeneficiaries().catch(error => {
+             console.error("Error fetching family members:", error);
+             setIsLoading(false);
         });
 
-        return () => unsubscribe();
     }, [user, authLoading]);
     
     return (
@@ -172,5 +186,3 @@ export default function MyFamilyDashboardPage() {
         </div>
     );
 }
-
-    
