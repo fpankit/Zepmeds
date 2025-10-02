@@ -57,11 +57,12 @@ export default function MyFamilyDashboardPage() {
 
         setIsLoading(true);
         
-        // ** THE FIX **: Query for beneficiaries where the `ashaWorkerId` field matches the logged-in user's ID.
-        // This is the correct way to link ASHA workers to their assigned beneficiaries.
+        // ** THE FIX **: The root cause was querying by 'ashaWorkerId'. 
+        // Based on the data structure, ASHA workers are linked to beneficiaries via a shared 'familyId'.
+        // The query now correctly fetches all beneficiaries where their `familyId` matches the logged-in ASHA worker's `id`.
         const q = query(
             collection(db, 'zep_beneficiaries'), 
-            where('ashaWorkerId', '==', user.id)
+            where('familyId', '==', user.id)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -123,7 +124,7 @@ export default function MyFamilyDashboardPage() {
                                         <div className="flex items-center gap-4">
                                             <Avatar className="h-12 w-12">
                                                 <AvatarImage src={member.avatar} alt={member.patientName} data-ai-hint={member.dataAiHint} />
-                                                <AvatarFallback>{member.patientName[0]}</AvatarFallback>
+                                                <AvatarFallback>{member.patientName?.[0] || 'U'}</AvatarFallback>
                                             </Avatar>
                                             <div>
                                                 <h3 className="font-semibold">{member.patientName}</h3>
