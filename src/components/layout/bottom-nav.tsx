@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { Home, BarChart3, Star, MoreHorizontal, Activity, Users } from "lucide-react";
+import { Home, BarChart3, Star, MoreHorizontal, Activity, Users, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ const BottomNavComponent = () => {
     { href: "/home", icon: Home, label: t('bottomNav.home') },
     { href: "/activity", icon: BarChart3, label: "Progress" },
     { href: "/asha", icon: Users, label: 'My Family' },
-    { href: "/more", icon: Star, label: "Rewards" },
+    { href: "/cart", icon: ShoppingCart, label: t('bottomNav.cart') },
     { href: "/more", icon: MoreHorizontal, label: t('bottomNav.more') },
   ];
 
@@ -35,13 +35,15 @@ const BottomNavComponent = () => {
           if (item.href === '/home' && pathname === '/home') isActive = true;
           if (item.href === '/activity') isActive = isActivityActive;
           if (item.href === '/asha') isActive = isFamilyActive;
+          if (item.href === '/cart' && pathname.startsWith('/cart')) isActive = true;
+
           const isCenterButton = index === 2;
 
           return (
             <Link
               key={item.label}
               href={item.href}
-              className="flex flex-col items-center justify-center gap-1 text-xs w-1/5"
+              className="flex flex-col items-center justify-center gap-1 text-xs w-1/5 relative"
             >
               <div className={cn(
                 "p-2 rounded-lg transition-all relative flex items-center justify-center",
@@ -53,6 +55,11 @@ const BottomNavComponent = () => {
                   "h-6 w-6 transition-colors",
                   isCenterButton && 'text-white'
                   )} />
+                {item.href === '/cart' && cart.length > 0 && !isCenterButton && (
+                    <Badge variant="destructive" className="absolute top-0 right-0 h-4 w-4 flex items-center justify-center p-0 text-[10px]">
+                        {cart.length}
+                    </Badge>
+                )}
               </div>
               {!isCenterButton && (
                   <span className={cn(
