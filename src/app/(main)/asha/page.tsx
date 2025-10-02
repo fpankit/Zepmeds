@@ -72,7 +72,7 @@ export default function MyFamilyDashboardPage() {
 
             // Fallback query if the primary one returns nothing
             if (fetchedMembers.length === 0 && user.familyId) {
-                 q = query(beneficiariesCol, where('familyId', '==', user.familyId));
+                 q = query(beneficiariesCol, where('familyId', '==', user.id));
                  querySnapshot = await getDocs(q);
                  fetchedMembers = querySnapshot.docs.map(doc => ({
                     id: doc.id,
@@ -138,7 +138,6 @@ export default function MyFamilyDashboardPage() {
                                             </Avatar>
                                             <div>
                                                 <h3 className="font-semibold">{member.patientName}</h3>
-                                                <p className="text-sm text-muted-foreground">{member.relation} • {member.age}</p>
                                             </div>
                                         </div>
                                         <ArrowRight className="h-5 w-5 text-muted-foreground" />
