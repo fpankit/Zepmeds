@@ -80,21 +80,31 @@ export default function MyFamilyDashboardPage() {
 
     return (
         <div className="bg-background min-h-screen font-sans">
-            {/* Header */}
-            <header className="sticky top-0 z-10 p-4 bg-background/80 backdrop-blur-lg border-b">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-xl font-bold">My Family</h1>
-                        <p className="text-sm text-muted-foreground">Manage your family's health records.</p>
-                    </div>
-                    <Button variant="ghost" size="icon">
-                        <Bell className="h-6 w-6"/>
-                    </Button>
-                </div>
-            </header>
-
             <main className="p-4 space-y-6">
                 
+                <Card className="bg-card/80">
+                     <CardContent className="p-4 flex items-center justify-between">
+                         <div className="flex items-center gap-3">
+                            <Avatar className="h-12 w-12">
+                            <AvatarImage src={user?.photoURL || undefined} alt={user?.firstName} />
+                            <AvatarFallback>
+                                {user?.firstName?.[0]}
+                                {user?.lastName?.[0]}
+                            </AvatarFallback>
+                            </Avatar>
+                            <div>
+                            <p className="text-sm text-muted-foreground">Good morning!</p>
+                            <p className="font-bold text-lg">
+                                {user?.firstName} {user?.lastName}
+                            </p>
+                            </div>
+                        </div>
+                        <Button variant="ghost" size="icon">
+                            <Bell className="h-6 w-6"/>
+                        </Button>
+                    </CardContent>
+                </Card>
+
                 <div className="space-y-3">
                     <h2 className="text-lg font-semibold text-muted-foreground">Family Members</h2>
                     {isLoading ? (
