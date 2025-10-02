@@ -58,10 +58,10 @@ export default function MyFamilyDashboardPage() {
 
         const familyId = user.id; 
         
+        // ** THE FIX **: Removed the orderBy clause to prevent index error
         const q = query(
             collection(db, 'zep_beneficiaries'), 
-            where('familyId', '==', familyId),
-            orderBy('patientName', 'asc')
+            where('familyId', '==', familyId)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -70,6 +70,9 @@ export default function MyFamilyDashboardPage() {
                 ...doc.data()
             } as Beneficiary));
             
+            // ** THE FIX **: Sorting is now done on the client-side
+            fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
+
             setFamilyMembers(fetchedMembers);
             setIsLoading(false);
         }, (error) => {
