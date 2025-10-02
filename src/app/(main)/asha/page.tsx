@@ -3,23 +3,34 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/auth-context';
+import { useAuth, User as AuthUser } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Bell, Plus, User, Syringe, Baby, BarChart3, ClipboardList, Calendar } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, Bell, Plus, User, Syringe, Baby, BarChart3, ClipboardList, Calendar, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from '@/components/ui/skeleton';
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+
 interface Beneficiary {
     id: string;
     patientName: string;
-    relation: string;
-    age: string;
     avatar: string;
     dataAiHint: string;
     status?: string;
@@ -41,58 +52,119 @@ const FamilyMemberSkeleton = () => (
     </div>
 );
 
+const AddMemberForm = ({ onMemberAdded }: { onMemberAdded: () => void }) => {
+    const { user } = useAuth();
+    const [patientName, setPatientName] = useState('');
+    const [age, setAge] = useState('');
+    const [gender, setGender] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!patientName || !age || !gender || !user) return;
+        
+        setIsSubmitting(true);
+        try {
+            await addDoc(collection(db, 'zep_beneficiaries'), {
+                patientName,
+                age,
+                gender,
+                familyId: user.id, // Set the familyId to the ASHA worker's ID
+                ashaWorkerId: user.id, // Also set the ashaWorkerId for future queries
+                createdAt: serverTimestamp(),
+                // Default values for other fields
+                avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Fplaceholder.png?alt=media",
+                dataAiHint: "person",
+            });
+            onMemberAdded(); // Callback to refresh the list
+        } catch (error) {
+            console.error("Error adding new member:", error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                 <Button variant="outline" className="w-full">
+                    <Plus className="h-5 w-5 mr-2" /> Add New Member
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add New Family Member</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <Label htmlFor="patientName">Full Name</Label>
+                        <Input id="patientName" value={patientName} onChange={(e) => setPatientName(e.target.value)} required />
+                    </div>
+                    <div>
+                        <Label htmlFor="age">Age</Label>
+                        <Input id="age" type="number" value={age} onChange={(e) => setAge(e.target.value)} required />
+                    </div>
+                     <div>
+                        <Label htmlFor="gender">Gender</Label>
+                        <Input id="gender" value={gender} onChange={(e) => setGender(e.target.value)} required />
+                    </div>
+                    <DialogFooter>
+                        <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Add Member
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export default function MyFamilyDashboardPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
     const [familyMembers, setFamilyMembers] = useState<Beneficiary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    
-    useEffect(() => {
-        if (authLoading) return;
-        if (!user || user.isGuest || !user.isDoctor) {
+    const [fetchTrigger, setFetchTrigger] = useState(0); // State to trigger re-fetch
+
+    const fetchBeneficiaries = async () => {
+        if (!user || user.isGuest || !user.id) {
             setIsLoading(false);
             return;
         }
 
         setIsLoading(true);
-        
-        // This is a robust query that first tries to find beneficiaries by `ashaWorkerId`.
-        // If that returns no results, it falls back to querying by `familyId` for backward compatibility.
-        const fetchBeneficiaries = async () => {
+        try {
             const beneficiariesCol = collection(db, 'zep_beneficiaries');
             
-            // Primary query (ideal structure)
-            let q = query(beneficiariesCol, where('ashaWorkerId', '==', user.id));
-            let querySnapshot = await getDocs(q);
+            // The corrected, reliable query using the ASHA worker's own ID to find their assigned family members.
+            const q = query(beneficiariesCol, where('familyId', '==', user.id));
+            
+            const querySnapshot = await getDocs(q);
             
             let fetchedMembers: Beneficiary[] = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as Beneficiary));
 
-            // Fallback query if the primary one returns nothing
-            if (fetchedMembers.length === 0 && user.familyId) {
-                 q = query(beneficiariesCol, where('familyId', '==', user.id));
-                 querySnapshot = await getDocs(q);
-                 fetchedMembers = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                } as Beneficiary));
-            }
-
-            // Client-side sorting after fetching
             fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
 
             setFamilyMembers(fetchedMembers);
+        } catch (error) {
+            console.error("Error fetching family members:", error);
+        } finally {
             setIsLoading(false);
-        };
-
-        fetchBeneficiaries().catch(error => {
-             console.error("Error fetching family members:", error);
-             setIsLoading(false);
-        });
-
-    }, [user, authLoading]);
+        }
+    };
+    
+    useEffect(() => {
+        fetchBeneficiaries();
+    }, [user, fetchTrigger]); // Re-fetch when user logs in or when a new member is added.
+    
+    const handleMemberAdded = () => {
+        setFetchTrigger(prev => prev + 1); // Increment to trigger the useEffect
+    }
     
     return (
         <div className="bg-background min-h-screen font-sans">
@@ -158,13 +230,11 @@ export default function MyFamilyDashboardPage() {
                             <CardContent className="p-6 text-center text-muted-foreground">
                                 <User className="mx-auto h-12 w-12 mb-4" />
                                 <h3 className="font-semibold text-lg">No Family Members Found</h3>
-                                <p className="text-sm">You have no beneficiaries assigned to you. An admin can add them for you.</p>
+                                <p className="text-sm">You have no beneficiaries assigned to you. Click below to add one.</p>
                             </CardContent>
                         </Card>
                     )}
-                    <Button variant="outline" className="w-full">
-                        <Plus className="h-5 w-5 mr-2" /> Add New Member
-                    </Button>
+                    <AddMemberForm onMemberAdded={handleMemberAdded} />
                 </div>
 
                 <div className="space-y-3">
