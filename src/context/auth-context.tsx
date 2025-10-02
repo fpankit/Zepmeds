@@ -126,7 +126,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             finalUser = { 
                 id: userDocSnap.id, 
                 ...existingUserData,
-                // **THE FIX**: If an existing user doesn't have a familyId, assign their own ID as the familyId.
                 familyId: existingUserData.familyId || userDocSnap.id 
             } as User;
         } else {
@@ -150,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 addresses: [defaultAddress],
                 healthData: {},
                 isGuest: false,
-                isDoctor: false, // Explicitly set isDoctor to false for new users
+                isDoctor: false, 
             };
             await setDoc(userDocRef, finalUser);
         }
@@ -166,7 +165,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
         } catch (e) {
             console.error("Could not sync doctor status on login:", e);
-            // Non-fatal, proceed with login
         }
 
         setUser(finalUser);
@@ -174,7 +172,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error) {
         console.error("Login/Signup Error:", error);
-        // Re-throw the error so the UI can catch it and display a message
         throw error;
     } finally {
         setLoading(false);
@@ -207,15 +204,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userDocRef = doc(db, "users", user.id);
     await updateDoc(userDocRef, userData);
 
-    // If the user is a doctor, also update the doctors collection
     if (user.isDoctor) {
         const doctorDocRef = doc(db, "doctors", user.id);
         try {
             await updateDoc(doctorDocRef, userData);
         } catch (error) {
             console.error("Could not find or update doctor document:", error);
-            // This might happen if the doctor doc doesn't exist yet, which is a state to handle.
-            // For now, we just log it.
         }
     }
   };
