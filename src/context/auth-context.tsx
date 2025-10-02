@@ -123,6 +123,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (userDocSnap.exists()) {
             finalUser = { id: userDocSnap.id, ...userDocSnap.data() } as User;
+             // **THE FIX**: If an existing user doesn't have a familyId, assign their own ID as the familyId.
+            if (!finalUser.familyId) {
+                finalUser.familyId = finalUser.id;
+            }
         } else {
             if (!newUserDetails) {
                 throw new Error("User not found. Please sign up.");
