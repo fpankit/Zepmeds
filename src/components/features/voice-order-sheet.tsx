@@ -208,18 +208,17 @@ export function VoiceOrderSheet() {
 
   useEffect(() => {
     if (state === 'processing' && finalTranscript) {
-      // **THE FIX**: Trim trailing spaces and punctuation from the final transcript
-      const cleanedTranscript = finalTranscript.trim().replace(/[.,]$/, '').trim();
+      const cleanedTranscript = finalTranscript.trim().replace(/[.,]$/, '').toLowerCase();
       
       if (!cleanedTranscript) {
           handleOpenChange(false);
           return;
       }
       
-      const words = cleanedTranscript.toLowerCase().split(/\s*,\s*|\s+and\s+/).map(s => s.trim()).filter(Boolean);
+      const words = cleanedTranscript.split(/\s*,\s*|\s+and\s+/).map(s => s.trim()).filter(Boolean);
       
       const found: FoundMedicine[] = [];
-      let bestMatch: { product: Product, distance: number } | null = null;
+      let bestOverallMatch: { product: Product, distance: number } | null = null;
 
       words.forEach(word => {
           let minDistance = Infinity;
@@ -232,34 +231,37 @@ export function VoiceOrderSheet() {
                   closestProduct = product;
               }
           });
-
-          // If a very close match is found (e.g., Levenshtein distance <= 2)
-          if (closestProduct && minDistance <= 2) {
-              // Exact match or very close spelling
-              if (minDistance === 0) {
-                  if (!found.some(f => f.id === closestProduct!.id)) {
-                      found.push({ ...closestProduct, quantity: 1 });
-                  }
-              } else {
-                // Potential misspelling, save it for suggestion
-                if (!bestMatch || minDistance < bestMatch.distance) {
-                    bestMatch = { product: closestProduct, distance: minDistance };
+          
+          // **THE FIX**: Increased tolerance for fuzzy matching.
+          // Now considers anything with a Levenshtein distance of 3 or less a potential match.
+          if (closestProduct && minDistance <= 3) {
+              if (!found.some(f => f.id === closestProduct!.id)) {
+                // If it's a very close match, add it directly
+                if (minDistance <= 1) {
+                    found.push({ ...closestProduct, quantity: 1 });
+                } else {
+                    // Otherwise, consider it for the 'best overall match'
+                    if (!bestOverallMatch || minDistance < bestOverallMatch.distance) {
+                        bestOverallMatch = { product: closestProduct, distance: minDistance };
+                    }
                 }
               }
           }
       });
       
+      // **THE FIX**: Simplified flow. If any exact matches are found, use them.
+      // If not, but a reasonably close match was found, use that.
       if (found.length > 0) {
         setFoundMedicines(found);
         setState('confirming');
-      } else if (bestMatch) {
-          setSuggestedMedicine({ ...bestMatch.product, quantity: 1 });
-          setState('suggesting');
+      } else if (bestOverallMatch) {
+          setFoundMedicines([{ ...bestOverallMatch.product, quantity: 1 }]);
+          setState('confirming');
       } else {
         toast({
           variant: "destructive",
           title: "Medicine Not Found",
-          description: `We couldn't find any items for: ${cleanedTranscript}. Please try again.`,
+          description: `We couldn't find any items for: "${cleanedTranscript}". Please try again.`,
         });
         handleOpenChange(false);
       }
@@ -275,13 +277,6 @@ export function VoiceOrderSheet() {
         return () => clearTimeout(timer);
     }
   }, [state, placeOrder]);
-
-  const handleSuggestionConfirm = () => {
-    if (suggestedMedicine) {
-      setFoundMedicines([suggestedMedicine]);
-      setState('confirming');
-    }
-  }
 
   const getStateContent = () => {
       switch (state) {
@@ -306,22 +301,9 @@ export function VoiceOrderSheet() {
                 ),
                 footer: null
             };
-        case 'suggesting':
-             return {
-                icon: <Bot className="h-12 w-12 text-teal-500" />,
-                title: `Did you mean ${suggestedMedicine?.name}?`,
-                description: `You said: "${finalTranscript.trim()}"`,
-                customBody: null,
-                footer: (
-                    <div className="grid grid-cols-2 gap-4 w-full">
-                        <Button variant="outline" onClick={() => handleOpenChange(false)}>No, Cancel</Button>
-                        <Button onClick={handleSuggestionConfirm}>Yes, Order</Button>
-                    </div>
-                )
-             }
         case 'confirming':
         case 'ordering':
-            const medsToShow = foundMedicines.length > 0 ? foundMedicines : suggestedMedicine ? [suggestedMedicine] : [];
+            const medsToShow = foundMedicines;
             return {
                 icon: (
                   <div className="bg-green-500 rounded-full p-2 animate-pulse">
@@ -407,3 +389,5 @@ export function VoiceOrderSheet() {
     </>
   );
 }
+
+    
