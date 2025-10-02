@@ -1,35 +1,169 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Bell, Syringe, BarChart3, ClipboardPlus, Calendar, Check, AlertTriangle, FileDown } from "lucide-react";
+import { ArrowLeft, Bell, Syringe, BarChart3, ClipboardPlus, Calendar, Check, AlertTriangle, FileDown, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { vaccinationData, Vaccine } from '@/lib/vaccination-data';
 import { growthData } from '@/lib/growth-data';
 import { format, isPast } from 'date-fns';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
-const familyMembers = [
-    { id: 'member-1', name: "Sita Shah", relation: "Wife", age: "32 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Fhousewife.png?alt=media", dataAiHint: "indian woman" },
-    { id: 'member-2', name: "Rohan Shah", relation: "Son", age: "5 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Findian-kid.png?alt=media", dataAiHint: "indian child" },
-];
+interface Beneficiary {
+    id: string;
+    patientName: string;
+    age: string;
+    avatar: string;
+    dataAiHint: string;
+}
 
-const healthReports = [
-    { title: "ANC Checkup - Trimester 1", date: "2024-05-15", doctor: "Dr. Priya Mehta" },
-    { title: "Hemoglobin Test", date: "2024-05-16", doctor: "Pathology Lab" },
-];
+interface Report {
+  id: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  doctorSpecialty: string;
+  createdAt: Timestamp; 
+  officialDiagnosis: string;
+  chiefComplaint: string;
+  doctorNotes?: string;
+  medications?: { name: string; dosage: string; frequency: string }[];
+  recommendedTests?: string;
+  followUpAdvice?: string;
+}
 
+const MemberDetailSkeleton = () => (
+    <div className="p-4 space-y-4">
+        <header className="flex justify-between items-center">
+             <Skeleton className="h-10 w-10 rounded-full" />
+             <div className="flex-1 ml-4 space-y-2">
+                <Skeleton className="h-6 w-1/2" />
+                <Skeleton className="h-4 w-1/4" />
+             </div>
+             <Skeleton className="h-10 w-10 rounded-full" />
+        </header>
+        <main className="mt-4">
+            <Skeleton className="h-10 w-full mb-4" />
+            <div className="space-y-3">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+            </div>
+        </main>
+    </div>
+)
 
 export default function FamilyMemberDetailPage() {
     const router = useRouter();
     const params = useParams();
-    const memberId = params.memberId;
+    const memberId = params.memberId as string;
 
-    const member = familyMembers.find(m => m.id === memberId) || familyMembers[1]; // Default to child for demo
+    const [member, setMember] = useState<Beneficiary | null>(null);
+    const [reports, setReports] = useState<Report[]>([]);
+    const [isLoadingMember, setIsLoadingMember] = useState(true);
+    const [isLoadingReports, setIsLoadingReports] = useState(true);
+
+    useEffect(() => {
+        if (!memberId) return;
+
+        setIsLoadingMember(true);
+        const memberDocRef = doc(db, 'zep_beneficiaries', memberId);
+        const unsubscribeMember = onSnapshot(memberDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setMember({ id: docSnap.id, ...docSnap.data() } as Beneficiary);
+            } else {
+                // Handle case where member is not found
+                router.push('/asha');
+            }
+            setIsLoadingMember(false);
+        });
+
+        return () => unsubscribeMember();
+    }, [memberId, router]);
+    
+    useEffect(() => {
+        if (!memberId) return;
+
+        setIsLoadingReports(true);
+        const q = query(collection(db, "zep_reports"), where("patientId", "==", memberId));
+        const unsubscribeReports = onSnapshot(q, (querySnapshot) => {
+            const fetchedReports = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
+            setReports(fetchedReports);
+            setIsLoadingReports(false);
+        });
+        
+        return () => unsubscribeReports();
+    }, [memberId]);
+    
+    const handleDownloadPdf = (report: Report) => {
+        const doc = new jsPDF();
+        const pageHeight = doc.internal.pageSize.height || doc.internal.pageSize.getHeight();
+        const pageWidth = doc.internal.pageSize.width || doc.internal.pageSize.getWidth();
+        let lastY = 0;
+
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Diagnostic Report', 15, 28);
+        doc.setLineWidth(0.5);
+        doc.line(15, 35, pageWidth - 15, 35);
+        lastY = 35;
+        
+        (doc as any).autoTable({
+            startY: lastY + 8,
+            body: [
+                [{ content: 'Patient:', styles: { fontStyle: 'bold' } }, report.patientName, { content: 'Doctor:', styles: { fontStyle: 'bold' } }, report.doctorName],
+                [{ content: 'Date:', styles: { fontStyle: 'bold' } }, format(report.createdAt.toDate(), 'PPP'), { content: 'Specialty:', styles: { fontStyle: 'bold' } }, report.doctorSpecialty || 'N/A'],
+            ],
+            theme: 'plain',
+            styles: { fontSize: 10, cellPadding: 2 },
+        });
+        lastY = (doc as any).lastAutoTable.finalY;
+
+        const addSection = (title: string, content: string | undefined, y: number) => {
+            if (!content) return y;
+            if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(title, 15, y + 10);
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            const text = doc.splitTextToSize(content || 'N/A', pageWidth - 30);
+            doc.text(text, 15, y + 18);
+            return y + 18 + (text.length * 5);
+        };
+
+        lastY = addSection('Chief Complaint', report.chiefComplaint, lastY);
+        lastY = addSection('Official Diagnosis', report.officialDiagnosis, lastY);
+        if (report.medications && report.medications.length > 0) {
+            if(lastY > pageHeight - 60) { doc.addPage(); lastY = 20; }
+            doc.setFontSize(14);
+            doc.text('Prescribed Medication', 15, lastY + 10);
+            (doc as any).autoTable({
+                startY: lastY + 15,
+                head: [['Medication', 'Dosage', 'Frequency']],
+                body: report.medications.map(m => [m.name, m.dosage, m.frequency]),
+                theme: 'striped',
+                headStyles: { fillColor: [30, 30, 30] },
+                margin: { left: 15, right: 15 },
+            });
+            lastY = (doc as any).lastAutoTable.finalY;
+        }
+        lastY = addSection('Recommended Tests', report.recommendedTests, lastY);
+        lastY = addSection('Follow-up Advice', report.followUpAdvice, lastY);
+        
+        doc.save(`Report_${report.patientName}_${format(report.createdAt.toDate(), 'yyyy-MM-dd')}.pdf`);
+    };
 
     const getStatus = (vaccine: Vaccine) => {
         const dueDate = new Date(vaccine.dueDate);
@@ -42,9 +176,12 @@ export default function FamilyMemberDetailPage() {
         return { icon: <Calendar className="h-4 w-4 text-yellow-500" />, text: `Due on ${format(dueDate, 'dd MMM yyyy')}`, color: 'text-yellow-400' };
     };
 
+    if (isLoadingMember || !member) {
+        return <MemberDetailSkeleton />;
+    }
+
     return (
         <div className="bg-background min-h-screen font-sans">
-            {/* Header */}
             <header className="sticky top-0 z-10 p-4 bg-background/80 backdrop-blur-lg border-b">
                 <div className="flex justify-between items-center">
                     <Button variant="ghost" size="icon" onClick={() => router.back()}>
@@ -52,12 +189,12 @@ export default function FamilyMemberDetailPage() {
                     </Button>
                      <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9">
-                            <AvatarImage src={member.avatar} alt={member.name} data-ai-hint={member.dataAiHint} />
-                            <AvatarFallback>{member.name[0]}</AvatarFallback>
+                            <AvatarImage src={member.avatar} alt={member.patientName} data-ai-hint={member.dataAiHint} />
+                            <AvatarFallback>{member.patientName?.[0]}</AvatarFallback>
                         </Avatar>
                         <div>
-                            <h1 className="text-lg font-bold">{member.name}</h1>
-                            <p className="text-xs text-muted-foreground">{member.relation} • {member.age}</p>
+                            <h1 className="text-lg font-bold">{member.patientName}</h1>
+                            <p className="text-xs text-muted-foreground">{member.age} years</p>
                         </div>
                     </div>
                     <Button variant="ghost" size="icon">
@@ -131,19 +268,29 @@ export default function FamilyMemberDetailPage() {
                     </TabsContent>
 
                     <TabsContent value="reports" className="mt-4 space-y-3">
-                        {healthReports.map(report => (
-                             <Card key={report.title}>
-                                <CardContent className="p-4 flex items-center justify-between">
-                                    <div>
-                                        <p className="font-bold">{report.title}</p>
-                                        <p className="text-sm text-muted-foreground">Dr. {report.doctor} • {format(new Date(report.date), 'dd MMM yyyy')}</p>
-                                    </div>
-                                    <Button size="icon" variant="outline">
-                                        <FileDown className="h-5 w-5" />
-                                    </Button>
-                                </CardContent>
+                        {isLoadingReports ? (
+                            <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+                        ) : reports.length === 0 ? (
+                            <Card className="text-center p-10 text-muted-foreground">
+                                <ClipboardPlus className="mx-auto h-12 w-12" />
+                                <h3 className="mt-4 font-semibold">No Reports Found</h3>
+                                <p className="text-sm">There are no diagnostic reports for {member.patientName}.</p>
                             </Card>
-                        ))}
+                        ) : (
+                            reports.map(report => (
+                                 <Card key={report.id}>
+                                    <CardContent className="p-4 flex items-center justify-between">
+                                        <div>
+                                            <p className="font-bold">{report.officialDiagnosis}</p>
+                                            <p className="text-sm text-muted-foreground">Dr. {report.doctorName} • {format(report.createdAt.toDate(), 'dd MMM yyyy')}</p>
+                                        </div>
+                                        <Button size="icon" variant="outline" onClick={() => handleDownloadPdf(report)}>
+                                            <FileDown className="h-5 w-5" />
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        )}
                     </TabsContent>
                 </Tabs>
             </main>
