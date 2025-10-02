@@ -70,19 +70,17 @@ function DoctorPageContent() {
 
   useEffect(() => {
     if (user?.id) {
-        // Simplified query to avoid composite index
         const q = query(
             collection(db, 'appointments'),
-            where('patientId', '==', user.id)
+            where('patientId', '==', user.id),
+            orderBy('createdAt', 'desc'),
+            limit(1)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const allAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            // Filter for upcoming appointments and sort on the client-side
-            const upcoming = allAppointments
-                .filter(appt => ['confirmed', 'pending'].includes(appt.status))
-                .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+            const upcoming = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(appt => ['confirmed', 'pending'].includes(appt.status));
 
             if (upcoming.length > 0) {
                 const apptData = upcoming[0];
@@ -149,7 +147,7 @@ function DoctorPageContent() {
   }
 
   return (
-    <div className="bg-slate-50 min-h-screen">
+    <div className="bg-slate-50 dark:bg-background min-h-screen">
       <div className="container mx-auto px-4 py-6 md:px-6 md:py-8 space-y-6">
         {/* Header */}
         <header className="flex items-center justify-between">
@@ -186,7 +184,7 @@ function DoctorPageContent() {
           <input
             type="text"
             placeholder="Search a doctor, medicins, etc..."
-            className="w-full h-14 pl-12 pr-12 rounded-full border border-border bg-white"
+            className="w-full h-14 pl-12 pr-12 rounded-full border border-border bg-card"
           />
         </div>
 
@@ -238,7 +236,7 @@ function DoctorPageContent() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="secondary" className="bg-white/90 text-primary">
+                <Button variant="secondary" className="bg-white/90 text-primary hover:bg-white">
                   Re-Schedule
                 </Button>
                 <Button variant="outline" className="bg-transparent border-white/50 hover:bg-white/20 hover:text-white" onClick={() => router.push(`/doctor`)}>
@@ -275,11 +273,11 @@ function DoctorPageContent() {
           <div className="space-y-3">
             {isLoading ? (
                 Array.from({length: 2}).map((_, i) => (
-                    <Card key={i} className="p-4 bg-white"><div className="flex items-center gap-4"><div className="h-16 w-16 rounded-full bg-muted animate-pulse"></div><div className="space-y-2"><div className="h-5 w-32 bg-muted animate-pulse"></div><div className="h-4 w-24 bg-muted animate-pulse"></div></div></div></Card>
+                    <Card key={i} className="p-4"><div className="flex items-center gap-4"><div className="h-16 w-16 rounded-full bg-muted animate-pulse"></div><div className="space-y-2"><div className="h-5 w-32 bg-muted animate-pulse"></div><div className="h-4 w-24 bg-muted animate-pulse"></div></div></div></Card>
                 ))
             ) : doctors.length > 0 ? (
                 doctors.map((doc) => (
-                <Card key={doc.id} className="p-4 bg-white">
+                <Card key={doc.id} className="p-4">
                     <CardContent className="p-0">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4" onClick={() => router.push(`/doctor/${doc.id}/book`)}>
@@ -316,7 +314,7 @@ function DoctorPageContent() {
                 </Card>
                 ))
             ) : (
-                <Card className="p-4 bg-white text-center text-muted-foreground">No doctors found for this specialty.</Card>
+                <Card className="p-4 text-center text-muted-foreground">No doctors found for this specialty.</Card>
             )}
           </div>
         </div>
@@ -338,3 +336,5 @@ export default function DoctorPage() {
     </Suspense>
   );
 }
+
+    
