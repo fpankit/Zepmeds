@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { Home, Stethoscope, MoreHorizontal, ShoppingCart, Activity, Users } from "lucide-react";
+import { Home, BarChart3, Star, MoreHorizontal, Activity, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -17,9 +17,9 @@ const BottomNavComponent = () => {
 
   const navItems = [
     { href: "/home", icon: Home, label: t('bottomNav.home') },
-    { href: "/activity", icon: Activity, label: t('bottomNav.activity') },
+    { href: "/activity", icon: BarChart3, label: "Progress" },
     { href: "/asha", icon: Users, label: 'My Family' },
-    { href: "/cart", icon: ShoppingCart, label: t('bottomNav.cart') },
+    { href: "/more", icon: Star, label: "Rewards" },
     { href: "/more", icon: MoreHorizontal, label: t('bottomNav.more') },
   ];
 
@@ -30,11 +30,12 @@ const BottomNavComponent = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/80 bg-background/95 backdrop-blur-lg">
       <div className="flex h-16 items-center justify-around">
-        {navItems.map((item) => {
-          let isActive = pathname.startsWith(item.href);
+        {navItems.map((item, index) => {
+          let isActive = pathname.startsWith(item.href) && item.href !== '/home';
+          if (item.href === '/home' && pathname === '/home') isActive = true;
           if (item.href === '/activity') isActive = isActivityActive;
           if (item.href === '/asha') isActive = isFamilyActive;
-
+          const isCenterButton = index === 2;
 
           return (
             <Link
@@ -43,22 +44,22 @@ const BottomNavComponent = () => {
               className="flex flex-col items-center justify-center gap-1 text-xs w-1/5"
             >
               <div className={cn(
-                "p-2 rounded-lg transition-all relative",
-                isActive ? "bg-primary/20 shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)]" : ""
+                "p-2 rounded-lg transition-all relative flex items-center justify-center",
+                 isCenterButton ? "h-12 w-12 rounded-full bg-green-400 text-white shadow-[0_4px_14px_rgba(74,222,128,0.5)] -translate-y-4" : "h-10 w-10",
+                 isActive && !isCenterButton ? "text-primary" : "text-muted-foreground"
               )}>
-                 {item.label === t('bottomNav.cart') && cart.length > 0 && (
-                     <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0">{cart.length}</Badge>
-                 )}
                 
                 <item.icon className={cn(
                   "h-6 w-6 transition-colors",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  isCenterButton && 'text-white'
                   )} />
               </div>
-              <span className={cn(
-                  "transition-colors text-xs",
-                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
-              )}>{item.label}</span>
+              {!isCenterButton && (
+                  <span className={cn(
+                      "transition-colors text-xs -mt-1",
+                      isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                  )}>{item.label}</span>
+              )}
             </Link>
           );
         })}

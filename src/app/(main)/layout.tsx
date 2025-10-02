@@ -12,7 +12,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const noHeaderRoutes: string[] = [];
+  const noHeaderRoutes: string[] = ["/activity"];
   const noLayoutRoutes = ["/checkout", "/first-aid/", "/verify-medicine", "/scan-package", "/health-report", "/profile/", "/product/", "/chat/", "/doctor", "/asha"];
   
   const isLayoutVisible = !noLayoutRoutes.some(route => {
@@ -28,7 +28,7 @@ export default function MainLayout({
 
   if (!isLayoutVisible) {
     // A special check for profile sub-pages which should not have the main layout
-    if (pathname.startsWith('/profile/') || pathname.startsWith('/product/') || pathname.startsWith('/urgent-medicine') || pathname.startsWith('/health-report') || pathname.startsWith('/chat/') || pathname.startsWith('/doctor') || pathname.startsWith('/asha')) {
+    if (pathname.startsWith('/profile/') || pathname.startsWith('/product/') || pathname.startsWith('/urgent-medicine') || pathname.startsWith('/health-report') || pathname.startsWith('/chat/') || pathname.startsWith('/doctor') || pathname.startsWith('/asha') || pathname.startsWith('/activity')) {
         return <main>{children}</main>;
     }
     return <main>{children}</main>;
