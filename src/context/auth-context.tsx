@@ -26,6 +26,7 @@ export interface HealthData {
 
 export interface User {
   id: string; 
+  familyId?: string; // Added familyId to the user model
   firstName: string;
   lastName: string;
   email: string;
@@ -69,6 +70,7 @@ const sanitizeForId = (identifier: string) => identifier.replace(/[^a-zA-Z0-9]/g
 
 const createGuestUser = (): User => ({
     id: uuidv4(),
+    familyId: uuidv4(),
     firstName: "Guest",
     lastName: "User",
     email: "",
@@ -136,7 +138,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 address: 'A-123, Main Street, Gurugram, Haryana, 122001'
             };
             finalUser = {
-                id: userId, // Use the sanitized ID here
+                id: userId,
+                familyId: userId, // For new users, familyId is the same as their own ID
                 ...newUserDetails,
                 addresses: [defaultAddress],
                 healthData: {},

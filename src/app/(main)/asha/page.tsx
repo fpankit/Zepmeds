@@ -51,12 +51,12 @@ export default function MyFamilyDashboardPage() {
     
     useEffect(() => {
         if (authLoading) return;
-        if (!user || user.isGuest) {
+        if (!user || user.isGuest || !user.familyId) {
             setIsLoading(false);
             return;
         }
 
-        const familyId = user.id; 
+        const familyId = user.familyId; // Use the familyId from the user object
         
         const q = query(
             collection(db, 'zep_beneficiaries'), 
