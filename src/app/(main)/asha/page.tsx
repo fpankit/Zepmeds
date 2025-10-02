@@ -23,8 +23,29 @@ interface Beneficiary {
     avatar: string;
     dataAiHint: string;
     status?: string;
-    familyId: string;
+    familyId?: string; // It might be optional if we use mock data
 }
+
+const mockFamilyMembers: Beneficiary[] = [
+    { 
+        id: 'member-1', 
+        patientName: "Sita Shah", 
+        relation: "Wife", 
+        age: "32 years", 
+        avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Fhousewife.png?alt=media", 
+        dataAiHint: "indian woman",
+        status: "ANC Checkup Due"
+    },
+    { 
+        id: 'member-2', 
+        patientName: "Rohan Shah", 
+        relation: "Son", 
+        age: "5 years", 
+        avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Findian-kid.png?alt=media", 
+        dataAiHint: "indian child",
+        status: "Vaccination Due"
+    },
+];
 
 const quickActions = [
     { title: 'Child Care', icon: Baby, href: '/asha/member-2', color: 'text-pink-400' },
@@ -46,9 +67,12 @@ const FamilyMemberSkeleton = () => (
 export default function MyFamilyDashboardPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const [familyMembers, setFamilyMembers] = useState<Beneficiary[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    // Use mock data for now
+    const [familyMembers, setFamilyMembers] = useState<Beneficiary[]>(mockFamilyMembers);
+    const [isLoading, setIsLoading] = useState(false); // Set to false as we are using mock data
     
+    // The useEffect for Firestore fetching is commented out to use mock data
+    /*
     useEffect(() => {
         if (authLoading) return;
         if (!user || user.isGuest || !user.familyId) {
@@ -56,7 +80,8 @@ export default function MyFamilyDashboardPage() {
             return;
         }
 
-        const familyId = user.familyId; // Use the familyId from the user object
+        const familyId = user.familyId;
+        setIsLoading(true);
         
         const q = query(
             collection(db, 'zep_beneficiaries'), 
@@ -64,7 +89,7 @@ export default function MyFamilyDashboardPage() {
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedMembers = snapshot.docs.map(doc => ({
+            const fetchedMembers: Beneficiary[] = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as Beneficiary));
@@ -81,6 +106,7 @@ export default function MyFamilyDashboardPage() {
 
         return () => unsubscribe();
     }, [user, authLoading]);
+    */
 
     return (
         <div className="bg-background min-h-screen font-sans">
@@ -99,7 +125,7 @@ export default function MyFamilyDashboardPage() {
                             <div>
                             <p className="text-sm text-muted-foreground">Good morning!</p>
                             <p className="font-bold text-lg">
-                                {user?.firstName} {user?.lastName}
+                                {user?.firstName || 'User'} {user?.lastName || ''}
                             </p>
                             </div>
                         </div>
