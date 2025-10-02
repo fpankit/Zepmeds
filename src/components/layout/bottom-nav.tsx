@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { Home, Stethoscope, MoreHorizontal, ShoppingCart, Activity } from "lucide-react";
+import { Home, Stethoscope, MoreHorizontal, ShoppingCart, Activity, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -18,20 +18,24 @@ const BottomNavComponent = () => {
   const navItems = [
     { href: "/home", icon: Home, label: t('bottomNav.home') },
     { href: "/activity", icon: Activity, label: t('bottomNav.activity') },
-    { href: "/doctor", icon: Stethoscope, label: t('bottomNav.doctor') },
+    { href: "/asha", icon: Users, label: 'My Family' },
     { href: "/cart", icon: ShoppingCart, label: t('bottomNav.cart') },
     { href: "/more", icon: MoreHorizontal, label: t('bottomNav.more') },
   ];
 
   // A more robust check for activity page and its children
   const isActivityActive = pathname === '/activity' || pathname.startsWith('/activity/');
+  const isFamilyActive = pathname === '/asha' || pathname.startsWith('/asha/');
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/80 bg-background/95 backdrop-blur-lg">
       <div className="flex h-16 items-center justify-around">
         {navItems.map((item) => {
-          // Special check for activity tab
-          const isActive = item.label === t('bottomNav.activity') ? isActivityActive : pathname.startsWith(item.href);
+          let isActive = pathname.startsWith(item.href);
+          if (item.href === '/activity') isActive = isActivityActive;
+          if (item.href === '/asha') isActive = isFamilyActive;
+
+
           return (
             <Link
               key={item.label}
