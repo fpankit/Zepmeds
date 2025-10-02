@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,29 +23,8 @@ interface Beneficiary {
     avatar: string;
     dataAiHint: string;
     status?: string;
-    familyId?: string; // It might be optional if we use mock data
+    familyId?: string;
 }
-
-const mockFamilyMembers: Beneficiary[] = [
-    { 
-        id: 'member-1', 
-        patientName: "Sita Shah", 
-        relation: "Wife", 
-        age: "32 years", 
-        avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Fhousewife.png?alt=media", 
-        dataAiHint: "indian woman",
-        status: "ANC Checkup Due"
-    },
-    { 
-        id: 'member-2', 
-        patientName: "Rohan Shah", 
-        relation: "Son", 
-        age: "5 years", 
-        avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Findian-kid.png?alt=media", 
-        dataAiHint: "indian child",
-        status: "Vaccination Due"
-    },
-];
 
 const quickActions = [
     { title: 'Child Care', icon: Baby, href: '/asha/member-2', color: 'text-pink-400' },
@@ -55,7 +34,6 @@ const quickActions = [
     { title: 'Health Reports', icon: ClipboardList, href: '/profile/diagnostic-reports', color: 'text-purple-400' },
 ];
 
-
 const FamilyMemberSkeleton = () => (
     <div className="space-y-3">
         <Card><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
@@ -63,16 +41,12 @@ const FamilyMemberSkeleton = () => (
     </div>
 );
 
-
 export default function MyFamilyDashboardPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    // Use mock data for now
-    const [familyMembers, setFamilyMembers] = useState<Beneficiary[]>(mockFamilyMembers);
-    const [isLoading, setIsLoading] = useState(false); // Set to false as we are using mock data
+    const [familyMembers, setFamilyMembers] = useState<Beneficiary[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     
-    // The useEffect for Firestore fetching is commented out to use mock data
-    /*
     useEffect(() => {
         if (authLoading) return;
         if (!user || user.isGuest || !user.familyId) {
@@ -94,7 +68,7 @@ export default function MyFamilyDashboardPage() {
                 ...doc.data()
             } as Beneficiary));
             
-            // Client-side sorting
+            // Client-side sorting to avoid composite index requirement
             fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
 
             setFamilyMembers(fetchedMembers);
@@ -106,8 +80,7 @@ export default function MyFamilyDashboardPage() {
 
         return () => unsubscribe();
     }, [user, authLoading]);
-    */
-
+    
     return (
         <div className="bg-background min-h-screen font-sans">
             <main className="p-4 space-y-6">
