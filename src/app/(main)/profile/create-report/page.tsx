@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -99,10 +100,10 @@ function CreateReportPageContent() {
     setIsSubmitting(true);
 
     try {
-      await addDoc(collection(db, 'reports'), {
+      await addDoc(collection(db, 'zep_reports'), {
         patientId: data.patient.id,
         patientName: data.patient.name,
-        doctorId: doctorUser.id, // Corrected from doctorUser.uid to doctorUser.id
+        doctorId: doctorUser.id,
         doctorName: `${doctorUser.firstName} ${doctorUser.lastName}`,
         doctorSpecialty: doctorUser.specialty || 'General Physician',
         createdAt: serverTimestamp(),
@@ -356,5 +357,3 @@ export default function CreateReportPage() {
         </Suspense>
     )
 }
-
-    

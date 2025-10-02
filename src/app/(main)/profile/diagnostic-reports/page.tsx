@@ -54,10 +54,9 @@ export default function DiagnosticReportsPage() {
       return;
     }
 
-    // This query now fetches all reports ordered by date, to be filtered on the client-side
-    // or secured via Firestore rules in a real app. This ensures ASHA-added reports are visible.
+    // This query now fetches reports from the 'zep_reports' collection.
     const q = query(
-      collection(db, "reports"),
+      collection(db, "zep_reports"),
       orderBy("createdAt", "desc") 
     );
 
