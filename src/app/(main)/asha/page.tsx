@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface Beneficiary {
     id: string;
-    name: string;
+    patientName: string; // Changed from 'name' to 'patientName'
     relation: string;
     age: string;
     avatar: string;
@@ -68,7 +68,8 @@ export default function MyFamilyDashboardPage() {
                 ...doc.data()
             } as Beneficiary));
             
-            fetchedMembers.sort((a, b) => a.name.localeCompare(b.name));
+            // Sort on the client side using the correct field
+            fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
             setFamilyMembers(fetchedMembers);
             setIsLoading(false);
         }, (error) => {
@@ -118,11 +119,11 @@ export default function MyFamilyDashboardPage() {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <Avatar className="h-12 w-12">
-                                                <AvatarImage src={member.avatar} alt={member.name} data-ai-hint={member.dataAiHint} />
-                                                <AvatarFallback>{member.name[0]}</AvatarFallback>
+                                                <AvatarImage src={member.avatar} alt={member.patientName} data-ai-hint={member.dataAiHint} />
+                                                <AvatarFallback>{member.patientName[0]}</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <h3 className="font-semibold">{member.name}</h3>
+                                                <h3 className="font-semibold">{member.patientName}</h3>
                                                 <p className="text-sm text-muted-foreground">{member.relation} • {member.age}</p>
                                             </div>
                                         </div>
