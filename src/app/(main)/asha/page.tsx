@@ -49,17 +49,19 @@ export default function MyFamilyDashboardPage() {
     
     useEffect(() => {
         if (authLoading) return;
-        if (!user || user.isGuest || !user.familyId) {
+        // Check if the user is an ASHA worker. Non-ASHAs shouldn't see this page's data.
+        if (!user || user.isGuest || !user.isDoctor) {
             setIsLoading(false);
             return;
         }
 
-        const familyId = user.familyId;
         setIsLoading(true);
         
+        // ** THE FIX **: Query for beneficiaries where the `ashaWorkerId` field matches the logged-in user's ID.
+        // This is the correct way to link ASHA workers to their assigned beneficiaries.
         const q = query(
             collection(db, 'zep_beneficiaries'), 
-            where('familyId', '==', familyId)
+            where('ashaWorkerId', '==', user.id)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -146,7 +148,7 @@ export default function MyFamilyDashboardPage() {
                             <CardContent className="p-6 text-center text-muted-foreground">
                                 <User className="mx-auto h-12 w-12 mb-4" />
                                 <h3 className="font-semibold text-lg">No Family Members Found</h3>
-                                <p className="text-sm">An ASHA worker can add your family members to view their health records here.</p>
+                                <p className="text-sm">You have no beneficiaries assigned to you. An admin can add them for you.</p>
                             </CardContent>
                         </Card>
                     )}
