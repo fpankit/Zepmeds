@@ -13,7 +13,7 @@ export default function MainLayout({
 }) {
   const pathname = usePathname();
   const noHeaderRoutes: string[] = [];
-  const noLayoutRoutes = ["/checkout", "/first-aid/", "/verify-medicine", "/scan-package", "/activity", "/call/", "/health-report", "/profile/", "/product/", "/chat/", "/doctor", "/asha"];
+  const noLayoutRoutes = ["/checkout", "/first-aid/", "/verify-medicine", "/scan-package", "/health-report", "/profile/", "/product/", "/chat/", "/doctor", "/asha"];
   
   const isLayoutVisible = !noLayoutRoutes.some(route => {
     if (route.endsWith('/')) {
