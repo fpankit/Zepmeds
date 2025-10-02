@@ -1,117 +1,144 @@
 
 'use client';
 
-import { Baby, Bell, BellRing, ChevronRight, FileText, HeartHandshake, LineChart, Users, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
+import placeholderImages from '@/app/lib/placeholder-images.json';
+import { Clock, Search, SlidersHorizontal } from "lucide-react";
+import Image from "next/image";
 
-const actionCards = [
-    { title: "Add Beneficiary", icon: UserPlus, href: "#", color: "text-blue-400" },
-    { title: "Add Report", icon: FileText, href: "#", color: "text-green-400" },
-    { title: "Reminders", icon: BellRing, href: "#", color: "text-yellow-400" }
+const categories = [
+    { 
+        title: "Beneficiaries", 
+        tasks: "12 Records", 
+        image: placeholderImages.illustrations.womanWithLaptop.url, 
+        hint: placeholderImages.illustrations.womanWithLaptop.hint, 
+        color: "bg-amber-100 dark:bg-amber-900/50" 
+    },
+    { 
+        title: "Reports", 
+        tasks: "05 Reports", 
+        image: placeholderImages.illustrations.manWithLaptop.url,
+        hint: placeholderImages.illustrations.manWithLaptop.hint,
+        color: "bg-emerald-100 dark:bg-emerald-900/50" 
+    },
 ];
 
-const serviceCards = [
-    { title: "Maternal Care", description: "ANC/PNC Check-ups", icon: HeartHandshake, href: "#" },
-    { title: "Child Health", description: "Growth Monitoring", icon: Baby, href: "#" },
-    { title: "Family Planning", description: "Counseling & Info", icon: Users, href: "#" },
-    { title: "Records", description: "View/Manage Data", icon: FileText, href: "#" },
-];
-
+const ongoingTasks = [
+    {
+        title: "ANC/PNC Visits",
+        team: [
+            { src: "https://i.pravatar.cc/150?img=1", alt: "Member 1"},
+            { src: "https://i.pravatar.cc/150?img=2", alt: "Member 2"},
+            { src: "https://i.pravatar.cc/150?img=3", alt: "Member 3"},
+        ],
+        dueDate: "6d",
+        time: "9:00 AM - 4:00 PM",
+        progress: 46,
+        color: "bg-purple-100 dark:bg-purple-900/50"
+    },
+    {
+        title: "Vaccination Drive",
+        team: [
+            { src: "https://i.pravatar.cc/150?img=4", alt: "Member 4"},
+            { src: "https://i.pravatar.cc/150?img=5", alt: "Member 5"},
+            { src: "https://i.pravatar.cc/150?img=6", alt: "Member 6"},
+        ],
+        dueDate: "4d",
+        time: "10:00 AM - 2:00 PM",
+        progress: 76,
+        color: "bg-lime-100 dark:bg-lime-900/50"
+    }
+]
 
 export default function AshaDashboardPage() {
     const { user } = useAuth();
-    const router = useRouter();
-
+    
     return (
-        <div className="flex flex-col min-h-screen bg-background">
-            <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b">
-                <h1 className="text-xl font-bold">ASHA Dashboard</h1>
-                <Button variant="ghost" size="icon">
-                    <Bell className="h-6 w-6" />
-                </Button>
+        <div className="bg-background text-foreground p-6 font-sans">
+            <header className="flex justify-between items-center mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Hi {user?.firstName || 'Rakib'}</h1>
+                    <p className="text-muted-foreground">10 tasks pending</p>
+                </div>
+                <Avatar className="h-12 w-12">
+                    <AvatarImage src={user?.photoURL} alt={user?.displayName || "ASHA Worker"}/>
+                    <AvatarFallback>{user?.firstName?.[0] || 'A'}</AvatarFallback>
+                </Avatar>
             </header>
 
-            <main className="flex-1 overflow-y-auto p-4 space-y-6">
-                <Card className="bg-card/50">
-                    <CardContent className="p-4 flex items-center gap-4">
-                         <Avatar className="h-14 w-14 border-2 border-primary">
-                            <AvatarImage src={user?.photoURL} alt={user?.displayName || "ASHA Worker"}/>
-                            <AvatarFallback>{user?.displayName?.charAt(0) || 'A'}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="text-muted-foreground">Hello!</p>
-                            <p className="text-lg font-bold">{user?.displayName || "ASHA Worker"}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <div className="grid grid-cols-3 gap-3">
-                    {actionCards.map(card => (
-                        <Card key={card.title} className="bg-card/80 text-center p-3 flex flex-col items-center justify-center gap-2 hover:bg-card/60 transition-colors">
-                            <card.icon className={`h-7 w-7 ${card.color}`} />
-                            <p className="text-xs font-semibold">{card.title}</p>
+            <div className="flex items-center gap-4 mb-6">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5"/>
+                    <Input placeholder="Search" className="pl-10 h-12 bg-card border-none rounded-lg" />
+                </div>
+                <Button variant="default" size="icon" className="h-12 w-12 rounded-lg bg-primary text-primary-foreground">
+                    <SlidersHorizontal className="h-6 w-6"/>
+                </Button>
+            </div>
+            
+            <section className="mb-6">
+                <h2 className="text-lg font-bold mb-3">Categories</h2>
+                <div className="grid grid-cols-2 gap-4">
+                    {categories.map((category) => (
+                        <Card key={category.title} className={`${category.color} border-none overflow-hidden`}>
+                            <CardContent className="p-4">
+                                <div className="relative h-20 w-full mb-2">
+                                     <Image src={category.image} alt={category.title} layout="fill" objectFit="contain" data-ai-hint={category.hint} />
+                                </div>
+                                <h3 className="font-bold">{category.title}</h3>
+                                <p className="text-sm text-muted-foreground">{category.tasks}</p>
+                            </CardContent>
                         </Card>
                     ))}
                 </div>
+            </section>
 
-                <div>
-                    <h2 className="text-lg font-semibold mb-3">Services</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                        {serviceCards.map(card => (
-                            <Card key={card.title} className="bg-card/80 p-4 flex flex-col justify-between hover:bg-card/60 transition-colors">
-                                <div className="space-y-1">
-                                    <card.icon className="h-7 w-7 text-primary mb-2"/>
-                                    <h3 className="font-bold">{card.title}</h3>
-                                    <p className="text-xs text-muted-foreground">{card.description}</p>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
+            <section>
+                 <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-lg font-bold">Ongoing tasks</h2>
+                    <Button variant="link" className="text-muted-foreground">See all</Button>
                 </div>
-
-                <Card className="bg-card/50">
-                     <CardHeader>
-                        <CardTitle>Child Growth & Vaccination</CardTitle>
-                        <CardDescription>Track child's vaccination schedule and growth milestones.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <Link href="#">
-                            <div className="p-4 rounded-lg bg-background flex items-center justify-between hover:bg-muted/50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <Baby className="h-6 w-6 text-primary"/>
-                                    <p className="font-semibold">Child Profiles</p>
+                <div className="space-y-4">
+                    {ongoingTasks.map(task => (
+                        <Card key={task.title} className={`${task.color} border-none`}>
+                            <CardContent className="p-4 space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <h3 className="font-bold">{task.title}</h3>
+                                    <div className="text-xs font-semibold bg-background/50 px-2 py-1 rounded-md">{task.dueDate}</div>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                        </Link>
-                         <Link href="#">
-                            <div className="p-4 rounded-lg bg-background flex items-center justify-between hover:bg-muted/50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M12 17a5 5 0 0 0 0-10V2a10 10 0 0 0 0 20v-5Z"/></svg>
-                                    <p className="font-semibold">Vaccination Tracker</p>
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-1">Team members</p>
+                                    <div className="flex -space-x-2">
+                                        {task.team.map((member, index) => (
+                                            <Avatar key={index} className="h-6 w-6 border-2 border-background">
+                                                <AvatarImage src={member.src} alt={member.alt} />
+                                                <AvatarFallback>{member.alt[0]}</AvatarFallback>
+                                            </Avatar>
+                                        ))}
+                                    </div>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                        </Link>
-                         <Link href="#">
-                            <div className="p-4 rounded-lg bg-background flex items-center justify-between hover:bg-muted/50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <LineChart className="h-6 w-6 text-primary"/>
-                                    <p className="font-semibold">Growth Charts</p>
+                                <div className="flex justify-between items-center text-sm">
+                                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                                        <Clock className="h-4 w-4"/>
+                                        <span>{task.time}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative h-8 w-8">
+                                            <Progress value={task.progress} className="h-8 w-8 [&>*]:bg-primary" />
+                                            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">{task.progress}%</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                        </Link>
-                    </CardContent>
-                </Card>
-
-            </main>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </section>
         </div>
     );
 }
-

@@ -1,0 +1,13 @@
+
+{
+    "illustrations": {
+        "womanWithLaptop": {
+            "url": "https://picsum.photos/seed/illustration1/300/200",
+            "hint": "woman illustration"
+        },
+        "manWithLaptop": {
+            "url": "https://picsum.photos/seed/illustration2/300/200",
+            "hint": "man illustration"
+        }
+    }
+}
