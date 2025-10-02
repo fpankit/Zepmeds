@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { collection, query, where, onSnapshot, orderBy, Timestamp, doc, updateDo
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Video, AlertTriangle, Calendar, Clock, User, Loader2, Check, X } from 'lucide-react';
+import { ArrowLeft, Video, AlertTriangle, Calendar, Clock, User, Loader2, Check, X, Building, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +26,23 @@ interface Appointment {
     status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'ringing';
 }
 
+const boothVisits = [
+    {
+        id: 'booth-1',
+        title: 'Pulse Polio Immunization',
+        venue: 'Govt. Primary School, Sector 14',
+        date: '2024-10-05',
+        time: '9:00 AM - 2:00 PM'
+    },
+    {
+        id: 'booth-2',
+        title: 'Vitamin A Supplementation Camp',
+        venue: 'Community Center, DLF Phase 3',
+        date: '2024-10-12',
+        time: '10:00 AM - 4:00 PM'
+    }
+];
+
 const AppointmentSkeleton = () => (
     <div className="space-y-4">
         <Skeleton className="h-32 w-full" />
@@ -38,7 +56,7 @@ export default function AppointmentsPage() {
     const { user, loading: authLoading } = useAuth();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [filter, setFilter] = useState('upcoming');
+    const [activeTab, setActiveTab] = useState('doctor');
     const router = useRouter();
     const { toast } = useToast();
 
@@ -126,14 +144,6 @@ export default function AppointmentsPage() {
         }
     }
 
-    const filteredAppointments = appointments.filter(appt => {
-        const isPast = new Date(appt.appointmentDate) < new Date();
-        if (filter === 'upcoming') return !isPast && (appt.status === 'pending' || appt.status === 'confirmed' || appt.status === 'ringing');
-        if (filter === 'past') return isPast || appt.status === 'completed' || appt.status === 'cancelled';
-        return true;
-    });
-
-
     if(authLoading) {
         return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
@@ -168,55 +178,85 @@ export default function AppointmentsPage() {
                 <div className="w-8" />
             </header>
             <main className="flex-1 overflow-y-auto p-4 space-y-4">
-                 <Tabs value={filter} onValueChange={setFilter}>
+                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                        <TabsTrigger value="past">Past & Cancelled</TabsTrigger>
+                        <TabsTrigger value="doctor">Doctor Visits</TabsTrigger>
+                        <TabsTrigger value="booth">Booth Visits</TabsTrigger>
                     </TabsList>
-                </Tabs>
 
-                {isLoading ? (
-                    <AppointmentSkeleton />
-                ) : filteredAppointments.length === 0 ? (
-                    <Card className="text-center p-10 mt-6">
-                        <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                        <h3 className="text-xl font-semibold">No Appointments Found</h3>
-                        <p className="text-muted-foreground">You have no {filter} appointments.</p>
-                    </Card>
-                ) : (
-                    <div className="space-y-4">
-                        {filteredAppointments.map(appt => (
-                            <Card key={appt.id}>
-                                <CardContent className="p-4 space-y-4">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="font-bold text-lg">Dr. {appt.doctorName}</p>
-                                            <p className="text-sm text-primary">{appt.doctorSpecialty}</p>
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-                                                <Calendar className="h-4 w-4" />
-                                                <span>{format(new Date(appt.appointmentDate), 'PPP')}</span>
-                                                <Clock className="h-4 w-4" />
-                                                <span>{appt.appointmentTime}</span>
-                                            </div>
-                                        </div>
-                                        {getStatusBadge(appt.status)}
-                                    </div>
-
-                                    {appt.status === 'confirmed' && (
-                                        <Button className="w-full" onClick={() => handleJoinCall(appt)}>
-                                            <Video className="mr-2 h-4 w-4"/> Join Call
-                                        </Button>
-                                    )}
-                                    {appt.status === 'pending' && (
-                                        <Button variant="destructive" className="w-full" onClick={() => handleCancelAppointment(appt.id)}>
-                                            <X className="mr-2 h-4 w-4" /> Cancel Appointment
-                                        </Button>
-                                    )}
-                                </CardContent>
+                    <TabsContent value="doctor" className="mt-4 space-y-4">
+                        {isLoading ? (
+                            <AppointmentSkeleton />
+                        ) : appointments.length === 0 ? (
+                            <Card className="text-center p-10 mt-6">
+                                <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                                <h3 className="text-xl font-semibold">No Doctor Appointments</h3>
+                                <p className="text-muted-foreground">You have no upcoming or past doctor visits.</p>
                             </Card>
-                        ))}
-                    </div>
-                )}
+                        ) : (
+                            <div className="space-y-4">
+                                {appointments.map(appt => (
+                                    <Card key={appt.id}>
+                                        <CardContent className="p-4 space-y-4">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-bold text-lg">Dr. {appt.doctorName}</p>
+                                                    <p className="text-sm text-primary">{appt.doctorSpecialty}</p>
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                                                        <Calendar className="h-4 w-4" />
+                                                        <span>{format(new Date(appt.appointmentDate), 'PPP')}</span>
+                                                        <Clock className="h-4 w-4" />
+                                                        <span>{appt.appointmentTime}</span>
+                                                    </div>
+                                                </div>
+                                                {getStatusBadge(appt.status)}
+                                            </div>
+
+                                            {appt.status === 'confirmed' && (
+                                                <Button className="w-full" onClick={() => handleJoinCall(appt)}>
+                                                    <Video className="mr-2 h-4 w-4"/> Join Call
+                                                </Button>
+                                            )}
+                                            {appt.status === 'pending' && (
+                                                <Button variant="destructive" className="w-full" onClick={() => handleCancelAppointment(appt.id)}>
+                                                    <X className="mr-2 h-4 w-4" /> Cancel Appointment
+                                                </Button>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value="booth" className="mt-4 space-y-4">
+                        {boothVisits.length > 0 ? (
+                             boothVisits.map(visit => (
+                                <Card key={visit.id}>
+                                    <CardContent className="p-4">
+                                        <p className="font-bold text-lg">{visit.title}</p>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                                            <Building className="h-4 w-4" />
+                                            <span>{visit.venue}</span>
+                                        </div>
+                                         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                            <Calendar className="h-4 w-4" />
+                                            <span>{format(new Date(visit.date), 'PPP')}</span>
+                                            <Clock className="h-4 w-4" />
+                                            <span>{visit.time}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        ) : (
+                             <Card className="text-center p-10 mt-6">
+                                <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                                <h3 className="text-xl font-semibold">No Booth Visits Found</h3>
+                                <p className="text-muted-foreground">There are no upcoming health booths in your area.</p>
+                            </Card>
+                        )}
+                    </TabsContent>
+                </Tabs>
             </main>
         </div>
     );

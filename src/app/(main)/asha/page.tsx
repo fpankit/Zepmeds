@@ -3,11 +3,11 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/context/auth-context";
-import { ArrowRight, Bell, ClipboardList, History, Plus, UserPlus, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, Bell, ClipboardList, History, Plus, Users, Syringe } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 
 const quickLinks = [
     { title: "My Appointments", description: "View upcoming & past bookings", icon: History, href: "/appointments" },
@@ -16,13 +16,12 @@ const quickLinks = [
 ];
 
 const familyMembers = [
-    { name: "Sita Shah", relation: "Wife", age: "32 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Fhousewife.png?alt=media", dataAiHint: "indian woman" },
-    { name: "Rohan Shah", relation: "Son", age: "5 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Findian-kid.png?alt=media", dataAiHint: "indian child" },
+    { id: 'member-1', name: "Sita Shah", relation: "Wife", age: "32 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Fhousewife.png?alt=media", dataAiHint: "indian woman", status: "ANC Checkup Due" },
+    { id: 'member-2', name: "Rohan Shah", relation: "Son", age: "5 years", avatar: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Findian-kid.png?alt=media", dataAiHint: "indian child", status: "Polio Vaccine Due" },
 ];
 
 
-export default function AshaDashboardPage() {
-    const { user } = useAuth();
+export default function MyFamilyDashboardPage() {
     const router = useRouter();
     
     return (
@@ -46,21 +45,33 @@ export default function AshaDashboardPage() {
                 <div className="space-y-3">
                     <h2 className="text-lg font-semibold text-muted-foreground">My Family</h2>
                     {familyMembers.map((member) => (
-                        <Card key={member.name} className="hover:border-primary transition-colors">
-                            <CardContent className="p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                     <Avatar className="h-12 w-12">
-                                        <AvatarImage src={member.avatar} alt={member.name} data-ai-hint={member.dataAiHint} />
-                                        <AvatarFallback>{member.name[0]}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <h3 className="font-semibold">{member.name}</h3>
-                                        <p className="text-sm text-muted-foreground">{member.relation} • {member.age}</p>
+                         <Link href={`/asha/${member.id}`} key={member.name}>
+                            <Card className="hover:border-primary transition-colors">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <Avatar className="h-12 w-12">
+                                                <AvatarImage src={member.avatar} alt={member.name} data-ai-hint={member.dataAiHint} />
+                                                <AvatarFallback>{member.name[0]}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <h3 className="font-semibold">{member.name}</h3>
+                                                <p className="text-sm text-muted-foreground">{member.relation} • {member.age}</p>
+                                            </div>
+                                        </div>
+                                        <ArrowRight className="h-5 w-5 text-muted-foreground" />
                                     </div>
-                                </div>
-                                <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                            </CardContent>
-                        </Card>
+                                    {member.status && (
+                                        <div className="mt-3 pt-3 border-t border-dashed">
+                                            <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-300 border-yellow-500/50">
+                                                <Syringe className="h-3 w-3 mr-1.5"/>
+                                                {member.status}
+                                            </Badge>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </Link>
                     ))}
                     <Button variant="outline" className="w-full h-16">
                         <Plus className="h-5 w-5 mr-2" /> Add New Member
