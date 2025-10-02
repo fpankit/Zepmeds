@@ -71,8 +71,8 @@ export default function MyFamilyDashboardPage() {
             } as Beneficiary));
 
             // Fallback query if the primary one returns nothing
-            if (fetchedMembers.length === 0) {
-                 q = query(beneficiariesCol, where('familyId', '==', user.id));
+            if (fetchedMembers.length === 0 && user.familyId) {
+                 q = query(beneficiariesCol, where('familyId', '==', user.familyId));
                  querySnapshot = await getDocs(q);
                  fetchedMembers = querySnapshot.docs.map(doc => ({
                     id: doc.id,
