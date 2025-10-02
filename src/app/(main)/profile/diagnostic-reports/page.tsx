@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -53,7 +54,8 @@ export default function DiagnosticReportsPage() {
       return;
     }
 
-    // THE FIX: Removed all 'where' clauses to fetch ALL documents from the collection.
+    // This query now fetches all reports ordered by date, to be filtered on the client-side
+    // or secured via Firestore rules in a real app. This ensures ASHA-added reports are visible.
     const q = query(
       collection(db, "reports"),
       orderBy("createdAt", "desc") 
@@ -64,7 +66,11 @@ export default function DiagnosticReportsPage() {
         id: doc.id,
         ...doc.data()
       } as Report));
-      setReports(fetchedReports);
+      
+      // Client-side filter to show reports for the logged-in user.
+      const userReports = fetchedReports.filter(report => report.patientId === user.id);
+      
+      setReports(userReports);
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching diagnostic reports: ", error);
@@ -200,7 +206,7 @@ export default function DiagnosticReportsPage() {
           <Card className="text-center p-10 mt-6">
             <ClipboardList className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold">No Reports Found</h3>
-            <p className="text-muted-foreground">There are no reports in the database yet.</p>
+            <p className="text-muted-foreground">You do not have any reports available yet.</p>
           </Card>
         ) : (
           <Accordion type="single" collapsible className="w-full space-y-3">
@@ -250,7 +256,7 @@ export default function DiagnosticReportsPage() {
                                  <div>
                                     <h4 className="font-semibold text-sm text-muted-foreground">Follow-up</h4>
                                     <p>{report.followUpAdvice}</p>
-                                </div>
+                                 </div>
                              )}
 
                             <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(report)}>
