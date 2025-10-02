@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface Beneficiary {
     id: string;
-    patientName: string; // Changed from 'name' to 'patientName'
+    patientName: string;
     relation: string;
     age: string;
     avatar: string;
     dataAiHint: string;
     status?: string;
+    familyId: string;
 }
 
 const quickActions = [
@@ -59,7 +60,8 @@ export default function MyFamilyDashboardPage() {
         
         const q = query(
             collection(db, 'zep_beneficiaries'), 
-            where('familyId', '==', familyId)
+            where('familyId', '==', familyId),
+            orderBy('patientName', 'asc')
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -68,8 +70,6 @@ export default function MyFamilyDashboardPage() {
                 ...doc.data()
             } as Beneficiary));
             
-            // Sort on the client side using the correct field
-            fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
             setFamilyMembers(fetchedMembers);
             setIsLoading(false);
         }, (error) => {
