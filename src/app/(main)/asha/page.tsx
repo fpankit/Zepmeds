@@ -29,7 +29,7 @@ interface Beneficiary {
 const quickActions = [
     { title: 'Child Care', icon: Baby, href: '/asha/member-2', color: 'text-pink-400' },
     { title: 'Vaccination', icon: Syringe, href: '/asha/member-2', color: 'text-blue-400' },
-    { title: 'Appointments', icon: Calendar, href: '/appointments', color: 'text-teal-400' },
+    { title: 'Appointments', icon: '/appointments', color: 'text-teal-400' },
     { title: 'Growth Report', icon: BarChart3, href: '/asha/member-2', color: 'text-orange-400' },
     { title: 'Health Reports', icon: ClipboardList, href: '/profile/diagnostic-reports', color: 'text-purple-400' },
 ];
@@ -58,7 +58,6 @@ export default function MyFamilyDashboardPage() {
 
         const familyId = user.id; 
         
-        // ** THE FIX **: Removed the orderBy clause to prevent index error
         const q = query(
             collection(db, 'zep_beneficiaries'), 
             where('familyId', '==', familyId)
@@ -70,7 +69,6 @@ export default function MyFamilyDashboardPage() {
                 ...doc.data()
             } as Beneficiary));
             
-            // ** THE FIX **: Sorting is now done on the client-side
             fetchedMembers.sort((a, b) => a.patientName.localeCompare(b.patientName));
 
             setFamilyMembers(fetchedMembers);
