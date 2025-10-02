@@ -70,19 +70,24 @@ function DoctorPageContent() {
 
   useEffect(() => {
     if (user?.id) {
+        // Simplified query to avoid composite index
         const q = query(
             collection(db, 'appointments'),
-            where('patientId', '==', user.id),
-            where('status', 'in', ['confirmed', 'pending']),
-            orderBy('createdAt', 'desc'),
-            limit(1)
+            where('patientId', '==', user.id)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            if (!snapshot.empty) {
-                const apptData = snapshot.docs[0].data();
+            const allAppointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Filter for upcoming appointments and sort on the client-side
+            const upcoming = allAppointments
+                .filter(appt => ['confirmed', 'pending'].includes(appt.status))
+                .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
+            if (upcoming.length > 0) {
+                const apptData = upcoming[0];
                 setUpcomingAppointment({
-                    id: snapshot.docs[0].id,
+                    id: apptData.id,
                     doctor: {
                         name: apptData.doctorName,
                         specialty: apptData.doctorSpecialty,
@@ -333,5 +338,3 @@ export default function DoctorPage() {
     </Suspense>
   );
 }
-
-    

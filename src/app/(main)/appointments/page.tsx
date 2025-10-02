@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -68,8 +69,7 @@ export default function AppointmentsPage() {
 
         const q = query(
             collection(db, 'appointments'),
-            where('patientId', '==', user.id),
-            orderBy('createdAt', 'desc')
+            where('patientId', '==', user.id)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -77,6 +77,8 @@ export default function AppointmentsPage() {
                 id: doc.id,
                 ...doc.data()
             } as Appointment));
+            // Sort on the client-side to avoid complex indexes
+            fetchedAppointments.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
             setAppointments(fetchedAppointments);
             setIsLoading(false);
         }, (error) => {
