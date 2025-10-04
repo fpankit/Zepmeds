@@ -31,14 +31,22 @@ export function EditMetricDialog({
   currentValue,
   onSave,
 }: EditMetricDialogProps) {
-  const [value, setValue] = useState(currentValue);
-
+  
+  const [value, setValue] = useState('');
+  const [unit, setUnit] = useState('');
+  
   useEffect(() => {
-    setValue(currentValue);
+    const parts = currentValue.split(' ');
+    const numericValue = parts[0];
+    const unitPart = parts.slice(1).join(' ');
+    setValue(numericValue);
+    setUnit(unitPart);
   }, [currentValue]);
 
+
   const handleSave = () => {
-    onSave(metric.id, value);
+    const newValueWithUnit = `${value.trim()} ${unit}`.trim();
+    onSave(metric.id, newValueWithUnit);
   };
 
   return (
@@ -53,12 +61,15 @@ export function EditMetricDialog({
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="metric-value">{metric.title}</Label>
-            <Input
-              id="metric-value"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={`e.g., ${metric.defaultValue}`}
-            />
+            <div className="flex items-center gap-2">
+                <Input
+                  id="metric-value"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  placeholder={metric.defaultValue.split(' ')[0]}
+                />
+                {unit && <span className="text-muted-foreground">{unit}</span>}
+            </div>
           </div>
         </div>
         <DialogFooter>
