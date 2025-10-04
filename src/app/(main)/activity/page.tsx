@@ -102,6 +102,24 @@ export default function ActivityProgressPage() {
     // Redirect to the backend route that starts the OAuth flow
     router.push('/api/google-fit/auth');
   };
+
+  const handleLogActivity = () => {
+    if (!selectedExercise) {
+      toast({
+        variant: "destructive",
+        title: "No Exercise Selected",
+        description: "Please select an exercise mode to log.",
+      });
+      return;
+    }
+
+    toast({
+      title: "Activity Logged!",
+      description: `You've logged a ${selectedExercise} session. Keep it up!`,
+    });
+
+    setSelectedExercise(null);
+  };
   
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -269,7 +287,7 @@ export default function ActivityProgressPage() {
                         </button>
                     ))}
                 </div>
-                <Button className="w-full mt-6">Log Activity</Button>
+                <Button className="w-full mt-6" onClick={handleLogActivity}>Log Activity</Button>
             </CardContent>
         </Card>
 
