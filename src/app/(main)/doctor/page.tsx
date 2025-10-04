@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, limit, getDocs, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, limit, getDocs, doc, setDoc, getDoc, serverTimestamp, addDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,7 +38,7 @@ function DoctorPageContent() {
   const { toast } = useToast();
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [upcomingAppointment, setUpcomingAppointment] = useState<Appointment | null>(null);
+  const [upcomingAppointment, setUpcomingAppointment] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
 
@@ -85,7 +85,7 @@ function DoctorPageContent() {
             if (upcoming.length > 0) {
                 const apptData = upcoming[0];
                 setUpcomingAppointment({
-                    id: apptData.id,
+                    ...apptData,
                     doctor: {
                         name: apptData.doctorName,
                         specialty: apptData.doctorSpecialty,
@@ -134,6 +134,34 @@ function DoctorPageContent() {
         } catch(error) {
             console.error("Error starting chat:", error);
             toast({ variant: 'destructive', title: 'Failed to start chat.'});
+        }
+    };
+    
+    const handleJoinCall = async () => {
+        if (!user || !upcomingAppointment) {
+            toast({ variant: 'destructive', title: 'Login required or no appointment found.' });
+            return;
+        }
+        
+        try {
+            // Create a new call document in `zep_calls` to notify the doctor
+            const callDocRef = await addDoc(collection(db, 'zep_calls'), {
+                appointmentId: upcomingAppointment.id,
+                doctorId: upcomingAppointment.doctorId,
+                doctorName: upcomingAppointment.doctor.name,
+                patientId: user.id,
+                patientName: `${user.firstName} ${user.lastName}`,
+                status: 'ringing',
+                createdAt: serverTimestamp(),
+            });
+            
+            toast({ title: "Ringing Doctor...", description: "Please wait while we connect you." });
+            
+            // Navigate to the call page with the new call document ID
+            router.push(`/call/${callDocRef.id}`);
+        } catch (error) {
+            console.error("Failed to start call:", error);
+            toast({ variant: 'destructive', title: 'Call Failed', description: 'Could not connect to the doctor.' });
         }
     };
 
@@ -221,6 +249,7 @@ function DoctorPageContent() {
                   variant="ghost"
                   size="icon"
                   className="bg-white/20 rounded-full h-10 w-10 hover:bg-white/30"
+                  onClick={handleJoinCall}
                 >
                   <Video className="h-5 w-5" />
                 </Button>
@@ -239,7 +268,7 @@ function DoctorPageContent() {
                 <Button variant="secondary" className="bg-white/90 text-primary hover:bg-white">
                   Re-Schedule
                 </Button>
-                <Button variant="outline" className="bg-transparent border-white/50 hover:bg-white/20 hover:text-white" onClick={() => router.push(`/doctor`)}>
+                <Button variant="outline" className="bg-transparent border-white/50 hover:bg-white/20 hover:text-white" onClick={() => router.push(`/doctor/${upcomingAppointment.doctorId}/book`)}>
                   View Profile
                 </Button>
               </div>
@@ -336,5 +365,3 @@ export default function DoctorPage() {
     </Suspense>
   );
 }
-
-    
