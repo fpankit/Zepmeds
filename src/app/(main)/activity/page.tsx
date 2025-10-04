@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   CalendarDays,
   Bell,
@@ -16,6 +16,13 @@ import {
   Footprints,
   Droplets,
   Zap,
+  Heart,
+  Bike,
+  Music,
+  Waves,
+  Dumbbell,
+  Activity,
+  Feather,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import Image from "next/image";
@@ -48,7 +55,20 @@ const meals = [
             { src: "https://firebasestorage.googleapis.com/v0/b/zepmeds-admin-panel.appspot.com/o/images%2Fstock%2Ffood-6.png?alt=media", hint: "quinoa salad" },
         ]
     }
-]
+];
+
+const exerciseModes = [
+    { name: "Cycling", icon: Bike },
+    { name: "Walking", icon: Footprints },
+    { name: "Zumba", icon: Music },
+    { name: "Skating", icon: Activity }, // Placeholder icon
+    { name: "Swimming", icon: Waves },
+    { name: "Hockey", icon: Activity }, // Placeholder icon
+    { name: "Cricket", icon: Activity }, // Placeholder icon
+    { name: "Badminton", icon: Feather },
+    { name: "Gym", icon: Dumbbell },
+];
+
 
 export default function ActivityProgressPage() {
   const { user } = useAuth();
@@ -57,6 +77,7 @@ export default function ActivityProgressPage() {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday
@@ -112,6 +133,8 @@ export default function ActivityProgressPage() {
       return {
           steps: user?.healthData?.dailySteps?.split(' ')[0] || '5,500',
           water: user?.healthData?.waterIntake?.split(' ')[0] || '12',
+          bloodPressure: user?.healthData?.bloodPressure || '120/80',
+          bloodGlucose: user?.healthData?.bloodGlucose?.split(' ')[0] || '95',
       }
   }, [user]);
 
@@ -181,7 +204,7 @@ export default function ActivityProgressPage() {
             <Zap className="h-5 w-5 mr-2 text-yellow-500"/> Sync with Google Fit
         </Button>
 
-         {/* Steps and Water Cards */}
+         {/* Health Data Cards */}
          <div className="grid grid-cols-2 gap-4">
             <Card className="p-4 rounded-2xl bg-card/80">
                 <CardContent className="p-0">
@@ -205,7 +228,51 @@ export default function ActivityProgressPage() {
                     <p className="text-2xl font-bold mt-2">{healthData.water} <span className="text-sm font-normal text-muted-foreground">glass</span></p>
                 </CardContent>
             </Card>
+             <Card className="p-4 rounded-2xl bg-card/80">
+                <CardContent className="p-0">
+                    <div className="flex items-center justify-between">
+                        <p className="font-semibold text-sm">Blood Pressure</p>
+                        <div className="p-2 bg-red-100 rounded-lg dark:bg-red-900/50">
+                            <Heart className="h-5 w-5 text-red-500"/>
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold mt-2">{healthData.bloodPressure} <span className="text-sm font-normal text-muted-foreground">mmHg</span></p>
+                </CardContent>
+            </Card>
+            <Card className="p-4 rounded-2xl bg-card/80">
+                <CardContent className="p-0">
+                     <div className="flex items-center justify-between">
+                        <p className="font-semibold text-sm">Blood Glucose</p>
+                         <div className="p-2 bg-purple-100 rounded-lg dark:bg-purple-900/50">
+                            <Droplets className="h-5 w-5 text-purple-500"/>
+                        </div>
+                    </div>
+                    <p className="text-2xl font-bold mt-2">{healthData.bloodGlucose} <span className="text-sm font-normal text-muted-foreground">mg/dL</span></p>
+                </CardContent>
+            </Card>
         </div>
+        
+        {/* Exercise Logging */}
+        <Card>
+            <CardHeader>
+                <CardTitle>Log Your Exercise</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                    {exerciseModes.map((mode) => (
+                        <button key={mode.name} onClick={() => setSelectedExercise(mode.name)} className={cn(
+                            "flex flex-col items-center justify-center gap-2 p-3 rounded-lg border-2 transition-colors",
+                            selectedExercise === mode.name ? "border-primary bg-primary/10" : "border-transparent bg-muted/50 hover:bg-muted"
+                        )}>
+                            <mode.icon className={cn("h-7 w-7", selectedExercise === mode.name ? "text-primary" : "text-muted-foreground")} />
+                            <p className="text-xs font-semibold">{mode.name}</p>
+                        </button>
+                    ))}
+                </div>
+                <Button className="w-full mt-6">Log Activity</Button>
+            </CardContent>
+        </Card>
+
 
         {/* Date Picker */}
         <Card className="p-4 rounded-2xl bg-card/80">
@@ -268,5 +335,3 @@ export default function ActivityProgressPage() {
     </div>
   );
 }
-
-    
