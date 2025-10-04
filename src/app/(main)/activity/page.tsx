@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,13 +15,13 @@ import {
   Plus,
   Footprints,
   Droplets,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-
-const weekDays = ["S", "M", "T", "W", "T", "F", "S"];
-const dates = ["07", "08", "09", "10", "11", "12", "13"];
+import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, getDay, isSameDay } from 'date-fns';
+import { useToast } from "@/hooks/use-toast";
 
 const meals = [
     { 
@@ -51,12 +52,68 @@ const meals = [
 
 export default function ActivityProgressPage() {
   const { user } = useAuth();
-  const [activeDate, setActiveDate] = useState(3); // 'W' is active
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const weekDays = useMemo(() => {
+    const start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday
+    const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+    return eachDayOfInterval({ start, end });
+  }, [currentDate]);
+
+  const trackedDays = useMemo(() => {
+    // This is a simulation. In a real app, you'd check which days have data.
+    return weekDays.filter(day => getDay(day) <= getDay(new Date())).length;
+  }, [weekDays]);
+
+  const handleNextWeek = () => {
+    setCurrentDate(prev => addDays(prev, 7));
+  };
+
+  const handlePrevWeek = () => {
+    setCurrentDate(prev => addDays(prev, -7));
+  };
+  
+  const handleGoogleFitSync = () => {
+    // Redirect to the backend route that starts the OAuth flow
+    router.push('/api/google-fit/auth');
+  };
+  
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if(params.get('success') === 'google_fit_synced') {
+        toast({
+            title: "Google Fit Synced!",
+            description: "Your health data has been successfully imported.",
+        });
+        // Clean up URL
+        router.replace('/activity');
+    } else if (params.get('error') === 'google_fit_failed') {
+         toast({
+            variant: "destructive",
+            title: "Sync Failed",
+            description: "Could not sync with Google Fit. Please try again.",
+        });
+        // Clean up URL
+        router.replace('/activity');
+    }
+  }, [router, toast]);
+
 
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName || !lastName) return "U";
     return `${firstName[0]}${lastName[0]}`.toUpperCase();
   };
+
+  const healthData = useMemo(() => {
+      return {
+          steps: user?.healthData?.dailySteps?.split(' ')[0] || '5,500',
+          water: user?.healthData?.waterIntake?.split(' ')[0] || '12',
+      }
+  }, [user]);
 
   return (
     <div className="bg-background font-sans">
@@ -106,18 +163,23 @@ export default function ActivityProgressPage() {
                             strokeWidth="8" 
                             fill="none" 
                             strokeDasharray="283" 
-                            strokeDashoffset={283 - (283 * (6/7))} 
+                            strokeDashoffset={283 - (283 * (trackedDays/7))} 
                             strokeLinecap="round" 
                             transform="rotate(-90 50 50)" 
                         />
                     </svg>
                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <p className="text-xl font-bold">6</p>
+                        <p className="text-xl font-bold">{trackedDays}</p>
                         <p className="text-xs">days</p>
                     </div>
                 </div>
             </CardContent>
         </Card>
+        
+        {/* Google Fit Sync */}
+        <Button variant="outline" className="w-full" onClick={handleGoogleFitSync}>
+            <Zap className="h-5 w-5 mr-2 text-yellow-500"/> Sync with Google Fit
+        </Button>
 
          {/* Steps and Water Cards */}
          <div className="grid grid-cols-2 gap-4">
@@ -129,7 +191,7 @@ export default function ActivityProgressPage() {
                             <Footprints className="h-5 w-5 text-orange-500"/>
                         </div>
                     </div>
-                    <p className="text-2xl font-bold mt-2">5,500 <span className="text-sm font-normal text-muted-foreground">steps</span></p>
+                    <p className="text-2xl font-bold mt-2">{healthData.steps} <span className="text-sm font-normal text-muted-foreground">steps</span></p>
                 </CardContent>
             </Card>
             <Card className="p-4 rounded-2xl bg-card/80">
@@ -140,7 +202,7 @@ export default function ActivityProgressPage() {
                             <Droplets className="h-5 w-5 text-blue-500"/>
                         </div>
                     </div>
-                    <p className="text-2xl font-bold mt-2">12 <span className="text-sm font-normal text-muted-foreground">glass</span></p>
+                    <p className="text-2xl font-bold mt-2">{healthData.water} <span className="text-sm font-normal text-muted-foreground">glass</span></p>
                 </CardContent>
             </Card>
         </div>
@@ -149,22 +211,22 @@ export default function ActivityProgressPage() {
         <Card className="p-4 rounded-2xl bg-card/80">
             <CardContent className="p-0">
                 <div className="flex justify-between items-center mb-4">
-                    <p className="font-bold">August 2025</p>
+                    <p className="font-bold">{format(currentDate, 'MMMM yyyy')}</p>
                     <div className="flex gap-2">
-                        <Button size="icon" variant="outline" className="h-8 w-8 rounded-full"><ChevronLeft className="h-4 w-4"/></Button>
-                        <Button size="icon" variant="outline" className="h-8 w-8 rounded-full"><ChevronRight className="h-4 w-4"/></Button>
+                        <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={handlePrevWeek}><ChevronLeft className="h-4 w-4"/></Button>
+                        <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" onClick={handleNextWeek}><ChevronRight className="h-4 w-4"/></Button>
                     </div>
                 </div>
                 <div className="flex justify-between">
-                    {weekDays.map((day, index) => (
-                        <div key={index} 
-                            onClick={() => setActiveDate(index)}
+                    {weekDays.map((day) => (
+                        <div key={day.toString()} 
+                            onClick={() => setSelectedDate(day)}
                             className={cn(
-                                "flex flex-col items-center gap-2 p-2 rounded-lg cursor-pointer w-12",
-                                activeDate === index ? "bg-green-400 text-white" : ""
+                                "flex flex-col items-center gap-2 p-2 rounded-lg cursor-pointer w-12 transition-colors",
+                                isSameDay(day, selectedDate) ? "bg-green-400 text-white" : "hover:bg-accent"
                             )}>
-                            <p className="text-xs text-muted-foreground">{day}</p>
-                            <p className="font-bold text-lg">{dates[index]}</p>
+                            <p className="text-xs text-muted-foreground">{format(day, 'E')[0]}</p>
+                            <p className="font-bold text-lg">{format(day, 'dd')}</p>
                         </div>
                     ))}
                 </div>
@@ -206,3 +268,5 @@ export default function ActivityProgressPage() {
     </div>
   );
 }
+
+    
