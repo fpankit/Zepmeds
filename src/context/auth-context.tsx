@@ -141,7 +141,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 familyId: userId, // For new users, familyId is the same as their own ID
                 ...newUserDetails,
                 addresses: [defaultAddress],
-                healthData: {},
+                healthData: {
+                    dailySteps: "7,642 steps",
+                    waterIntake: "8 glasses",
+                    caloriesBurned: "420 cals",
+                    bloodPressure: "120/80 mmHg",
+                    bloodGlucose: "95 mg/dL",
+                    heartRate: "72 bpm",
+                },
                 isGuest: false,
                 isDoctor: false, 
             };

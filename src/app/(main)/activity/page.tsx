@@ -29,6 +29,8 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, getDay, isSameDay } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import { healthMetrics, HealthMetric } from "@/lib/health-data";
+import { EditMetricDialog } from "@/components/features/edit-metric-dialog";
 
 const meals = [
     { 
@@ -61,23 +63,25 @@ const exerciseModes = [
     { name: "Cycling", icon: Bike },
     { name: "Walking", icon: Footprints },
     { name: "Zumba", icon: Music },
-    { name: "Skating", icon: Activity }, // Placeholder icon
+    { name: "Skating", icon: Activity },
     { name: "Swimming", icon: Waves },
-    { name: "Hockey", icon: Activity }, // Placeholder icon
-    { name: "Cricket", icon: Activity }, // Placeholder icon
+    { name: "Hockey", icon: Activity },
+    { name: "Cricket", icon: Activity },
     { name: "Badminton", icon: Feather },
     { name: "Gym", icon: Dumbbell },
 ];
 
 
 export default function ActivityProgressPage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  
+  const [editingMetric, setEditingMetric] = useState<HealthMetric | null>(null);
 
   const weekDays = useMemo(() => {
     const start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday
@@ -86,7 +90,6 @@ export default function ActivityProgressPage() {
   }, [currentDate]);
 
   const trackedDays = useMemo(() => {
-    // This is a simulation. In a real app, you'd check which days have data.
     return weekDays.filter(day => getDay(day) <= getDay(new Date())).length;
   }, [weekDays]);
 
@@ -99,7 +102,6 @@ export default function ActivityProgressPage() {
   };
   
   const handleGoogleFitSync = () => {
-    // Redirect to the backend route that starts the OAuth flow
     router.push('/api/google-fit/auth');
   };
 
@@ -112,12 +114,10 @@ export default function ActivityProgressPage() {
       });
       return;
     }
-
     toast({
       title: "Activity Logged!",
       description: `You've logged a ${selectedExercise} session. Keep it up!`,
     });
-
     setSelectedExercise(null);
   };
   
@@ -128,7 +128,6 @@ export default function ActivityProgressPage() {
             title: "Google Fit Synced!",
             description: "Your health data has been successfully imported.",
         });
-        // Clean up URL
         router.replace('/activity');
     } else if (params.get('error') === 'google_fit_failed') {
          toast({
@@ -136,24 +135,39 @@ export default function ActivityProgressPage() {
             title: "Sync Failed",
             description: "Could not sync with Google Fit. Please try again.",
         });
-        // Clean up URL
         router.replace('/activity');
     }
   }, [router, toast]);
+  
+  const handleSaveMetric = async (metricId: string, newValue: string) => {
+      if (!user) return;
+      
+      const newHealthData = {
+          ...user.healthData,
+          [metricId]: newValue,
+      };
+
+      await updateUser({ healthData: newHealthData });
+      setEditingMetric(null); // Close the dialog
+      toast({
+        title: "Data Updated!",
+        description: `Your ${editingMetric?.title} has been updated.`,
+      });
+  };
 
 
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName || !lastName) return "U";
     return `${firstName[0]}${lastName[0]}`.toUpperCase();
   };
-
-  const healthData = useMemo(() => {
-      return {
-          steps: user?.healthData?.dailySteps?.split(' ')[0] || '5,500',
-          water: user?.healthData?.waterIntake?.split(' ')[0] || '12',
-          bloodPressure: user?.healthData?.bloodPressure || '120/80',
-          bloodGlucose: user?.healthData?.bloodGlucose?.split(' ')[0] || '95',
-      }
+  
+   const userHealthData = useMemo(() => {
+    if (!user) return {};
+    const data: { [key: string]: string } = {};
+    healthMetrics.forEach(metric => {
+      data[metric.id] = user.healthData?.[metric.id] || metric.defaultValue;
+    });
+    return data;
   }, [user]);
 
   return (
@@ -224,50 +238,19 @@ export default function ActivityProgressPage() {
 
          {/* Health Data Cards */}
          <div className="grid grid-cols-2 gap-4">
-            <Card className="p-4 rounded-2xl bg-card/80">
-                <CardContent className="p-0">
-                    <div className="flex items-center justify-between">
-                        <p className="font-semibold text-sm">Step to walk</p>
-                        <div className="p-2 bg-orange-100 rounded-lg dark:bg-orange-900/50">
-                            <Footprints className="h-5 w-5 text-orange-500"/>
+            {healthMetrics.map((metric) => (
+                 <Card key={metric.id} className="p-4 rounded-2xl bg-card/80 cursor-pointer" onClick={() => setEditingMetric(metric)}>
+                    <CardContent className="p-0">
+                        <div className="flex items-center justify-between">
+                            <p className="font-semibold text-sm">{metric.title}</p>
+                            <div className={cn("p-2 rounded-lg", metric.bg)}>
+                                <metric.icon className={cn("h-5 w-5", metric.color)}/>
+                            </div>
                         </div>
-                    </div>
-                    <p className="text-2xl font-bold mt-2">{healthData.steps} <span className="text-sm font-normal text-muted-foreground">steps</span></p>
-                </CardContent>
-            </Card>
-            <Card className="p-4 rounded-2xl bg-card/80">
-                <CardContent className="p-0">
-                     <div className="flex items-center justify-between">
-                        <p className="font-semibold text-sm">Drink Water</p>
-                         <div className="p-2 bg-blue-100 rounded-lg dark:bg-blue-900/50">
-                            <Droplets className="h-5 w-5 text-blue-500"/>
-                        </div>
-                    </div>
-                    <p className="text-2xl font-bold mt-2">{healthData.water} <span className="text-sm font-normal text-muted-foreground">glass</span></p>
-                </CardContent>
-            </Card>
-             <Card className="p-4 rounded-2xl bg-card/80">
-                <CardContent className="p-0">
-                    <div className="flex items-center justify-between">
-                        <p className="font-semibold text-sm">Blood Pressure</p>
-                        <div className="p-2 bg-red-100 rounded-lg dark:bg-red-900/50">
-                            <Heart className="h-5 w-5 text-red-500"/>
-                        </div>
-                    </div>
-                    <p className="text-2xl font-bold mt-2">{healthData.bloodPressure} <span className="text-sm font-normal text-muted-foreground">mmHg</span></p>
-                </CardContent>
-            </Card>
-            <Card className="p-4 rounded-2xl bg-card/80">
-                <CardContent className="p-0">
-                     <div className="flex items-center justify-between">
-                        <p className="font-semibold text-sm">Blood Glucose</p>
-                         <div className="p-2 bg-purple-100 rounded-lg dark:bg-purple-900/50">
-                            <Droplets className="h-5 w-5 text-purple-500"/>
-                        </div>
-                    </div>
-                    <p className="text-2xl font-bold mt-2">{healthData.bloodGlucose} <span className="text-sm font-normal text-muted-foreground">mg/dL</span></p>
-                </CardContent>
-            </Card>
+                        <p className="text-2xl font-bold mt-2">{userHealthData[metric.id]?.split(' ')[0] || ''} <span className="text-sm font-normal text-muted-foreground">{userHealthData[metric.id]?.split(' ').slice(1).join(' ')}</span></p>
+                    </CardContent>
+                </Card>
+            ))}
         </div>
         
         {/* Exercise Logging */}
@@ -290,7 +273,6 @@ export default function ActivityProgressPage() {
                 <Button className="w-full mt-6" onClick={handleLogActivity}>Log Activity</Button>
             </CardContent>
         </Card>
-
 
         {/* Date Picker */}
         <Card className="p-4 rounded-2xl bg-card/80">
@@ -350,6 +332,16 @@ export default function ActivityProgressPage() {
             ))}
         </div>
       </main>
+
+       {editingMetric && (
+        <EditMetricDialog
+            isOpen={!!editingMetric}
+            onClose={() => setEditingMetric(null)}
+            metric={editingMetric}
+            currentValue={userHealthData[editingMetric.id] || ''}
+            onSave={handleSaveMetric}
+        />
+      )}
     </div>
   );
 }
