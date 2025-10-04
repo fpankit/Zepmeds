@@ -128,8 +128,8 @@ export default function BookAppointmentPage() {
 
     if (isLoading) {
         return (
-            <div className="flex flex-col h-screen bg-slate-50">
-                <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-slate-50">
+            <div className="flex flex-col h-screen bg-background">
+                <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background">
                     <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="h-6 w-6" /></Button>
                     <Button variant="ghost" size="icon"><Share className="h-6 w-6" /></Button>
                 </header>
@@ -141,8 +141,8 @@ export default function BookAppointmentPage() {
     if (!doctor) return null;
 
     return (
-        <div className="flex flex-col h-screen bg-slate-50">
-            <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-slate-50">
+        <div className="flex flex-col h-screen bg-background">
+            <header className="sticky top-0 z-10 flex items-center justify-between p-4 bg-background">
                 <Button variant="ghost" size="icon" onClick={() => router.back()}>
                     <ArrowLeft className="h-6 w-6" />
                 </Button>
@@ -152,7 +152,7 @@ export default function BookAppointmentPage() {
             </header>
             <main className="flex-1 overflow-y-auto px-4 space-y-6">
                 <div className="relative h-48">
-                    <Avatar className="h-32 w-32 absolute bottom-0 left-1/2 -translate-x-1/2 border-4 border-slate-50">
+                    <Avatar className="h-32 w-32 absolute bottom-0 left-1/2 -translate-x-1/2 border-4 border-background">
                         <AvatarImage src={doctor.photoURL} alt={doctor.displayName} />
                         <AvatarFallback className="text-3xl">{getInitials(doctor.displayName || '')}</AvatarFallback>
                     </Avatar>
@@ -168,7 +168,7 @@ export default function BookAppointmentPage() {
                 </div>
                 
 
-                <Card className="bg-white">
+                <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle className="text-lg">Select Date</CardTitle>
@@ -185,7 +185,7 @@ export default function BookAppointmentPage() {
                                 "p-2 border rounded-xl text-center w-full",
                                 format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd') 
                                 ? "bg-primary text-primary-foreground" 
-                                : "bg-slate-100 hover:bg-slate-200"
+                                : "bg-card hover:bg-accent"
                             )}>
                                 <p className="text-xs">{format(date, 'EEE')}</p>
                                 <p className="font-bold text-lg">{format(date, 'd')}</p>
@@ -194,7 +194,7 @@ export default function BookAppointmentPage() {
                     </CardContent>
                 </Card>
                 
-                 <Card className="bg-white">
+                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle className="text-lg">Select Time</CardTitle>
@@ -220,7 +220,7 @@ export default function BookAppointmentPage() {
                 </Card>
 
             </main>
-            <footer className="p-4 border-t bg-white">
+            <footer className="p-4 border-t bg-background">
                  <div className="flex gap-3">
                     <Button variant="secondary" size="icon" className="h-14 w-14 rounded-full">
                         <MessageSquare className="h-6 w-6"/>
@@ -234,4 +234,3 @@ export default function BookAppointmentPage() {
         </div>
     )
 }
-
