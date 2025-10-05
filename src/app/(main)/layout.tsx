@@ -12,8 +12,8 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const noHeaderRoutes: string[] = ["/activity"];
-  const noLayoutRoutes = ["/checkout", "/first-aid/", "/verify-medicine", "/scan-package", "/health-report", "/profile/", "/product/", "/chat/", "/doctor", "/asha"];
+  const noHeaderRoutes: string[] = [];
+  const noLayoutRoutes = ["/checkout", "/first-aid/", "/verify-medicine", "/scan-package", "/health-report", "/profile/", "/product/", "/chat/", "/doctor", "/asha", "/activity"];
   
   const isLayoutVisible = !noLayoutRoutes.some(route => {
     if (route.endsWith('/')) {

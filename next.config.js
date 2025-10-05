@@ -1,5 +1,8 @@
 
 /** @type {import('next').NextConfig} */
+const {
+  withHydrationOverlay,
+} = require('@builder.io/react-hydration-overlay/next');
 
 const withPWA = require("@ducanh2912/next-pwa").default({
   dest: "out",
@@ -10,6 +13,49 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   disable: process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,
+    runtimeCaching: [
+      {
+        urlPattern: ({ request }) => request.mode === 'navigate',
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'pages',
+          networkTimeoutSeconds: 10,
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:png|jpg|jpeg|svg|gif|ico)$/,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'images',
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:js|css)$/,
+        handler: 'StaleWhileRevalidate',
+        options: {
+          cacheName: 'static-resources',
+        },
+      },
+       {
+        urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts',
+          expiration: {
+            maxEntries: 20,
+            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 Year
+          },
+        },
+      },
+    ],
   },
 });
 
@@ -22,6 +68,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  output: 'export',
   async headers() {
     return [
       {
@@ -61,6 +108,14 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
-
+module.exports = withHydrationOverlay({
+    /**
+     * Optional: `appRootSelector` specifies the root element of your app.
+     * If not provided, it defaults to `main`.
+     * You can use this mechanism to limit the scope of the hydration overlay
+     * to a specific part of your application.
+     */
+    appRootSelector: 'main',
+  })(withPWA(nextConfig));
     
+
