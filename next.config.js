@@ -13,49 +13,15 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   disable: process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,
-    runtimeCaching: [
-      {
-        urlPattern: ({ request }) => request.mode === 'navigate',
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'pages',
-          networkTimeoutSeconds: 10,
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
-          },
-        },
-      },
-      {
-        urlPattern: /\.(?:png|jpg|jpeg|svg|gif|ico)$/,
-        handler: 'CacheFirst',
-        options: {
-          cacheName: 'images',
-          expiration: {
-            maxEntries: 100,
-            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
-          },
-        },
-      },
-      {
-        urlPattern: /\.(?:js|css)$/,
-        handler: 'StaleWhileRevalidate',
-        options: {
-          cacheName: 'static-resources',
-        },
-      },
-       {
-        urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
-        handler: 'CacheFirst',
-        options: {
-          cacheName: 'google-fonts',
-          expiration: {
-            maxEntries: 20,
-            maxAgeSeconds: 365 * 24 * 60 * 60, // 1 Year
-          },
-        },
-      },
-    ],
+    // THE FIX: This ensures all generated files (pages, chunks, etc.) are pre-cached.
+    // Since we use `output: 'export'`, this will include all HTML pages.
+    // The globPatterns ensures everything in the output directory is included.
+    globPatterns: ['**/*'], 
+  },
+  // THE FIX: Include all files in the output directory in the precache manifest.
+  // This is the key to making all pages available offline from the start.
+  precacheManifest: {
+    globPatterns: ["**/*"],
   },
 });
 
@@ -118,4 +84,3 @@ module.exports = withHydrationOverlay({
     appRootSelector: 'main',
   })(withPWA(nextConfig));
     
-
