@@ -1,7 +1,6 @@
-
 # How to Build the Zepmeds Android App (.apk)
 
-This guide provides the exact steps to build a native `.apk` file for Android from your Zepmeds web application using Capacitor.
+This guide provides the exact, step-by-step commands to build a native `.apk` file for Android from your Zepmeds web application using Capacitor. Follow them in order.
 
 ### Prerequisites
 
@@ -12,7 +11,7 @@ This guide provides the exact steps to build a native `.apk` file for Android fr
 
 ## Step 1: One-Time Project Setup
 
-_You only need to run these commands once for your project._
+_You only need to run these commands **once** for your project._
 
 Open a terminal in the project's root directory and run these commands one by one:
 
@@ -34,9 +33,7 @@ npx cap add android
 
 ## Step 2: Build the Web App
 
-_**IMPORTANT:** You must run this command every time you make changes to the web app's code._
-
-This command creates an optimized, production-ready build of your web app in a folder named `out`. This is the folder that Capacitor will use.
+_**IMPORTANT:** You must run this command **every time** you make changes to the web app's code. This command creates the `out` folder that Capacitor needs._
 
 ```bash
 npm run build
@@ -45,6 +42,8 @@ npm run build
 ---
 
 ## Step 3: Open and Build the Native Android Project
+
+_Run this command **only after** `npm run build` has completed successfully._
 
 This command opens your project directly in Android Studio, where you will create the final app file.
 
